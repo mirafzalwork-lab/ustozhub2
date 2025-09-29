@@ -1,0 +1,695 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Главная - UstozHub{% endblock %}
+
+{% block content %}
+<style>
+    .page-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 30px 20px;
+    }
+
+    /* Header Section */
+    .page-header {
+        text-align: center;
+        margin-bottom: 24px;
+        padding: 16px 0;
+        border-bottom: 1px solid rgba(10, 37, 64, 0.08);
+    }
+
+    .page-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 6px;
+        line-height: 1.3;
+    }
+
+    .page-subtitle {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 4px;
+        font-weight: 500;
+    }
+
+    .page-description {
+        font-size: 12px;
+        color: #888;
+        max-width: 100%;
+        margin: 0;
+        line-height: 1.4;
+        opacity: 0.9;
+    }
+
+    /* Layout */
+    .content-layout {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 30px;
+        align-items: start;
+    }
+
+    /* Filters Sidebar */
+    .filters-sidebar {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
+        position: sticky;
+        top: 90px;
+        max-height: calc(100vh - 110px);
+        overflow-y: auto;
+    }
+
+    .filters-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .filters-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #0A2540;
+    }
+
+    .reset-filters {
+        background: none;
+        border: none;
+        color: #3B82F6;
+        font-size: 13px;
+        cursor: pointer;
+        text-decoration: underline;
+    }
+
+    .filter-group {
+        margin-bottom: 25px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .filter-group:last-child {
+        border-bottom: none;
+    }
+
+    .filter-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 10px;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border 0.3s;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #3B82F6;
+    }
+
+    .filter-select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        background: white;
+        cursor: pointer;
+        transition: border 0.3s;
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: #3B82F6;
+    }
+
+    .price-inputs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .price-input {
+        padding: 8px 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 13px;
+    }
+
+    .rating-options {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .rating-option {
+        display: flex;
+        align-items: center;
+        padding: 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .rating-option:hover {
+        background: #f5f5f5;
+    }
+
+    .rating-option input[type="radio"] {
+        margin-right: 8px;
+    }
+
+    .rating-stars {
+        color: #FCD34D;
+        font-size: 14px;
+        margin-left: 5px;
+    }
+
+    .apply-filters-btn {
+        width: 100%;
+        padding: 12px;
+        background: #0A2540;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-top: 15px;
+    }
+
+    .apply-filters-btn:hover {
+        background: #1e4a72;
+    }
+
+    /* Teachers Grid */
+    .teachers-section {
+        min-height: 500px;
+    }
+
+    .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .results-count {
+        font-size: 14px;
+        color: #666;
+    }
+
+    .teachers-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+    }
+
+    .teacher-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .teacher-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(10, 37, 64, 0.12);
+    }
+
+    .teacher-header {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .teacher-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3B82F6, #1E40AF);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 20px;
+        font-weight: 700;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .teacher-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .teacher-info {
+        flex: 1;
+    }
+
+    .teacher-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 5px;
+    }
+
+    .teacher-rating {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 14px;
+    }
+
+    .rating-star {
+        color: #FCD34D;
+    }
+
+    .rating-value {
+        font-weight: 600;
+        color: #0A2540;
+    }
+
+    .rating-count {
+        color: #999;
+    }
+
+    .teacher-subjects {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 12px;
+    }
+
+    .subject-tag {
+        background: rgba(59, 130, 246, 0.1);
+        color: #3B82F6;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .teacher-description {
+        color: #666;
+        font-size: 13px;
+        line-height: 1.5;
+        margin-bottom: 12px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .teacher-meta {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 12px;
+        font-size: 13px;
+        color: #666;
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .meta-item i {
+        color: #0A2540;
+    }
+
+    .teacher-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 12px;
+        border-top: 1px solid #eee;
+    }
+
+    .teacher-price {
+        font-size: 18px;
+        font-weight: 700;
+        color: #0A2540;
+    }
+
+    .price-period {
+        font-size: 12px;
+        color: #999;
+    }
+
+    .contact-btn {
+        padding: 8px 16px;
+        background: #0A2540;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .contact-btn:hover {
+        background: #1e4a72;
+    }
+
+    .no-results {
+        text-align: center;
+        padding: 80px 20px;
+        color: #666;
+    }
+
+    .no-results i {
+        font-size: 48px;
+        color: #ddd;
+        margin-bottom: 15px;
+    }
+
+    /* Mobile Toggle Filters */
+    .mobile-filters-toggle {
+        display: none;
+        width: 100%;
+        padding: 12px;
+        background: #0A2540;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-bottom: 20px;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 1024px) {
+        .content-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .filters-sidebar {
+            display: none;
+            position: fixed;
+            top: 70px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 999;
+            max-height: none;
+            border-radius: 0;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .filters-sidebar.active {
+            display: block;
+        }
+
+        .mobile-filters-toggle {
+            display: block;
+        }
+
+        .teachers-grid {
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        }
+    }
+
+    @media (max-width: 640px) {
+        .teachers-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .page-title {
+            font-size: 24px;
+        }
+    }
+</style>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1 class="page-title">Найдите репетитора по Data Science онлайн</h1>
+        <!-- <p class="page-subtitle">{{ teachers.count }} квалифицированных преподавателей готовы помочь вам</p> -->
+        <p class="page-description">Используйте фильтры поиска, чтобы найти репетиторов по Data Science в соответствии с вашим бюджетом и потребностями. Развивайтесь быстрее с индивидуальным подходом!</p>
+    </div>
+
+    <button class="mobile-filters-toggle" onclick="toggleFilters()">
+        <i class="fas fa-filter"></i> Фильтры
+    </button>
+
+    <div class="content-layout">
+        <!-- Filters Sidebar -->
+        <aside class="filters-sidebar" id="filtersSidebar">
+            <div class="filters-header">
+                <h3 class="filters-title">Фильтры</h3>
+                <button class="reset-filters" onclick="resetFilters()">Сбросить</button>
+            </div>
+
+            <form method="GET" action="" id="filtersForm">
+                <!-- Search -->
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <i class="fas fa-search"></i> Поиск
+                    </label>
+                    <input type="text" 
+                           name="search" 
+                           class="search-input" 
+                           placeholder="Имя учителя..."
+                           value="{{ search_query|default:'' }}">
+                </div>
+
+                <!-- Subject -->
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <i class="fas fa-book"></i> Предмет
+                    </label>
+                    <select name="subject" class="filter-select">
+                        <option value="">Все предметы</option>
+                        {% for subject in subjects %}
+                            <option value="{{ subject.id }}" {% if selected_subject == subject.id|stringformat:"s" %}selected{% endif %}>
+                                {{ subject.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- City -->
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <i class="fas fa-map-marker-alt"></i> Город
+                    </label>
+                    <select name="city" class="filter-select">
+                        <option value="">Все города</option>
+                        {% for city in cities %}
+                            <option value="{{ city.id }}" {% if selected_city == city.id|stringformat:"s" %}selected{% endif %}>
+                                {{ city.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Teaching Format -->
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <i class="fas fa-desktop"></i> Формат обучения
+                    </label>
+                    <select name="format" class="filter-select">
+                        <option value="">Любой</option>
+                        {% for value, label in teaching_formats %}
+                            <option value="{{ value }}" {% if selected_format == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Price Range -->
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <i class="fas fa-dollar-sign"></i> Цена за час (сум)
+                    </label>
+                    <div class="price-inputs">
+                        <input type="number" 
+                               name="min_price" 
+                               class="price-input" 
+                               placeholder="От"
+                               value="{{ selected_min_price|default:'' }}">
+                        <input type="number" 
+                               name="max_price" 
+                               class="price-input" 
+                               placeholder="До"
+                               value="{{ selected_max_price|default:'' }}">
+                    </div>
+                </div>
+
+                <!-- Rating -->
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <i class="fas fa-star"></i> Рейтинг
+                    </label>
+                    <div class="rating-options">
+                        <label class="rating-option">
+                            <input type="radio" name="min_rating" value="" {% if not selected_min_rating %}checked{% endif %}>
+                            <span>Любой</span>
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="min_rating" value="4" {% if selected_min_rating == "4" %}checked{% endif %}>
+                            <span>4+</span>
+                            <span class="rating-stars">★★★★☆</span>
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="min_rating" value="4.5" {% if selected_min_rating == "4.5" %}checked{% endif %}>
+                            <span>4.5+</span>
+                            <span class="rating-stars">★★★★★</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Experience -->
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <i class="fas fa-clock"></i> Опыт (лет)
+                    </label>
+                    <select name="min_experience" class="filter-select">
+                        <option value="">Любой</option>
+                        <option value="1" {% if selected_min_experience == "1" %}selected{% endif %}>От 1 года</option>
+                        <option value="3" {% if selected_min_experience == "3" %}selected{% endif %}>От 3 лет</option>
+                        <option value="5" {% if selected_min_experience == "5" %}selected{% endif %}>От 5 лет</option>
+                        <option value="10" {% if selected_min_experience == "10" %}selected{% endif %}>От 10 лет</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="apply-filters-btn">
+                    Применить фильтры
+                </button>
+            </form>
+        </aside>
+
+        <!-- Teachers List -->
+        <section class="teachers-section">
+            <div class="results-header">
+                <span class="results-count">
+                    Найдено: <strong>{{ teachers.count }}</strong> 
+                    {% if teachers.count == 1 %}учитель{% elif teachers.count < 5 %}учителя{% else %}учителей{% endif %}
+                </span>
+            </div>
+
+            {% if teachers %}
+                <div class="teachers-grid">
+                    {% for teacher in teachers %}
+                        <div class="teacher-card" onclick="window.location.href=''">
+                            <div class="teacher-header">
+                                <div class="teacher-avatar">
+                                    {% if teacher.user.avatar %}
+                                        <img src="{{ teacher.user.avatar.url }}" alt="{{ teacher.user.get_full_name }}">
+                                    {% else %}
+                                        {{ teacher.user.first_name.0|default:"У" }}{{ teacher.user.last_name.0|default:"" }}
+                                    {% endif %}
+                                </div>
+                                <div class="teacher-info">
+                                    <h3 class="teacher-name">
+                                        {{ teacher.user.get_full_name|default:teacher.user.username }}
+                                    </h3>
+                                    <div class="teacher-rating">
+                                        <i class="fas fa-star rating-star"></i>
+                                        <span class="rating-value">{{ teacher.rating|floatformat:1 }}</span>
+                                        <span class="rating-count">({{ teacher.total_reviews }})</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="teacher-subjects">
+                                {% for ts in teacher.teachersubject_set.all|slice:":3" %}
+                                    <span class="subject-tag">{{ ts.subject.name }}</span>
+                                {% endfor %}
+                            </div>
+
+                            <p class="teacher-description">
+                                {{ teacher.bio|truncatewords:15 }}
+                            </p>
+
+                            <div class="teacher-meta">
+                                <div class="meta-item">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>{{ teacher.city.name|default:"Онлайн" }}</span>
+                                </div>
+                                <div class="meta-item">
+                                    <i class="fas fa-clock"></i>
+                                    <span>{{ teacher.experience_years }} лет</span>
+                                </div>
+                            </div>
+
+                            <div class="teacher-footer">
+                                <div>
+                                    {% with min_price=teacher.get_min_price %}
+                                        <div class="teacher-price">
+                                            {% if min_price > 0 %}
+                                                {{ min_price|floatformat:0 }} сум
+                                            {% else %}
+                                                Договорная
+                                            {% endif %}
+                                        </div>
+                                        <div class="price-period">за час</div>
+                                    {% endwith %}
+                                </div>
+                                <button class="contact-btn" onclick="event.stopPropagation()">
+                                    <i class="fas fa-comment"></i> Написать
+                                </button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="no-results">
+                    <i class="fas fa-search"></i>
+                    <h3>Учителя не найдены</h3>
+                    <p>Попробуйте изменить параметры фильтрации</p>
+                </div>
+            {% endif %}
+        </section>
+    </div>
+</div>
+
+<script>
+    function toggleFilters() {
+        const sidebar = document.getElementById('filtersSidebar');
+        sidebar.classList.toggle('active');
+    }
+
+    function resetFilters() {
+        window.location.href = window.location.pathname;
+    }
+
+    // Auto-submit on select change
+    document.querySelectorAll('.filter-select').forEach(select => {
+        select.addEventListener('change', function() {
+            document.getElementById('filtersForm').submit();
+        });
+    });
+
+    // Close filters on mobile when clicking outside
+    document.addEventListener('click', function(event) {
+        const sidebar = document.getElementById('filtersSidebar');
+        const toggle = document.querySelector('.mobile-filters-toggle');
+        
+        if (window.innerWidth <= 1024 && 
+            sidebar.classList.contains('active') &&
+            !sidebar.contains(event.target) &&
+            !toggle.contains(event.target)) {
+            sidebar.classList.remove('active');
+        }
+    });
+</script>
+{% endblock %}
