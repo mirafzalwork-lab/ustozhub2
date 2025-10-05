@@ -1,0 +1,729 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Регистрация учителя - Шаг 2 из 3{% endblock %}
+{% load form_filter %}
+{% block content %}
+<style>
+    .register-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+
+    .register-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .register-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #0A2540;
+        margin-bottom: 12px;
+    }
+
+    .register-subtitle {
+        font-size: 16px;
+        color: #666;
+    }
+
+    /* Progress Steps */
+    .progress-steps {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 40px;
+        position: relative;
+    }
+
+    .progress-line {
+        position: absolute;
+        top: 20px;
+        left: 25%;
+        right: 25%;
+        height: 2px;
+        background: #e0e0e0;
+        z-index: 0;
+    }
+
+    .progress-line-active {
+        position: absolute;
+        top: 20px;
+        left: 25%;
+        height: 2px;
+        background: #3B82F6;
+        z-index: 1;
+        transition: width 0.3s ease;
+        width: 25%;
+    }
+
+    .steps-container {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        max-width: 600px;
+        position: relative;
+        z-index: 2;
+    }
+
+    .step-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+    }
+
+    .step-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid #e0e0e0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: #999;
+        margin-bottom: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .step-circle.active {
+        background: #3B82F6;
+        border-color: #3B82F6;
+        color: white;
+    }
+
+    .step-circle.completed {
+        background: #10B981;
+        border-color: #10B981;
+        color: white;
+    }
+
+    .step-label {
+        font-size: 13px;
+        color: #999;
+        text-align: center;
+    }
+
+    .step-label.active {
+        color: #0A2540;
+        font-weight: 600;
+    }
+
+    .step-label.completed {
+        color: #10B981;
+    }
+
+    /* Form Card */
+    .form-card {
+        background: white;
+        border-radius: 16px;
+        padding: 40px;
+        box-shadow: 0 4px 20px rgba(10, 37, 64, 0.08);
+    }
+
+    .info-banner {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(16, 185, 129, 0.1));
+        border-left: 4px solid #3B82F6;
+        padding: 16px 20px;
+        border-radius: 10px;
+        margin-bottom: 32px;
+        display: flex;
+        align-items: start;
+        gap: 12px;
+    }
+
+    .info-banner i {
+        color: #3B82F6;
+        font-size: 20px;
+        margin-top: 2px;
+    }
+
+    .info-banner-content h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 6px;
+    }
+
+    .info-banner-content p {
+        font-size: 14px;
+        color: #666;
+        line-height: 1.5;
+    }
+
+    .subjects-container {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .subject-card {
+        background: #f8f9fa;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 24px;
+        position: relative;
+        transition: all 0.3s;
+    }
+
+    .subject-card.active {
+        border-color: #3B82F6;
+        background: white;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+    }
+
+    .subject-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .subject-number {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        color: #0A2540;
+    }
+
+    .subject-badge {
+        background: #3B82F6;
+        color: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .remove-subject {
+        background: none;
+        border: none;
+        color: #EF4444;
+        cursor: pointer;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 14px;
+        display: none;
+        transition: all 0.3s;
+    }
+
+    .subject-card.active .remove-subject {
+        display: block;
+    }
+
+    .remove-subject:hover {
+        background: #FEE2E2;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 8px;
+    }
+
+    .form-label .required {
+        color: #EF4444;
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 14px;
+        transition: all 0.3s;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+        outline: none;
+        border-color: #3B82F6;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+
+    .form-help {
+        font-size: 12px;
+        color: #999;
+        margin-top: 6px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .price-input-wrapper {
+        position: relative;
+    }
+
+    .currency-label {
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #666;
+        font-size: 14px;
+        font-weight: 500;
+        pointer-events: none;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .checkbox-group:hover {
+        border-color: #3B82F6;
+        background: white;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    .checkbox-group label {
+        cursor: pointer;
+        font-size: 14px;
+        color: #333;
+        margin: 0;
+    }
+
+    .add-subject-btn {
+        width: 100%;
+        padding: 14px;
+        background: white;
+        color: #3B82F6;
+        border: 2px dashed #3B82F6;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 20px;
+    }
+
+    .add-subject-btn:hover {
+        background: rgba(59, 130, 246, 0.05);
+        transform: translateY(-2px);
+    }
+
+    .add-subject-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* Error Messages */
+    .form-errors {
+        background: #FEE2E2;
+        border: 1px solid #FCA5A5;
+        color: #991B1B;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 14px;
+    }
+
+    .field-error {
+        color: #EF4444;
+        font-size: 12px;
+        margin-top: 4px;
+    }
+
+    .form-input.error,
+    .form-select.error,
+    .form-textarea.error {
+        border-color: #EF4444;
+    }
+
+    /* Success message */
+    .success-message {
+        background: #D1FAE5;
+        border: 1px solid #6EE7B7;
+        color: #065F46;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Buttons */
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 32px;
+        justify-content: space-between;
+    }
+
+    .btn-back {
+        padding: 14px 24px;
+        background: white;
+        color: #666;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-back:hover {
+        border-color: #999;
+        color: #333;
+    }
+
+    .btn-next {
+        padding: 14px 32px;
+        background: #0A2540;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-next:hover {
+        background: #1e4a72;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(10, 37, 64, 0.2);
+    }
+
+    .btn-next:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .register-container {
+            padding: 20px 16px;
+        }
+
+        .form-card {
+            padding: 24px 20px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .register-title {
+            font-size: 24px;
+        }
+
+        .steps-container {
+            max-width: 100%;
+        }
+
+        .step-label {
+            font-size: 11px;
+        }
+
+        .subject-card {
+            padding: 20px;
+        }
+    }
+</style>
+
+<div class="register-container">
+    <div class="register-header">
+        <h1 class="register-title">Предметы и цены</h1>
+        <p class="register-subtitle">Укажите предметы, которые вы преподаете, и стоимость занятий</p>
+    </div>
+
+    <!-- Progress Steps -->
+    <div class="progress-steps">
+        <div class="progress-line"></div>
+        <div class="progress-line-active"></div>
+        
+        <div class="steps-container">
+            <div class="step-item">
+                <div class="step-circle completed">
+                    <i class="fas fa-check"></i>
+                </div>
+                <span class="step-label completed">Личные данные</span>
+            </div>
+            <div class="step-item">
+                <div class="step-circle active">2</div>
+                <span class="step-label active">Предметы и цены</span>
+            </div>
+            <div class="step-item">
+                <div class="step-circle">3</div>
+                <span class="step-label">Сертификаты</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="form-card">
+        <div class="info-banner">
+            <i class="fas fa-lightbulb"></i>
+            <div class="info-banner-content">
+                <h3>Совет по ценообразованию</h3>
+                <p>Укажите честную цену, основанную на вашем опыте. Средняя цена на платформе: 50,000 - 150,000 сум/час. Вы можете добавить до 5 предметов.</p>
+            </div>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="success-message">
+                    <i class="fas fa-check-circle"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if form.non_field_errors %}
+            <div class="form-errors">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <form method="POST" id="subjectsForm">
+            {% csrf_token %}
+
+            <div class="subjects-container" id="subjectsContainer">
+                <!-- Subject 1 -->
+                <div class="subject-card active" data-subject-num="1">
+                    <div class="subject-card-header">
+                        <div class="subject-number">
+                            <span class="subject-badge">1</span>
+                            Предмет 1
+                        </div>
+                        <button type="button" class="remove-subject" onclick="removeSubject(1)">
+                            <i class="fas fa-times"></i> Удалить
+                        </button>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            Предмет <span class="required">*</span>
+                        </label>
+                        {{ form.subject_1 }}
+                        {% if form.subject_1.errors %}
+                            <div class="field-error">{{ form.subject_1.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">
+                                Цена за час <span class="required">*</span>
+                            </label>
+                            <div class="price-input-wrapper">
+                                {{ form.hourly_rate_1 }}
+                                <span class="currency-label">сум</span>
+                            </div>
+                            {% if form.hourly_rate_1.errors %}
+                                <div class="field-error">{{ form.hourly_rate_1.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-help">
+                                <i class="fas fa-info-circle"></i>
+                                Укажите цену в узбекских сумах
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" style="opacity: 0;">Placeholder</label>
+                            <div class="checkbox-group">
+                                {{ form.is_free_trial_1 }}
+                                <label for="{{ form.is_free_trial_1.id_for_label }}">
+                                    Бесплатное пробное занятие
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            Дополнительная информация
+                        </label>
+                        {{ form.description_1 }}
+                        {% if form.description_1.errors %}
+                            <div class="field-error">{{ form.description_1.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            Опишите особенности преподавания этого предмета
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subjects 2-5 will be added dynamically -->
+                {% for i in "2345" %}
+                <div class="subject-card" data-subject-num="{{ i }}" style="display: none;">
+                    <div class="subject-card-header">
+                        <div class="subject-number">
+                            <span class="subject-badge">{{ i }}</span>
+                            Предмет {{ i }}
+                        </div>
+                        <button type="button" class="remove-subject" onclick="removeSubject({{ i }})">
+                            <i class="fas fa-times"></i> Удалить
+                        </button>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            Предмет
+                        </label>
+                        {% get_form_field form "subject_" i %}                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">
+                                Цена за час
+                            </label>
+                            <div class="price-input-wrapper">
+                                {% get_form_field form "hourly_rate_" i %}
+                                <span class="currency-label">сум</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" style="opacity: 0;">Placeholder</label>
+                            <div class="checkbox-group">
+                                {% get_form_field form "is_free_trial_" i %}
+                                <label for="id_is_free_trial_{{ i }}">
+                                    Бесплатное пробное занятие
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            Дополнительная информация
+                        </label>
+                        {% get_form_field form "description_" i %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <button type="button" class="add-subject-btn" id="addSubjectBtn" onclick="addSubject()">
+                <i class="fas fa-plus-circle"></i>
+                Добавить еще предмет
+            </button>
+
+            <!-- Actions -->
+            <div class="form-actions">
+                <a href="{% url 'teacher_register_step1' %}" class="btn-back">
+                    <i class="fas fa-arrow-left"></i> Назад
+                </a>
+                <button type="submit" class="btn-next" id="submitBtn">
+                    Далее <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Form validation - ИСПРАВЛЕННАЯ ВЕРСИЯ
+document.getElementById('subjectsForm').addEventListener('submit', function(e) {
+    let hasValidSubject = false;
+    
+    for (let i = 1; i <= maxSubjects; i++) {
+        const card = document.querySelector(`[data-subject-num="${i}"]`);
+        
+        // Проверяем, что карточка видима (не display: none)
+        if (card && card.style.display !== 'none') {
+            const subjectSelect = document.getElementById(`id_subject_${i}`);
+            const priceInput = document.getElementById(`id_hourly_rate_${i}`);
+            
+            // ИСПРАВЛЕНИЕ: проверяем, что оба поля заполнены и цена больше 0
+            if (subjectSelect && subjectSelect.value && 
+                priceInput && priceInput.value && 
+                parseFloat(priceInput.value) > 0) {
+                hasValidSubject = true;
+            }
+        }
+    }
+    
+    if (!hasValidSubject) {
+        e.preventDefault();
+        alert('Добавьте хотя бы один предмет с ценой');
+        return false;
+    }
+});
+
+// ДОПОЛНИТЕЛЬНО: Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    // Подсчитываем видимые карточки
+    activeSubjects = 0;
+    for (let i = 1; i <= maxSubjects; i++) {
+        const card = document.querySelector(`[data-subject-num="${i}"]`);
+        if (card && card.style.display !== 'none') {
+            activeSubjects = i;
+        }
+    }
+    updateAddButton();
+});
+
+// Enable subject card when subject is selected
+document.querySelectorAll('[id^="id_subject_"]').forEach(select => {
+    select.addEventListener('change', function() {
+        const num = this.id.match(/\d+/)[0];
+        const card = document.querySelector(`[data-subject-num="${num}"]`);
+        const priceInput = document.getElementById(`id_hourly_rate_${num}`);
+        
+        if (this.value && priceInput) {
+            priceInput.required = true;
+        } else if (priceInput) {
+            priceInput.required = false;
+        }
+    });
+});
+</script>
+{% endblock %}

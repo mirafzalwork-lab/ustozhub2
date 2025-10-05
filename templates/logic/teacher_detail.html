@@ -1,0 +1,1293 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ teacher.user.get_full_name }} - Учитель на UstozHub{% endblock %}
+
+{% block content %}
+<style>
+    .detail-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 30px 20px;
+    }
+
+    /* Breadcrumbs */
+    .breadcrumbs {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 24px;
+    }
+
+    .breadcrumbs a {
+        color: #3B82F6;
+        text-decoration: none;
+    }
+
+    .breadcrumbs a:hover {
+        text-decoration: underline;
+    }
+
+    .breadcrumb-separator {
+        color: #ccc;
+    }
+
+    /* Layout */
+    .detail-layout {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 30px;
+        align-items: start;
+    }
+
+    /* Main Content */
+    .detail-main {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    /* Teacher Header Card */
+    .teacher-header-card {
+        background: white;
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
+    }
+
+    .teacher-header-content {
+        display: flex;
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+
+    .teacher-avatar-large {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3B82F6, #1E40AF);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 40px;
+        font-weight: 700;
+        flex-shrink: 0;
+        overflow: hidden;
+        border: 4px solid #f8f9fa;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+    }
+
+    .teacher-avatar-large img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .teacher-header-info {
+        flex: 1;
+    }
+
+    .teacher-name-large {
+        font-size: 28px;
+        font-weight: 700;
+        color: #0A2540;
+        margin-bottom: 8px;
+        line-height: 1.2;
+    }
+
+    .teacher-title {
+        font-size: 16px;
+        color: #666;
+        margin-bottom: 16px;
+    }
+
+    .teacher-rating-large {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .rating-stars-large {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .rating-star-large {
+        color: #FCD34D;
+        font-size: 20px;
+    }
+
+    .rating-number {
+        font-size: 24px;
+        font-weight: 700;
+        color: #0A2540;
+    }
+
+    .rating-details {
+        font-size: 14px;
+        color: #666;
+    }
+
+    .teacher-stats {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #666;
+    }
+
+    .stat-item i {
+        color: #3B82F6;
+        font-size: 18px;
+    }
+
+    .stat-value {
+        font-weight: 600;
+        color: #0A2540;
+    }
+
+    .teacher-badges {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+        flex-wrap: wrap;
+    }
+
+    .badge {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .badge-verified {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10B981;
+    }
+
+    .badge-featured {
+        background: rgba(245, 158, 11, 0.1);
+        color: #F59E0B;
+    }
+
+    .badge-format {
+        background: rgba(59, 130, 246, 0.1);
+        color: #3B82F6;
+    }
+
+    /* Content Card */
+    .content-card {
+        background: white;
+        border-radius: 16px;
+        padding: 28px;
+        box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
+    }
+
+    .card-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #0A2540;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .card-title i {
+        color: #3B82F6;
+    }
+
+    /* Bio Section */
+    .bio-text {
+        font-size: 15px;
+        line-height: 1.7;
+        color: #333;
+        white-space: pre-line;
+    }
+
+    /* Subjects & Prices */
+    .subjects-grid {
+        display: grid;
+        gap: 16px;
+    }
+
+    .subject-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        border: 2px solid transparent;
+        transition: all 0.3s;
+    }
+
+    .subject-item:hover {
+        border-color: #3B82F6;
+        background: white;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+    }
+
+    .subject-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .subject-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #3B82F6, #1E40AF);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 18px;
+    }
+
+    .subject-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0A2540;
+    }
+
+    .subject-price {
+        text-align: right;
+    }
+
+    .price-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: #0A2540;
+    }
+
+    .price-label {
+        font-size: 12px;
+        color: #666;
+    }
+
+    .trial-badge {
+        display: inline-block;
+        background: #10B981;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-top: 4px;
+    }
+
+    /* Education */
+    .education-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .education-item {
+        padding: 16px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        border-left: 4px solid #3B82F6;
+    }
+
+    .education-degree {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 4px;
+    }
+
+    .education-institution {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 4px;
+    }
+
+    .education-specialization {
+        font-size: 13px;
+        color: #999;
+    }
+
+    /* Certificates */
+    .certificates-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .certificate-item {
+        padding: 16px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+
+    .certificate-item:hover {
+        border-color: #3B82F6;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+    }
+
+    .certificate-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 6px;
+    }
+
+    .certificate-issuer {
+        font-size: 12px;
+        color: #666;
+    }
+
+    /* Rating Breakdown */
+    .rating-breakdown {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .rating-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .rating-label {
+        width: 140px;
+        font-size: 14px;
+        color: #666;
+    }
+
+    .rating-bar {
+        flex: 1;
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .rating-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #3B82F6, #1E40AF);
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+
+    .rating-value-small {
+        width: 40px;
+        text-align: right;
+        font-size: 14px;
+        font-weight: 600;
+        color: #0A2540;
+    }
+
+    /* Reviews */
+    .reviews-list {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .review-item {
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 12px;
+    }
+
+    .review-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 12px;
+    }
+
+    .reviewer-info {
+        display: flex;
+        gap: 12px;
+    }
+
+    .reviewer-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3B82F6, #1E40AF);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .reviewer-details {
+        flex: 1;
+    }
+
+    .reviewer-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 4px;
+    }
+
+    .review-meta {
+        font-size: 12px;
+        color: #999;
+    }
+
+    .review-rating {
+        display: flex;
+        gap: 4px;
+    }
+
+    .review-text {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #333;
+        margin-top: 12px;
+    }
+
+    .review-verified {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        background: rgba(16, 185, 129, 0.1);
+        color: #10B981;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-top: 8px;
+    }
+
+    /* Sidebar */
+    .detail-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        position: sticky;
+        top: 90px;
+    }
+
+    /* Booking Card */
+    .booking-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 20px rgba(10, 37, 64, 0.12);
+        border: 2px solid #e9ecef;
+    }
+
+    .booking-header {
+        text-align: center;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #f0f0f0;
+        margin-bottom: 20px;
+    }
+
+    .booking-price {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 8px;
+    }
+
+    .booking-amount {
+        font-size: 36px;
+        font-weight: 700;
+        color: #0A2540;
+        margin-bottom: 4px;
+    }
+
+    .booking-period {
+        font-size: 14px;
+        color: #999;
+    }
+
+    .booking-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .btn-primary {
+        width: 100%;
+        padding: 14px;
+        background: #0A2540;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-primary:hover {
+        background: #1e4a72;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(10, 37, 64, 0.2);
+    }
+
+    .btn-secondary {
+        width: 100%;
+        padding: 14px;
+        background: white;
+        color: #0A2540;
+        border: 2px solid #0A2540;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-secondary:hover {
+        background: #f8f9fa;
+    }
+
+    .btn-favorite {
+        width: 100%;
+        padding: 14px;
+        background: white;
+        color: #EF4444;
+        border: 2px solid #EF4444;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-favorite:hover {
+        background: #FEE2E2;
+    }
+
+    .btn-favorite.active {
+        background: #EF4444;
+        color: white;
+    }
+    .languages-section {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    .languages-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .languages-title i {
+        color: #7C3AED;
+    }
+
+    .languages-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .language-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(139, 92, 246, 0.1));
+        border: 1px solid rgba(124, 58, 237, 0.2);
+        color: #7C3AED;
+        border-radius: 16px;
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    .language-badge i {
+        font-size: 12px;
+    }
+    .booking-note {
+        font-size: 12px;
+        color: #999;
+        text-align: center;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    /* Contact Card */
+    .contact-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
+    }
+
+    .contact-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 16px;
+    }
+
+    .contact-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        font-size: 14px;
+        color: #333;
+    }
+
+    .contact-icon {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, #3B82F6, #1E40AF);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 16px;
+    }
+
+    /* Availability Card */
+    .availability-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
+    }
+
+    .availability-info {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .availability-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        color: #666;
+    }
+
+    .availability-item i {
+        color: #3B82F6;
+        width: 20px;
+    }
+
+    /* Similar Teachers */
+    .similar-teachers-grid {
+        display: grid;
+        gap: 16px;
+    }
+
+    .similar-teacher-card {
+        padding: 16px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: 2px solid transparent;
+    }
+
+    .similar-teacher-card:hover {
+        background: white;
+        border-color: #3B82F6;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+    }
+
+    .similar-teacher-header {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 10px;
+    }
+
+    .similar-teacher-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3B82F6, #1E40AF);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 18px;
+        font-weight: 600;
+        overflow: hidden;
+    }
+
+    .similar-teacher-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .similar-teacher-info {
+        flex: 1;
+    }
+
+    .similar-teacher-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 4px;
+    }
+
+    .similar-teacher-rating {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 13px;
+    }
+
+    .similar-teacher-price {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-top: 8px;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #999;
+    }
+
+    .empty-state i {
+        font-size: 48px;
+        color: #ddd;
+        margin-bottom: 16px;
+    }
+
+    .empty-state p {
+        font-size: 14px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .detail-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .detail-sidebar {
+            position: static;
+        }
+
+        .booking-card {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            border-radius: 16px 16px 0 0;
+            z-index: 999;
+            box-shadow: 0 -4px 20px rgba(10, 37, 64, 0.15);
+        }
+    }
+
+    @media (max-width: 640px) {
+        .detail-container {
+            padding: 20px 16px;
+        }
+
+        .teacher-header-card {
+            padding: 20px;
+        }
+
+        .teacher-header-content {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .teacher-name-large {
+            font-size: 24px;
+        }
+
+        .teacher-stats {
+            justify-content: center;
+        }
+
+        .content-card {
+            padding: 20px;
+        }
+
+        .subjects-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .certificates-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="detail-container">
+    <!-- Breadcrumbs -->
+    <div class="breadcrumbs">
+        <a href="{% url 'home' %}">
+            <i class="fas fa-home"></i> Главная
+        </a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{% url 'home' %}">Учителя</a>
+        <span class="breadcrumb-separator">/</span>
+        <span>{{ teacher.user.get_full_name }}</span>
+    </div>
+
+    <div class="detail-layout">
+        <!-- Main Content -->
+        <div class="detail-main">
+            <!-- Teacher Header -->
+            <div class="teacher-header-card">
+                <div class="teacher-header-content">
+                    <div class="teacher-avatar-large">
+                        {% if teacher.user.avatar %}
+                            <img src="{{ teacher.user.avatar.url }}" alt="{{ teacher.user.get_full_name }}">
+                        {% else %}
+                            {{ teacher.user.first_name.0|default:"У" }}{{ teacher.user.last_name.0|default:"" }}
+                        {% endif %}
+                    </div>
+
+                    <div class="teacher-header-info">
+                        <h1 class="teacher-name-large">{{ teacher.user.get_full_name|default:teacher.user.username }}</h1>
+                        <p class="teacher-title">
+                            {{ teacher.get_education_level_display }} • {{ teacher.experience_years }} лет опыта
+                        </p>
+
+                        <div class="teacher-rating-large">
+                            <div class="rating-stars-large">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= teacher.rating %}
+                                        <i class="fas fa-star rating-star-large"></i>
+                                    {% else %}
+                                        <i class="far fa-star rating-star-large"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <span class="rating-number">{{ teacher.rating|floatformat:1 }}</span>
+                            <span class="rating-details">({{ teacher.total_reviews }} отзывов)</span>
+                        </div>
+
+                        <div class="teacher-stats">
+                            <div class="stat-item">
+                                <i class="fas fa-graduation-cap"></i>
+                                <span><span class="stat-value">{{ teacher.total_students }}+</span> учеников</span>
+                            </div>
+                            <div class="stat-item">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>{{ teacher.city.name|default:"Онлайн" }}</span>
+                            </div>
+                            <div class="stat-item">
+                                <i class="fas fa-clock"></i>
+                                <span>{{ teacher.get_available_weekdays_display }}</span>
+                            </div>
+                        </div>
+
+                        <div class="teacher-badges">
+                            {% if teacher.user.is_verified %}
+                                <span class="badge badge-verified">
+                                    <i class="fas fa-check-circle"></i> Верифицирован
+                                </span>
+                            {% endif %}
+                            {% if teacher.is_featured %}
+                                <span class="badge badge-featured">
+                                    <i class="fas fa-star"></i> Топ преподаватель
+                                </span>
+                            {% endif %}
+                            <span class="badge badge-format">
+                                <i class="fas fa-desktop"></i> {{ teacher.get_teaching_format_display }}
+                            </span>
+                            <div class="stat-item">
+                                <i class="fas fa-language"></i>
+                                <span>
+                                    {% with langs=teacher.get_teaching_languages_list %}
+                                        {% if langs|length == 1 %}
+                                           язык {{ langs.0 }}
+                                        {% elif langs|length == 2 %}
+                                            язык {{ langs.0 }}, {{ langs.1 }}
+                                        {% elif langs|length > 2 %}
+                                            язык {{ langs.0 }}, {{ langs.1 }} +{{ langs|length|add:"-2" }}
+                                        {% else %}
+                                            Не указаны
+                                        {% endif %}
+                                    {% endwith %}
+                                </span>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+
+            <!-- About -->
+            <div class="content-card">
+                <h2 class="card-title">
+                    <i class="fas fa-user"></i>
+                    О преподавателе
+                </h2>
+                <p class="bio-text">{{ teacher.bio }}</p>
+            </div>
+            
+            <!-- Subjects & Prices -->
+            <div class="content-card">
+                <h2 class="card-title">
+                    <i class="fas fa-book"></i>
+                    Предметы и цены
+                </h2>
+                <div class="subjects-grid">
+                    {% for ts in teacher.teachersubject_set.all %}
+                        <div class="subject-item">
+                            <div class="subject-info">
+                                <div class="subject-icon">
+                                    <i class="fas fa-book-open"></i>
+                                </div>
+                                <div>
+                                    <div class="subject-name">{{ ts.subject.name }}</div>
+                                    {% if ts.description %}
+                                        <div style="font-size: 13px; color: #666; margin-top: 4px;">
+                                            {{ ts.description|truncatewords:10 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="subject-price">
+                                <div class="price-value">{{ ts.hourly_rate|floatformat:0 }} сум</div>
+                                <div class="price-label">за час</div>
+                                {% if ts.is_free_trial %}
+                                    <span class="trial-badge">Пробный урок бесплатно</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="empty-state">
+                            <i class="fas fa-book"></i>
+                            <p>Предметы не указаны</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Education -->
+            <div class="content-card">
+                <h2 class="card-title">
+                    <i class="fas fa-graduation-cap"></i>
+                    Образование
+                </h2>
+                <div class="education-list">
+                    <div class="education-item">
+                        <div class="education-degree">{{ teacher.get_education_level_display }}</div>
+                        {% if teacher.university %}
+                            <div class="education-institution">{{ teacher.university }}</div>
+                        {% endif %}
+                        {% if teacher.specialization %}
+                            <div class="education-specialization">Специализация: {{ teacher.specialization }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Certificates -->
+            {% if teacher.certificates.exists %}
+                <div class="content-card">
+                    <h2 class="card-title">
+                        <i class="fas fa-certificate"></i>
+                        Сертификаты и достижения
+                    </h2>
+                    <div class="certificates-grid">
+                        {% for cert in teacher.certificates.all %}
+                            <div class="certificate-item">
+                                <div class="certificate-name">{{ cert.name }}</div>
+                                <div class="certificate-issuer">{{ cert.issuer }}</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Reviews -->
+            <div class="content-card">
+                <h2 class="card-title">
+                    <i class="fas fa-star"></i>
+                    Отзывы ({{ reviews.count }})
+                </h2>
+
+                {% if rating_stats.avg_knowledge %}
+                    <div class="rating-breakdown">
+                        <div class="rating-row">
+                            <span class="rating-label">Знание предмета</span>
+                            <div class="rating-bar">
+                                <div class="rating-bar-fill" style="width: {{ rating_stats.avg_knowledge|floatformat:0|add:"0" }}%"></div>
+                            </div>
+                            <span class="rating-value-small">{{ rating_stats.avg_knowledge|floatformat:1 }}</span>
+                        </div>
+                        <div class="rating-row">
+                            <span class="rating-label">Коммуникабельность</span>
+                            <div class="rating-bar">
+                                <div class="rating-bar-fill" style="width: {{ rating_stats.avg_communication|floatformat:0|add:"0" }}%"></div>
+                            </div>
+                            <span class="rating-value-small">{{ rating_stats.avg_communication|floatformat:1 }}</span>
+                        </div>
+                        <div class="rating-row">
+                            <span class="rating-label">Пунктуальность</span>
+                            <div class="rating-bar">
+                                <div class="rating-bar-fill" style="width: {{ rating_stats.avg_punctuality|floatformat:0|add:"0" }}%"></div>
+                            </div>
+                            <span class="rating-value-small">{{ rating_stats.avg_punctuality|floatformat:1 }}</span>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="reviews-list">
+                    {% for review in reviews|slice:":5" %}
+                        <div class="review-item">
+                            <div class="review-header">
+                                <div class="reviewer-info">
+                                    <div class="reviewer-avatar">
+                                        {% if review.student.avatar %}
+                                            <img src="{{ review.student.avatar.url }}" alt="{{ review.student.get_full_name }}">
+                                        {% else %}
+                                            {{ review.student.first_name.0|default:"У" }}
+                                        {% endif %}
+                                    </div>
+                                    <div class="reviewer-details">
+                                        <div class="reviewer-name">{{ review.student.get_full_name|default:review.student.username }}</div>
+                                        <div class="review-meta">
+                                            {{ review.created_at|date:"d.m.Y" }} • {{ review.subject.name|default:"Общий отзыв" }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="review-rating">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= review.rating %}
+                                            <i class="fas fa-star" style="color: #FCD34D;"></i>
+                                        {% else %}
+                                            <i class="far fa-star" style="color: #FCD34D;"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% if review.comment %}
+                                <p class="review-text">{{ review.comment }}</p>
+                            {% endif %}
+                            {% if review.is_verified %}
+                                <span class="review-verified">
+                                    <i class="fas fa-check-circle"></i> Проверенный отзыв
+                                </span>
+                            {% endif %}
+                        </div>
+                    {% empty %}
+                        <div class="empty-state">
+                            <i class="fas fa-comments"></i>
+                            <p>Пока нет отзывов</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="detail-sidebar">
+            <!-- Booking Card -->
+            <div class="booking-card">
+                <div class="booking-header">
+                    <div class="booking-price">Стоимость занятий</div>
+                    {% with min_price=teacher.get_min_price %}
+                        <div class="booking-amount">
+                            {% if min_price > 0 %}
+                                от {{ min_price|floatformat:0 }} сум
+                            {% else %}
+                                Договорная
+                            {% endif %}
+                        </div>
+                        <div class="booking-period">за час</div>
+                    {% endwith %}
+                </div>
+
+                <div class="booking-actions">
+                    <button class="btn-primary" onclick="contactTeacher()">
+                        <i class="fas fa-comment-dots"></i>
+                        Написать сообщение
+                    </button>
+                    
+                    <button class="btn-secondary" onclick="bookLesson()">
+                        <i class="fas fa-calendar-check"></i>
+                        Записаться на урок
+                    </button>
+
+                    <button class="btn-favorite {% if is_favorite %}active{% endif %}" onclick="toggleFavorite({{ teacher.id }})">
+                        <i class="{% if is_favorite %}fas{% else %}far{% endif %} fa-heart"></i>
+                        {% if is_favorite %}В избранном{% else %}В избранное{% endif %}
+                    </button>
+                </div>
+
+                <div class="booking-note">
+                    <i class="fas fa-shield-alt"></i>
+                    Безопасная сделка через платформу
+                </div>
+            </div>
+
+            <!-- Contact Info -->
+            <div class="contact-card">
+                <h3 class="contact-title">Контактная информация</h3>
+                <div class="contact-list">
+                    {% if teacher.user.phone %}
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <span>{{ teacher.user.phone }}</span>
+                        </div>
+                    {% endif %}
+                    {% if teacher.telegram %}
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fab fa-telegram"></i>
+                            </div>
+                            <span>{{ teacher.telegram }}</span>
+                        </div>
+                    {% endif %}
+                    {% if teacher.whatsapp %}
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fab fa-whatsapp"></i>
+                            </div>
+                            <span>{{ teacher.whatsapp }}</span>
+                        </div>
+                    {% endif %}
+                    {% if teacher.user.email %}
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <span>{{ teacher.user.email }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Availability -->
+            <div class="availability-card">
+                <h3 class="contact-title">Доступность</h3>
+                <div class="availability-info">
+                    <div class="availability-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>{{ teacher.get_available_weekdays_display }}</span>
+                    </div>
+                    <div class="availability-item">
+                        <i class="fas fa-clock"></i>
+                        <span>{{ teacher.available_from|time:"H:i" }} - {{ teacher.available_to|time:"H:i" }}</span>
+                    </div>
+                    <div class="availability-item">
+                        <i class="fas fa-desktop"></i>
+                        <span>{{ teacher.get_teaching_format_display }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Similar Teachers -->
+            {% if similar_teachers %}
+                <div class="contact-card">
+                    <h3 class="contact-title">Похожие преподаватели</h3>
+                    <div class="similar-teachers-grid">
+                        {% for similar in similar_teachers %}
+                            <div class="similar-teacher-card" onclick="window.location.href='{% url 'teacher_detail' similar.id %}'">
+                                <div class="similar-teacher-header">
+                                    <div class="similar-teacher-avatar">
+                                        {% if similar.user.avatar %}
+                                            <img src="{{ similar.user.avatar.url }}" alt="{{ similar.user.get_full_name }}">
+                                        {% else %}
+                                            {{ similar.user.first_name.0|default:"У" }}
+                                        {% endif %}
+                                    </div>
+                                    <div class="similar-teacher-info">
+                                        <div class="similar-teacher-name">{{ similar.user.get_full_name }}</div>
+                                        <div class="similar-teacher-rating">
+                                            <i class="fas fa-star" style="color: #FCD34D;"></i>
+                                            <span>{{ similar.rating|floatformat:1 }}</span>
+                                            <span style="color: #999;">({{ similar.total_reviews }})</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="similar-teacher-price">
+                                    от {{ similar.get_min_price|floatformat:0 }} сум/час
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </aside>
+    </div>
+</div>
+
+<script>
+   function toggleFavorite(teacherId) {
+    {% if user.is_authenticated %}
+        fetch(`/api/favorites/toggle/${teacherId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Произошла ошибка');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Произошла ошибка при добавлении в избранное');
+        });
+    {% else %}
+        alert('Войдите в систему, чтобы добавить в избранное');
+    {% endif %}
+}
+</script>
+{% endblock %}

@@ -1,0 +1,342 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Регистрация завершена - UstozHub{% endblock %}
+
+{% block content %}
+<style>
+    .complete-container {
+        max-width: 700px;
+        margin: 60px auto;
+        padding: 40px 20px;
+        text-align: center;
+    }
+
+    .success-icon {
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, #10B981, #059669);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 32px;
+        animation: scaleIn 0.5s ease;
+    }
+
+    .success-icon i {
+        font-size: 60px;
+        color: white;
+    }
+
+    @keyframes scaleIn {
+        from {
+            transform: scale(0);
+        }
+        to {
+            transform: scale(1);
+        }
+    }
+
+    .complete-card {
+        background: white;
+        border-radius: 16px;
+        padding: 48px 40px;
+        box-shadow: 0 4px 20px rgba(10, 37, 64, 0.08);
+    }
+
+    .complete-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #0A2540;
+        margin-bottom: 16px;
+    }
+
+    .complete-message {
+        font-size: 18px;
+        color: #666;
+        line-height: 1.6;
+        margin-bottom: 32px;
+    }
+
+    .info-box {
+        background: #F0F9FF;
+        border: 2px solid #BAE6FD;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 32px;
+        text-align: left;
+    }
+
+    .info-box-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .info-box-title i {
+        color: #3B82F6;
+    }
+
+    .info-box p {
+        font-size: 14px;
+        color: #666;
+        line-height: 1.6;
+        margin-bottom: 8px;
+    }
+
+    .info-box ul {
+        margin: 12px 0;
+        padding-left: 24px;
+    }
+
+    .info-box li {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 8px;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        background: rgba(245, 158, 11, 0.1);
+        color: #F59E0B;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 24px;
+    }
+
+    .timeline {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 32px;
+        text-align: left;
+    }
+
+    .timeline-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 16px;
+    }
+
+    .timeline-item {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+
+    .timeline-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .timeline-icon {
+        width: 40px;
+        height: 40px;
+        background: white;
+        border: 3px solid #3B82F6;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .timeline-icon i {
+        color: #3B82F6;
+        font-size: 16px;
+    }
+
+    .timeline-content {
+        flex: 1;
+        padding-top: 4px;
+    }
+
+    .timeline-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 4px;
+    }
+
+    .timeline-text {
+        font-size: 13px;
+        color: #666;
+    }
+
+    .actions-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 32px;
+    }
+
+    .action-btn {
+        padding: 16px 24px;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.3s;
+    }
+
+    .btn-primary {
+        background: #0A2540;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #1e4a72;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(10, 37, 64, 0.2);
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #0A2540;
+        border: 2px solid #e0e0e0;
+    }
+
+    .btn-secondary:hover {
+        border-color: #0A2540;
+    }
+
+    .contact-info {
+        font-size: 14px;
+        color: #999;
+        margin-top: 24px;
+    }
+
+    .contact-info a {
+        color: #3B82F6;
+        text-decoration: none;
+    }
+
+    .contact-info a:hover {
+        text-decoration: underline;
+    }
+
+    @media (max-width: 640px) {
+        .complete-card {
+            padding: 32px 24px;
+        }
+
+        .complete-title {
+            font-size: 24px;
+        }
+
+        .complete-message {
+            font-size: 16px;
+        }
+
+        .actions-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="complete-container">
+    <div class="success-icon">
+        <i class="fas fa-check"></i>
+    </div>
+
+    <div class="complete-card">
+        <span class="status-badge">
+            <i class="fas fa-clock"></i>
+            На модерации
+        </span>
+
+        <h1 class="complete-title">Спасибо за регистрацию!</h1>
+        
+        <p class="complete-message">
+            Ваша заявка на регистрацию учителя успешно отправлена. Наша команда проверит ваши данные и свяжется с вами в ближайшее время.
+        </p>
+
+        <div class="info-box">
+            <div class="info-box-title">
+                <i class="fas fa-info-circle"></i>
+                Что дальше?
+            </div>
+            <p>Ваша заявка будет проверена администратором в течение <strong>24 часов</strong>. Мы проверим:</p>
+            <ul>
+                <li>Достоверность предоставленной информации</li>
+                <li>Соответствие требованиям платформы</li>
+                <li>Качество заполнения профиля</li>
+            </ul>
+            <p style="margin-top: 12px;">После одобрения вы получите уведомление на email <strong>{{ teacher.user.email }}</strong> и сможете начать работу на платформе.</p>
+        </div>
+
+        <div class="timeline">
+            <div class="timeline-title">Процесс модерации</div>
+            
+            <div class="timeline-item">
+                <div class="timeline-icon">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div class="timeline-content">
+                    <div class="timeline-label">Заявка отправлена</div>
+                    <div class="timeline-text">Ваши данные получены и находятся в очереди на проверку</div>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <div class="timeline-content">
+                    <div class="timeline-label">Проверка (до 24 часов)</div>
+                    <div class="timeline-text">Администратор проверит вашу заявку</div>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-icon">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <div class="timeline-content">
+                    <div class="timeline-label">Уведомление</div>
+                    <div class="timeline-text">Вы получите email с результатом проверки</div>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-icon">
+                    <i class="fas fa-rocket"></i>
+                </div>
+                <div class="timeline-content">
+                    <div class="timeline-label">Начало работы</div>
+                    <div class="timeline-text">После одобрения ваш профиль появится на платформе</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions-grid">
+            <a href="{% url 'home' %}" class="action-btn btn-secondary">
+                <i class="fas fa-home"></i>
+                На главную
+            </a>
+            <a href="mailto:info@ustozhub.uz" class="action-btn btn-primary">
+                <i class="fas fa-envelope"></i>
+                Написать нам
+            </a>
+        </div>
+
+        <div class="contact-info">
+            Есть вопросы? Свяжитесь с нами: 
+            <a href="mailto:info@ustozhub.uz">info@ustozhub.uz</a> или 
+            <a href="tel:+998901234567">+998 90 123 45 67</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -54,7 +54,7 @@ class TeacherSubjectInline(admin.TabularInline):
 @admin.register(TeacherProfile)
 class TeacherProfileAdmin(admin.ModelAdmin):
     inlines = [TeacherSubjectInline]
-    list_display = ("user", "education_level", "experience_years", "city", "teaching_format",
+    list_display = ("user", "education_level", "teaching_languages", "experience_years", "city", "teaching_format",
                     "rating", "total_reviews", "total_students", "is_featured", "is_active")
     list_filter = ("education_level", "teaching_format", "is_featured", "is_active", "city")
     search_fields = ("user__username", "user__first_name", "user__last_name", "specialization", "university")

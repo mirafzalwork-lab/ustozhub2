@@ -89,6 +89,15 @@ class TeacherProfile(models.Model):
         ('offline', 'Офлайн'),
         ('both', 'Онлайн и офлайн'),
     ]
+    TEACHING_LANGUAGES = [
+        ('uz', 'Узбекский'),
+        ('ru', 'Русский'),
+        ('en', 'Английский'),
+        ('tr', 'Турецкий'),
+        ('de', 'Немецкий'),
+        ('fr', 'Французский'),
+        ('other', 'Другой'),
+    ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='teacher_profile')
     
@@ -112,7 +121,13 @@ class TeacherProfile(models.Model):
     # Контакты и доступность
     telegram = models.CharField(max_length=100, blank=True)
     whatsapp = models.CharField(max_length=20, blank=True)
-    
+
+    teaching_languages = models.CharField(
+        max_length=100,
+        blank=True,
+        default='ru',
+        help_text="Коды языков через запятую (uz,ru,en)"
+    )
     # Время работы
     available_from = models.TimeField(default=datetime.time(9, 0))
     available_to = models.TimeField(default=datetime.time(21, 0))
@@ -132,10 +147,80 @@ class TeacherProfile(models.Model):
     # Даты
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    MODERATION_STATUS = [
+        ('pending', 'На модерации'),
+        ('approved', 'Одобрено'),
+        ('rejected', 'Отклонено'),
+    ]
+    
+    moderation_status = models.CharField(
+        max_length=20,
+        choices=MODERATION_STATUS,
+        default='pending',
+        verbose_name='Статус модерации'
+    )
+    
+    moderation_comment = models.TextField(
+        blank=True,
+        verbose_name='Комментарий модератора',
+        help_text='Причина отклонения или рекомендации'
+    )
+    
+    moderation_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Дата модерации'
+    )
+    
+    moderated_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='moderated_teachers',
+        verbose_name='Проверил'
+    )
+    
+    # ... остальные поля ...
+    
     class Meta:
         verbose_name = 'Профиль учителя'
         verbose_name_plural = 'Профили учителей'
+        ordering = ['-created_at']
+        
+    def approve(self, moderator, comment=''):
+        """
+        Одобрить профиль учителя
+        """
+        self.moderation_status = 'approved'
+        self.moderation_comment = comment
+        self.moderation_date = timezone.now()
+        self.moderated_by = moderator
+        self.save()
+
+    def reject(self, moderator, comment=''):
+        """
+        Отклонить профиль учителя
+        """
+        self.moderation_status = 'rejected'
+        self.moderation_comment = comment
+        self.moderation_date = timezone.now()
+        self.moderated_by = moderator
+        self.save()
+    
+    def get_teaching_languages_display(self):
+        """Получить названия языков преподавания"""
+        languages_dict = dict(self.TEACHING_LANGUAGES)
+        codes = self.teaching_languages.split(',')
+        return ', '.join([languages_dict.get(code.strip(), code) for code in codes if code.strip()])
+
+    def get_teaching_languages_list(self):
+        """Получить список языков для отображения"""
+        languages_dict = dict(self.TEACHING_LANGUAGES)
+        codes = self.teaching_languages.split(',')
+        return [languages_dict.get(code.strip(), code) for code in codes if code.strip()]
+
+
 
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.get_subjects_display()}"

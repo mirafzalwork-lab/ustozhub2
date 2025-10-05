@@ -1,0 +1,213 @@
+<!-- templates/logic/student_profile.html -->
+{% extends 'base.html' %}
+
+{% block title %}Мой профиль - UstozHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 16px;
+    }
+
+    .profile-header {
+        background: white;
+        border-radius: 16px;
+        padding: 32px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+    }
+
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0A2540, #1e4a72);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 48px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .profile-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+
+    .profile-info h1 {
+        font-size: 32px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 8px;
+    }
+
+    .profile-meta {
+        display: flex;
+        gap: 16px;
+        font-size: 14px;
+        color: #666;
+    }
+
+    .profile-meta i {
+        margin-right: 6px;
+    }
+
+    .profile-actions {
+        margin-top: 16px;
+        display: flex;
+        gap: 12px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background: #0A2540;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #1e4a72;
+    }
+
+    .btn-secondary {
+        background: #f5f5f5;
+        color: #666;
+    }
+
+    .btn-secondary:hover {
+        background: #e5e5e5;
+    }
+
+    .profile-section {
+        background: white;
+        border-radius: 16px;
+        padding: 32px;
+        margin-bottom: 24px;
+    }
+
+    .section-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 20px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    .info-item {
+        padding: 16px;
+        background: #f9fafb;
+        border-radius: 8px;
+    }
+
+    .info-label {
+        font-size: 13px;
+        color: #999;
+        margin-bottom: 4px;
+    }
+
+    .info-value {
+        font-size: 15px;
+        color: #333;
+        font-weight: 500;
+    }
+
+    @media (max-width: 768px) {
+        .profile-header {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header">
+        <div class="profile-avatar">
+            {% if user.avatar %}
+                <img src="{{ user.avatar.url }}" alt="{{ user.get_full_name }}">
+            {% else %}
+                {{ user.first_name.0|default:"У" }}
+            {% endif %}
+        </div>
+        <div class="profile-info">
+            <h1>{{ user.get_full_name|default:user.username }}</h1>
+            <div class="profile-meta">
+                <span><i class="fas fa-user-graduate"></i> Ученик</span>
+                <span><i class="fas fa-envelope"></i> {{ user.email }}</span>
+                {% if user.phone %}
+                    <span><i class="fas fa-phone"></i> {{ user.phone }}</span>
+                {% endif %}
+            </div>
+            <div class="profile-actions">
+                <a href="{% url 'profile_edit' %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Редактировать профиль
+                </a>
+                <a href="{% url 'logout' %}" class="btn btn-secondary">
+                    <i class="fas fa-sign-out-alt"></i> Выйти
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="profile-section">
+        <h2 class="section-title">Информация о профиле</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Имя пользователя</div>
+                <div class="info-value">{{ user.username }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Email</div>
+                <div class="info-value">{{ user.email }}</div>
+            </div>
+            {% if user.phone %}
+            <div class="info-item">
+                <div class="info-label">Телефон</div>
+                <div class="info-value">{{ user.phone }}</div>
+            </div>
+            {% endif %}
+            {% if user.age %}
+            <div class="info-item">
+                <div class="info-label">Возраст</div>
+                <div class="info-value">{{ user.age }} лет</div>
+            </div>
+            {% endif %}
+            <div class="info-item">
+                <div class="info-label">Дата регистрации</div>
+                <div class="info-value">{{ user.date_joined|date:"d.m.Y" }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Тип аккаунта</div>
+                <div class="info-value">Ученик</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

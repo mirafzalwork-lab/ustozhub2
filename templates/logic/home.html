@@ -600,7 +600,7 @@
                                 </div>
                                 <div class="teacher-info">
                                     <h3 class="teacher-name">
-                                        {{ teacher.user.get_full_name|default:teacher.user.username }}
+                                       <a style="text-decoration: none; color: inherit;" href="{% url 'teacher_detail' teacher.id %}">{{ teacher.user.get_full_name|default:teacher.user.username }}</a>
                                     </h3>
                                     <div class="teacher-rating">
                                         <i class="fas fa-star rating-star"></i>

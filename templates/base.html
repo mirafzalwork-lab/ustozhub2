@@ -7,7 +7,6 @@
     <meta name="description" content="UstozHub - платформа для поиска квалифицированных преподавателей">
     <title>{% block title %}UstozHub{% endblock %}</title>
     
-    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
@@ -39,10 +38,6 @@
             transition: transform 0.3s, box-shadow 0.3s;
         }
 
-        .navbar.hidden {
-            transform: translateY(-100%);
-        }
-
         .navbar.scrolled {
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
@@ -54,38 +49,48 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            height: 56px;
+            height: 64px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
         }
 
         .logo img {
-            height: 32px;
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
         }
 
         .nav-search {
             flex: 1;
             max-width: 500px;
-            margin: 0 16px;
+            margin: 0 24px;
             position: relative;
         }
 
         .search-input {
             width: 100%;
-            padding: 8px 36px 8px 32px;
+            padding: 10px 40px 10px 40px;
             border: 1px solid #e0e0e0;
-            border-radius: 8px;
+            border-radius: 24px;
             font-size: 14px;
             background: #f8f8f8;
+            transition: all 0.3s;
         }
 
         .search-input:focus {
             outline: none;
             border-color: #7000ff;
             background: white;
+            box-shadow: 0 0 0 3px rgba(10, 37, 64, 0.1);
         }
 
         .search-icon {
             position: absolute;
-            left: 12px;
+            left: 14px;
             top: 50%;
             transform: translateY(-50%);
             color: #999;
@@ -93,7 +98,7 @@
 
         .clear-search {
             position: absolute;
-            right: 8px;
+            right: 12px;
             top: 50%;
             transform: translateY(-50%);
             background: none;
@@ -101,20 +106,22 @@
             color: #999;
             cursor: pointer;
             display: none;
+            padding: 4px;
         }
 
         .search-input:not(:placeholder-shown) ~ .clear-search {
             display: block;
         }
 
+        /* Navigation Actions */
         .nav-actions {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
         }
 
         .nav-btn {
-            padding: 6px 12px;
+            padding: 8px 16px;
             background: none;
             border: none;
             border-radius: 8px;
@@ -123,45 +130,72 @@
             color: #1a1a1a;
             cursor: pointer;
             text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
         }
 
         .nav-btn:hover {
             background: #f5f5f5;
         }
 
+        .nav-btn i {
+            font-size: 16px;
+        }
+
         .nav-btn-primary {
-            background: #7000ff;
+            background: #0A2540;
             color: white;
         }
 
         .nav-btn-primary:hover {
-            background: #5c00d6;
+            background: #1e4a72;
+        }
+
+        .nav-btn-outline {
+            border: 1px solid #e0e0e0;
+        }
+
+        .nav-btn-outline:hover {
+            border-color: #0A2540;
+            color: #0A2540;
+        }
+
+        /* Profile Button & Dropdown */
+        .profile-container {
+            position: relative;
         }
 
         .profile-btn {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 4px 8px;
+            padding: 6px 12px;
             border: 1px solid #e0e0e0;
-            border-radius: 16px;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
         .profile-btn:hover {
-            border-color: #7000ff;
+            border-color: #0A2540;
+            background: #f0f4f8;
         }
 
         .profile-avatar {
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #7000ff, #5c00d6);
+            background: linear-gradient(135deg, #0A2540, #1e4a72);
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
+            overflow: hidden;
         }
 
         .profile-avatar img {
@@ -170,59 +204,171 @@
             object-fit: cover;
         }
 
-        .mobile-toggle {
+        .profile-name {
+            font-size: 14px;
+            font-weight: 500;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Dropdown Menu */
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            min-width: 240px;
             display: none;
-            font-size: 20px;
+            z-index: 100;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+            animation: slideDown 0.2s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown-header {
+            padding: 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .dropdown-header-name {
+            font-weight: 600;
+            font-size: 15px;
             color: #1a1a1a;
         }
 
-        /* Secondary Nav */
-        .secondary-nav {
-            background: white;
-            border-bottom: 1px solid #f0f0f0;
-            margin-top: 56px;
-        }
-
-        .secondary-nav-container {
-            max-width: 1440px;
-            margin: 0 auto;
-            padding: 0 16px;
-            display: flex;
-            gap: 24px;
-            height: 44px;
-            overflow-x: auto;
-            scrollbar-width: none;
-        }
-
-        .secondary-nav-container::-webkit-scrollbar {
-            display: none;
-        }
-
-        .nav-link {
-            text-decoration: none;
-            color: #666;
+        .dropdown-header-email {
             font-size: 13px;
-            font-weight: 500;
-            padding: 4px 0;
-            border-bottom: 2px solid transparent;
+            color: #666;
+            margin-top: 2px;
         }
 
-        .nav-link:hover, .nav-link.active {
-            color: #7000ff;
-            border-bottom-color: #7000ff;
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: #333;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background: #f5f5f5;
+        }
+
+        .dropdown-item i {
+            width: 20px;
+            font-size: 16px;
+            color: #666;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: #f0f0f0;
+            margin: 4px 0;
+        }
+
+        .dropdown-item.danger {
+            color: #dc3545;
+        }
+
+        .dropdown-item.danger i {
+            color: #dc3545;
+        }
+
+        /* Mobile Menu Toggle */
+        .mobile-toggle {
+            display: none;
+            font-size: 24px;
+            color: #1a1a1a;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        /* Mobile Menu Overlay */
+        .mobile-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: white;
+            z-index: 999;
+            transform: translateX(-100%);
+            transition: transform 0.3s;
+            overflow-y: auto;
+        }
+
+        .mobile-menu.show {
+            transform: translateX(0);
+        }
+
+        .mobile-menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .mobile-menu-close {
+            font-size: 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .mobile-menu-content {
+            padding: 16px;
+        }
+
+        .mobile-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            color: #333;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .mobile-menu-item:hover {
+            background: #f5f5f5;
         }
 
         /* Main Content */
         main {
             flex: 1;
-            margin-top: 40px;
+            margin-top: 64px;
+            padding-top: 24px;
         }
 
         /* Footer */
         .footer {
             background: #1a1a1a;
             color: white;
-            padding: 32px 16px;
+            padding: 48px 16px 24px;
+            margin-top: 64px;
         }
 
         .footer-container {
@@ -230,21 +376,28 @@
             margin: 0 auto;
             display: grid;
             grid-template-columns: 2fr repeat(3, 1fr);
-            gap: 24px;
+            gap: 32px;
         }
 
         .footer-section h3 {
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 600;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
+        }
+
+        .footer-section p {
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+            line-height: 1.6;
         }
 
         .footer-section a {
             color: rgba(255,255,255,0.7);
             text-decoration: none;
-            font-size: 13px;
+            font-size: 14px;
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            transition: color 0.2s;
         }
 
         .footer-section a:hover {
@@ -253,91 +406,109 @@
 
         .social-links {
             display: flex;
-            gap: 8px;
-            margin-top: 12px;
+            gap: 12px;
+            margin-top: 16px;
         }
 
         .social-link {
-            width: 32px;
-            height: 32px;
+            width: 40px;
+            height: 40px;
             background: rgba(255,255,255,0.1);
-            border-radius: 8 특정
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
+            transition: all 0.2s;
         }
 
         .social-link:hover {
-            background: #7000ff;
+            background: #0A2540;
+            transform: translateY(-2px);
         }
 
         .footer-bottom {
             border-top: 1px solid rgba(255,255,255,0.1);
-            padding-top: 16px;
-            margin-top: 24px;
+            padding-top: 24px;
+            margin-top: 32px;
             display: flex;
             justify-content: space-between;
-            font-size: 12px;
+            align-items: center;
+            font-size: 13px;
             color: rgba(255,255,255,0.5);
         }
 
         .footer-links-inline {
             display: flex;
-            gap: 16px;
+            gap: 24px;
         }
 
-        /* Responsive */
+        .footer-links-inline a {
+            display: inline;
+        }
+
+        /* Responsive Design */
         @media (max-width: 1024px) {
             .nav-search {
+                max-width: 300px;
+            }
+
+            .profile-name {
                 display: none;
             }
 
             .nav-btn span {
                 display: none;
             }
-
-            .profile-name {
-                display: none;
-            }
         }
 
         @media (max-width: 768px) {
             .nav-container {
-                height: 48px;
+                height: 56px;
             }
 
             .logo img {
-                height: 28px;
+                width: 60px;
+                height: 60px;
             }
 
-            .secondary-nav {
+            .nav-search {
                 display: none;
-            }
-
-            main {
-                margin-top: 48px;
             }
 
             .mobile-toggle {
                 display: block;
             }
 
+            .nav-actions .nav-btn:not(.nav-btn-primary) {
+                display: none;
+            }
+
+            main {
+                margin-top: 56px;
+            }
+
             .footer-container {
                 grid-template-columns: 1fr;
-                gap: 16px;
+                gap: 24px;
             }
 
             .footer-bottom {
                 flex-direction: column;
+                gap: 16px;
                 text-align: center;
+            }
+
+            .footer-links-inline {
+                flex-direction: column;
                 gap: 8px;
             }
         }
 
-        /* Scrollbar */
+        /* Scrollbar Styling */
         ::-webkit-scrollbar {
-            width: 6px;
+            width: 8px;
+            height: 8px;
         }
 
         ::-webkit-scrollbar-track {
@@ -346,114 +517,267 @@
 
         ::-webkit-scrollbar-thumb {
             background: #ccc;
-            border-radius: 3px;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #999;
         }
     </style>
 
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- Navbar -->
     <nav class="navbar" id="navbar">
         <div class="nav-container">
+            <!-- Logo -->
             <a href="{% url 'home' %}" class="logo">
-                <img class="logo" style=" margin-top: 10px; width: 80px; height: 80px;" src="{% static 'logo/logo.png' %}" alt="UstozHub">
+                <img src="{% static 'logo/logo.png' %}" alt="UstozHub">
             </a>
+
+            <!-- Search Bar (Desktop) -->
             <div class="nav-search">
                 <i class="fas fa-search search-icon"></i>
-                <input type="text" class="search-input"  placeholder="        Найти учителя или предмет..." id="navSearchInput">
-                <button class="clear-search" onclick="clearSearch()"><i class="fas fa-times"></i></button>
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    placeholder="Найти учителя или предмет..." 
+                    id="navSearchInput"
+                >
+                <button class="clear-search" onclick="clearSearch()">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
+
+            <!-- Actions -->
             <div class="nav-actions">
-                <button class="mobile-toggle" onclick="toggleMobileMenu()"><i class="fas fa-bars"></i></button>
-                <a href="#" class="nav-btn"><i class="fas fa-chalkboard-teacher"></i><span>Стать учителем</span></a>
+                <!-- Mobile Menu Toggle -->
+                <button class="mobile-toggle" onclick="toggleMobileMenu()">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <!-- Become Teacher Button -->
+                <a href="{% url 'teacher_register_step1' %}" class="nav-btn nav-btn-outline">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <span>Стать учителем</span>
+                </a>
+
                 {% if user.is_authenticated %}
-                    <button class="profile-btn" onclick="toggleProfileMenu()">
-                        <div class="profile-avatar">
-                            {% if user.avatar %}
-                                <img src="{{ user.avatar.url }}" alt="{{ user.get_full_name }}">
+                    <!-- Authenticated User Menu -->
+                    <div class="profile-container">
+                        <button class="profile-btn" onclick="toggleProfileDropdown()">
+                            <div style="width: 40px; height: 40px;" class="profile-avatar">
+                                {% if user.avatar %}
+                                    <img src="{{ user.avatar.url }}" alt="{{ user.get_full_name }}">
+                                {% else %}
+                                    {{ user.first_name.0|default:"U" }}{{ user.last_name.0|default:"" }}
+                                {% endif %}
+                            </div>
+                            <span class="profile-name">{{ user.get_full_name|default:user.username }}</span>
+                            <i class="fas fa-chevron-down" style="font-size: 12px;"></i>
+                        </button>
+
+                        <!-- Dropdown Menu -->
+                        <div class="dropdown-menu" id="profileDropdown">
+                            <div class="dropdown-header">
+                                <div class="dropdown-header-name">{{ user.get_full_name|default:user.username }}</div>
+                                <div class="dropdown-header-email">{{ user.email }}</div>
+                            </div>
+
+                            <a href="{% url 'profile' %}" class="dropdown-item">
+                                <i class="fas fa-user"></i>
+                                <span>Мой профиль</span>
+                            </a>
+
+                            {% if user.user_type == 'teacher' %}
+                                <a href="{% url 'profile' %}" class="dropdown-item">
+                                    <i class="fas fa-chalkboard"></i>
+                                    <span>Мои занятия</span>
+                                </a>
                             {% else %}
-                                {{ user.first_name.0|default:"У" }}
+                                <a href="#" class="dropdown-item">
+                                    <i class="fas fa-heart"></i>
+                                    <span>Избранное</span>
+                                </a>
                             {% endif %}
+
+                            <a href="#" class="dropdown-item">
+                                <i class="fas fa-comments"></i>
+                                <span>Сообщения</span>
+                            </a>
+
+                            <a href="{% url 'profile_edit' %}" class="dropdown-item">
+                                <i class="fas fa-cog"></i>
+                                <span>Настройки</span>
+                            </a>
+
+                            <div class="dropdown-divider"></div>
+
+                            <form method="post" action="{% url 'logout' %}" style="margin: 0;">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item danger" style="width: 100%; border: none; background: none; text-align: left; cursor: pointer;">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Выйти</span>
+                                </button>
+                            </form>
                         </div>
-                        <span class="profile-name">{{ user.get_full_name|default:user.username }}</span>
-                    </button>
+                    </div>
                 {% else %}
-                    <a href="#" class="nav-btn nav-btn-primary"><i class="fas fa-sign-in-alt"></i><span>Войти</span></a>
+                    <!-- Guest User Buttons -->
+                    <a href="{% url 'login' %}" class="nav-btn">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>Войти</span>
+                    </a>
+                    <a href="{% url 'register_choose' %}" class="nav-btn nav-btn-primary">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Регистрация</span>
+                    </a>
                 {% endif %}
             </div>
         </div>
     </nav>
 
-    <!-- <div class="secondary-nav">
-        <div class="secondary-nav-container">
-            <a href="{% url 'home' %}" class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">Все учителя</a>
-            <a href="#" class="nav-link">Топ преподаватели</a>
-            <a href="#" class="nav-link">Онлайн обучение</a>
-            <a href="#" class="nav-link">Для детей</a>
-            <a href="#" class="nav-link">Подготовка к экзаменам</a>
-            <a href="#" class="nav-link">О платформе</a>
-            <a href="#" class="nav-link">Помощь</a>
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <div class="mobile-menu-header">
+            <h3>Меню</h3>
+            <button class="mobile-menu-close" onclick="toggleMobileMenu()">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
-    </div> -->
+        <div class="mobile-menu-content">
+            <!-- Mobile Search -->
+            <div style="margin-bottom: 16px;">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    placeholder="Поиск..." 
+                    id="mobileSearchInput"
+                    style="width: 100%;"
+                >
+            </div>
 
+            {% if user.is_authenticated %}
+                <a href="{% url 'profile' %}" class="mobile-menu-item">
+                    <i class="fas fa-user"></i>
+                    <span>Мой профиль</span>
+                </a>
+                <a href="#" class="mobile-menu-item">
+                    <i class="fas fa-comments"></i>
+                    <span>Сообщения</span>
+                </a>
+                <a href="#" class="mobile-menu-item">
+                    <i class="fas fa-heart"></i>
+                    <span>Избранное</span>
+                </a>
+                <a href="{% url 'teacher_register_step1' %}" class="mobile-menu-item">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <span>Стать учителем</span>
+                </a>
+                <div style="height: 1px; background: #f0f0f0; margin: 16px 0;"></div>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="mobile-menu-item" style="width: 100%; border: none; background: none; color: #dc3545; text-align: left;">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Выйти</span>
+                    </button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}" class="mobile-menu-item">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Войти</span>
+                </a>
+                <a href="{% url 'register_choose' %}" class="mobile-menu-item">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Регистрация</span>
+                </a>
+                <a href="{% url 'teacher_register_step1' %}" class="mobile-menu-item">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <span>Стать учителем</span>
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Main Content -->
     <main>
         {% block content %}{% endblock %}
     </main>
 
+    <!-- Footer -->
     <footer class="footer">
         <div class="footer-container">
             <div class="footer-section">
                 <h3>UstozHub</h3>
-                <p>Платформа №1 для поиска квалифицированных преподавателей.</p>
+                <p>Платформа №1 для поиска квалифицированных преподавателей в Узбекистане.</p>
                 <div class="social-links">
-                    <a href="#" class="social-link"><i class="fab fa-telegram-plane"></i></a>
-                    <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
-                    <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
+                    <a href="#" class="social-link" aria-label="Telegram">
+                        <i class="fab fa-telegram-plane"></i>
+                    </a>
+                    <a href="#" class="social-link" aria-label="Instagram">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    <a href="#" class="social-link" aria-label="YouTube">
+                        <i class="fab fa-youtube"></i>
+                    </a>
                 </div>
             </div>
+
             <div class="footer-section">
                 <h3>Ученикам</h3>
                 <a href="{% url 'home' %}">Найти учителя</a>
                 <a href="#">Онлайн обучение</a>
                 <a href="#">Популярные предметы</a>
+                <a href="#">Как это работает</a>
             </div>
+
             <div class="footer-section">
                 <h3>Учителям</h3>
-                <a href="#">Стать учителем</a>
+                <a href="{% url 'teacher_register_step1' %}">Стать учителем</a>
                 <a href="#">Преимущества</a>
                 <a href="#">Правила платформы</a>
+                <a href="#">FAQ для учителей</a>
             </div>
+
             <div class="footer-section">
                 <h3>Поддержка</h3>
                 <a href="mailto:info@ustozhub.uz">info@ustozhub.uz</a>
                 <a href="tel:+998901234567">+998 90 123 45 67</a>
                 <a href="#">Центр помощи</a>
+                <a href="#">Связаться с нами</a>
             </div>
-            <div class="footer-bottom">
-                <p>&copy; 2025 UstozHub. Все права защищены.</p>
-                <div class="footer-links-inline">
-                    <a href="#">Политика конфиденциальности</a>
-                    <a href="#">Условия использования</a>
-                </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 UstozHub. Все права защищены.</p>
+            <div class="footer-links-inline">
+                <a href="#">Политика конфиденциальности</a>
+                <a href="#">Условия использования</a>
+                <a href="#">Cookies</a>
             </div>
         </div>
     </footer>
 
+    <!-- JavaScript -->
     <script>
+        // Navbar scroll behavior
         let lastScrollTop = 0;
         const navbar = document.getElementById('navbar');
 
         window.addEventListener('scroll', () => {
             let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            if (scrollTop > 100) {
-                navbar.classList.toggle('hidden', scrollTop > lastScrollTop);
+            
+            if (scrollTop > 50) {
                 navbar.classList.add('scrolled');
             } else {
-                navbar.classList.remove('hidden', 'scrolled');
+                navbar.classList.remove('scrolled');
             }
+            
             lastScrollTop = scrollTop;
         });
 
+        // Search functionality
         function clearSearch() {
             document.getElementById('navSearchInput').value = '';
             document.getElementById('navSearchInput').focus();
@@ -465,13 +789,47 @@
             }
         });
 
-        function toggleMobileMenu() {
-            alert('Мобильное меню будет добавлено');
+        // Mobile search
+        const mobileSearchInput = document.getElementById('mobileSearchInput');
+        if (mobileSearchInput) {
+            mobileSearchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && this.value.trim()) {
+                    window.location.href = `{% url 'home' %}?search=${encodeURIComponent(this.value.trim())}`;
+                }
+            });
         }
 
-        function toggleProfileMenu() {
-            alert('Меню профиля будет добавлено');
+        // Profile dropdown toggle
+        function toggleProfileDropdown() {
+            const dropdown = document.getElementById('profileDropdown');
+            dropdown.classList.toggle('show');
         }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const profileContainer = document.querySelector('.profile-container');
+            const dropdown = document.getElementById('profileDropdown');
+            
+            if (dropdown && !profileContainer.contains(event.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('show');
+            document.body.style.overflow = mobileMenu.classList.contains('show') ? 'hidden' : '';
+        }
+
+        // Close mobile menu on resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                const mobileMenu = document.getElementById('mobileMenu');
+                mobileMenu.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+        });
     </script>
 
     {% block extra_js %}{% endblock %}

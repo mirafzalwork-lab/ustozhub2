@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Профиль учителя - UstozHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 16px;
+    }
+
+    .alert {
+        padding: 16px 20px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .alert-warning {
+        background: #fef3c7;
+        color: #92400e;
+        border: 1px solid #fde68a;
+    }
+
+    .alert-info {
+        background: #dbeafe;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+    }
+
+    .profile-header {
+        background: white;
+        border-radius: 16px;
+        padding: 32px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+    }
+
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0A2540, #1e4a72);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 48px;
+        font-weight: 700;
+    }
+
+    .profile-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+
+    .profile-info h1 {
+        font-size: 32px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 8px;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 12px;
+    }
+
+    .status-pending {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-approved {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-block;
+    }
+
+    .btn-secondary {
+        background: #f5f5f5;
+        color: #666;
+    }
+
+    .btn-secondary:hover {
+        background: #e5e5e5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    {% if teacher.moderation_status == 'pending' %}
+        <div class="alert alert-warning">
+            <i class="fas fa-clock"></i>
+            <div>
+                <strong>Ваш профиль на модерации</strong><br>
+                Администрация проверит ваш профиль в ближайшее время. После одобрения вы сможете получать запросы от учеников.
+            </div>
+        </div>
+    {% elif teacher.moderation_status == 'rejected' %}
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>
+                <strong>Профиль отклонен</strong><br>
+                {{ teacher.moderation_comment|default:"Пожалуйста, свяжитесь с поддержкой для уточнения причины." }}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="profile-header">
+        <div class="profile-avatar">
+            {% if user.avatar %}
+                <img src="{{ user.avatar.url }}" alt="{{ user.get_full_name }}">
+            {% else %}
+                {{ user.first_name.0|default:"У" }}
+            {% endif %}
+        </div>
+        <div class="profile-info">
+            <span class="status-badge status-{{ teacher.moderation_status }}">
+                {% if teacher.moderation_status == 'pending' %}
+                    <i class="fas fa-clock"></i> На модерации
+                {% elif teacher.moderation_status == 'approved' %}
+                    <i class="fas fa-check-circle"></i> Одобрено
+                {% else %}
+                    <i class="fas fa-times-circle"></i> Отклонено
+                {% endif %}
+            </span>
+            <h1>{{ user.get_full_name|default:user.username }}</h1>
+            <p style="color: #666; margin: 8px 0;">{{ teacher.specialization }}</p>
+            <div style="margin-top: 16px;">
+                <a href="{% url 'logout' %}" class="btn btn-secondary">
+                    <i class="fas fa-sign-out-alt"></i> Выйти
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

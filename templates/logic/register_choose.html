@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Регистрация - UstozHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .choose-container {
+        min-height: calc(100vh - 200px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 16px;
+    }
+
+    .choose-content {
+        max-width: 900px;
+        width: 100%;
+    }
+
+    .choose-header {
+        text-align: center;
+        margin-bottom: 48px;
+    }
+
+    .choose-header h1 {
+        font-size: 36px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 12px;
+    }
+
+    .choose-header p {
+        font-size: 16px;
+        color: #666;
+    }
+
+    .choose-cards {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+        margin-bottom: 32px;
+    }
+
+    .choose-card {
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 16px;
+        padding: 40px 32px;
+        text-align: center;
+        transition: all 0.3s;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+
+    .choose-card:hover {
+        border-color: #7000ff;
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(112, 0, 255, 0.15);
+    }
+
+    .card-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #7000ff, #5c00d6);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+        font-size: 36px;
+        color: white;
+    }
+
+    .card-icon.teacher {
+        background: linear-gradient(135deg, #7000ff, #5c00d6);
+    }
+
+    .card-icon.student {
+        background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    .card-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 12px;
+    }
+
+    .card-description {
+        font-size: 15px;
+        color: #666;
+        line-height: 1.6;
+        margin-bottom: 20px;
+    }
+
+    .card-features {
+        text-align: left;
+        margin-top: 20px;
+    }
+
+    .feature-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 0;
+        font-size: 14px;
+        color: #333;
+    }
+
+    .feature-icon {
+        width: 24px;
+        height: 24px;
+        background: #f0f0f0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .feature-icon i {
+        font-size: 12px;
+        color: #7000ff;
+    }
+
+    .login-link {
+        text-align: center;
+        font-size: 15px;
+        color: #666;
+    }
+
+    .login-link a {
+        color: #7000ff;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .login-link a:hover {
+        text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+        .choose-cards {
+            grid-template-columns: 1fr;
+        }
+
+        .choose-header h1 {
+            font-size: 28px;
+        }
+
+        .choose-card {
+            padding: 32px 24px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="choose-container">
+    <div class="choose-content">
+        <div class="choose-header">
+            <h1>Добро пожаловать в UstozHub</h1>
+            <p>Выберите тип аккаунта для регистрации</p>
+        </div>
+
+        <div class="choose-cards">
+            <a href="{% url 'register_student' %}" class="choose-card">
+                <div class="card-icon student">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <h2 class="card-title">Я ученик</h2>
+                <p class="card-description">
+                    Ищете квалифицированного преподавателя? Зарегистрируйтесь как ученик
+                </p>
+                <div class="card-features">
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <span>Найти учителя по любому предмету</span>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <span>Читать отзывы других учеников</span>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <span>Связаться с учителем напрямую</span>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <span>Сохранять избранных учителей</span>
+                    </div>
+                </div>
+            </a>
+
+            <a href="{% url 'teacher_register_step1' %}" class="choose-card">
+                <div class="card-icon teacher">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+                <h2 class="card-title">Я учитель</h2>
+                <p class="card-description">
+                    Преподаете? Создайте профиль учителя и найдите учеников
+                </p>
+                <div class="card-features">
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <span>Создать профессиональный профиль</span>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <span>Установить свои цены</span>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <span>Получать запросы от учеников</span>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <span>Управлять расписанием</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="login-link">
+            Уже есть аккаунт? <a href="{% url 'login' %}">Войти</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

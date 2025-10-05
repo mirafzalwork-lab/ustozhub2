@@ -1,0 +1,847 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Регистрация учителя - Шаг 3 из 3{% endblock %}
+
+{% block content %}
+<style>
+    .register-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+
+    .register-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .register-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #0A2540;
+        margin-bottom: 12px;
+    }
+
+    .register-subtitle {
+        font-size: 16px;
+        color: #666;
+    }
+
+    /* Progress Steps */
+    .progress-steps {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 40px;
+        position: relative;
+    }
+
+    .progress-line {
+        position: absolute;
+        top: 20px;
+        left: 25%;
+        right: 25%;
+        height: 2px;
+        background: #e0e0e0;
+        z-index: 0;
+    }
+
+    .progress-line-active {
+        position: absolute;
+        top: 20px;
+        left: 25%;
+        height: 2px;
+        background: #3B82F6;
+        z-index: 1;
+        transition: width 0.3s ease;
+        width: 50%;
+    }
+
+    .steps-container {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        max-width: 600px;
+        position: relative;
+        z-index: 2;
+    }
+
+    .step-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+    }
+
+    .step-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid #e0e0e0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: #999;
+        margin-bottom: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .step-circle.active {
+        background: #3B82F6;
+        border-color: #3B82F6;
+        color: white;
+    }
+
+    .step-circle.completed {
+        background: #10B981;
+        border-color: #10B981;
+        color: white;
+    }
+
+    .step-label {
+        font-size: 13px;
+        color: #999;
+        text-align: center;
+    }
+
+    .step-label.active {
+        color: #0A2540;
+        font-weight: 600;
+    }
+
+    .step-label.completed {
+        color: #10B981;
+    }
+
+    /* Form Card */
+    .form-card {
+        background: white;
+        border-radius: 16px;
+        padding: 40px;
+        box-shadow: 0 4px 20px rgba(10, 37, 64, 0.08);
+    }
+
+    .info-banner {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(16, 185, 129, 0.1));
+        border-left: 4px solid #10B981;
+        padding: 16px 20px;
+        border-radius: 10px;
+        margin-bottom: 32px;
+        display: flex;
+        align-items: start;
+        gap: 12px;
+    }
+
+    .info-banner.optional {
+        background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1));
+        border-left-color: #F59E0B;
+    }
+
+    .info-banner i {
+        color: #10B981;
+        font-size: 20px;
+        margin-top: 2px;
+    }
+
+    .info-banner.optional i {
+        color: #F59E0B;
+    }
+
+    .info-banner-content h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 6px;
+    }
+
+    .info-banner-content p {
+        font-size: 14px;
+        color: #666;
+        line-height: 1.5;
+    }
+
+    /* Certificate Upload Area */
+    .upload-section {
+        margin-bottom: 32px;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section-title i {
+        color: #3B82F6;
+    }
+
+    .upload-area {
+        border: 2px dashed #e0e0e0;
+        border-radius: 12px;
+        padding: 32px;
+        text-align: center;
+        background: #f8f9fa;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+
+    .upload-area:hover {
+        border-color: #3B82F6;
+        background: rgba(59, 130, 246, 0.05);
+    }
+
+    .upload-area.dragover {
+        border-color: #3B82F6;
+        background: rgba(59, 130, 246, 0.1);
+        transform: scale(1.02);
+    }
+
+    .upload-icon {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 16px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #3B82F6;
+        font-size: 28px;
+    }
+
+    .upload-text h4 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 8px;
+    }
+
+    .upload-text p {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 16px;
+    }
+
+    .upload-text .file-types {
+        font-size: 12px;
+        color: #999;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 8px;
+    }
+
+    .form-label .required {
+        color: #EF4444;
+    }
+
+    .form-input,
+    .form-select,
+    .form-file {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 14px;
+        transition: all 0.3s;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .form-input:focus,
+    .form-select:focus {
+        outline: none;
+        border-color: #3B82F6;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-file {
+        display: none;
+    }
+
+    .form-help {
+        font-size: 12px;
+        color: #999;
+        margin-top: 6px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* Certificates List */
+    .certificates-list {
+        margin-top: 32px;
+    }
+
+    .certificate-item {
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: all 0.3s;
+        animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .certificate-item:hover {
+        border-color: #3B82F6;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+    }
+
+    .certificate-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #3B82F6, #10B981);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .certificate-info {
+        flex: 1;
+    }
+
+    .certificate-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 4px;
+    }
+
+    .certificate-issuer {
+        font-size: 13px;
+        color: #666;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .certificate-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-view,
+    .btn-remove {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-view {
+        background: #f0f0f0;
+        color: #333;
+    }
+
+    .btn-view:hover {
+        background: #e0e0e0;
+    }
+
+    .btn-remove {
+        background: #FEE2E2;
+        color: #EF4444;
+    }
+
+    .btn-remove:hover {
+        background: #FCA5A5;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #999;
+    }
+
+    .empty-state i {
+        font-size: 48px;
+        color: #e0e0e0;
+        margin-bottom: 16px;
+    }
+
+    .empty-state p {
+        font-size: 14px;
+    }
+
+    /* Success message */
+    .success-message {
+        background: #D1FAE5;
+        border: 1px solid #6EE7B7;
+        color: #065F46;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Error Messages */
+    .form-errors {
+        background: #FEE2E2;
+        border: 1px solid #FCA5A5;
+        color: #991B1B;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 14px;
+    }
+
+    .field-error {
+        color: #EF4444;
+        font-size: 12px;
+        margin-top: 4px;
+    }
+
+    /* Buttons */
+    .btn-add-more {
+        width: 100%;
+        padding: 14px;
+        background: white;
+        color: #3B82F6;
+        border: 2px solid #3B82F6;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 20px;
+    }
+
+    .btn-add-more:hover {
+        background: #3B82F6;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 32px;
+        justify-content: space-between;
+    }
+
+    .btn-back {
+        padding: 14px 24px;
+        background: white;
+        color: #666;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-back:hover {
+        border-color: #999;
+        color: #333;
+    }
+
+    .btn-skip {
+        padding: 14px 24px;
+        background: white;
+        color: #666;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-skip:hover {
+        border-color: #F59E0B;
+        color: #F59E0B;
+    }
+
+    .btn-finish {
+        padding: 14px 32px;
+        background: #10B981;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-finish:hover {
+        background: #059669;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .register-container {
+            padding: 20px 16px;
+        }
+
+        .form-card {
+            padding: 24px 20px;
+        }
+
+        .register-title {
+            font-size: 24px;
+        }
+
+        .steps-container {
+            max-width: 100%;
+        }
+
+        .step-label {
+            font-size: 11px;
+        }
+
+        .upload-area {
+            padding: 24px 16px;
+        }
+
+        .certificate-item {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .certificate-actions {
+            width: 100%;
+            flex-direction: column;
+        }
+
+        .btn-view,
+        .btn-remove {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .btn-back,
+        .btn-skip,
+        .btn-finish {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<div class="register-container">
+    <div class="register-header">
+        <h1 class="register-title">Сертификаты и достижения</h1>
+        <p class="register-subtitle">Добавьте сертификаты для повышения доверия (необязательно)</p>
+    </div>
+
+    <!-- Progress Steps -->
+    <div class="progress-steps">
+        <div class="progress-line"></div>
+        <div class="progress-line-active"></div>
+        
+        <div class="steps-container">
+            <div class="step-item">
+                <div class="step-circle completed">
+                    <i class="fas fa-check"></i>
+                </div>
+                <span class="step-label completed">Личные данные</span>
+            </div>
+            <div class="step-item">
+                <div class="step-circle completed">
+                    <i class="fas fa-check"></i>
+                </div>
+                <span class="step-label completed">Предметы и цены</span>
+            </div>
+            <div class="step-item">
+                <div class="step-circle active">3</div>
+                <span class="step-label active">Сертификаты</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="form-card">
+        <div class="info-banner optional">
+            <i class="fas fa-star"></i>
+            <div class="info-banner-content">
+                <h3>Этот шаг необязателен</h3>
+                <p>Сертификаты повышают доверие учеников и помогают выделиться среди других учителей. Вы можете добавить их сейчас или позже в личном кабинете.</p>
+            </div>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="success-message">
+                    <i class="fas fa-check-circle"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if form.errors %}
+            <div class="form-errors">
+                <strong>Ошибка при загрузке:</strong>
+                {{ form.errors }}
+            </div>
+        {% endif %}
+
+        <!-- Upload Section -->
+        <div class="upload-section">
+            <h2 class="section-title">
+                <i class="fas fa-cloud-upload-alt"></i>
+                Добавить сертификат
+            </h2>
+
+            <form method="POST" enctype="multipart/form-data" id="certificateForm">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label class="form-label">
+                        {{ form.name.label }} <span class="required">*</span>
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <div class="field-error">{{ form.name.errors.0 }}</div>
+                    {% endif %}
+                    <div class="form-help">
+                        <i class="fas fa-info-circle"></i>
+                        Например: "Сертификат IELTS", "Диплом магистра"
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        {{ form.issuer.label }} <span class="required">*</span>
+                    </label>
+                    {{ form.issuer }}
+                    {% if form.issuer.errors %}
+                        <div class="field-error">{{ form.issuer.errors.0 }}</div>
+                    {% endif %}
+                    <div class="form-help">
+                        <i class="fas fa-info-circle"></i>
+                        Организация, выдавшая сертификат
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        {{ form.file.label }} <span class="required">*</span>
+                    </label>
+                    
+                    <div class="upload-area" id="uploadArea" onclick="document.getElementById('id_file').click()">
+                        <div class="upload-icon">
+                            <i class="fas fa-file-upload"></i>
+                        </div>
+                        <div class="upload-text">
+                            <h4>Перетащите файл сюда</h4>
+                            <p>или нажмите для выбора</p>
+                            <span class="file-types">Форматы: PDF, JPG, PNG (макс. 5 МБ)</span>
+                        </div>
+                    </div>
+                    
+                    {{ form.file }}
+                    
+                    <div id="fileName" style="margin-top: 10px; font-size: 13px; color: #666;"></div>
+                    
+                    {% if form.file.errors %}
+                        <div class="field-error">{{ form.file.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <button type="submit" name="add_more" class="btn-add-more">
+                    <i class="fas fa-plus-circle"></i>
+                    Добавить сертификат
+                </button>
+            </form>
+        </div>
+
+        <!-- Certificates List -->
+        <div class="certificates-list">
+            <h2 class="section-title">
+                <i class="fas fa-certificate"></i>
+                Загруженные сертификаты
+                <span style="font-size: 14px; font-weight: 400; color: #666; margin-left: auto;">
+                    ({{ certificates|length }})
+                </span>
+            </h2>
+
+            {% if certificates %}
+                {% for certificate in certificates %}
+                    <div class="certificate-item">
+                        <div class="certificate-icon">
+                            <i class="fas fa-award"></i>
+                        </div>
+                        <div class="certificate-info">
+                            <div class="certificate-name">{{ certificate.name }}</div>
+                            <div class="certificate-issuer">
+                                <i class="fas fa-building"></i>
+                                {{ certificate.issuer }}
+                            </div>
+                        </div>
+                        <div class="certificate-actions">
+                            {% if certificate.file %}
+                                <a href="{{ certificate.file.url }}" target="_blank" class="btn-view">
+                                    <i class="fas fa-eye"></i>
+                                    Просмотр
+                                </a>
+                            {% endif %}
+                            <form method="POST" action="{% url 'remove_certificate' certificate.id %}" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-remove" onclick="return confirm('Удалить этот сертификат?')">
+                                    <i class="fas fa-trash-alt"></i>
+                                    Удалить
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>Сертификаты еще не добавлены</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Actions -->
+        <div class="form-actions">
+            <a href="{% url 'teacher_register_step2' %}" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Назад
+            </a>
+            
+            <div style="display: flex; gap: 12px;">
+                <form method="POST" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" name="skip" class="btn-skip">
+                        Пропустить <i class="fas fa-arrow-right"></i>
+                    </button>
+                </form>
+                
+                <a href="{% url 'teacher_register_complete' %}" class="btn-finish">
+                    <i class="fas fa-check"></i> Завершить
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // File input handling
+    const fileInput = document.getElementById('id_file');
+    const uploadArea = document.getElementById('uploadArea');
+    const fileName = document.getElementById('fileName');
+
+    fileInput.addEventListener('change', function(e) {
+        if (this.files && this.files[0]) {
+            const file = this.files[0];
+            const fileSize = (file.size / 1024 / 1024).toFixed(2);
+            fileName.innerHTML = `<i class="fas fa-file"></i> <strong>${file.name}</strong> (${fileSize} МБ)`;
+            fileName.style.color = '#10B981';
+        }
+    });
+
+    // Drag and drop
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        this.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            const event = new Event('change');
+            fileInput.dispatchEvent(event);
+        }
+    });
+
+    // Form validation
+    document.getElementById('certificateForm').addEventListener('submit', function(e) {
+        const name = document.getElementById('id_name').value.trim();
+        const issuer = document.getElementById('id_issuer').value.trim();
+        const file = fileInput.files.length > 0;
+
+        if (!name || !issuer || !file) {
+            e.preventDefault();
+            alert('Пожалуйста, заполните все поля и выберите файл');
+            return false;
+        }
+
+        // Check file size (5MB max)
+        if (fileInput.files[0].size > 5 * 1024 * 1024) {
+            e.preventDefault();
+            alert('Размер файла не должен превышать 5 МБ');
+            return false;
+        }
+
+        // Check file type
+        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+        if (!allowedTypes.includes(fileInput.files[0].type)) {
+            e.preventDefault();
+            alert('Разрешены только файлы форматов: PDF, JPG, PNG');
+            return false;
+        }
+    });
+</script>
+{% endblock %}
