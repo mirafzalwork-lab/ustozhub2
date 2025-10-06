@@ -23,9 +23,9 @@ TEMPLATES_DIRS = BASE_DIR / 'templates'
 SECRET_KEY = 'django-insecure-rx4raz1u)-1$v=)b66qio%2hn_pxu(!*g38dfkgfr0kg#+p*br'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -121,6 +121,7 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'static'
 ]
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 AUTH_USER_MODEL = 'teachers.User'
 
