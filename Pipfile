@@ -4,6 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+whitenoise = "==6.5.0"
 
 [dev-packages]
 

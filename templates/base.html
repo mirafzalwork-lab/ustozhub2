@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="UstozHub - платформа для поиска квалифицированных преподавателей">
     <title>{% block title %}UstozHub{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{% static 'logo/logo.png' %}">
+
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -538,17 +540,20 @@
 
             <!-- Search Bar (Desktop) -->
             <div class="nav-search">
-                <i class="fas fa-search search-icon"></i>
+
                 <input 
                     type="text" 
                     class="search-input" 
-                    placeholder="Найти учителя или предмет..." 
+                    placeholder="     Найти учителя или предмет..." 
                     id="navSearchInput"
+                    
                 >
                 <button class="clear-search" onclick="clearSearch()">
                     <i class="fas fa-times"></i>
                 </button>
+                <i class="fas fa-search search-icon"></i>
             </div>
+            
 
             <!-- Actions -->
             <div class="nav-actions">
@@ -742,8 +747,8 @@
 
             <div class="footer-section">
                 <h3>Поддержка</h3>
-                <a href="mailto:info@ustozhub.uz">info@ustozhub.uz</a>
-                <a href="tel:+998901234567">+998 90 123 45 67</a>
+                <a href="mailto:info@ustozhub.uz">info@ustozhubedu.uz</a>
+                <a href="tel:+998901234567">+998 94 218 26 09</a>
                 <a href="#">Центр помощи</a>
                 <a href="#">Связаться с нами</a>
             </div>
