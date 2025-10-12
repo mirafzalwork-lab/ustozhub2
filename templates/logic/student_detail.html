@@ -1,0 +1,842 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ student.user.get_full_name }} - Профиль ученика - UstozHub{% endblock %}
+
+{% block content %}
+<style>
+    /* Основной контейнер */
+    .detail-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 30px 20px;
+    }
+
+    /* Навигация "хлебные крошки" */
+    .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 24px;
+    }
+
+    .breadcrumb a {
+        color: #3B82F6;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+
+    .breadcrumb a:hover {
+        color: #2563EB;
+    }
+
+    .breadcrumb-separator {
+        color: #ccc;
+    }
+
+    /* Основная сетка */
+    .detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 30px;
+        align-items: start;
+    }
+
+    /* Левая колонка - основная информация */
+    .main-column {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    /* Карточка профиля */
+    .profile-card {
+        background: white;
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
+        border-left: 4px solid #10B981;
+    }
+
+    .profile-header {
+        display: flex;
+        gap: 24px;
+        margin-bottom: 24px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .profile-avatar-large {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #10B981, #059669);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 20px;
+        font-weight: 700;
+        flex-shrink: 0;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    }
+
+    .profile-avatar-large img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .profile-info {
+        flex: 1;
+    }
+
+    .profile-name {
+        font-size: 28px;
+        font-weight: 700;
+        color: #0A2540;
+        margin-bottom: 8px;
+    }
+
+    .profile-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        background: rgba(16, 185, 129, 0.1);
+        color: #059669;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .badge i {
+        font-size: 14px;
+    }
+
+    .badge.secondary {
+        background: rgba(59, 130, 246, 0.1);
+        color: #2563EB;
+    }
+
+    .profile-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        color: #666;
+        font-size: 14px;
+    }
+
+    .meta-item-large {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .meta-item-large i {
+        color: #10B981;
+        font-size: 16px;
+    }
+
+    /* Секции контента */
+    .content-section {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(10, 37, 64, 0.06);
+    }
+
+    .section-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #0A2540;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section-title i {
+        color: #10B981;
+        font-size: 22px;
+    }
+
+    /* Описание целей */
+    .description-text {
+    color: #444;
+    font-size: 15px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    word-wrap: break-word;      /* Перенос длинных слов */
+    overflow-wrap: anywhere;    /* Современный аналог для надёжности */
+    max-height: 280px;          /* Ограничиваем высоту блока */
+    overflow-y: auto;           /* Вертикальный скролл только если текста слишком много */
+}
+
+    /* Список предметов */
+    .subjects-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .subject-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+        border: 2px solid rgba(16, 185, 129, 0.2);
+        border-radius: 12px;
+        color: #059669;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.3s;
+    }
+
+    .subject-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        border-color: #10B981;
+    }
+
+    .subject-item i {
+        font-size: 16px;
+    }
+
+    /* Таблица информации */
+    .info-table {
+        width: 100%;
+    }
+
+    .info-row {
+        display: grid;
+        grid-template-columns: 180px 1fr;
+        gap: 16px;
+        padding: 14px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #666;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .info-label i {
+        color: #10B981;
+        width: 20px;
+    }
+
+    .info-value {
+        color: #0A2540;
+        font-weight: 500;
+    }
+
+    /* Правая колонка - контакты и действия */
+    .sidebar-column {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        position: sticky;
+        top: 90px;
+    }
+
+    /* Карточка бюджета */
+    .budget-card {
+        background: linear-gradient(135deg, #10B981, #059669);
+        border-radius: 16px;
+        padding: 24px;
+        color: white;
+        box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+    }
+
+    .budget-label {
+        font-size: 14px;
+        opacity: 0.9;
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+
+    .budget-amount {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .budget-period {
+        font-size: 13px;
+        opacity: 0.8;
+    }
+
+    /* Карточка контактов */
+    .contact-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(10, 37, 64, 0.06);
+    }
+
+    .contact-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #0A2540;
+        margin-bottom: 16px;
+    }
+
+    .contact-btn-primary {
+        width: 100%;
+        padding: 14px;
+        background: #10B981;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .contact-btn-primary:hover {
+        background: #059669;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .contact-btn-secondary {
+        width: 100%;
+        padding: 12px;
+        background: white;
+        color: #0A2540;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .contact-btn-secondary:hover {
+        border-color: #10B981;
+        color: #10B981;
+        background: rgba(16, 185, 129, 0.05);
+    }
+
+    /* Карточка похожих учеников */
+    .similar-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(10, 37, 64, 0.06);
+    }
+
+    .similar-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #0A2540;
+        margin-bottom: 16px;
+    }
+
+    .similar-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .similar-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        text-decoration: none;
+        transition: all 0.3s;
+    }
+
+    .similar-item:hover {
+        background: rgba(16, 185, 129, 0.1);
+        transform: translateX(4px);
+    }
+
+    .similar-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #10B981, #059669);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 16px;
+        font-weight: 700;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .similar-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .similar-info {
+        flex: 1;
+    }
+
+    .similar-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 4px;
+    }
+
+    .similar-subjects {
+        font-size: 12px;
+        color: #666;
+    }
+
+    /* Секция рекомендуемых учителей */
+    .teachers-section {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(10, 37, 64, 0.06);
+    }
+
+    .teachers-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-top: 16px;
+    }
+
+    .teacher-mini-card {
+        padding: 16px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        text-decoration: none;
+        transition: all 0.3s;
+    }
+
+    .teacher-mini-card:hover {
+        background: rgba(59, 130, 246, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .teacher-mini-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 10px;
+    }
+
+    .teacher-mini-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3B82F6, #2563EB);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 16px;
+        font-weight: 700;
+        overflow: hidden;
+    }
+
+    .teacher-mini-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .teacher-mini-info h4 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 4px;
+    }
+
+    .teacher-mini-rating {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        color: #666;
+    }
+
+    .teacher-mini-rating i {
+        color: #FCD34D;
+    }
+
+    .teacher-mini-subjects {
+        font-size: 12px;
+        color: #3B82F6;
+        font-weight: 500;
+    }
+
+    /* Пустое состояние */
+    .empty-state {
+        text-align: center;
+        padding: 30px;
+        color: #999;
+    }
+
+    .empty-state i {
+        font-size: 36px;
+        color: #ddd;
+        margin-bottom: 12px;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 1024px) {
+        .detail-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .sidebar-column {
+            position: static;
+            order: -1;
+        }
+
+        .teachers-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .detail-container {
+            padding: 20px 16px;
+        }
+
+        .profile-card {
+            padding: 20px;
+        }
+
+        .profile-header {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .profile-avatar-large {
+            width: 100px;
+            height: 100px;
+            font-size: 40px;
+        }
+
+        .profile-name {
+            font-size: 24px;
+        }
+
+        .profile-meta {
+            justify-content: center;
+        }
+
+        .info-row {
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .budget-amount {
+            font-size: 28px;
+        }
+    }
+</style>
+
+<div class="detail-container">
+    <!-- Хлебные крошки -->
+    <nav class="breadcrumb">
+        <a href="{% url 'home' %}">Главная</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{% url 'students_list' %}">Ученики</a>
+        <span class="breadcrumb-separator">/</span>
+        <span>{{ student.user.get_full_name|default:student.user.username }}</span>
+    </nav>
+
+    <!-- Основная сетка -->
+    <div class="detail-grid">
+        <!-- Левая колонка -->
+        <div class="main-column">
+            <!-- Карточка профиля -->
+            <div class="profile-card">
+                <div class="profile-header">
+                    <div class="profile-avatar-large">
+                        {% if student.user.avatar %}
+                            <img src="{{ student.user.avatar.url }}" alt="{{ student.user.get_full_name }}">
+                        {% else %}
+                            {{ student.user.first_name.0|default:"У" }}{{ student.user.last_name.0|default:"" }}
+                        {% endif %}
+                    </div>
+                    <div class="profile-info">
+                        <h1 class="profile-name">{{ student.user.get_full_name|default:student.user.username }}</h1>
+                        
+                        <div class="profile-badges">
+                            {% if student.education_level %}
+                                <span class="badge">
+                                    <i class="fas fa-graduation-cap"></i>
+                                    {{ student.get_education_level_display }}
+                                </span>
+                            {% endif %}
+                            {% if student.learning_format %}
+                                <span class="badge secondary">
+                                    <i class="fas fa-desktop"></i>
+                                    {{ student.get_learning_format_display }}
+                                </span>
+                            {% endif %}
+                            <span class="badge">
+                                <i class="fas fa-user-check"></i>
+                                Активный поиск
+                            </span>
+                        </div>
+
+                        <div class="profile-meta">
+                            {% if student.city %}
+                                <div class="meta-item-large">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>{{ student.city.name }}</span>
+                                </div>
+                            {% endif %}
+                            {% if student.user.age %}
+                                <div class="meta-item-large">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span>{{ student.user.age }} лет</span>
+                                </div>
+                            {% endif %}
+                            <div class="meta-item-large">
+                                <i class="fas fa-clock"></i>
+                                <span>Зарегистрирован {{ student.created_at|date:"d.m.Y" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Описание целей -->
+            {% if student.description or student.bio %}
+                <div class="content-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-bullseye"></i>
+                        Цели и пожелания
+                    </h2>
+                    <p class="description-text">{{ student.description|default:student.bio }}</p>
+                </div>
+            {% endif %}
+
+            <!-- Желаемые предметы -->
+            {% if desired_subjects %}
+                <div class="content-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-book-open"></i>
+                        Хочет изучать ({{ desired_subjects.count }})
+                    </h2>
+                    <div class="subjects-list">
+                        {% for subject in desired_subjects %}
+                            <div class="subject-item">
+                                <i class="fas fa-check-circle"></i>
+                                {{ subject.name }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Дополнительная информация -->
+            <div class="content-section">
+                <h2 class="section-title">
+                    <i class="fas fa-info-circle"></i>
+                    Дополнительная информация
+                </h2>
+                <div class="info-table">
+                    {% if student.school_university %}
+                        <div class="info-row">
+                            <div class="info-label">
+                                <i class="fas fa-university"></i>
+                                Учебное заведение
+                            </div>
+                            <div class="info-value">{{ student.school_university }}</div>
+                        </div>
+                    {% endif %}
+
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-desktop"></i>
+                            Формат занятий
+                        </div>
+                        <div class="info-value">{{ student.get_learning_format_display }}</div>
+                    </div>
+
+                    {% if student.available_weekdays %}
+                        <div class="info-row">
+                            <div class="info-label">
+                                <i class="fas fa-calendar-week"></i>
+                                Доступные дни
+                            </div>
+                            <div class="info-value">{{ student.get_available_weekdays_display }}</div>
+                        </div>
+                    {% endif %}
+
+                    {% if student.user.phone %}
+                        <div class="info-row">
+                            <div class="info-label">
+                                <i class="fas fa-phone"></i>
+                                Телефон
+                            </div>
+                            <div class="info-value">{{ student.user.phone }}</div>
+                        </div>
+                    {% endif %}
+
+                    {% if student.user.email %}
+                        <div class="info-row">
+                            <div class="info-label">
+                                <i class="fas fa-envelope"></i>
+                                Email
+                            </div>
+                            <div class="info-value">{{ student.user.email }}</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Другие интересы -->
+            {% if other_interests %}
+                <div class="content-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-star"></i>
+                        Дополнительные интересы
+                    </h2>
+                    <div class="subjects-list">
+                        {% for interest in other_interests %}
+                            <div class="subject-item">
+                                <i class="fas fa-heart"></i>
+                                {{ interest.name }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Рекомендуемые учителя -->
+            {% if suggested_teachers %}
+                <div class="teachers-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                        Подходящие учителя ({{ suggested_teachers.count }})
+                    </h2>
+                    <div class="teachers-grid">
+                        {% for teacher in suggested_teachers %}
+                            <a href="{% url 'teacher_detail' teacher.id %}" class="teacher-mini-card">
+                                <div class="teacher-mini-header">
+                                    <div class="teacher-mini-avatar">
+                                        {% if teacher.user.avatar %}
+                                            <img src="{{ teacher.user.avatar.url }}" alt="{{ teacher.user.get_full_name }}">
+                                        {% else %}
+                                            {{ teacher.user.first_name.0|default:"У" }}{{ teacher.user.last_name.0|default:"" }}
+                                        {% endif %}
+                                    </div>
+                                    <div class="teacher-mini-info">
+                                        <h4>{{ teacher.user.get_full_name|default:teacher.user.username }}</h4>
+                                        <div class="teacher-mini-rating">
+                                            <i class="fas fa-star"></i>
+                                            <span>{{ teacher.rating|floatformat:1 }} ({{ teacher.total_reviews }})</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="teacher-mini-subjects">
+                                    {{ teacher.get_subjects_display }}
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Правая колонка -->
+        <div class="sidebar-column">
+            <!-- Карточка бюджета -->
+            <div class="budget-card">
+                <div class="budget-label">Бюджет ученика</div>
+                <div class="budget-amount">{{ student.get_budget_display }}</div>
+                {% if student.budget_min or student.budget_max %}
+                    <div class="budget-period">готов платить за час</div>
+                {% endif %}
+            </div>
+
+            <!-- Карточка контактов -->
+            <div class="contact-card">
+                <h3 class="contact-title">Связаться с учеником</h3>
+                
+                <button class="contact-btn-primary" onclick="alert('Функция в разработке')">
+                    <i class="fas fa-paper-plane"></i>
+                    Отправить сообщение
+                </button>
+
+                {% if student.user.phone %}
+                    <button class="contact-btn-secondary" onclick="window.location.href='tel:{{ student.user.phone }}'">
+                        <i class="fas fa-phone"></i>
+                        Позвонить
+                    </button>
+                {% endif %}
+            </div>
+
+            <!-- Похожие ученики -->
+            {% if similar_students %}
+                <div class="similar-card">
+                    <h3 class="similar-title">Похожие ученики</h3>
+                    <div class="similar-list">
+                        {% for similar in similar_students %}
+                            <a href="{% url 'student_detail' similar.id %}" class="similar-item">
+                                <div class="similar-avatar">
+                                    {% if similar.user.avatar %}
+                                        <img src="{{ similar.user.avatar.url }}" alt="{{ similar.user.get_full_name }}">
+                                    {% else %}
+                                        {{ similar.user.first_name.0|default:"У" }}{{ similar.user.last_name.0|default:"" }}
+                                    {% endif %}
+                                </div>
+                                <div class="similar-info">
+                                    <div class="similar-name">{{ similar.user.get_full_name|default:similar.user.username }}</div>
+                                    <div class="similar-subjects">{{ similar.get_desired_subjects_display }}</div>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // Кнопка "Назад"
+    document.addEventListener('DOMContentLoaded', function() {
+        // Можно добавить дополнительный функционал
+        console.log('Страница профиля ученика загружена');
+    });
+</script>
+{% endblock %}

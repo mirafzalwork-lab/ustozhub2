@@ -1,0 +1,619 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Редактирование профиля учителя - UstozHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .edit-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 30px 20px;
+    }
+
+    .edit-header {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .edit-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #0A2540;
+    }
+
+    .status-toggle {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        background: #f8f9fa;
+        border-radius: 10px;
+    }
+
+    .toggle-switch {
+        position: relative;
+        width: 50px;
+        height: 26px;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 26px;
+    }
+
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+        background-color: #10B981;
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(24px);
+    }
+
+    .status-text {
+        font-size: 14px;
+        font-weight: 600;
+        color: #666;
+    }
+
+    .form-card {
+        background: white;
+        border-radius: 12px;
+        padding: 32px;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .section-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #0A2540;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section-title i {
+        color: #3B82F6;
+        font-size: 22px;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+    }
+
+    .form-input, .form-select, .form-textarea {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 15px;
+        transition: all 0.2s;
+    }
+
+    .form-textarea {
+        resize: vertical;
+        font-family: inherit;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+        outline: none;
+        border-color: #3B82F6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .checkbox-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-top: 12px;
+    }
+
+    .checkbox-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+
+    .checkbox-wrapper:hover {
+        border-color: #3B82F6;
+        background: #eff6ff;
+    }
+
+    .checkbox-wrapper input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: #3B82F6;
+    }
+
+    .checkbox-wrapper label {
+        cursor: pointer;
+        font-size: 14px;
+        color: #333;
+        flex: 1;
+        margin: 0;
+    }
+
+    .checkbox-wrapper input[type="checkbox"]:checked + label {
+        color: #3B82F6;
+        font-weight: 600;
+    }
+
+    .form-checkbox-large {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        accent-color: #3B82F6;
+    }
+
+    .help-text {
+        font-size: 12px;
+        color: #999;
+        margin-top: 4px;
+    }
+
+    .error-message {
+        color: #ef4444;
+        font-size: 13px;
+        margin-top: 6px;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 32px;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #3B82F6, #2563EB);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #666;
+        border: 2px solid #e0e0e0;
+    }
+
+    .btn-secondary:hover {
+        border-color: #3B82F6;
+        color: #3B82F6;
+    }
+
+    .avatar-upload {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .current-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3B82F6, #2563EB);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 36px;
+        font-weight: 700;
+        overflow: hidden;
+    }
+
+    .current-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .alert {
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 14px;
+    }
+
+    .alert-success {
+        background: #d1fae5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+    }
+
+    .alert-error {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
+
+    @media (max-width: 768px) {
+        .edit-header {
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-row, .checkbox-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="edit-container">
+    <div class="edit-header">
+        <h1 class="edit-title">Редактирование профиля учителя</h1>
+        
+        <div class="status-toggle">
+            <span class="status-text">Отображение в поиске:</span>
+            <label class="toggle-switch">
+                <input type="checkbox" 
+                       id="profileToggle" 
+                       {% if teacher.is_active %}checked{% endif %}
+                       onchange="toggleProfileStatus()">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" id="profileForm">
+        {% csrf_token %}
+
+        <!-- Личная информация -->
+        <div class="form-card">
+            <h2 class="section-title">
+                <i class="fas fa-user"></i>
+                Личная информация
+            </h2>
+
+            <div class="form-group full-width">
+                <label class="form-label">Фото профиля</label>
+                <div class="avatar-upload">
+                    <div class="current-avatar">
+                        {% if user.avatar %}
+                            <img src="{{ user.avatar.url }}" alt="Avatar">
+                        {% else %}
+                            {{ user.first_name.0|default:"У" }}{{ user.last_name.0|default:"" }}
+                        {% endif %}
+                    </div>
+                    <div style="flex: 1;">
+                        {{ user_form.avatar }}
+                        {% if user_form.avatar.errors %}
+                            <div class="error-message">{{ user_form.avatar.errors.0 }}</div>
+                        {% endif %}
+                        <div class="help-text">{{ user_form.avatar.help_text }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">{{ user_form.first_name.label }}</label>
+                    {{ user_form.first_name }}
+                    {% if user_form.first_name.errors %}
+                        <div class="error-message">{{ user_form.first_name.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">{{ user_form.last_name.label }}</label>
+                    {{ user_form.last_name }}
+                    {% if user_form.last_name.errors %}
+                        <div class="error-message">{{ user_form.last_name.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">{{ user_form.email.label }}</label>
+                    {{ user_form.email }}
+                    {% if user_form.email.errors %}
+                        <div class="error-message">{{ user_form.email.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">{{ user_form.phone.label }}</label>
+                    {{ user_form.phone }}
+                    {% if user_form.phone.errors %}
+                        <div class="error-message">{{ user_form.phone.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">{{ user_form.age.label }}</label>
+                {{ user_form.age }}
+                {% if user_form.age.errors %}
+                    <div class="error-message">{{ user_form.age.errors.0 }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Профессиональная информация -->
+        <div class="form-card">
+            <h2 class="section-title">
+                <i class="fas fa-briefcase"></i>
+                Профессиональная информация
+            </h2>
+
+            <div class="form-group full-width">
+                <label class="form-label">{{ profile_form.bio.label }}</label>
+                {{ profile_form.bio }}
+                {% if profile_form.bio.errors %}
+                    <div class="error-message">{{ profile_form.bio.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">{{ profile_form.education_level.label }}</label>
+                    {{ profile_form.education_level }}
+                    {% if profile_form.education_level.errors %}
+                        <div class="error-message">{{ profile_form.education_level.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">{{ profile_form.experience_years.label }}</label>
+                    {{ profile_form.experience_years }}
+                    {% if profile_form.experience_years.errors %}
+                        <div class="error-message">{{ profile_form.experience_years.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">{{ profile_form.university.label }}</label>
+                    {{ profile_form.university }}
+                    {% if profile_form.university.errors %}
+                        <div class="error-message">{{ profile_form.university.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">{{ profile_form.specialization.label }}</label>
+                    {{ profile_form.specialization }}
+                    {% if profile_form.specialization.errors %}
+                        <div class="error-message">{{ profile_form.specialization.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-group full-width">
+                <label class="form-label">{{ profile_form.teaching_languages.label }}</label>
+                <div class="checkbox-grid">
+                    {% for checkbox in profile_form.teaching_languages %}
+                        <div class="checkbox-wrapper">
+                            {{ checkbox.tag }}
+                            <label for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% if profile_form.teaching_languages.errors %}
+                    <div class="error-message">{{ profile_form.teaching_languages.errors.0 }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Формат и расписание -->
+        <div class="form-card">
+            <h2 class="section-title">
+                <i class="fas fa-calendar"></i>
+                Формат и расписание
+            </h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">{{ profile_form.city.label }}</label>
+                    {{ profile_form.city }}
+                    {% if profile_form.city.errors %}
+                        <div class="error-message">{{ profile_form.city.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">{{ profile_form.teaching_format.label }}</label>
+                    {{ profile_form.teaching_format }}
+                    {% if profile_form.teaching_format.errors %}
+                        <div class="error-message">{{ profile_form.teaching_format.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">{{ profile_form.available_from.label }}</label>
+                    {{ profile_form.available_from }}
+                    {% if profile_form.available_from.errors %}
+                        <div class="error-message">{{ profile_form.available_from.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">{{ profile_form.available_to.label }}</label>
+                    {{ profile_form.available_to }}
+                    {% if profile_form.available_to.errors %}
+                        <div class="error-message">{{ profile_form.available_to.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-group full-width">
+                <label class="form-label">{{ profile_form.available_weekdays.label }}</label>
+                <div class="checkbox-grid">
+                    {% for checkbox in profile_form.available_weekdays %}
+                        <div class="checkbox-wrapper">
+                            {{ checkbox.tag }}
+                            <label for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% if profile_form.available_weekdays.errors %}
+                    <div class="error-message">{{ profile_form.available_weekdays.errors.0 }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Контакты -->
+        <div class="form-card">
+            <h2 class="section-title">
+                <i class="fas fa-phone"></i>
+                Контактная информация
+            </h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">{{ profile_form.telegram.label }}</label>
+                    {{ profile_form.telegram }}
+                    {% if profile_form.telegram.errors %}
+                        <div class="error-message">{{ profile_form.telegram.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">{{ profile_form.whatsapp.label }}</label>
+                    {{ profile_form.whatsapp }}
+                    {% if profile_form.whatsapp.errors %}
+                        <div class="error-message">{{ profile_form.whatsapp.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <a href="{% url 'profile' %}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Отмена
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Сохранить изменения
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleProfileStatus() {
+        const checkbox = document.getElementById('profileToggle');
+        const isActive = checkbox.checked;
+        
+        fetch("{% url 'toggle_profile_status' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ is_active: isActive })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Status updated:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            checkbox.checked = !isActive; // Возврат к предыдущему состоянию при ошибке
+        });
+    }
+</script>
+{% endblock %}

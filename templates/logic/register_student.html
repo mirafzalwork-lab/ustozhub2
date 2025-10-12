@@ -18,7 +18,7 @@
         border-radius: 16px;
         box-shadow: 0 4px 24px rgba(0,0,0,0.08);
         width: 100%;
-        max-width: 540px;
+        max-width: 800px;
         padding: 48px 40px;
     }
 
@@ -52,6 +52,32 @@
         font-size: 14px;
     }
 
+    .form-section {
+        margin-bottom: 32px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid #e5e5e5;
+    }
+
+    .form-section:last-of-type {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .section-title i {
+        color: #10b981;
+        font-size: 20px;
+    }
+
     .form-row {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -62,6 +88,10 @@
         margin-bottom: 20px;
     }
 
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+
     .form-label {
         display: block;
         font-size: 14px;
@@ -70,7 +100,7 @@
         margin-bottom: 8px;
     }
 
-    .form-input {
+    .form-input, .form-select {
         width: 100%;
         padding: 12px 16px;
         border: 1px solid #e0e0e0;
@@ -79,10 +109,74 @@
         transition: all 0.2s;
     }
 
-    .form-input:focus {
+    .form-textarea {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 15px;
+        transition: all 0.2s;
+        resize: vertical;
+        font-family: inherit;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
         outline: none;
         border-color: #10b981;
         box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+
+    .subjects-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-top: 12px;
+    }
+
+    .subject-checkbox-wrapper, .weekday-checkbox-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+
+    .subject-checkbox-wrapper:hover, .weekday-checkbox-wrapper:hover {
+        border-color: #10b981;
+        background: #f0fdf4;
+    }
+
+    .subject-checkbox-wrapper input[type="checkbox"],
+    .weekday-checkbox-wrapper input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: #10b981;
+    }
+
+    .subject-checkbox-wrapper label,
+    .weekday-checkbox-wrapper label {
+        cursor: pointer;
+        font-size: 14px;
+        color: #333;
+        flex: 1;
+        margin: 0;
+    }
+
+    .subject-checkbox-wrapper input[type="checkbox"]:checked + label,
+    .weekday-checkbox-wrapper input[type="checkbox"]:checked + label {
+        color: #10b981;
+        font-weight: 600;
+    }
+
+    .weekdays-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-top: 12px;
     }
 
     .error-message {
@@ -110,6 +204,7 @@
         cursor: pointer;
         margin-top: 2px;
         flex-shrink: 0;
+        accent-color: #10b981;
     }
 
     .checkbox-label {
@@ -139,6 +234,7 @@
         font-weight: 600;
         cursor: pointer;
         transition: transform 0.2s;
+        margin-top: 24px;
     }
 
     .submit-btn:hover {
@@ -183,12 +279,44 @@
         border: 1px solid #fcc;
     }
 
-    @media (max-width: 640px) {
+    .char-counter {
+        font-size: 12px;
+        color: #999;
+        text-align: right;
+        margin-top: 4px;
+    }
+
+    .char-counter.warning {
+        color: #f59e0b;
+    }
+
+    .char-counter.error {
+        color: #ef4444;
+    }
+
+    .budget-note {
+        background: #f0fdf4;
+        border: 1px solid #d1fae5;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 13px;
+        color: #059669;
+        margin-top: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .budget-note i {
+        font-size: 16px;
+    }
+
+    @media (max-width: 768px) {
         .auth-card {
             padding: 32px 24px;
         }
 
-        .form-row {
+        .form-row, .subjects-grid, .weekdays-grid {
             grid-template-columns: 1fr;
         }
     }
@@ -217,90 +345,243 @@
         <form method="post" id="registerForm">
             {% csrf_token %}
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label" for="id_first_name">
-                        {{ form.first_name.label }} <span style="color: red;">*</span>
-                    </label>
-                    {{ form.first_name }}
-                    {% if form.first_name.errors %}
-                        <div class="error-message">{{ form.first_name.errors.0 }}</div>
-                    {% endif %}
+            <!-- Личная информация -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-user"></i>
+                    Личная информация
+                </h3>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="id_first_name">
+                            {{ form.first_name.label }} <span style="color: red;">*</span>
+                        </label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                            <div class="error-message">{{ form.first_name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="id_last_name">
+                            {{ form.last_name.label }} <span style="color: red;">*</span>
+                        </label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}
+                            <div class="error-message">{{ form.last_name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="id_last_name">
-                        {{ form.last_name.label }} <span style="color: red;">*</span>
+                    <label class="form-label" for="id_username">
+                        {{ form.username.label }} <span style="color: red;">*</span>
                     </label>
-                    {{ form.last_name }}
-                    {% if form.last_name.errors %}
-                        <div class="error-message">{{ form.last_name.errors.0 }}</div>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                        <div class="error-message">{{ form.username.errors.0 }}</div>
                     {% endif %}
+                    <div class="help-text">Это имя будет использоваться для входа</div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="id_email">
+                            {{ form.email.label }}
+                        </label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <div class="error-message">{{ form.email.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="id_phone">
+                            {{ form.phone.label }} <span style="color: red;">*</span>
+                        </label>
+                        {{ form.phone }}
+                        {% if form.phone.errors %}
+                            <div class="error-message">{{ form.phone.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="id_age">
+                            {{ form.age.label }}
+                        </label>
+                        {{ form.age }}
+                        {% if form.age.errors %}
+                            <div class="error-message">{{ form.age.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="id_city">
+                            {{ form.city.label }}
+                        </label>
+                        {{ form.city }}
+                        {% if form.city.errors %}
+                            <div class="error-message">{{ form.city.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="id_education_level">
+                            {{ form.education_level.label }}
+                        </label>
+                        {{ form.education_level }}
+                        {% if form.education_level.errors %}
+                            <div class="error-message">{{ form.education_level.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="id_school_university">
+                            {{ form.school_university.label }}
+                        </label>
+                        {{ form.school_university }}
+                        {% if form.school_university.errors %}
+                            <div class="error-message">{{ form.school_university.errors.0 }}</div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label class="form-label" for="id_username">
-                    {{ form.username.label }} <span style="color: red;">*</span>
-                </label>
-                {{ form.username }}
-                {% if form.username.errors %}
-                    <div class="error-message">{{ form.username.errors.0 }}</div>
-                {% endif %}
-                <div class="help-text">Это имя будет использоваться для входа</div>
+            <!-- Предметы и цели -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-book"></i>
+                    Предметы и цели обучения
+                </h3>
+
+                <div class="form-group full-width">
+                    <label class="form-label">
+                        {{ form.interests.label }} <span style="color: red;">*</span>
+                    </label>
+                    <div class="subjects-grid">
+                        {% for checkbox in form.interests %}
+                            <div class="subject-checkbox-wrapper">
+                                {{ checkbox.tag }}
+                                <label for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if form.interests.errors %}
+                        <div class="error-message">{{ form.interests.errors.0 }}</div>
+                    {% endif %}
+                    <div class="help-text">{{ form.interests.help_text }}</div>
+                </div>
+
+                <div class="form-group full-width">
+                    <label class="form-label" for="id_bio">
+                        {{ form.bio.label }}
+                    </label>
+                    {{ form.bio }}
+                    <div class="char-counter" id="bioCounter">0 / 1000 символов</div>
+                    {% if form.bio.errors %}
+                        <div class="error-message">{{ form.bio.errors.0 }}</div>
+                    {% endif %}
+                    <div class="help-text">{{ form.bio.help_text }}</div>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label class="form-label" for="id_email">
-                    {{ form.email.label }} <span style="color: red;">*</span>
-                </label>
-                {{ form.email }}
-                {% if form.email.errors %}
-                    <div class="error-message">{{ form.email.errors.0 }}</div>
-                {% endif %}
+            <!-- Формат и бюджет -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-cog"></i>
+                    Предпочтения по обучению
+                </h3>
+
+                <div class="form-group full-width">
+                    <label class="form-label" for="id_learning_format">
+                        {{ form.learning_format.label }} <span style="color: red;">*</span>
+                    </label>
+                    {{ form.learning_format }}
+                    {% if form.learning_format.errors %}
+                        <div class="error-message">{{ form.learning_format.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="id_budget_min">
+                            {{ form.budget_min.label }}
+                        </label>
+                        {{ form.budget_min }}
+                        {% if form.budget_min.errors %}
+                            <div class="error-message">{{ form.budget_min.errors.0 }}</div>
+                        {% endif %}
+                        <div class="help-text">{{ form.budget_min.help_text }}</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="id_budget_max">
+                            {{ form.budget_max.label }}
+                        </label>
+                        {{ form.budget_max }}
+                        {% if form.budget_max.errors %}
+                            <div class="error-message">{{ form.budget_max.errors.0 }}</div>
+                        {% endif %}
+                        <div class="help-text">{{ form.budget_max.help_text }}</div>
+                    </div>
+                </div>
+
+                <div class="budget-note">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Указание бюджета поможет учителям понять ваши возможности. Можно не указывать и договориться отдельно.</span>
+                </div>
+
+                <div class="form-group full-width">
+                    <label class="form-label">
+                        {{ form.available_weekdays.label }}
+                    </label>
+                    <div class="weekdays-grid">
+                        {% for checkbox in form.available_weekdays %}
+                            <div class="weekday-checkbox-wrapper">
+                                {{ checkbox.tag }}
+                                <label for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if form.available_weekdays.errors %}
+                        <div class="error-message">{{ form.available_weekdays.errors.0 }}</div>
+                    {% endif %}
+                    <div class="help-text">{{ form.available_weekdays.help_text }}</div>
+                </div>
             </div>
 
-            <div class="form-row">
+            <!-- Безопасность -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-lock"></i>
+                    Безопасность
+                </h3>
+
                 <div class="form-group">
-                    <label class="form-label" for="id_phone">
-                        {{ form.phone.label }} <span style="color: red;">*</span>
+                    <label class="form-label" for="id_password1">
+                        {{ form.password1.label }} <span style="color: red;">*</span>
                     </label>
-                    {{ form.phone }}
-                    {% if form.phone.errors %}
-                        <div class="error-message">{{ form.phone.errors.0 }}</div>
+                    {{ form.password1 }}
+                    {% if form.password1.errors %}
+                        <div class="error-message">{{ form.password1.errors.0 }}</div>
                     {% endif %}
+                    <div class="help-text">Минимум 8 символов</div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="id_age">
-                        {{ form.age.label }}
+                    <label class="form-label" for="id_password2">
+                        {{ form.password2.label }} <span style="color: red;">*</span>
                     </label>
-                    {{ form.age }}
-                    {% if form.age.errors %}
-                        <div class="error-message">{{ form.age.errors.0 }}</div>
+                    {{ form.password2 }}
+                    {% if form.password2.errors %}
+                        <div class="error-message">{{ form.password2.errors.0 }}</div>
                     {% endif %}
                 </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="id_password1">
-                    {{ form.password1.label }} <span style="color: red;">*</span>
-                </label>
-                {{ form.password1 }}
-                {% if form.password1.errors %}
-                    <div class="error-message">{{ form.password1.errors.0 }}</div>
-                {% endif %}
-                <div class="help-text">Минимум 8 символов</div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="id_password2">
-                    {{ form.password2.label }} <span style="color: red;">*</span>
-                </label>
-                {{ form.password2 }}
-                {% if form.password2.errors %}
-                    <div class="error-message">{{ form.password2.errors.0 }}</div>
-                {% endif %}
             </div>
 
             <div class="checkbox-group">
@@ -331,6 +612,50 @@
 
 {% block extra_js %}
 <script>
+    // Счетчик символов для поля описания
+    const bioField = document.getElementById('id_bio');
+    const charCounter = document.getElementById('bioCounter');
+    
+    if (bioField && charCounter) {
+        function updateCounter() {
+            const length = bioField.value.length;
+            const maxLength = 1000;
+            charCounter.textContent = `${length} / ${maxLength} символов`;
+            
+            if (length < 20) {
+                charCounter.className = 'char-counter error';
+            } else if (length > maxLength * 0.9) {
+                charCounter.className = 'char-counter warning';
+            } else {
+                charCounter.className = 'char-counter';
+            }
+        }
+        
+        bioField.addEventListener('input', updateCounter);
+        updateCounter();
+    }
+
+    // Валидация бюджета
+    const budgetMin = document.getElementById('id_budget_min');
+    const budgetMax = document.getElementById('id_budget_max');
+    
+    if (budgetMin && budgetMax) {
+        function validateBudget() {
+            const min = parseFloat(budgetMin.value) || 0;
+            const max = parseFloat(budgetMax.value) || 0;
+            
+            if (min > 0 && max > 0 && min > max) {
+                budgetMax.setCustomValidity('Максимальный бюджет должен быть больше минимального');
+            } else {
+                budgetMax.setCustomValidity('');
+            }
+        }
+        
+        budgetMin.addEventListener('input', validateBudget);
+        budgetMax.addEventListener('input', validateBudget);
+    }
+
+    // Блокировка кнопки при отправке
     document.getElementById('registerForm').addEventListener('submit', function(e) {
         const btn = this.querySelector('.submit-btn');
         btn.disabled = true;

@@ -269,7 +269,15 @@ class TeacherSubject(models.Model):
         return f"{self.teacher.user.get_full_name()} - {self.subject.name} ({self.hourly_rate} сум/час)"
 
 class StudentProfile(models.Model):
-    """Профиль ученика"""
+    """
+    Профиль ученика
+    НОВЫЕ ПОЛЯ ДОБАВЛЕНЫ:
+    - desired_subjects: предметы, которые хочет изучать
+    - budget_min, budget_max: бюджет ученика
+    - learning_format: формат обучения
+    - description: расширенное описание
+    - is_active: активность профиля
+    """
     EDUCATION_LEVELS = [
         ('elementary', 'Начальная школа (1-4 класс)'),
         ('middle', 'Средняя школа (5-9 класс)'),
@@ -277,19 +285,131 @@ class StudentProfile(models.Model):
         ('university', 'Университет'),
         ('adult', 'Взрослый'),
     ]
+    
+    # НОВОЕ: Форматы обучения для ученика
+    LEARNING_FORMATS = [
+        ('online', 'Онлайн'),
+        ('offline', 'Офлайн'),
+        ('both', 'Онлайн и офлайн'),
+    ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile')
     education_level = models.CharField(max_length=20, choices=EDUCATION_LEVELS, blank=True)
     school_university = models.CharField(max_length=200, blank=True)
     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True)
-    interests = models.ManyToManyField(Subject, blank=True, help_text="Интересующие предметы")
-    bio = models.TextField(max_length=500, blank=True)
+    
+    # СТАРОЕ ПОЛЕ: переименовано для ясности
+    interests = models.ManyToManyField(
+        Subject, 
+        blank=True, 
+        related_name='interested_students',
+        help_text="Интересующие предметы"
+    )
+    
+    # НОВОЕ: Основные предметы, которые хочет изучать (для отображения в карточке)
+    desired_subjects = models.ManyToManyField(
+        Subject,
+        blank=True,
+        related_name='learning_students',
+        help_text="Предметы для изучения"
+    )
+    
+    bio = models.TextField(max_length=500, blank=True, verbose_name="Краткое описание")
+    
+    # НОВОЕ: Расширенное описание целей обучения
+    description = models.TextField(
+        max_length=1000, 
+        blank=True,
+        verbose_name="Описание целей и пожеланий",
+        help_text="Расскажите о своих целях обучения, уровне подготовки и ожиданиях"
+    )
+    
+    # НОВОЕ: Бюджет ученика
+    budget_min = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)],
+        verbose_name="Минимальный бюджет (сум/час)",
+        help_text="Минимальная цена, которую готов платить"
+    )
+    
+    budget_max = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)],
+        verbose_name="Максимальный бюджет (сум/час)",
+        help_text="Максимальная цена, которую готов платить"
+    )
+    
+    # НОВОЕ: Формат обучения
+    learning_format = models.CharField(
+        max_length=10,
+        choices=LEARNING_FORMATS,
+        default='both',
+        verbose_name="Предпочитаемый формат обучения"
+    )
+    
+    # НОВОЕ: Активность профиля (для отображения в поиске)
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Активный профиль",
+        help_text="Ищет ли ученик учителя в данный момент"
+    )
+    
+    # НОВОЕ: Доступность для занятий
+    available_weekdays = models.CharField(
+        max_length=20,
+        default='1,2,3,4,5,6,7',
+        blank=True,
+        verbose_name="Доступные дни недели",
+        help_text="Дни недели через запятую (1-7)"
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = 'Профиль ученика'
         verbose_name_plural = 'Профили учеников'
+        ordering = ['-created_at']  # ИЗМЕНЕНО: сортировка по дате создания
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} - Ученик"
+    
+    # НОВОЕ: Метод для получения желаемых предметов
+    def get_desired_subjects_display(self):
+        """Возвращает строку с названиями желаемых предметов"""
+        subjects = self.desired_subjects.all()[:3]
+        if subjects:
+            return ", ".join([s.name for s in subjects])
+        return "Не указано"
+    
+    # НОВОЕ: Метод для получения бюджета в читаемом виде
+    def get_budget_display(self):
+        """Возвращает строку с бюджетом"""
+        if self.budget_min and self.budget_max:
+            return f"{self.budget_min:,.0f} - {self.budget_max:,.0f} сум/час"
+        elif self.budget_max:
+            return f"До {self.budget_max:,.0f} сум/час"
+        elif self.budget_min:
+            return f"От {self.budget_min:,.0f} сум/час"
+        return "Договорная"
+    
+    # НОВОЕ: Метод для получения доступных дней
+    def get_available_weekdays_display(self):
+        """Возвращает строку с днями недели"""
+        days_map = {
+            '1': 'Пн', '2': 'Вт', '3': 'Ср', '4': 'Чт',
+            '5': 'Пт', '6': 'Сб', '7': 'Вс'
+        }
+        if self.available_weekdays:
+            days = self.available_weekdays.split(',')
+            return ', '.join([days_map.get(day.strip(), day) for day in days])
+        return "Не указано"
 
     def __str__(self):
         return f"{self.user.get_full_name()} - Ученик"

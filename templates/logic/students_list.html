@@ -1,10 +1,12 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}Главная - UstozHub{% endblock %}
+{% block title %}Ученики - UstozHub{% endblock %}
 
 {% block content %}
 <style>
-    /* НОВОЕ: Стили для переключателя вкладок */
+    /* НОВОЕ: Все стили для страницы учеников */
+    
+    /* Переключатель вкладок */
     .tabs-container {
         max-width: 1400px;
         margin: 0 auto;
@@ -57,7 +59,6 @@
         font-size: 18px;
     }
 
-    /* Остальные стили БЕЗ ИЗМЕНЕНИЙ */
     .page-container {
         max-width: 1400px;
         margin: 0 auto;
@@ -79,13 +80,6 @@
         line-height: 1.3;
     }
 
-    .page-subtitle {
-        font-size: 13px;
-        color: #666;
-        margin-bottom: 4px;
-        font-weight: 500;
-    }
-
     .page-description {
         font-size: 12px;
         color: #888;
@@ -102,6 +96,7 @@
         align-items: start;
     }
 
+    /* Фильтры для учеников */
     .filters-sidebar {
         background: white;
         border-radius: 12px;
@@ -153,32 +148,17 @@
         margin-bottom: 10px;
     }
 
-    .search-input {
-        width: 100%;
-        padding: 10px 12px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        font-size: 14px;
-        transition: border 0.3s;
-    }
-
-    .search-input:focus {
-        outline: none;
-        border-color: #3B82F6;
-    }
-
-    .filter-select {
+    .search-input, .filter-select, .price-input {
         width: 100%;
         padding: 10px 12px;
         border: 1px solid #ddd;
         border-radius: 8px;
         font-size: 14px;
         background: white;
-        cursor: pointer;
         transition: border 0.3s;
     }
 
-    .filter-select:focus {
+    .search-input:focus, .filter-select:focus, .price-input:focus {
         outline: none;
         border-color: #3B82F6;
     }
@@ -191,38 +171,7 @@
 
     .price-input {
         padding: 8px 10px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
         font-size: 13px;
-    }
-
-    .rating-options {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .rating-option {
-        display: flex;
-        align-items: center;
-        padding: 8px;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: background 0.2s;
-    }
-
-    .rating-option:hover {
-        background: #f5f5f5;
-    }
-
-    .rating-option input[type="radio"] {
-        margin-right: 8px;
-    }
-
-    .rating-stars {
-        color: #FCD34D;
-        font-size: 14px;
-        margin-left: 5px;
     }
 
     .apply-filters-btn {
@@ -243,7 +192,8 @@
         background: #1e4a72;
     }
 
-    .teachers-section {
+    /* Сетка карточек учеников */
+    .students-section {
         min-height: 500px;
     }
 
@@ -259,37 +209,39 @@
         color: #666;
     }
 
-    .teachers-grid {
+    .students-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
         gap: 20px;
     }
 
-    .teacher-card {
+    /* НОВОЕ: Карточка ученика - отличается от карточки учителя */
+    .student-card {
         background: white;
         border-radius: 12px;
         padding: 20px;
         box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
         transition: all 0.3s ease;
         cursor: pointer;
+        border-left: 4px solid #10B981; /* Зеленый акцент для отличия от учителей */
     }
 
-    .teacher-card:hover {
+    .student-card:hover {
         transform: translateY(-3px);
         box-shadow: 0 6px 20px rgba(10, 37, 64, 0.12);
     }
 
-    .teacher-header {
+    .student-header {
         display: flex;
         gap: 15px;
         margin-bottom: 15px;
     }
 
-    .teacher-avatar {
+    .student-avatar {
         width: 60px;
         height: 60px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #3B82F6, #1E40AF);
+        background: linear-gradient(135deg, #10B981, #059669); /* Зеленый градиент */
         display: flex;
         align-items: center;
         justify-content: center;
@@ -300,44 +252,38 @@
         overflow: hidden;
     }
 
-    .teacher-avatar img {
+    .student-avatar img {
         width: 100%;
         height: 100%;
         object-fit: cover;
     }
 
-    .teacher-info {
+    .student-info {
         flex: 1;
     }
 
-    .teacher-name {
+    .student-name {
         font-size: 18px;
         font-weight: 600;
         color: #0A2540;
         margin-bottom: 5px;
     }
 
-    .teacher-rating {
-        display: flex;
+    /* НОВОЕ: Бейдж уровня образования */
+    .student-level {
+        display: inline-flex;
         align-items: center;
         gap: 5px;
-        font-size: 14px;
+        font-size: 12px;
+        padding: 3px 10px;
+        background: rgba(16, 185, 129, 0.1);
+        color: #059669;
+        border-radius: 12px;
+        font-weight: 500;
     }
 
-    .rating-star {
-        color: #FCD34D;
-    }
-
-    .rating-value {
-        font-weight: 600;
-        color: #0A2540;
-    }
-
-    .rating-count {
-        color: #999;
-    }
-
-    .teacher-subjects {
+    /* НОВОЕ: Желаемые предметы */
+    .student-subjects {
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
@@ -345,31 +291,34 @@
     }
 
     .subject-tag {
-        background: rgba(59, 130, 246, 0.1);
-        color: #3B82F6;
+        background: rgba(16, 185, 129, 0.1);
+        color: #059669;
         padding: 4px 10px;
         border-radius: 12px;
         font-size: 12px;
         font-weight: 500;
     }
 
-    .teacher-description {
+    /* НОВОЕ: Описание ученика */
+    .student-description {
         color: #666;
         font-size: 13px;
         line-height: 1.5;
         margin-bottom: 12px;
         display: -webkit-box;
-        -webkit-line-clamp: 2;
+        -webkit-line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
 
-    .teacher-meta {
+    /* НОВОЕ: Метаинформация ученика */
+    .student-meta {
         display: flex;
         gap: 15px;
         margin-bottom: 12px;
         font-size: 13px;
         color: #666;
+        flex-wrap: wrap;
     }
 
     .meta-item {
@@ -379,10 +328,11 @@
     }
 
     .meta-item i {
-        color: #0A2540;
+        color: #10B981;
     }
 
-    .teacher-footer {
+    /* НОВОЕ: Футер карточки с бюджетом */
+    .student-footer {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -390,20 +340,20 @@
         border-top: 1px solid #eee;
     }
 
-    .teacher-price {
-        font-size: 18px;
+    .student-budget {
+        font-size: 16px;
         font-weight: 700;
-        color: #0A2540;
+        color: #10B981;
     }
 
-    .price-period {
+    .budget-period {
         font-size: 12px;
         color: #999;
     }
 
     .contact-btn {
         padding: 8px 16px;
-        background: #0A2540;
+        background: #10B981;
         color: white;
         border: none;
         border-radius: 6px;
@@ -414,7 +364,7 @@
     }
 
     .contact-btn:hover {
-        background: #1e4a72;
+        background: #059669;
     }
 
     .no-results {
@@ -443,6 +393,7 @@
         margin-bottom: 20px;
     }
 
+    /* Адаптивность */
     @media (max-width: 1024px) {
         .content-layout {
             grid-template-columns: 1fr;
@@ -470,11 +421,10 @@
             display: block;
         }
 
-        .teachers-grid {
+        .students-grid {
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         }
 
-        /* НОВОЕ: Адаптация вкладок для мобильных */
         .tabs-wrapper {
             flex-direction: row;
             overflow-x: auto;
@@ -487,24 +437,24 @@
     }
 
     @media (max-width: 640px) {
-        .teachers-grid {
+        .students-grid {
             grid-template-columns: 1fr;
         }
 
         .page-title {
-            font-size: 24px;
+            font-size: 18px;
         }
     }
 </style>
 
-<!-- НОВОЕ: Переключатель вкладок -->
+<!-- НОВОЕ: Переключатель вкладок с активной вкладкой "Ученики" -->
 <div class="tabs-container">
     <div class="tabs-wrapper">
-        <button class="tab-button active" onclick="window.location.href='{% url 'home' %}'">
+        <button class="tab-button" onclick="window.location.href='{% url 'home' %}'">
             <i class="fas fa-chalkboard-teacher"></i>
             <span>Учителя</span>
         </button>
-        <button class="tab-button" onclick="window.location.href='{% url 'students_list' %}'">
+        <button class="tab-button active">
             <i class="fas fa-user-graduate"></i>
             <span>Ученики</span>
         </button>
@@ -512,9 +462,10 @@
 </div>
 
 <div class="page-container">
+    <!-- НОВОЕ: Заголовок для страницы учеников -->
     <div class="page-header">
-        <h1 class="page-title">Найдите репетитора по Data Science онлайн</h1>
-        <p class="page-description">Используйте фильтры поиска, чтобы найти репетиторов по Data Science в соответствии с вашим бюджетом и потребностями. Развивайтесь быстрее с индивидуальным подходом!</p>
+        <h1 class="page-title">Ученики ищут учителей</h1>
+        <p class="page-description">Найдите учеников, которым нужна ваша помощь. Свяжитесь с ними напрямую и начните преподавать!</p>
     </div>
 
     <button class="mobile-filters-toggle" onclick="toggleFilters()">
@@ -522,7 +473,7 @@
     </button>
 
     <div class="content-layout">
-        <!-- Filters Sidebar - БЕЗ ИЗМЕНЕНИЙ -->
+        <!-- НОВОЕ: Боковая панель фильтров для учеников -->
         <aside class="filters-sidebar" id="filtersSidebar">
             <div class="filters-header">
                 <h3 class="filters-title">Фильтры</h3>
@@ -530,6 +481,7 @@
             </div>
 
             <form method="GET" action="" id="filtersForm">
+                <!-- Поиск -->
                 <div class="filter-group">
                     <label class="filter-label">
                         <i class="fas fa-search"></i> Поиск
@@ -537,13 +489,14 @@
                     <input type="text" 
                            name="search" 
                            class="search-input" 
-                           placeholder="Имя учителя..."
+                           placeholder="Имя ученика..."
                            value="{{ search_query|default:'' }}">
                 </div>
 
+                <!-- Предмет -->
                 <div class="filter-group">
                     <label class="filter-label">
-                        <i class="fas fa-book"></i> Предмет
+                        <i class="fas fa-book"></i> Предмет для изучения
                     </label>
                     <select name="subject" class="filter-select">
                         <option value="">Все предметы</option>
@@ -555,6 +508,7 @@
                     </select>
                 </div>
 
+                <!-- Город -->
                 <div class="filter-group">
                     <label class="filter-label">
                         <i class="fas fa-map-marker-alt"></i> Город
@@ -569,13 +523,14 @@
                     </select>
                 </div>
 
+                <!-- Формат обучения -->
                 <div class="filter-group">
                     <label class="filter-label">
                         <i class="fas fa-desktop"></i> Формат обучения
                     </label>
                     <select name="format" class="filter-select">
                         <option value="">Любой</option>
-                        {% for value, label in teaching_formats %}
+                        {% for value, label in learning_formats %}
                             <option value="{{ value }}" {% if selected_format == value %}selected{% endif %}>
                                 {{ label }}
                             </option>
@@ -583,57 +538,38 @@
                     </select>
                 </div>
 
+                <!-- Уровень образования -->
                 <div class="filter-group">
                     <label class="filter-label">
-                        <i class="fas fa-dollar-sign"></i> Цена за час (сум)
+                        <i class="fas fa-graduation-cap"></i> Уровень образования
+                    </label>
+                    <select name="education_level" class="filter-select">
+                        <option value="">Любой</option>
+                        {% for value, label in education_levels %}
+                            <option value="{{ value }}" {% if selected_education_level == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Бюджет ученика -->
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <i class="fas fa-dollar-sign"></i> Бюджет ученика (сум/час)
                     </label>
                     <div class="price-inputs">
                         <input type="number" 
-                               name="min_price" 
+                               name="min_budget" 
                                class="price-input" 
                                placeholder="От"
-                               value="{{ selected_min_price|default:'' }}">
+                               value="{{ selected_min_budget|default:'' }}">
                         <input type="number" 
-                               name="max_price" 
+                               name="max_budget" 
                                class="price-input" 
                                placeholder="До"
-                               value="{{ selected_max_price|default:'' }}">
+                               value="{{ selected_max_budget|default:'' }}">
                     </div>
-                </div>
-
-                <div class="filter-group">
-                    <label class="filter-label">
-                        <i class="fas fa-star"></i> Рейтинг
-                    </label>
-                    <div class="rating-options">
-                        <label class="rating-option">
-                            <input type="radio" name="min_rating" value="" {% if not selected_min_rating %}checked{% endif %}>
-                            <span>Любой</span>
-                        </label>
-                        <label class="rating-option">
-                            <input type="radio" name="min_rating" value="4" {% if selected_min_rating == "4" %}checked{% endif %}>
-                            <span>4+</span>
-                            <span class="rating-stars">★★★★☆</span>
-                        </label>
-                        <label class="rating-option">
-                            <input type="radio" name="min_rating" value="4.5" {% if selected_min_rating == "4.5" %}checked{% endif %}>
-                            <span>4.5+</span>
-                            <span class="rating-stars">★★★★★</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="filter-group">
-                    <label class="filter-label">
-                        <i class="fas fa-clock"></i> Опыт (лет)
-                    </label>
-                    <select name="min_experience" class="filter-select">
-                        <option value="">Любой</option>
-                        <option value="1" {% if selected_min_experience == "1" %}selected{% endif %}>От 1 года</option>
-                        <option value="3" {% if selected_min_experience == "3" %}selected{% endif %}>От 3 лет</option>
-                        <option value="5" {% if selected_min_experience == "5" %}selected{% endif %}>От 5 лет</option>
-                        <option value="10" {% if selected_min_experience == "10" %}selected{% endif %}>От 10 лет</option>
-                    </select>
                 </div>
 
                 <button type="submit" class="apply-filters-btn">
@@ -642,75 +578,91 @@
             </form>
         </aside>
 
-        <!-- Teachers List - БЕЗ ИЗМЕНЕНИЙ -->
-        <section class="teachers-section">
+        <!-- НОВОЕ: Список учеников -->
+        <section class="students-section">
             <div class="results-header">
                 <span class="results-count">
-                    Найдено: <strong>{{ teachers.count }}</strong> 
-                    {% if teachers.count == 1 %}учитель{% elif teachers.count < 5 %}учителя{% else %}учителей{% endif %}
+                    Найдено: <strong>{{ students.count }}</strong> 
+                    {% if students.count == 1 %}ученик{% elif students.count < 5 %}ученика{% else %}учеников{% endif %}
                 </span>
             </div>
 
-            {% if teachers %}
-                <div class="teachers-grid">
-                    {% for teacher in teachers %}
-                        <div class="teacher-card" onclick="window.location.href=''">
-                            <div class="teacher-header">
-                                <div class="teacher-avatar">
-                                    {% if teacher.user.avatar %}
-                                        <img src="{{ teacher.user.avatar.url }}" alt="{{ teacher.user.get_full_name }}">
+            {% if students %}
+                <div class="students-grid">
+                    {% for student in students %}
+                        <div class="student-card">
+                            <!-- Заголовок карточки -->
+                            <div class="student-header">
+                                <div class="student-avatar">
+                                    {% if student.user.avatar %}
+                                        <img src="{{ student.user.avatar.url }}" alt="{{ student.user.get_full_name }}">
                                     {% else %}
-                                        {{ teacher.user.first_name.0|default:"У" }}{{ teacher.user.last_name.0|default:"" }}
+                                        {{ student.user.first_name.0|default:"У" }}{{ student.user.last_name.0|default:"" }}
                                     {% endif %}
                                 </div>
-                                <div class="teacher-info">
-                                    <h3 class="teacher-name">
-                                       <a style="text-decoration: none; color: inherit;" href="{% url 'teacher_detail' teacher.id %}">{{ teacher.user.get_full_name|default:teacher.user.username }}</a>
+                                <div class="student-info">
+                                    <h3 class="student-name">
+                                       <a style="text-decoration: none; color: inherit;" href="{% url 'student_detail' student.id %}">{{ student.user.get_full_name|default:student.user.username }}</a>
                                     </h3>
-                                    <div class="teacher-rating">
-                                        <i class="fas fa-star rating-star"></i>
-                                        <span class="rating-value">{{ teacher.rating|floatformat:1 }}</span>
-                                        <span class="rating-count">({{ teacher.total_reviews }})</span>
-                                    </div>
+                                    {% if student.education_level %}
+                                        <span class="student-level">
+                                            <i class="fas fa-graduation-cap"></i>
+                                            {{ student.get_education_level_display }}
+                                        </span>
+                                    {% endif %}
                                 </div>
                             </div>
 
-                            <div class="teacher-subjects">
-                                {% for ts in teacher.teachersubject_set.all|slice:":3" %}
-                                    <span class="subject-tag">{{ ts.subject.name }}</span>
-                                {% endfor %}
-                            </div>
+                            <!-- Желаемые предметы -->
+                            {% if student.desired_subjects.all %}
+                                <div class="student-subjects">
+                                    {% for subject in student.desired_subjects.all|slice:":3" %}
+                                        <span class="subject-tag">
+                                            <i class="fas fa-book-open"></i> {{ subject.name }}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
 
-                            <p class="teacher-description">
-                                {{ teacher.bio|truncatewords:15 }}
+                            <!-- Описание -->
+                            <p class="student-description">
+                                {{ student.description|default:student.bio|default:"Ищу учителя для изучения новых предметов"|truncatewords:20 }}
                             </p>
 
-                            <div class="teacher-meta">
+                            <!-- Метаинформация -->
+                            <div class="student-meta">
+                                {% if student.city %}
+                                    <div class="meta-item">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>{{ student.city.name }}</span>
+                                    </div>
+                                {% endif %}
+                                
                                 <div class="meta-item">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                    <span>{{ teacher.city.name|default:"Онлайн" }}</span>
+                                    <i class="fas fa-desktop"></i>
+                                    <span>{{ student.get_learning_format_display }}</span>
                                 </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-clock"></i>
-                                    <span>{{ teacher.experience_years }} лет</span>
-                                </div>
+
+                                {% if student.available_weekdays %}
+                                    <div class="meta-item">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <span>{{ student.get_available_weekdays_display }}</span>
+                                    </div>
+                                {% endif %}
                             </div>
 
-                            <div class="teacher-footer">
+                            <!-- Футер с бюджетом -->
+                            <div class="student-footer">
                                 <div>
-                                    {% with min_price=teacher.get_min_price %}
-                                        <div class="teacher-price">
-                                            {% if min_price > 0 %}
-                                                {{ min_price|floatformat:0 }} сум
-                                            {% else %}
-                                                Договорная
-                                            {% endif %}
-                                        </div>
-                                        <div class="price-period">за час</div>
-                                    {% endwith %}
+                                    <div class="student-budget">
+                                        {{ student.get_budget_display }}
+                                    </div>
+                                    {% if student.budget_min or student.budget_max %}
+                                        <div class="budget-period">готов платить</div>
+                                    {% endif %}
                                 </div>
                                 <button class="contact-btn" onclick="event.stopPropagation()">
-                                    <i class="fas fa-comment"></i> Написать
+                                    <i class="fas fa-paper-plane"></i> Связаться
                                 </button>
                             </div>
                         </div>
@@ -718,8 +670,8 @@
                 </div>
             {% else %}
                 <div class="no-results">
-                    <i class="fas fa-search"></i>
-                    <h3>Учителя не найдены</h3>
+                    <i class="fas fa-user-graduate"></i>
+                    <h3>Ученики не найдены</h3>
                     <p>Попробуйте изменить параметры фильтрации</p>
                 </div>
             {% endif %}

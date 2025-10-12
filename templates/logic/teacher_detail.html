@@ -1,13 +1,14 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block title %}{{ teacher.user.get_full_name }} - Учитель на UstozHub{% endblock %}
-
+{% load custom_filters %}
 {% block content %}
 <style>
     .detail-container {
         max-width: 1400px;
         margin: 0 auto;
         padding: 30px 20px;
+        overflow-x: hidden; /* Предотвращаем горизонтальный скролл */
     }
 
     /* Breadcrumbs */
@@ -18,6 +19,7 @@
         font-size: 13px;
         color: #666;
         margin-bottom: 24px;
+        flex-wrap: wrap; /* Перенос на мобильных */
     }
 
     .breadcrumbs a {
@@ -46,6 +48,7 @@
         display: flex;
         flex-direction: column;
         gap: 24px;
+        min-width: 0; /* Важно для предотвращения overflow */
     }
 
     /* Teacher Header Card */
@@ -87,6 +90,7 @@
 
     .teacher-header-info {
         flex: 1;
+        min-width: 0; /* Важно для текста */
     }
 
     .teacher-name-large {
@@ -95,12 +99,14 @@
         color: #0A2540;
         margin-bottom: 8px;
         line-height: 1.2;
+        word-wrap: break-word; /* Перенос длинных имен */
     }
 
     .teacher-title {
         font-size: 16px;
         color: #666;
         margin-bottom: 16px;
+        word-wrap: break-word;
     }
 
     .teacher-rating-large {
@@ -108,6 +114,7 @@
         align-items: center;
         gap: 12px;
         margin-bottom: 16px;
+        flex-wrap: wrap;
     }
 
     .rating-stars-large {
@@ -149,6 +156,7 @@
     .stat-item i {
         color: #3B82F6;
         font-size: 18px;
+        flex-shrink: 0;
     }
 
     .stat-value {
@@ -171,6 +179,7 @@
         display: flex;
         align-items: center;
         gap: 6px;
+        white-space: nowrap;
     }
 
     .badge-verified {
@@ -194,6 +203,7 @@
         border-radius: 16px;
         padding: 28px;
         box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
+        min-width: 0; /* Важно */
     }
 
     .card-title {
@@ -208,14 +218,18 @@
 
     .card-title i {
         color: #3B82F6;
+        flex-shrink: 0;
     }
 
-    /* Bio Section */
+    /* Bio Section - ИСПРАВЛЕНИЕ ГЛАВНОЙ ПРОБЛЕМЫ */
     .bio-text {
         font-size: 15px;
         line-height: 1.7;
         color: #333;
-        white-space: pre-line;
+        white-space: pre-wrap; /* Сохраняем переносы строк */
+        word-wrap: break-word; /* Переносим длинные слова */
+        overflow-wrap: break-word; /* Современный стандарт */
+        max-width: 100%; /* Не выходим за границы */
     }
 
     /* Subjects & Prices */
@@ -233,6 +247,8 @@
         border-radius: 12px;
         border: 2px solid transparent;
         transition: all 0.3s;
+        gap: 12px;
+        flex-wrap: wrap;
     }
 
     .subject-item:hover {
@@ -245,6 +261,8 @@
         display: flex;
         align-items: center;
         gap: 12px;
+        flex: 1;
+        min-width: 0;
     }
 
     .subject-icon {
@@ -257,22 +275,34 @@
         justify-content: center;
         color: white;
         font-size: 18px;
+        flex-shrink: 0;
     }
 
     .subject-name {
         font-size: 16px;
         font-weight: 600;
         color: #0A2540;
+        word-wrap: break-word;
+    }
+
+    .subject-description {
+        font-size: 13px;
+        color: #666;
+        margin-top: 4px;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
     }
 
     .subject-price {
         text-align: right;
+        flex-shrink: 0;
     }
 
     .price-value {
         font-size: 20px;
         font-weight: 700;
         color: #0A2540;
+        white-space: nowrap;
     }
 
     .price-label {
@@ -289,6 +319,7 @@
         font-size: 11px;
         font-weight: 600;
         margin-top: 4px;
+        white-space: nowrap;
     }
 
     /* Education */
@@ -310,17 +341,20 @@
         font-weight: 600;
         color: #0A2540;
         margin-bottom: 4px;
+        word-wrap: break-word;
     }
 
     .education-institution {
         font-size: 14px;
         color: #666;
         margin-bottom: 4px;
+        word-wrap: break-word;
     }
 
     .education-specialization {
         font-size: 13px;
         color: #999;
+        word-wrap: break-word;
     }
 
     /* Certificates */
@@ -349,11 +383,13 @@
         font-weight: 600;
         color: #0A2540;
         margin-bottom: 6px;
+        word-wrap: break-word;
     }
 
     .certificate-issuer {
         font-size: 12px;
         color: #666;
+        word-wrap: break-word;
     }
 
     /* Rating Breakdown */
@@ -374,6 +410,7 @@
         width: 140px;
         font-size: 14px;
         color: #666;
+        flex-shrink: 0;
     }
 
     .rating-bar {
@@ -382,6 +419,7 @@
         background: #e9ecef;
         border-radius: 4px;
         overflow: hidden;
+        min-width: 60px;
     }
 
     .rating-bar-fill {
@@ -397,6 +435,7 @@
         font-size: 14px;
         font-weight: 600;
         color: #0A2540;
+        flex-shrink: 0;
     }
 
     /* Reviews */
@@ -417,11 +456,15 @@
         justify-content: space-between;
         align-items: start;
         margin-bottom: 12px;
+        gap: 12px;
+        flex-wrap: wrap;
     }
 
     .reviewer-info {
         display: flex;
         gap: 12px;
+        flex: 1;
+        min-width: 0;
     }
 
     .reviewer-avatar {
@@ -435,10 +478,12 @@
         color: white;
         font-size: 14px;
         font-weight: 600;
+        flex-shrink: 0;
     }
 
     .reviewer-details {
         flex: 1;
+        min-width: 0;
     }
 
     .reviewer-name {
@@ -446,6 +491,7 @@
         font-weight: 600;
         color: #0A2540;
         margin-bottom: 4px;
+        word-wrap: break-word;
     }
 
     .review-meta {
@@ -456,6 +502,7 @@
     .review-rating {
         display: flex;
         gap: 4px;
+        flex-shrink: 0;
     }
 
     .review-text {
@@ -463,6 +510,8 @@
         line-height: 1.6;
         color: #333;
         margin-top: 12px;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
     }
 
     .review-verified {
@@ -483,6 +532,9 @@
         display: flex;
         flex-direction: column;
         gap: 20px;
+    }
+
+    .sidebar-sticky {
         position: sticky;
         top: 90px;
     }
@@ -514,6 +566,7 @@
         font-weight: 700;
         color: #0A2540;
         margin-bottom: 4px;
+        word-wrap: break-word;
     }
 
     .booking-period {
@@ -596,6 +649,185 @@
         background: #EF4444;
         color: white;
     }
+
+    .booking-note {
+        font-size: 12px;
+        color: #999;
+        text-align: center;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    /* Contact Card */
+    .contact-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
+    }
+
+    .contact-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 16px;
+    }
+
+    .contact-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        font-size: 14px;
+        color: #333;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .contact-icon {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, #3B82F6, #1E40AF);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+
+    /* Availability Card */
+    .availability-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
+    }
+
+    .availability-info {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .availability-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        color: #666;
+        word-wrap: break-word;
+    }
+
+    .availability-item i {
+        color: #3B82F6;
+        width: 20px;
+        flex-shrink: 0;
+    }
+
+    /* Similar Teachers */
+    .similar-teachers-grid {
+        display: grid;
+        gap: 16px;
+    }
+
+    .similar-teacher-card {
+        padding: 16px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: 2px solid transparent;
+    }
+
+    .similar-teacher-card:hover {
+        background: white;
+        border-color: #3B82F6;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+    }
+
+    .similar-teacher-header {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 10px;
+    }
+
+    .similar-teacher-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3B82F6, #1E40AF);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 18px;
+        font-weight: 600;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .similar-teacher-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .similar-teacher-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .similar-teacher-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 4px;
+        word-wrap: break-word;
+    }
+
+    .similar-teacher-rating {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 13px;
+    }
+
+    .similar-teacher-price {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-top: 8px;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #999;
+    }
+
+    .empty-state i {
+        font-size: 48px;
+        color: #ddd;
+        margin-bottom: 16px;
+    }
+
+    .empty-state p {
+        font-size: 14px;
+    }
+
+    /* Languages Section */
     .languages-section {
         margin-top: 16px;
         padding-top: 16px;
@@ -638,185 +870,24 @@
     .language-badge i {
         font-size: 12px;
     }
-    .booking-note {
-        font-size: 12px;
-        color: #999;
-        text-align: center;
-        margin-top: 16px;
-        padding-top: 16px;
-        border-top: 1px solid #f0f0f0;
-    }
 
-    /* Contact Card */
-    .contact-card {
-        background: white;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
-    }
-
-    .contact-title {
-        font-size: 16px;
-        font-weight: 600;
-        color: #0A2540;
-        margin-bottom: 16px;
-    }
-
-    .contact-list {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .contact-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px;
-        background: #f8f9fa;
-        border-radius: 10px;
-        font-size: 14px;
-        color: #333;
-    }
-
-    .contact-icon {
-        width: 36px;
-        height: 36px;
-        background: linear-gradient(135deg, #3B82F6, #1E40AF);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 16px;
-    }
-
-    /* Availability Card */
-    .availability-card {
-        background: white;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
-    }
-
-    .availability-info {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .availability-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 14px;
-        color: #666;
-    }
-
-    .availability-item i {
-        color: #3B82F6;
-        width: 20px;
-    }
-
-    /* Similar Teachers */
-    .similar-teachers-grid {
-        display: grid;
-        gap: 16px;
-    }
-
-    .similar-teacher-card {
-        padding: 16px;
-        background: #f8f9fa;
-        border-radius: 12px;
-        cursor: pointer;
-        transition: all 0.3s;
-        border: 2px solid transparent;
-    }
-
-    .similar-teacher-card:hover {
-        background: white;
-        border-color: #3B82F6;
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
-    }
-
-    .similar-teacher-header {
-        display: flex;
-        gap: 12px;
-        margin-bottom: 10px;
-    }
-
-    .similar-teacher-avatar {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #3B82F6, #1E40AF);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 18px;
-        font-weight: 600;
-        overflow: hidden;
-    }
-
-    .similar-teacher-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .similar-teacher-info {
-        flex: 1;
-    }
-
-    .similar-teacher-name {
-        font-size: 15px;
-        font-weight: 600;
-        color: #0A2540;
-        margin-bottom: 4px;
-    }
-
-    .similar-teacher-rating {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 13px;
-    }
-
-    .similar-teacher-price {
-        font-size: 14px;
-        font-weight: 600;
-        color: #0A2540;
-        margin-top: 8px;
-    }
-
-    /* Empty State */
-    .empty-state {
-        text-align: center;
-        padding: 40px 20px;
-        color: #999;
-    }
-
-    .empty-state i {
-        font-size: 48px;
-        color: #ddd;
-        margin-bottom: 16px;
-    }
-
-    .empty-state p {
-        font-size: 14px;
-    }
-
-    /* Responsive */
+    /* =============== RESPONSIVE DESIGN =============== */
+    
+    /* Tablet (1024px и меньше) */
     @media (max-width: 1024px) {
         .detail-layout {
             grid-template-columns: 1fr;
         }
 
         .detail-sidebar {
+            position: relative;
+        }
+
+        .sidebar-sticky {
             position: static;
         }
 
+        /* Фиксированная панель бронирования внизу */
         .booking-card {
             position: fixed;
             bottom: 0;
@@ -825,12 +896,32 @@
             border-radius: 16px 16px 0 0;
             z-index: 999;
             box-shadow: 0 -4px 20px rgba(10, 37, 64, 0.15);
+            max-width: 100%;
+        }
+
+        /* Добавляем отступ снизу для основного контента */
+        .detail-main {
+            margin-bottom: 200px;
+        }
+
+        .teacher-name-large {
+            font-size: 24px;
+        }
+
+        .rating-label {
+            width: 120px;
+            font-size: 13px;
         }
     }
 
-    @media (max-width: 640px) {
+    /* Mobile (768px и меньше) */
+    @media (max-width: 768px) {
         .detail-container {
-            padding: 20px 16px;
+            padding: 20px 12px;
+        }
+
+        .breadcrumbs {
+            font-size: 12px;
         }
 
         .teacher-header-card {
@@ -841,13 +932,37 @@
             flex-direction: column;
             align-items: center;
             text-align: center;
+            gap: 16px;
+        }
+
+        .teacher-avatar-large {
+            width: 100px;
+            height: 100px;
+            font-size: 32px;
         }
 
         .teacher-name-large {
-            font-size: 24px;
+            font-size: 22px;
+        }
+
+        .teacher-title {
+            font-size: 14px;
+        }
+
+        .rating-number {
+            font-size: 20px;
         }
 
         .teacher-stats {
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .stat-item {
+            font-size: 13px;
+        }
+
+        .teacher-badges {
             justify-content: center;
         }
 
@@ -855,12 +970,111 @@
             padding: 20px;
         }
 
-        .subjects-grid {
-            grid-template-columns: 1fr;
+        .card-title {
+            font-size: 18px;
+        }
+
+        .bio-text {
+            font-size: 14px;
+        }
+
+        .subject-item {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .subject-price {
+            text-align: left;
+            width: 100%;
         }
 
         .certificates-grid {
             grid-template-columns: 1fr;
+        }
+
+        .rating-label {
+            width: 100px;
+            font-size: 12px;
+        }
+
+        .review-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .booking-card {
+            padding: 20px;
+        }
+
+        .booking-amount {
+            font-size: 28px;
+        }
+
+        .btn-primary,
+        .btn-secondary,
+        .btn-favorite {
+            font-size: 14px;
+            padding: 12px;
+        }
+
+        .contact-card,
+        .availability-card {
+            padding: 20px;
+        }
+    }
+
+    /* Small Mobile (480px и меньше) */
+    @media (max-width: 480px) {
+        .detail-container {
+            padding: 16px 8px;
+        }
+
+        .teacher-header-card {
+            padding: 16px;
+        }
+
+        .content-card {
+            padding: 16px;
+        }
+
+        .teacher-name-large {
+            font-size: 20px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .bio-text {
+            font-size: 13px;
+        }
+
+        .subject-name {
+            font-size: 14px;
+        }
+
+        .price-value {
+            font-size: 18px;
+        }
+
+        .teacher-stats {
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .booking-card {
+            padding: 16px;
+        }
+
+        .booking-amount {
+            font-size: 24px;
+        }
+
+        .booking-actions {
+            gap: 10px;
         }
     }
 </style>
@@ -924,6 +1138,22 @@
                                 <i class="fas fa-clock"></i>
                                 <span>{{ teacher.get_available_weekdays_display }}</span>
                             </div>
+                            <div class="stat-item">
+                                <i class="fas fa-language"></i>
+                                <span>
+                                    {% with langs=teacher.get_teaching_languages_list %}
+                                        {% if langs|length == 1 %}
+                                           {{ langs.0 }}
+                                        {% elif langs|length == 2 %}
+                                            {{ langs.0 }}, {{ langs.1 }}
+                                        {% elif langs|length > 2 %}
+                                            {{ langs.0 }}, {{ langs.1 }} +{{ langs|length|add:"-2" }}
+                                        {% else %}
+                                            Не указаны
+                                        {% endif %}
+                                    {% endwith %}
+                                </span>
+                            </div>
                         </div>
 
                         <div class="teacher-badges">
@@ -940,24 +1170,7 @@
                             <span class="badge badge-format">
                                 <i class="fas fa-desktop"></i> {{ teacher.get_teaching_format_display }}
                             </span>
-                            <div class="stat-item">
-                                <i class="fas fa-language"></i>
-                                <span>
-                                    {% with langs=teacher.get_teaching_languages_list %}
-                                        {% if langs|length == 1 %}
-                                           язык {{ langs.0 }}
-                                        {% elif langs|length == 2 %}
-                                            язык {{ langs.0 }}, {{ langs.1 }}
-                                        {% elif langs|length > 2 %}
-                                            язык {{ langs.0 }}, {{ langs.1 }} +{{ langs|length|add:"-2" }}
-                                        {% else %}
-                                            Не указаны
-                                        {% endif %}
-                                    {% endwith %}
-                                </span>
-                            </div>
                         </div>
-                        
                     </div>
                 </div>
             </div>
@@ -984,11 +1197,11 @@
                                 <div class="subject-icon">
                                     <i class="fas fa-book-open"></i>
                                 </div>
-                                <div>
+                                <div style="flex: 1; min-width: 0;">
                                     <div class="subject-name">{{ ts.subject.name }}</div>
                                     {% if ts.description %}
-                                        <div style="font-size: 13px; color: #666; margin-top: 4px;">
-                                            {{ ts.description|truncatewords:10 }}
+                                        <div class="subject-description">
+                                            {{ ts.description|truncatewords:15 }}
                                         </div>
                                     {% endif %}
                                 </div>
@@ -1130,164 +1343,193 @@
 
         <!-- Sidebar -->
         <aside class="detail-sidebar">
-            <!-- Booking Card -->
-            <div class="booking-card">
-                <div class="booking-header">
-                    <div class="booking-price">Стоимость занятий</div>
-                    {% with min_price=teacher.get_min_price %}
-                        <div class="booking-amount">
-                            {% if min_price > 0 %}
-                                от {{ min_price|floatformat:0 }} сум
-                            {% else %}
-                                Договорная
-                            {% endif %}
-                        </div>
-                        <div class="booking-period">за час</div>
-                    {% endwith %}
-                </div>
-
-                <div class="booking-actions">
-                    <button class="btn-primary" onclick="contactTeacher()">
-                        <i class="fas fa-comment-dots"></i>
-                        Написать сообщение
-                    </button>
-                    
-                    <button class="btn-secondary" onclick="bookLesson()">
-                        <i class="fas fa-calendar-check"></i>
-                        Записаться на урок
-                    </button>
-
-                    <button class="btn-favorite {% if is_favorite %}active{% endif %}" onclick="toggleFavorite({{ teacher.id }})">
-                        <i class="{% if is_favorite %}fas{% else %}far{% endif %} fa-heart"></i>
-                        {% if is_favorite %}В избранном{% else %}В избранное{% endif %}
-                    </button>
-                </div>
-
-                <div class="booking-note">
-                    <i class="fas fa-shield-alt"></i>
-                    Безопасная сделка через платформу
-                </div>
-            </div>
-
-            <!-- Contact Info -->
-            <div class="contact-card">
-                <h3 class="contact-title">Контактная информация</h3>
-                <div class="contact-list">
-                    {% if teacher.user.phone %}
-                        <div class="contact-item">
-                            <div class="contact-icon">
-                                <i class="fas fa-phone"></i>
+            <div class="sidebar-sticky">
+                <!-- Booking Card -->
+                <div class="booking-card">
+                    <div class="booking-header">
+                        <div class="booking-price">Стоимость занятий</div>
+                        {% with min_price=teacher.get_min_price %}
+                            <div class="booking-amount">
+                                {% if min_price > 0 %}
+                                    от {{ min_price|floatformat:0 }} сум
+                                {% else %}
+                                    Договорная
+                                {% endif %}
                             </div>
-                            <span>{{ teacher.user.phone }}</span>
-                        </div>
-                    {% endif %}
-                    {% if teacher.telegram %}
-                        <div class="contact-item">
-                            <div class="contact-icon">
-                                <i class="fab fa-telegram"></i>
-                            </div>
-                            <span>{{ teacher.telegram }}</span>
-                        </div>
-                    {% endif %}
-                    {% if teacher.whatsapp %}
-                        <div class="contact-item">
-                            <div class="contact-icon">
-                                <i class="fab fa-whatsapp"></i>
-                            </div>
-                            <span>{{ teacher.whatsapp }}</span>
-                        </div>
-                    {% endif %}
-                    {% if teacher.user.email %}
-                        <div class="contact-item">
-                            <div class="contact-icon">
-                                <i class="fas fa-envelope"></i>
-                            </div>
-                            <span>{{ teacher.user.email }}</span>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Availability -->
-            <div class="availability-card">
-                <h3 class="contact-title">Доступность</h3>
-                <div class="availability-info">
-                    <div class="availability-item">
-                        <i class="fas fa-calendar"></i>
-                        <span>{{ teacher.get_available_weekdays_display }}</span>
+                            <div class="booking-period">за час</div>
+                        {% endwith %}
                     </div>
-                    <div class="availability-item">
-                        <i class="fas fa-clock"></i>
-                        <span>{{ teacher.available_from|time:"H:i" }} - {{ teacher.available_to|time:"H:i" }}</span>
+
+                    <div class="booking-actions">
+                        <button class="btn-primary" onclick="contactTeacher()">
+                            <i class="fas fa-comment-dots"></i>
+                            Написать сообщение
+                        </button>
+                        
+                        <button class="btn-secondary" onclick="bookLesson()">
+                            <i class="fas fa-calendar-check"></i>
+                            Записаться на урок
+                        </button>
+
+                        <button class="btn-favorite {% if is_favorite %}active{% endif %}" onclick="toggleFavorite({{ teacher.id }})">
+                            <i class="{% if is_favorite %}fas{% else %}far{% endif %} fa-heart"></i>
+                            {% if is_favorite %}В избранном{% else %}В избранное{% endif %}
+                        </button>
                     </div>
-                    <div class="availability-item">
-                        <i class="fas fa-desktop"></i>
-                        <span>{{ teacher.get_teaching_format_display }}</span>
+
+                    <div class="booking-note">
+                        <i class="fas fa-shield-alt"></i>
+                        Безопасная сделка через платформу
                     </div>
                 </div>
-            </div>
 
-            <!-- Similar Teachers -->
-            {% if similar_teachers %}
+                <!-- Contact Info -->
                 <div class="contact-card">
-                    <h3 class="contact-title">Похожие преподаватели</h3>
-                    <div class="similar-teachers-grid">
-                        {% for similar in similar_teachers %}
-                            <div class="similar-teacher-card" onclick="window.location.href='{% url 'teacher_detail' similar.id %}'">
-                                <div class="similar-teacher-header">
-                                    <div class="similar-teacher-avatar">
-                                        {% if similar.user.avatar %}
-                                            <img src="{{ similar.user.avatar.url }}" alt="{{ similar.user.get_full_name }}">
-                                        {% else %}
-                                            {{ similar.user.first_name.0|default:"У" }}
-                                        {% endif %}
-                                    </div>
-                                    <div class="similar-teacher-info">
-                                        <div class="similar-teacher-name">{{ similar.user.get_full_name }}</div>
-                                        <div class="similar-teacher-rating">
-                                            <i class="fas fa-star" style="color: #FCD34D;"></i>
-                                            <span>{{ similar.rating|floatformat:1 }}</span>
-                                            <span style="color: #999;">({{ similar.total_reviews }})</span>
+                    <h3 class="contact-title">Контактная информация</h3>
+                    <div class="contact-list">
+                        {% if teacher.user.phone %}
+                            <div class="contact-item">
+                                <div class="contact-icon">
+                                    <i class="fas fa-phone"></i>
+                                </div>
+                                <span>{{ teacher.user.phone }}</span>
+                            </div>
+                        {% endif %}
+                        {% if teacher.telegram %}
+                            <div class="contact-item">
+                                <div class="contact-icon">
+                                    <i class="fab fa-telegram"></i>
+                                </div>
+                                <span>{{ teacher.telegram }}</span>
+                            </div>
+                        {% endif %}
+                        {% if teacher.whatsapp %}
+                            <div class="contact-item">
+                                <div class="contact-icon">
+                                    <i class="fab fa-whatsapp"></i>
+                                </div>
+                                <span>{{ teacher.whatsapp }}</span>
+                            </div>
+                        {% endif %}
+                        {% if teacher.user.email %}
+                            <div class="contact-item">
+                                <div class="contact-icon">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                                <span>{{ teacher.user.email }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Availability -->
+                <div class="availability-card">
+                    <h3 class="contact-title">Доступность</h3>
+                    <div class="availability-info">
+                        <div class="availability-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>{{ teacher.get_available_weekdays_display }}</span>
+                        </div>
+                        <div class="availability-item">
+                            <i class="fas fa-clock"></i>
+                            <span>{{ teacher.available_from|time:"H:i" }} - {{ teacher.available_to|time:"H:i" }}</span>
+                        </div>
+                        <div class="availability-item">
+                            <i class="fas fa-desktop"></i>
+                            <span>{{ teacher.get_teaching_format_display }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Similar Teachers -->
+                {% if similar_teachers %}
+                    <div class="contact-card">
+                        <h3 class="contact-title">Похожие преподаватели</h3>
+                        <div class="similar-teachers-grid">
+                            {% for similar in similar_teachers %}
+                                <div class="similar-teacher-card" onclick="window.location.href='{% url 'teacher_detail' similar.id %}'">
+                                    <div class="similar-teacher-header">
+                                        <div class="similar-teacher-avatar">
+                                            {% if similar.user.avatar %}
+                                                <img src="{{ similar.user.avatar.url }}" alt="{{ similar.user.get_full_name }}">
+                                            {% else %}
+                                                {{ similar.user.first_name.0|default:"У" }}
+                                            {% endif %}
+                                        </div>
+                                        <div class="similar-teacher-info">
+                                            <div class="similar-teacher-name">{{ similar.user.get_full_name }}</div>
+                                            <div class="similar-teacher-rating">
+                                                <i class="fas fa-star" style="color: #FCD34D;"></i>
+                                                <span>{{ similar.rating|floatformat:1 }}</span>
+                                                <span style="color: #999;">({{ similar.total_reviews }})</span>
+                                            </div>
                                         </div>
                                     </div>
+                                    <div class="similar-teacher-price">
+                                        от {{ similar.get_min_price|floatformat:0 }} сум/час
+                                    </div>
                                 </div>
-                                <div class="similar-teacher-price">
-                                    от {{ similar.get_min_price|floatformat:0 }} сум/час
-                                </div>
-                            </div>
-                        {% endfor %}
+                            {% endfor %}
+                        </div>
                     </div>
-                </div>
-            {% endif %}
+                {% endif %}
+            </div>
         </aside>
     </div>
 </div>
 
 <script>
-   function toggleFavorite(teacherId) {
-    {% if user.is_authenticated %}
-        fetch(`/api/favorites/toggle/${teacherId}/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
+    function toggleFavorite(teacherId) {
+        {% if user.is_authenticated %}
+            fetch(`/api/favorites/toggle/${teacherId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Произошла ошибка');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Произошла ошибка при добавлении в избранное');
+            });
+        {% else %}
+            if (confirm('Войдите в систему, чтобы добавить в избранное')) {
+                window.location.href = '{% url "login" %}?next={{ request.path }}';
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Произошла ошибка');
+        {% endif %}
+    }
+
+    function contactTeacher() {
+        {% if user.is_authenticated %}
+            alert('Функция отправки сообщений будет доступна в следующей версии');
+        {% else %}
+            if (confirm('Войдите в систему, чтобы связаться с учителем')) {
+                window.location.href = '{% url "login" %}?next={{ request.path }}';
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Произошла ошибка при добавлении в избранное');
-        });
-    {% else %}
-        alert('Войдите в систему, чтобы добавить в избранное');
-    {% endif %}
-}
+        {% endif %}
+    }
+
+    function bookLesson() {
+        {% if user.is_authenticated %}
+            alert('Функция бронирования будет доступна в следующей версии');
+        {% else %}
+            if (confirm('Войдите в систему, чтобы записаться на урок')) {
+                window.location.href = '{% url "login" %}?next={{ request.path }}';
+            }
+        {% endif %}
+    }
+
+    // Предотвращаем горизонтальный скролл
+    document.addEventListener('DOMContentLoaded', function() {
+        document.body.style.overflowX = 'hidden';
+    });
 </script>
 {% endblock %}

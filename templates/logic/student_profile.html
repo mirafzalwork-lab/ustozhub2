@@ -54,6 +54,7 @@
         gap: 16px;
         font-size: 14px;
         color: #666;
+        flex-wrap: wrap; /* ✏️ ДОБАВЛЕНО: для адаптивности */
     }
 
     .profile-meta i {
@@ -64,6 +65,7 @@
         margin-top: 16px;
         display: flex;
         gap: 12px;
+        flex-wrap: wrap; /* ✏️ ДОБАВЛЕНО: для адаптивности */
     }
 
     .btn {
@@ -75,6 +77,9 @@
         border: none;
         cursor: pointer;
         transition: all 0.2s;
+        display: inline-flex; /* ✏️ ДОБАВЛЕНО */
+        align-items: center; /* ✏️ ДОБАВЛЕНО */
+        gap: 8px; /* ✏️ ДОБАВЛЕНО: отступ между иконкой и текстом */
     }
 
     .btn-primary {
@@ -107,6 +112,15 @@
         font-weight: 700;
         color: #1a1a1a;
         margin-bottom: 20px;
+        display: flex; /* ➕ ДОБАВЛЕНО: для иконок */
+        align-items: center; /* ➕ ДОБАВЛЕНО */
+        gap: 10px; /* ➕ ДОБАВЛЕНО */
+    }
+
+    /* ➕ ДОБАВЛЕНО: стиль для иконок в заголовках */
+    .section-title i {
+        color: #10b981;
+        font-size: 22px;
     }
 
     .info-grid {
@@ -121,10 +135,16 @@
         border-radius: 8px;
     }
 
+    /* ➕ ДОБАВЛЕНО: для элементов на всю ширину */
+    .info-item.full-width {
+        grid-column: 1 / -1;
+    }
+
     .info-label {
         font-size: 13px;
         color: #999;
         margin-bottom: 4px;
+        font-weight: 500; /* ✏️ ДОБАВЛЕНО */
     }
 
     .info-value {
@@ -133,13 +153,113 @@
         font-weight: 500;
     }
 
+    /* ➕ ДОБАВЛЕНО: Блок статистики */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        transition: transform 0.2s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: #10b981;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #666;
+        font-weight: 500;
+    }
+
+    /* ➕ ДОБАВЛЕНО: Стили для списка предметов */
+    .subjects-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .subject-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 500;
+        transition: transform 0.2s;
+    }
+
+    .subject-badge:hover {
+        transform: scale(1.05);
+    }
+
+    .subject-badge i {
+        font-size: 12px;
+    }
+
+    /* ➕ ДОБАВЛЕНО: Стили для блока описания целей */
+    .bio-text {
+        padding: 16px;
+        background: #f0fdf4;
+        border-left: 4px solid #10b981;
+        border-radius: 8px;
+        line-height: 1.6;
+        color: #333;
+        font-size: 15px;
+    }
+
+    /* ➕ ДОБАВЛЕНО: Стили для пустого состояния */
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #999;
+    }
+
+    .empty-state i {
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.3;
+    }
+
+    .empty-state p {
+        font-size: 15px;
+        margin-bottom: 16px;
+    }
+
     @media (max-width: 768px) {
         .profile-header {
             flex-direction: column;
             text-align: center;
         }
 
+        .profile-actions { /* ✏️ ДОБАВЛЕНО */
+            justify-content: center;
+            width: 100%;
+        }
+
         .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-grid { /* ➕ ДОБАВЛЕНО */
             grid-template-columns: 1fr;
         }
     }
@@ -148,6 +268,7 @@
 
 {% block content %}
 <div class="profile-container">
+    <!-- ========== ШАПКА ПРОФИЛЯ (без изменений структуры) ========== -->
     <div class="profile-header">
         <div class="profile-avatar">
             {% if user.avatar %}
@@ -164,9 +285,13 @@
                 {% if user.phone %}
                     <span><i class="fas fa-phone"></i> {{ user.phone }}</span>
                 {% endif %}
+                <!-- ➕ ДОБАВЛЕНО: показываем возраст в мета-информации -->
+                {% if user.age %}
+                    <span><i class="fas fa-birthday-cake"></i> {{ user.age }} лет</span>
+                {% endif %}
             </div>
             <div class="profile-actions">
-                <a href="{% url 'profile_edit' %}" class="btn btn-primary">
+                <a href="{% url 'student_profile_edit' %}" class="btn btn-primary">
                     <i class="fas fa-edit"></i> Редактировать профиль
                 </a>
                 <a href="{% url 'logout' %}" class="btn btn-secondary">
@@ -176,9 +301,63 @@
         </div>
     </div>
 
+    <!-- ➕ ДОБАВЛЕНО: Блок статистики (3 карточки) -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ user.student_profile.interests.count }}</div>
+            <div class="stat-label">Интересующих предметов</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ user.favorites.count }}</div>
+            <div class="stat-label">Избранных учителей</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ user.conversations.count }}</div>
+            <div class="stat-label">Активных переписок</div>
+        </div>
+    </div>
+
+    <!-- ➕ ДОБАВЛЕНО: Блок "Интересующие предметы" -->
+    <!-- Показывается только если студент выбрал предметы при регистрации -->
+    {% if user.student_profile.interests.exists %}
     <div class="profile-section">
-        <h2 class="section-title">Информация о профиле</h2>
+        <h2 class="section-title">
+            <i class="fas fa-book"></i>
+            Интересующие предметы
+        </h2>
+        <div class="subjects-list">
+            {% for subject in user.student_profile.interests.all %}
+                <span class="subject-badge">
+                    <i class="fas fa-check-circle"></i>
+                    {{ subject.name }}
+                </span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ➕ ДОБАВЛЕНО: Блок "Мои цели обучения" -->
+    <!-- Показывается только если студент заполнил описание целей -->
+    {% if user.student_profile.bio %}
+    <div class="profile-section">
+        <h2 class="section-title">
+            <i class="fas fa-target"></i>
+            Мои цели обучения
+        </h2>
+        <div style="white-space: pre-wrap; width: 100%; w" class="bio-text">
+            {{ user.student_profile.bio }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ✏️ РАСШИРЕНО: Блок "Информация о профиле" -->
+    <div class="profile-section">
+        <h2 class="section-title">
+            <i class="fas fa-info-circle"></i> <!-- ➕ ДОБАВЛЕНО: иконка -->
+            Информация о профиле
+        </h2>
         <div class="info-grid">
+            <!-- Базовые поля (без изменений) -->
             <div class="info-item">
                 <div class="info-label">Имя пользователя</div>
                 <div class="info-value">{{ user.username }}</div>
@@ -199,6 +378,32 @@
                 <div class="info-value">{{ user.age }} лет</div>
             </div>
             {% endif %}
+            
+            <!-- ➕ ДОБАВЛЕНО: Уровень образования -->
+            {% if user.student_profile.education_level %}
+            <div class="info-item">
+                <div class="info-label">Уровень образования</div>
+                <div class="info-value">{{ user.student_profile.get_education_level_display }}</div>
+            </div>
+            {% endif %}
+            
+            <!-- ➕ ДОБАВЛЕНО: Школа/Университет -->
+            {% if user.student_profile.school_university %}
+            <div class="info-item">
+                <div class="info-label">Школа/Университет</div>
+                <div class="info-value">{{ user.student_profile.school_university }}</div>
+            </div>
+            {% endif %}
+            
+            <!-- ➕ ДОБАВЛЕНО: Город -->
+            {% if user.student_profile.city %}
+            <div class="info-item">
+                <div class="info-label">Город</div>
+                <div class="info-value">{{ user.student_profile.city }}</div>
+            </div>
+            {% endif %}
+            
+            <!-- Системные поля (без изменений) -->
             <div class="info-item">
                 <div class="info-label">Дата регистрации</div>
                 <div class="info-value">{{ user.date_joined|date:"d.m.Y" }}</div>
@@ -209,5 +414,18 @@
             </div>
         </div>
     </div>
+
+    <!-- ➕ ДОБАВЛЕНО: Блок призыва к действию если профиль не заполнен -->
+    {% if not user.student_profile.interests.exists and not user.student_profile.bio %}
+    <div class="profile-section">
+        <div class="empty-state">
+            <i class="fas fa-graduation-cap"></i>
+            <p>Завершите заполнение профиля для лучшего подбора учителей</p>
+            <a href="{% url 'profile_edit' %}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Заполнить профиль
+            </a>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

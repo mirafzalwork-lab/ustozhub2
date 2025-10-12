@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 
-{% block title %}Профиль учителя - UstozHub{% endblock %}
+{% block title %}Мой профиль - UstozHub{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -10,14 +11,20 @@
         padding: 40px 16px;
     }
 
+    /* Алерты для статуса модерации */
     .alert {
         padding: 16px 20px;
         border-radius: 12px;
         margin-bottom: 24px;
         font-size: 14px;
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 12px;
+    }
+
+    .alert i {
+        font-size: 20px;
+        margin-top: 2px;
     }
 
     .alert-warning {
@@ -26,10 +33,16 @@
         border: 1px solid #fde68a;
     }
 
-    .alert-info {
-        background: #dbeafe;
-        color: #1e40af;
-        border: 1px solid #bfdbfe;
+    .alert-danger {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
+
+    .alert-success {
+        background: #d1fae5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
     }
 
     .profile-header {
@@ -40,6 +53,35 @@
         display: flex;
         align-items: center;
         gap: 24px;
+        position: relative;
+    }
+
+    .status-badge {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .status-pending {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-approved {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .status-rejected {
+        background: #fee2e2;
+        color: #991b1b;
     }
 
     .profile-avatar {
@@ -53,6 +95,7 @@
         color: white;
         font-size: 48px;
         font-weight: 700;
+        flex-shrink: 0;
     }
 
     .profile-avatar img {
@@ -69,25 +112,30 @@
         margin-bottom: 8px;
     }
 
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 600;
+    .profile-subtitle {
+        font-size: 16px;
+        color: #666;
         margin-bottom: 12px;
     }
 
-    .status-pending {
-        background: #fef3c7;
-        color: #92400e;
+    .profile-meta {
+        display: flex;
+        gap: 16px;
+        font-size: 14px;
+        color: #666;
+        flex-wrap: wrap;
     }
 
-    .status-approved {
-        background: #d1fae5;
-        color: #065f46;
+    .profile-meta i {
+        margin-right: 6px;
+        color: #10b981;
+    }
+
+    .profile-actions {
+        margin-top: 16px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
     }
 
     .btn {
@@ -99,7 +147,18 @@
         border: none;
         cursor: pointer;
         transition: all 0.2s;
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: #0A2540;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #1e4a72;
     }
 
     .btn-secondary {
@@ -110,53 +169,637 @@
     .btn-secondary:hover {
         background: #e5e5e5;
     }
+
+    .btn-success {
+        background: #10b981;
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #059669;
+    }
+
+    /* Статистика учителя */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 24px;
+        border-radius: 12px;
+        text-align: center;
+        transition: transform 0.2s;
+        border: 2px solid transparent;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        border-color: #10b981;
+    }
+
+    .stat-value {
+        font-size: 36px;
+        font-weight: 700;
+        color: #10b981;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #666;
+        font-weight: 500;
+    }
+
+    .stat-icon {
+        font-size: 24px;
+        color: #10b981;
+        margin-bottom: 8px;
+    }
+
+    .profile-section {
+        background: white;
+        border-radius: 16px;
+        padding: 32px;
+        margin-bottom: 24px;
+    }
+
+    .section-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section-title i {
+        color: #10b981;
+        font-size: 22px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    .info-item {
+        padding: 16px;
+        background: #f9fafb;
+        border-radius: 8px;
+    }
+
+    .info-item.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .info-label {
+        font-size: 13px;
+        color: #999;
+        margin-bottom: 4px;
+        font-weight: 500;
+    }
+
+    .info-value {
+        font-size: 15px;
+        color: #333;
+        font-weight: 500;
+    }
+
+    /* Предметы и цены */
+    .subjects-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+    }
+
+    .subject-card {
+        padding: 20px;
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+        border-radius: 12px;
+        border: 2px solid #a7f3d0;
+        transition: transform 0.2s;
+    }
+
+    .subject-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .subject-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: #065f46;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .subject-price {
+        font-size: 24px;
+        font-weight: 700;
+        color: #10b981;
+        margin-bottom: 8px;
+    }
+
+    .subject-price span {
+        font-size: 14px;
+        color: #666;
+        font-weight: 500;
+    }
+
+    .free-trial-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        background: #10b981;
+        color: white;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .subject-description {
+        color: #666;
+        font-size: 14px;
+        margin-top: 8px;
+        line-height: 1.5;
+    }
+
+    /* Био учителя */
+    .bio-text {
+        padding: 20px;
+        background: #f0fdf4;
+        border-left: 4px solid #10b981;
+        border-radius: 8px;
+        line-height: 1.8;
+        color: #333;
+        font-size: 15px;
+        white-space: pre-wrap;
+    }
+
+    /* Сертификаты */
+    .certificates-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+    }
+
+    .certificate-card {
+        padding: 20px;
+        background: #f9fafb;
+        border-radius: 12px;
+        border: 2px solid #e5e7eb;
+        transition: all 0.2s;
+    }
+
+    .certificate-card:hover {
+        border-color: #10b981;
+        transform: translateY(-2px);
+    }
+
+    .certificate-icon {
+        font-size: 32px;
+        color: #10b981;
+        margin-bottom: 12px;
+    }
+
+    .certificate-name {
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 4px;
+    }
+
+    .certificate-issuer {
+        font-size: 14px;
+        color: #666;
+    }
+
+    /* Языки преподавания */
+    .languages-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .language-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    /* Дни недели */
+    .weekdays-list {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+    }
+
+    .weekday-badge {
+        padding: 8px 12px;
+        background: #dbeafe;
+        color: #1e40af;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    /* Пустое состояние */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #999;
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        margin-bottom: 16px;
+        opacity: 0.3;
+    }
+
+    .empty-state h3 {
+        font-size: 20px;
+        color: #666;
+        margin-bottom: 8px;
+    }
+
+    .empty-state p {
+        font-size: 15px;
+        margin-bottom: 20px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .profile-header {
+            flex-direction: column;
+            text-align: center;
+            padding-top: 60px;
+        }
+
+        .status-badge {
+            top: 16px;
+            right: 16px;
+        }
+
+        .profile-actions {
+            justify-content: center;
+            width: 100%;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .subjects-grid,
+        .certificates-grid {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="profile-container">
+    <!-- Алерты статуса модерации -->
     {% if teacher.moderation_status == 'pending' %}
         <div class="alert alert-warning">
             <i class="fas fa-clock"></i>
             <div>
                 <strong>Ваш профиль на модерации</strong><br>
-                Администрация проверит ваш профиль в ближайшее время. После одобрения вы сможете получать запросы от учеников.
+                Администрация проверит ваш профиль в ближайшее время. После одобрения вы сможете получать запросы от учеников и ваш профиль будет виден в поиске.
             </div>
         </div>
     {% elif teacher.moderation_status == 'rejected' %}
-        <div class="alert alert-warning">
+        <div class="alert alert-danger">
             <i class="fas fa-exclamation-triangle"></i>
             <div>
                 <strong>Профиль отклонен</strong><br>
-                {{ teacher.moderation_comment|default:"Пожалуйста, свяжитесь с поддержкой для уточнения причины." }}
+                {% if teacher.moderation_comment %}
+                    {{ teacher.moderation_comment }}
+                {% else %}
+                    Пожалуйста, свяжитесь с поддержкой для уточнения причины отклонения.
+                {% endif %}
+            </div>
+        </div>
+    {% elif teacher.moderation_status == 'approved' %}
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i>
+            <div>
+                <strong>Профиль одобрен!</strong><br>
+                Ваш профиль виден в поиске. Вы можете получать запросы от учеников.
             </div>
         </div>
     {% endif %}
 
+    <!-- Шапка профиля -->
     <div class="profile-header">
+        <span class="status-badge status-{{ teacher.moderation_status }}">
+            {% if teacher.moderation_status == 'pending' %}
+                <i class="fas fa-clock"></i> На модерации
+            {% elif teacher.moderation_status == 'approved' %}
+                <i class="fas fa-check-circle"></i> Одобрено
+            {% else %}
+                <i class="fas fa-times-circle"></i> Отклонено
+            {% endif %}
+        </span>
+
         <div class="profile-avatar">
             {% if user.avatar %}
                 <img src="{{ user.avatar.url }}" alt="{{ user.get_full_name }}">
             {% else %}
-                {{ user.first_name.0|default:"У" }}
+                {{ user.first_name.0|default:"У" }}{{ user.last_name.0|default:"" }}
             {% endif %}
         </div>
+
         <div class="profile-info">
-            <span class="status-badge status-{{ teacher.moderation_status }}">
-                {% if teacher.moderation_status == 'pending' %}
-                    <i class="fas fa-clock"></i> На модерации
-                {% elif teacher.moderation_status == 'approved' %}
-                    <i class="fas fa-check-circle"></i> Одобрено
-                {% else %}
-                    <i class="fas fa-times-circle"></i> Отклонено
-                {% endif %}
-            </span>
             <h1>{{ user.get_full_name|default:user.username }}</h1>
-            <p style="color: #666; margin: 8px 0;">{{ teacher.specialization }}</p>
-            <div style="margin-top: 16px;">
+            <p class="profile-subtitle">
+                {{ teacher.specialization|default:"Преподаватель" }} • 
+                {{ teacher.get_education_level_display }}
+            </p>
+            <div class="profile-meta">
+                <span><i class="fas fa-briefcase"></i> {{ teacher.experience_years }} лет опыта</span>
+                <span><i class="fas fa-star"></i> {{ teacher.rating }} рейтинг</span>
+                <span><i class="fas fa-map-marker-alt"></i> {{ teacher.city|default:"Не указан" }}</span>
+                {% if user.phone %}
+                    <span><i class="fas fa-phone"></i> {{ user.phone }}</span>
+                {% endif %}
+            </div>
+            <div class="profile-actions">
+                <a href="{% url 'teacher_profile_edit' %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Редактировать профиль
+                </a>
+                <a href="{% url 'home' %}" class="btn btn-success">
+                    <i class="fas fa-eye"></i> Посмотреть как видят ученики
+                </a>
                 <a href="{% url 'logout' %}" class="btn btn-secondary">
                     <i class="fas fa-sign-out-alt"></i> Выйти
                 </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-value">{{ teacher.total_students }}</div>
+            <div class="stat-label">Всего учеников</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-star"></i></div>
+            <div class="stat-value">{{ teacher.rating }}</div>
+            <div class="stat-label">Рейтинг</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-comment"></i></div>
+            <div class="stat-value">{{ teacher.total_reviews }}</div>
+            <div class="stat-label">Отзывов</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-book"></i></div>
+            <div class="stat-value">{{ teacher.teachersubject_set.count }}</div>
+            <div class="stat-label">Предметов</div>
+        </div>
+    </div>
+
+    <!-- О себе -->
+    {% if teacher.bio %}
+    <div class="profile-section">
+        <h2 class="section-title">
+            <i class="fas fa-user"></i>
+            О себе
+        </h2>
+        <div class="bio-text">{{ teacher.bio }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Предметы и цены -->
+    {% if teacher.teachersubject_set.exists %}
+    <div class="profile-section">
+        <h2 class="section-title">
+            <i class="fas fa-book-open"></i>
+            Мои предметы и цены
+        </h2>
+        <div class="subjects-grid">
+            {% for ts in teacher.teachersubject_set.all %}
+            <div class="subject-card">
+                <div class="subject-name">
+                    <i class="fas fa-graduation-cap"></i>
+                    {{ ts.subject.name }}
+                </div>
+                <div class="subject-price">
+                    {{ ts.hourly_rate|floatformat:0 }} <span>сум/час</span>
+                </div>
+                {% if ts.is_free_trial %}
+                    <span class="free-trial-badge">
+                        <i class="fas fa-gift"></i>
+                        Пробное занятие бесплатно
+                    </span>
+                {% endif %}
+                {% if ts.description %}
+                    <p class="subject-description">{{ ts.description }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Образование -->
+    <div class="profile-section">
+        <h2 class="section-title">
+            <i class="fas fa-graduation-cap"></i>
+            Образование и опыт
+        </h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Уровень образования</div>
+                <div class="info-value">{{ teacher.get_education_level_display }}</div>
+            </div>
+            {% if teacher.university %}
+            <div class="info-item">
+                <div class="info-label">Учебное заведение</div>
+                <div class="info-value">{{ teacher.university }}</div>
+            </div>
+            {% endif %}
+            {% if teacher.specialization %}
+            <div class="info-item">
+                <div class="info-label">Специализация</div>
+                <div class="info-value">{{ teacher.specialization }}</div>
+            </div>
+            {% endif %}
+            <div class="info-item">
+                <div class="info-label">Опыт преподавания</div>
+                <div class="info-value">{{ teacher.experience_years }} лет</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Языки преподавания -->
+    {% if teacher.teaching_languages %}
+    <div class="profile-section">
+        <h2 class="section-title">
+            <i class="fas fa-language"></i>
+            Языки преподавания
+        </h2>
+        <div class="languages-list">
+            {% for lang in teacher.get_teaching_languages_list %}
+                <span class="language-badge">
+                    <i class="fas fa-check"></i>
+                    {{ lang }}
+                </span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Формат и расписание -->
+    <div class="profile-section">
+        <h2 class="section-title">
+            <i class="fas fa-calendar-alt"></i>
+            Формат и расписание
+        </h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Формат обучения</div>
+                <div class="info-value">{{ teacher.get_teaching_format_display }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Город</div>
+                <div class="info-value">{{ teacher.city|default:"Не указан" }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Время работы</div>
+                <div class="info-value">
+                    {{ teacher.available_from|time:"H:i" }} - {{ teacher.available_to|time:"H:i" }}
+                </div>
+            </div>
+            <div class="info-item full-width">
+                <div class="info-label">Рабочие дни</div>
+                <div class="weekdays-list">
+                    {% for day in teacher.get_available_weekdays_display|split:", " %}
+                        <span class="weekday-badge">{{ day }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Контакты -->
+    <div class="profile-section">
+        <h2 class="section-title">
+            <i class="fas fa-phone"></i>
+            Контактная информация
+        </h2>
+        <div class="info-grid">
+            {% if user.email %}
+            <div class="info-item">
+                <div class="info-label">Email</div>
+                <div class="info-value">{{ user.email }}</div>
+            </div>
+            {% endif %}
+            {% if user.phone %}
+            <div class="info-item">
+                <div class="info-label">Телефон</div>
+                <div class="info-value">{{ user.phone }}</div>
+            </div>
+            {% endif %}
+            {% if teacher.telegram %}
+            <div class="info-item">
+                <div class="info-label">Telegram</div>
+                <div class="info-value">{{ teacher.telegram }}</div>
+            </div>
+            {% endif %}
+            {% if teacher.whatsapp %}
+            <div class="info-item">
+                <div class="info-label">WhatsApp</div>
+                <div class="info-value">{{ teacher.whatsapp }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Сертификаты -->
+    {% if teacher.certificates.exists %}
+    <div class="profile-section">
+        <h2 class="section-title">
+            <i class="fas fa-certificate"></i>
+            Сертификаты и дипломы
+        </h2>
+        <div class="certificates-grid">
+            {% for cert in teacher.certificates.all %}
+            <div class="certificate-card">
+                <div class="certificate-icon">
+                    <i class="fas fa-award"></i>
+                </div>
+                <div class="certificate-name">{{ cert.name }}</div>
+                <div class="certificate-issuer">{{ cert.issuer }}</div>
+                {% if cert.file %}
+                    <a href="{{ cert.file.url }}" target="_blank" class="btn btn-secondary" style="margin-top: 12px; font-size: 13px;">
+                        <i class="fas fa-download"></i> Скачать
+                    </a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Системная информация -->
+    <div class="profile-section">
+        <h2 class="section-title">
+            <i class="fas fa-info-circle"></i>
+            Системная информация
+        </h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Имя пользователя</div>
+                <div class="info-value">{{ user.username }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Дата регистрации</div>
+                <div class="info-value">{{ user.date_joined|date:"d.m.Y" }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Статус профиля</div>
+                <div class="info-value">
+                    {% if teacher.is_active %}
+                        <span style="color: #10b981;">✓ Активен</span>
+                    {% else %}
+                        <span style="color: #dc3545;">✗ Неактивен</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Рекомендуемый</div>
+                <div class="info-value">
+                    {% if teacher.is_featured %}
+                        <span style="color: #10b981;">✓ Да</span>
+                    {% else %}
+                        <span style="color: #666;">✗ Нет</span>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
