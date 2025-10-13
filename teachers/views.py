@@ -261,6 +261,7 @@ def teacher_register_step1(request):
         'total_steps': 3
     }
     return render(request, 'logic/teacher_register_step1.html', context)
+ 
 
 
 def teacher_register_step2(request):
@@ -281,31 +282,60 @@ def teacher_register_step2(request):
         form = TeacherSubjectsForm(request.POST, teacher=teacher_profile)
         
         if form.is_valid():
+            # Удаляем старые предметы
             TeacherSubject.objects.filter(teacher=teacher_profile).delete()
             
+            subjects_added = 0
+            
+            # Проходим по всем 5 возможным предметам
             for i in range(1, 6):
                 subject = form.cleaned_data.get(f'subject_{i}')
+                hourly_rate = form.cleaned_data.get(f'hourly_rate_{i}')
                 
-                if subject:
+                # Сохраняем только если указаны И предмет И цена
+                if subject and hourly_rate and hourly_rate > 0:
                     TeacherSubject.objects.create(
                         teacher=teacher_profile,
                         subject=subject,
-                        hourly_rate=form.cleaned_data[f'hourly_rate_{i}'],
+                        hourly_rate=hourly_rate,
                         is_free_trial=form.cleaned_data.get(f'is_free_trial_{i}', False),
                         description=form.cleaned_data.get(f'description_{i}', '')
                     )
+                    subjects_added += 1
             
-            messages.success(request, 'Предметы добавлены! Переходим к сертификатам.')
+            # Проверка что добавлен хотя бы один предмет
+            if subjects_added == 0:
+                messages.error(request, 'Необходимо добавить хотя бы один предмет с указанием цены')
+                context = {
+                    'form': form,
+                    'step': 2,
+                    'total_steps': 3
+                }
+                return render(request, 'logic/teacher_register_step2.html', context)
+            
+            messages.success(
+                request, 
+                f'Добавлено {subjects_added} предмет(ов). Теперь загрузите сертификаты.'
+            )
             return redirect('teacher_register_step3')
+        else:
+            # Показываем ошибки формы
+            messages.error(request, 'Пожалуйста, исправьте ошибки в форме')
+            context = {
+                'form': form,
+                'step': 2,
+                'total_steps': 3
+            }
+            return render(request, 'logic/teacher_register_step2.html', context)    
+        
     else:
         form = TeacherSubjectsForm(teacher=teacher_profile)
-    
-    context = {
-        'form': form,
-        'step': 2,
-        'total_steps': 3
-    }
-    return render(request, 'logic/teacher_register_step2.html', context)
+        context = {
+            'form': form,
+            'step': 2,
+            'total_steps': 3
+        }
+        return render(request, 'logic/teacher_register_step2.html', context)
 
 
 def teacher_register_step3(request):

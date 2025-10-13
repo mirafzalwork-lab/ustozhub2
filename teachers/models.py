@@ -102,10 +102,10 @@ class TeacherProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='teacher_profile')
     
     # Основная информация
-    bio = models.TextField(max_length=1000, help_text="Краткое описание о себе")
-    education_level = models.CharField(max_length=20, choices=EDUCATION_LEVELS)
-    university = models.CharField(max_length=200, blank=True)
-    specialization = models.CharField(max_length=200, blank=True)
+    bio = models.TextField(max_length=1000, blank=True, null=True, help_text="Краткое описание о себе")
+    education_level = models.CharField(max_length=20, blank=True, null=True, choices=EDUCATION_LEVELS)
+    university = models.CharField(max_length=200, blank=True, null=True)
+    specialization = models.CharField(max_length=200, blank=True, null=True)
     
     # Опыт работы
     experience_years = models.PositiveIntegerField(

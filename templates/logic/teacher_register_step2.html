@@ -1,7 +1,9 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}Регистрация учителя - Шаг 2 из 3{% endblock %}
 {% load form_filter %}
+
+{% block title %}Регистрация учителя - Шаг 2 из 3{% endblock %}
+
 {% block content %}
 <style>
     .register-container {
@@ -171,6 +173,10 @@
         border-color: #3B82F6;
         background: white;
         box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+    }
+
+    .subject-card.hidden {
+        display: none;
     }
 
     .subject-card-header {
@@ -534,14 +540,14 @@
             {% csrf_token %}
 
             <div class="subjects-container" id="subjectsContainer">
-                <!-- Subject 1 -->
+                <!-- Subject 1 - ВСЕГДА ВИДИМА -->
                 <div class="subject-card active" data-subject-num="1">
                     <div class="subject-card-header">
                         <div class="subject-number">
                             <span class="subject-badge">1</span>
                             Предмет 1
                         </div>
-                        <button type="button" class="remove-subject" onclick="removeSubject(1)">
+                        <button type="button" class="remove-subject" onclick="removeSubject(1)" style="display: none;">
                             <i class="fas fa-times"></i> Удалить
                         </button>
                     </div>
@@ -600,9 +606,9 @@
                     </div>
                 </div>
 
-                <!-- Subjects 2-5 will be added dynamically -->
+                <!-- Subjects 2-5 - СКРЫТЫ ПО УМОЛЧАНИЮ -->
                 {% for i in "2345" %}
-                <div class="subject-card" data-subject-num="{{ i }}" style="display: none;">
+                <div class="subject-card hidden" data-subject-num="{{ i }}">
                     <div class="subject-card-header">
                         <div class="subject-number">
                             <span class="subject-badge">{{ i }}</span>
@@ -617,7 +623,8 @@
                         <label class="form-label">
                             Предмет
                         </label>
-                        {% get_form_field form "subject_" i %}                    </div>
+                        {% get_form_field form "subject_" i %}
+                    </div>
 
                     <div class="form-row">
                         <div class="form-group">
@@ -670,60 +677,139 @@
 </div>
 
 <script>
-// Form validation - ИСПРАВЛЕННАЯ ВЕРСИЯ
-document.getElementById('subjectsForm').addEventListener('submit', function(e) {
-    let hasValidSubject = false;
-    
-    for (let i = 1; i <= maxSubjects; i++) {
-        const card = document.querySelector(`[data-subject-num="${i}"]`);
+    // Глобальные переменные
+    const maxSubjects = 5;
+    let activeSubjects = 1;
+
+    // Проверка видимости карточки
+    function isCardVisible(card) {
+        return card && !card.classList.contains('hidden');
+    }
+
+    // Функция добавления предмета
+    function addSubject() {
+        if (activeSubjects >= maxSubjects) {
+            alert('Максимум 5 предметов');
+            return;
+        }
+
+        activeSubjects++;
+        const card = document.querySelector(`[data-subject-num="${activeSubjects}"]`);
         
-        // Проверяем, что карточка видима (не display: none)
-        if (card && card.style.display !== 'none') {
-            const subjectSelect = document.getElementById(`id_subject_${i}`);
-            const priceInput = document.getElementById(`id_hourly_rate_${i}`);
+        if (card) {
+            card.classList.remove('hidden');
+            card.classList.add('active');
             
-            // ИСПРАВЛЕНИЕ: проверяем, что оба поля заполнены и цена больше 0
-            if (subjectSelect && subjectSelect.value && 
-                priceInput && priceInput.value && 
-                parseFloat(priceInput.value) > 0) {
-                hasValidSubject = true;
+            // Прокрутка к новой карточке
+            setTimeout(() => {
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+
+        updateAddButton();
+    }
+
+    // Функция удаления предмета
+    function removeSubject(num) {
+        if (num === 1) {
+            alert('Первый предмет удалить нельзя');
+            return;
+        }
+
+        const card = document.querySelector(`[data-subject-num="${num}"]`);
+        
+        if (card) {
+            // Очищаем поля
+            const subjectSelect = document.getElementById(`id_subject_${num}`);
+            const priceInput = document.getElementById(`id_hourly_rate_${num}`);
+            const freeTrialCheckbox = document.getElementById(`id_is_free_trial_${num}`);
+            const descriptionTextarea = document.getElementById(`id_description_${num}`);
+
+            if (subjectSelect) subjectSelect.value = '';
+            if (priceInput) priceInput.value = '';
+            if (freeTrialCheckbox) freeTrialCheckbox.checked = false;
+            if (descriptionTextarea) descriptionTextarea.value = '';
+
+            // Скрываем карточку
+            card.classList.add('hidden');
+            card.classList.remove('active');
+
+            // Пересчитываем активные предметы
+            activeSubjects = 1; // Минимум первая карточка
+            for (let i = 2; i <= maxSubjects; i++) {
+                const c = document.querySelector(`[data-subject-num="${i}"]`);
+                if (isCardVisible(c)) {
+                    activeSubjects = i;
+                }
+            }
+        }
+
+        updateAddButton();
+    }
+
+    // Обновление кнопки добавления
+    function updateAddButton() {
+        const addBtn = document.getElementById('addSubjectBtn');
+        
+        if (addBtn) {
+            if (activeSubjects >= maxSubjects) {
+                addBtn.disabled = true;
+                addBtn.style.opacity = '0.5';
+                addBtn.innerHTML = '<i class="fas fa-check"></i> Максимум предметов добавлено';
+            } else {
+                addBtn.disabled = false;
+                addBtn.style.opacity = '1';
+                addBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Добавить еще предмет';
             }
         }
     }
-    
+
+    // Валидация формы
+    document.getElementById('subjectsForm').addEventListener('submit', function(e) {
+        let hasValidSubject = false;
+        let errors = [];
+        
+        console.log('=== ВАЛИДАЦИЯ ФОРМЫ ===');
+        
+        for (let i = 1; i <= maxSubjects; i++) {
+            const card = document.querySelector(`[data-subject-num="${i}"]`);
+            
+            // Проверяем только видимые карточки
+            if (isCardVisible(card)) {
+                const subjectSelect = document.getElementById(`id_subject_${i}`);
+                const priceInput = document.getElementById(`id_hourly_rate_${i}`);
+                
+                console.log(`Карточка ${i}:`, {
+                    видима: true,
+                    предмет: subjectSelect?.value || '(пусто)',
+                    цена: priceInput?.value || '(пусто)'
+                });
+                
+                // Если выбран предмет
+                if (subjectSelect && subjectSelect.value) {
+                    // Проверяем цену
+                    if (!priceInput || !priceInput.value || parseFloat(priceInput.value) <= 0) {
+                        errors.push(`Предмет ${i}: укажите цену`);
+                    } else {
+                        hasValidSubject = true;
+                    }
+                }
+            }
+        }
+        form.addEventListener('submit', function(e) {
+    console.log('Результат:', { hasValidSubject, errors });
+
     if (!hasValidSubject) {
         e.preventDefault();
-        alert('Добавьте хотя бы один предмет с ценой');
+        const message = errors.length > 0
+            ? 'Ошибки:\n' + errors.join('\n')
+            : 'Добавьте хотя бы один предмет с ценой';
+        alert(message);
         return false;
     }
 });
 
-// ДОПОЛНИТЕЛЬНО: Инициализация при загрузке страницы
-document.addEventListener('DOMContentLoaded', function() {
-    // Подсчитываем видимые карточки
-    activeSubjects = 0;
-    for (let i = 1; i <= maxSubjects; i++) {
-        const card = document.querySelector(`[data-subject-num="${i}"]`);
-        if (card && card.style.display !== 'none') {
-            activeSubjects = i;
-        }
-    }
-    updateAddButton();
-});
-
-// Enable subject card when subject is selected
-document.querySelectorAll('[id^="id_subject_"]').forEach(select => {
-    select.addEventListener('change', function() {
-        const num = this.id.match(/\d+/)[0];
-        const card = document.querySelector(`[data-subject-num="${num}"]`);
-        const priceInput = document.getElementById(`id_hourly_rate_${num}`);
-        
-        if (this.value && priceInput) {
-            priceInput.required = true;
-        } else if (priceInput) {
-            priceInput.required = false;
-        }
     });
-});
+
 </script>
 {% endblock %}

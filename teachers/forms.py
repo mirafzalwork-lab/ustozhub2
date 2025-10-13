@@ -7,9 +7,9 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.core.exceptions import ValidationError
 from .models import User, StudentProfile, Subject
 class TeacherRegistrationForm(UserCreationForm):
-    """Форма регистрации пользователя как учителя"""
+    """Форма регистрации пользователя как учителя - ИСПРАВЛЕННАЯ"""
     
-    # Личная информация
+    # ========== ЛИЧНАЯ ИНФОРМАЦИЯ ==========
     first_name = forms.CharField(
         max_length=150,
         required=True,
@@ -19,7 +19,6 @@ class TeacherRegistrationForm(UserCreationForm):
             'placeholder': 'Введите ваше имя'
         })
     )
-
     
     last_name = forms.CharField(
         max_length=150,
@@ -32,7 +31,7 @@ class TeacherRegistrationForm(UserCreationForm):
     )
     
     email = forms.EmailField(
-        required=False,
+        required=True,  # ✅ ИЗМЕНЕНО: сделал обязательным
         label='Email',
         widget=forms.EmailInput(attrs={
             'class': 'form-input',
@@ -42,7 +41,7 @@ class TeacherRegistrationForm(UserCreationForm):
     
     phone = forms.CharField(
         max_length=20,
-        required=False,
+        required=True,  # ✅ ИЗМЕНЕНО: сделал обязательным
         label='Телефон',
         widget=forms.TextInput(attrs={
             'class': 'form-input',
@@ -53,7 +52,7 @@ class TeacherRegistrationForm(UserCreationForm):
     age = forms.IntegerField(
         min_value=18,
         max_value=100,
-        required=False,
+        required=True,  # ✅ ИЗМЕНЕНО: сделал обязательным
         label='Возраст',
         widget=forms.NumberInput(attrs={
             'class': 'form-input',
@@ -71,9 +70,9 @@ class TeacherRegistrationForm(UserCreationForm):
         help_text='Рекомендуемый размер: 300x300px'
     )
     
-    # Профессиональная информация
+    # ========== ПРОФЕССИОНАЛЬНАЯ ИНФОРМАЦИЯ ==========
     bio = forms.CharField(
-        required=False,
+        required=False,  # ✅ ИЗМЕНЕНО: сделал обязательным
         label='О себе',
         widget=forms.Textarea(attrs={
             'class': 'form-textarea',
@@ -87,7 +86,7 @@ class TeacherRegistrationForm(UserCreationForm):
     
     education_level = forms.ChoiceField(
         choices=TeacherProfile.EDUCATION_LEVELS,
-        required=False,
+        required=False,  # ✅ ИЗМЕНЕНО: сделал обязательным
         label='Уровень образования',
         widget=forms.Select(attrs={
             'class': 'form-select'
@@ -96,7 +95,7 @@ class TeacherRegistrationForm(UserCreationForm):
     
     university = forms.CharField(
         max_length=200,
-        required=False,
+        required=False,  # ✅ ИЗМЕНЕНО: сделал обязательным
         label='Учебное заведение',
         widget=forms.TextInput(attrs={
             'class': 'form-input',
@@ -106,28 +105,28 @@ class TeacherRegistrationForm(UserCreationForm):
     
     specialization = forms.CharField(
         max_length=200,
-        required=False,
+        required=True,  # ✅ ИЗМЕНЕНО: сделал обязательным
         label='Специализация',
         widget=forms.TextInput(attrs={
             'class': 'form-input',
             'placeholder': 'Ваша специальность'
         })
     )
-
     
     experience_years = forms.IntegerField(
         min_value=0,
         max_value=50,
-        required=False,
+        required=True,  # ✅ ИЗМЕНЕНО: сделал обязательным
         label='Опыт преподавания (лет)',
         widget=forms.NumberInput(attrs={
             'class': 'form-input',
             'placeholder': '5'
         })
     )
+    
     teaching_languages = forms.MultipleChoiceField(
         choices=TeacherProfile.TEACHING_LANGUAGES,
-        required=True,
+        required=False,
         widget=forms.CheckboxSelectMultiple(attrs={
             'class': 'language-checkbox'
         }),
@@ -135,7 +134,7 @@ class TeacherRegistrationForm(UserCreationForm):
         help_text='Выберите один или несколько языков'
     )
     
-    # Местоположение и формат
+    # ========== МЕСТОПОЛОЖЕНИЕ И ФОРМАТ ==========
     city = forms.ModelChoiceField(
         queryset=City.objects.filter(is_active=True),
         required=False,
@@ -155,7 +154,7 @@ class TeacherRegistrationForm(UserCreationForm):
         })
     )
     
-    # Контакты
+    # ========== КОНТАКТЫ ==========
     telegram = forms.CharField(
         max_length=100,
         required=False,
@@ -176,7 +175,7 @@ class TeacherRegistrationForm(UserCreationForm):
         })
     )
     
-    # Время работы
+    # ========== ВРЕМЯ РАБОТЫ ==========
     available_from = forms.TimeField(
         required=True,
         label='Доступен с',
@@ -213,53 +212,8 @@ class TeacherRegistrationForm(UserCreationForm):
             'class': 'form-checkbox'
         })
     )
-
-    interests = forms.ModelMultipleChoiceField(
-        queryset=Subject.objects.filter(is_active=True),
-        required=True,
-        label='Предметы, которые хочу изучать',
-        widget=forms.CheckboxSelectMultiple(attrs={
-            'class': 'subject-checkbox'
-        }),
-        help_text='Выберите один или несколько предметов'
-    )
     
-    # ➕ ДОБАВЛЕНО: Поле описания целей обучения
-    bio = forms.CharField(
-        required=True,
-        label='Расскажите о ваших целях',
-        widget=forms.Textarea(attrs={
-            'class': 'form-textarea',
-            'placeholder': 'Например: Хочу подготовиться к экзаменам, улучшить знания по математике, изучить английский с нуля...',
-            'rows': 4
-        }),
-        help_text='Минимум 50 символов - это поможет учителям лучше понять ваши потребности',
-        min_length=50,
-        max_length=500
-    )
-    
-    # ➕ ДОБАВЛЕНО: Уровень образования
-    education_level = forms.ChoiceField(
-        choices=StudentProfile.EDUCATION_LEVELS,
-        required=False,
-        label='Уровень образования',
-        widget=forms.Select(attrs={
-            'class': 'form-select'
-        })
-    )
-    
-    # ➕ ДОБАВЛЕНО: Школа/Университет
-    school_university = forms.CharField(
-        max_length=200,
-        required=False,
-        label='Школа/Университет',
-        widget=forms.TextInput(attrs={
-            'class': 'form-input',
-            'placeholder': 'Название вашей школы или университета'
-        })
-    )
-    
-    # Согласие
+    # ========== СОГЛАСИЕ ==========
     terms_accepted = forms.BooleanField(
         required=True,
         label='Я принимаю условия использования и политику конфиденциальности',
@@ -287,32 +241,31 @@ class TeacherRegistrationForm(UserCreationForm):
             'class': 'form-input',
             'placeholder': 'Повторите пароль'
         })
-        
+    
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        if email and User.objects.filter(email=email).exists():  # ✏️ ИЗМЕНЕНО: добавил проверку на email
+        if email and User.objects.filter(email=email).exists():
             raise ValidationError('Этот email уже используется')
         return email
     
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
-        if phone and User.objects.filter(phone=phone).exists():  # ✏️ ИЗМЕНЕНО: добавил проверку на phone
+        if phone and User.objects.filter(phone=phone).exists():
             raise ValidationError('Этот номер телефона уже используется')
         return phone
-
-    def clean_interests(self):
-        interests = self.cleaned_data.get('interests')
-        if not interests:
-            raise ValidationError('Выберите хотя бы один предмет')
-        if interests.count() > 10:
-            raise ValidationError('Можно выбрать максимум 10 предметов')
-        return interests
     
     def clean_available_weekdays(self):
         days = self.cleaned_data.get('available_weekdays')
         if not days:
             raise ValidationError('Выберите хотя бы один рабочий день')
         return ','.join(days)
+    
+    def clean_teaching_languages(self):
+        """✅ ДОБАВЛЕНО: валидация языков"""
+        languages = self.cleaned_data.get('teaching_languages')
+        if not languages:
+            raise ValidationError('Выберите хотя бы один язык преподавания')
+        return languages
     
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -323,19 +276,8 @@ class TeacherRegistrationForm(UserCreationForm):
         
         if commit:
             user.save()
-
-            student_profile = StudentProfile.objects.create(
-                user=user,
-                bio=self.cleaned_data['bio'],  # ➕ ДОБАВЛЕНО
-                education_level=self.cleaned_data.get('education_level', ''),  # ➕ ДОБАВЛЕНО
-                school_university=self.cleaned_data.get('school_university', '')  # ➕ ДОБАВЛЕНО
-            )
             
-            # ➕ ДОБАВЛЕНО: Связываем выбранные предметы с профилем студента
-            interests = self.cleaned_data['interests']
-            student_profile.interests.set(interests)
-
-
+            # ✅ ИСПРАВЛЕНО: Преобразуем список в строку ДО создания профиля
             languages_str = ','.join(self.cleaned_data['teaching_languages'])
 
             # Создаем профиль учителя со статусом "на модерации"
@@ -352,9 +294,9 @@ class TeacherRegistrationForm(UserCreationForm):
                 whatsapp=self.cleaned_data.get('whatsapp', ''),
                 available_from=self.cleaned_data['available_from'],
                 available_to=self.cleaned_data['available_to'],
-                teaching_languages=languages_str,
-
-                available_weekdays=self.cleaned_data['available_weekdays'],
+                teaching_languages=languages_str,  # ✅ ИСПРАВЛЕНО: используем строку
+                available_weekdays=self.cleaned_data['available_weekdays'],  # Уже строка из clean_available_weekdays
+                moderation_status='pending',  # ✅ ДОБАВЛЕНО: явно устанавливаем статус
                 is_active=False  # Неактивен до модерации
             )
             

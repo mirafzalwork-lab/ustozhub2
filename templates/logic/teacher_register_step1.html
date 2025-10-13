@@ -633,6 +633,35 @@
                     {% endif %}
                 </div>
             </div>
+            <!-- Добавьте этот блок ПОСЛЕ блока "Образование и опыт" и ПЕРЕД блоком "Местоположение и формат" -->
+
+<!-- Языки преподавания -->
+        <div class="form-section">
+            <h2 class="section-title">
+                <i class="fas fa-language"></i>
+                Языки преподавания
+            </h2>
+
+            <div class="form-group">
+                <label class="form-label">
+                    {{ form.teaching_languages.label }} <span class="required">*</span>
+                </label>
+                <div class="weekdays-grid">
+                    {% for choice in form.teaching_languages %}
+                        <div class="weekday-item">
+                            {{ choice.tag }}
+                            <label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% if form.teaching_languages.errors %}
+                    <div class="field-error">{{ form.teaching_languages.errors.0 }}</div>
+                {% endif %}
+                {% if form.teaching_languages.help_text %}
+                    <div class="form-help">{{ form.teaching_languages.help_text }}</div>
+                {% endif %}
+            </div>
+        </div>
 
             <!-- Местоположение и формат -->
             <div class="form-section">
