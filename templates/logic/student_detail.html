@@ -720,6 +720,183 @@
                             <div class="info-value">{{ student.user.email }}</div>
                         </div>
                     {% endif %}
+
+                    <!-- ✅ НОВЫЕ БЛОКИ: Контакты для связи -->
+                    {% if student.telegram %}
+                        <div class="info-row">
+                            <div class="info-label">
+                                <i class="fab fa-telegram"></i>
+                                Telegram
+                            </div>
+                            <div class="info-value">
+                                {% if student.telegram starts_with('@' %}
+                                    <a href="https://t.me/{{ student.telegram|slice:'1:' }}" 
+                                       target="_blank" 
+                                       style="color: #0088cc; text-decoration: none;">
+                                        {{ student.telegram }}
+                                    </a>
+                                {% else %}
+                                    {{ student.telegram }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if student.whatsapp %}
+                        <div class="info-row">
+                            <div class="info-label">
+                                <i class="fab fa-whatsapp"></i>
+                                WhatsApp
+                            </div>
+                            <div class="info-value">
+                                <a href="https://wa.me/{{ student.whatsapp|cut:' '|cut:'+'|cut:'-' }}" 
+                                   target="_blank" 
+                                   style="color: #25D366; text-decoration: none;">
+                                    {{ student.whatsapp }}
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+
+ТАКЖЕ ЗАМЕНИТЕ секцию "Карточка контактов" (в правой колонке):
+
+                <h3 class="contact-title">Связаться с учеником</h3>
+                
+                {% if student.telegram or student.whatsapp or student.user.phone %}
+                    <!-- ✅ TELEGRAM -->
+                    {% if student.telegram %}
+                        {% if '@' in student.telegram %}
+                            <a href="https://t.me/{{ student.telegram|slice:'1:' }}" 
+                               target="_blank" 
+                               class="contact-btn-primary">
+                                <i class="fab fa-telegram"></i>
+                                Написать в Telegram
+                            </a>
+                        {% else %}
+                            <a href="https://t.me/{{ student.telegram }}" 
+                               target="_blank" 
+                               class="contact-btn-primary">
+                                <i class="fab fa-telegram"></i>
+                                Написать в Telegram
+                            </a>
+                        {% endif %}
+                    {% endif %}
+
+                    <!-- ✅ WHATSAPP -->
+                    {% if student.whatsapp %}
+                        <a href="https://wa.me/{{ student.whatsapp|cut:' '|cut:'+'|cut:'-' }}" 
+                           target="_blank" 
+                           class="contact-btn-secondary" 
+                           style="background: #25D366; color: white; border-color: #25D366;">
+                            <i class="fab fa-whatsapp"></i>
+                            Написать в WhatsApp
+                        </a>
+                    {% endif %}
+
+                    <!-- ТЕЛЕФОН -->
+                    {% if student.user.phone %}
+                        <a href="tel:{{ student.user.phone }}" 
+                           class="contact-btn-secondary">
+                            <i class="fas fa-phone"></i>
+                            Позвонить
+                        </a>
+                    {% endif %}
+                {% else %}
+                    <p style="text-align: center; color: #999; font-size: 14px; padding: 20px;">
+                        Ученик не указал контактные данные
+                    </p>
+                {% endif %}
+
+EOF
+cat /mnt/user-data/outputs/student_detail_update.txt
+Output
+
+=== ИЗМЕНЕНИЯ В student_detail.html ===
+
+В секции "Дополнительная информация" ПОСЛЕ блока с днями недели добавьте:
+
+                    <!-- ✅ НОВЫЕ БЛОКИ: Контакты для связи -->
+                    {% if student.telegram %}
+                        <div class="info-row">
+                            <div class="info-label">
+                                <i class="fab fa-telegram"></i>
+                                Telegram
+                            </div>
+                            <div class="info-value">
+                                {% if student.telegram starts_with('@' %}
+                                    <a href="https://t.me/{{ student.telegram|slice:'1:' }}" 
+                                       target="_blank" 
+                                       style="color: #0088cc; text-decoration: none;">
+                                        {{ student.telegram }}
+                                    </a>
+                                {% else %}
+                                    {{ student.telegram }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if student.whatsapp %}
+                        <div class="info-row">
+                            <div class="info-label">
+                                <i class="fab fa-whatsapp"></i>
+                                WhatsApp
+                            </div>
+                            <div class="info-value">
+                                <a href="https://wa.me/{{ student.whatsapp|cut:' '|cut:'+'|cut:'-' }}" 
+                                   target="_blank" 
+                                   style="color: #25D366; text-decoration: none;">
+                                    {{ student.whatsapp }}
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                {% if student.telegram or student.whatsapp or student.user.phone %}
+                    <!-- ✅ TELEGRAM -->
+                    {% if student.telegram %}
+                        {% if '@' in student.telegram %}
+                            <a href="https://t.me/{{ student.telegram|slice:'1:' }}" 
+                               target="_blank" 
+                               class="contact-btn-primary">
+                                <i class="fab fa-telegram"></i>
+                                Написать в Telegram
+                            </a>
+                        {% else %}
+                            <a href="https://t.me/{{ student.telegram }}" 
+                               target="_blank" 
+                               class="contact-btn-primary">
+                                <i class="fab fa-telegram"></i>
+                                Написать в Telegram
+                            </a>
+                        {% endif %}
+                    {% endif %}
+
+                    <!-- ✅ WHATSAPP -->
+                    {% if student.whatsapp %}
+                        <a href="https://wa.me/{{ student.whatsapp|cut:' '|cut:'+'|cut:'-' }}" 
+                           target="_blank" 
+                           class="contact-btn-secondary" 
+                           style="background: #25D366; color: white; border-color: #25D366;">
+                            <i class="fab fa-whatsapp"></i>
+                            Написать в WhatsApp
+                        </a>
+                    {% endif %}
+
+                    <!-- ТЕЛЕФОН -->
+                    {% if student.user.phone %}
+                        <a href="tel:{{ student.user.phone }}" 
+                           class="contact-btn-secondary">
+                            <i class="fas fa-phone"></i>
+                            Позвонить
+                        </a>
+                    {% endif %}
+                {% else %}
+                    <p style="text-align: center; color: #999; font-size: 14px; padding: 20px;">
+                        Ученик не указал контактные данные
+                    </p>
+                {% endif %}
+
                 </div>
             </div>
 

@@ -369,6 +369,21 @@ class StudentProfile(models.Model):
         verbose_name="Предпочитаемый формат обучения"
     )
     
+    # ✅ НОВЫЕ ПОЛЯ: Контакты для связи
+    telegram = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Telegram",
+        help_text="Ваш Telegram username (@username) или номер телефона"
+    )
+    
+    whatsapp = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="WhatsApp",
+        help_text="Номер WhatsApp для связи (+998 90 123 45 67)"
+    )
+    
     is_active = models.BooleanField(
         default=True,
         verbose_name="Активный профиль",

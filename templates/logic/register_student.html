@@ -489,7 +489,49 @@
                     <div class="help-text">{{ form.bio.help_text }}</div>
                 </div>
             </div>
+                        <div class="form-section">
+                            <h3 class="section-title">
+                                <i class="fas fa-address-book"></i>
+                                Контакты для связи
+                            </h3>
+                            <p style="color: #666; font-size: 14px; margin-bottom: 16px;">
+                                Укажите удобные способы связи, чтобы учителя могли легко с вами связаться
+                            </p>
+            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label" for="id_telegram">
+                                        {{ form.telegram.label }}
+                                    </label>
+                                    {{ form.telegram }}
+                                    {% if form.telegram.errors %}
+                                        <div class="error-message">{{ form.telegram.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="help-text">{{ form.telegram.help_text }}</div>
+                                </div>
+            
+                                <div class="form-group">
+                                    <label class="form-label" for="id_whatsapp">
+                                        {{ form.whatsapp.label }}
+                                    </label>
+                                    {{ form.whatsapp }}
+                                    {% if form.whatsapp.errors %}
+                                        <div class="error-message">{{ form.whatsapp.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="help-text">{{ form.whatsapp.help_text }}</div>
+                                </div>
+                            </div>
+            
+                            <div style="background: #f0fdf4; border: 1px solid #d1fae5; border-radius: 8px; padding: 12px; font-size: 13px; color: #059669; margin-top: 12px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-info-circle"></i>
+                                <span>Эти данные не обязательны, но помогут учителям быстрее связаться с вами для обсуждения деталей обучения</span>
+                            </div>
+                        </div>
+            
 
+            
+    
+             
             <!-- Формат и бюджет -->
             <div class="form-section">
                 <h3 class="section-title">

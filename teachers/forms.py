@@ -6,6 +6,7 @@ from .models import User, TeacherProfile, Subject, City, Certificate, TeacherSub
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.core.exceptions import ValidationError
 from .models import User, StudentProfile, Subject
+
 class TeacherRegistrationForm(UserCreationForm):
     """Форма регистрации пользователя как учителя - ИСПРАВЛЕННАЯ"""
     
@@ -31,7 +32,7 @@ class TeacherRegistrationForm(UserCreationForm):
     )
     
     email = forms.EmailField(
-        required=True,  # ✅ ИЗМЕНЕНО: сделал обязательным
+        required=True,
         label='Email',
         widget=forms.EmailInput(attrs={
             'class': 'form-input',
@@ -41,7 +42,7 @@ class TeacherRegistrationForm(UserCreationForm):
     
     phone = forms.CharField(
         max_length=20,
-        required=True,  # ✅ ИЗМЕНЕНО: сделал обязательным
+        required=True,
         label='Телефон',
         widget=forms.TextInput(attrs={
             'class': 'form-input',
@@ -52,7 +53,7 @@ class TeacherRegistrationForm(UserCreationForm):
     age = forms.IntegerField(
         min_value=18,
         max_value=100,
-        required=True,  # ✅ ИЗМЕНЕНО: сделал обязательным
+        required=True,
         label='Возраст',
         widget=forms.NumberInput(attrs={
             'class': 'form-input',
@@ -72,7 +73,7 @@ class TeacherRegistrationForm(UserCreationForm):
     
     # ========== ПРОФЕССИОНАЛЬНАЯ ИНФОРМАЦИЯ ==========
     bio = forms.CharField(
-        required=False,  # ✅ ИЗМЕНЕНО: сделал обязательным
+        required=False,
         label='О себе',
         widget=forms.Textarea(attrs={
             'class': 'form-textarea',
@@ -86,7 +87,7 @@ class TeacherRegistrationForm(UserCreationForm):
     
     education_level = forms.ChoiceField(
         choices=TeacherProfile.EDUCATION_LEVELS,
-        required=False,  # ✅ ИЗМЕНЕНО: сделал обязательным
+        required=False,
         label='Уровень образования',
         widget=forms.Select(attrs={
             'class': 'form-select'
@@ -95,7 +96,7 @@ class TeacherRegistrationForm(UserCreationForm):
     
     university = forms.CharField(
         max_length=200,
-        required=False,  # ✅ ИЗМЕНЕНО: сделал обязательным
+        required=False,
         label='Учебное заведение',
         widget=forms.TextInput(attrs={
             'class': 'form-input',
@@ -105,7 +106,7 @@ class TeacherRegistrationForm(UserCreationForm):
     
     specialization = forms.CharField(
         max_length=200,
-        required=True,  # ✅ ИЗМЕНЕНО: сделал обязательным
+        required=True,
         label='Специализация',
         widget=forms.TextInput(attrs={
             'class': 'form-input',
@@ -116,7 +117,7 @@ class TeacherRegistrationForm(UserCreationForm):
     experience_years = forms.IntegerField(
         min_value=0,
         max_value=50,
-        required=True,  # ✅ ИЗМЕНЕНО: сделал обязательным
+        required=True,
         label='Опыт преподавания (лет)',
         widget=forms.NumberInput(attrs={
             'class': 'form-input',
@@ -294,10 +295,10 @@ class TeacherRegistrationForm(UserCreationForm):
                 whatsapp=self.cleaned_data.get('whatsapp', ''),
                 available_from=self.cleaned_data['available_from'],
                 available_to=self.cleaned_data['available_to'],
-                teaching_languages=languages_str,  # ✅ ИСПРАВЛЕНО: используем строку
-                available_weekdays=self.cleaned_data['available_weekdays'],  # Уже строка из clean_available_weekdays
-                moderation_status='pending',  # ✅ ДОБАВЛЕНО: явно устанавливаем статус
-                is_active=False  # Неактивен до модерации
+                teaching_languages=languages_str,
+                available_weekdays=self.cleaned_data['available_weekdays'],
+                moderation_status='pending',
+                is_active=False
             )
             
         return user
@@ -403,10 +404,6 @@ class CertificateUploadForm(forms.ModelForm):
             'file': 'Файл сертификата'
         }
 
-from django import forms
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.core.exceptions import ValidationError
-from .models import User, StudentProfile
 
 class LoginForm(AuthenticationForm):
     """Форма входа"""
@@ -436,10 +433,9 @@ class LoginForm(AuthenticationForm):
         })
     )
 
-# Добавьте этот код в ваш forms.py, заменив класс StudentRegistrationForm
 
 class StudentRegistrationForm(UserCreationForm):
-    """Форма регистрации ученика"""
+    """Форма регистрации ученика с добавленными полями Telegram и WhatsApp"""
     
     # Личная информация
     first_name = forms.CharField(
@@ -492,7 +488,6 @@ class StudentRegistrationForm(UserCreationForm):
         })
     )
     
-    # ➕ НОВОЕ: Город
     city = forms.ModelChoiceField(
         queryset=City.objects.filter(is_active=True),
         required=False,
@@ -549,7 +544,7 @@ class StudentRegistrationForm(UserCreationForm):
         })
     )
     
-    # ➕ НОВОЕ: Формат обучения
+    # Формат обучения
     learning_format = forms.ChoiceField(
         choices=StudentProfile.LEARNING_FORMATS,
         required=True,
@@ -560,7 +555,7 @@ class StudentRegistrationForm(UserCreationForm):
         initial='both'
     )
     
-    # ➕ НОВОЕ: Бюджет минимальный
+    # Бюджет минимальный
     budget_min = forms.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -575,7 +570,7 @@ class StudentRegistrationForm(UserCreationForm):
         help_text='Минимальная цена, которую готовы платить'
     )
     
-    # ➕ НОВОЕ: Бюджет максимальный
+    # Бюджет максимальный
     budget_max = forms.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -590,7 +585,30 @@ class StudentRegistrationForm(UserCreationForm):
         help_text='Максимальная цена, которую готовы платить'
     )
     
-    # ➕ НОВОЕ: Доступные дни недели
+    # ✅ НОВЫЕ ПОЛЯ: Контакты для связи
+    telegram = forms.CharField(
+        max_length=100,
+        required=False,
+        label='Telegram',
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': '@username или +998901234567'
+        }),
+        help_text='Укажите ваш Telegram для удобной связи с учителями'
+    )
+    
+    whatsapp = forms.CharField(
+        max_length=20,
+        required=False,
+        label='WhatsApp',
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': '+998 90 123 45 67'
+        }),
+        help_text='Укажите номер WhatsApp для связи'
+    )
+    
+    # Доступные дни недели
     available_weekdays = forms.MultipleChoiceField(
         choices=[
             ('1', 'Понедельник'),
@@ -679,17 +697,19 @@ class StudentRegistrationForm(UserCreationForm):
         if commit:
             user.save()
             
-            # Создаем профиль ученика с ВСЕМИ полями
+            # Создаем профиль ученика с ВСЕМИ полями, включая новые telegram и whatsapp
             student_profile = StudentProfile.objects.create(
                 user=user,
                 bio=self.cleaned_data.get('bio', ''),
-                description=self.cleaned_data.get('bio', ''),  # Используем bio как description
+                description=self.cleaned_data.get('bio', ''),
                 education_level=self.cleaned_data.get('education_level', ''),
                 school_university=self.cleaned_data.get('school_university', ''),
                 city=self.cleaned_data.get('city'),
                 learning_format=self.cleaned_data.get('learning_format', 'both'),
                 budget_min=self.cleaned_data.get('budget_min'),
                 budget_max=self.cleaned_data.get('budget_max'),
+                telegram=self.cleaned_data.get('telegram', ''),  # ✅ НОВОЕ ПОЛЕ
+                whatsapp=self.cleaned_data.get('whatsapp', ''),  # ✅ НОВОЕ ПОЛЕ
                 available_weekdays=','.join(self.cleaned_data.get('available_weekdays', [])) if self.cleaned_data.get('available_weekdays') else '1,2,3,4,5,6,7',
                 is_active=True
             )
@@ -697,14 +717,10 @@ class StudentRegistrationForm(UserCreationForm):
             # Связываем выбранные предметы
             interests = self.cleaned_data['interests']
             student_profile.interests.set(interests)
-            student_profile.desired_subjects.set(interests)  # Также сохраняем как желаемые предметы
+            student_profile.desired_subjects.set(interests)
             
         return user
 
-# Добавьте эти классы в ваш forms.py
-
-from django import forms
-from .models import TeacherProfile, StudentProfile, City, Subject
 
 class TeacherProfileEditForm(forms.ModelForm):
     """Форма редактирования профиля учителя"""
@@ -827,7 +843,7 @@ class TeacherProfileEditForm(forms.ModelForm):
 
 
 class StudentProfileEditForm(forms.ModelForm):
-    """Форма редактирования профиля ученика"""
+    """Форма редактирования профиля ученика с добавленными полями Telegram и WhatsApp"""
     
     interests = forms.ModelMultipleChoiceField(
         queryset=Subject.objects.filter(is_active=True),
@@ -869,7 +885,9 @@ class StudentProfileEditForm(forms.ModelForm):
         model = StudentProfile
         fields = [
             'bio', 'description', 'education_level', 'school_university',
-            'city', 'learning_format', 'budget_min', 'budget_max', 'is_active'
+            'city', 'learning_format', 'budget_min', 'budget_max',
+            'telegram', 'whatsapp',  # ✅ НОВЫЕ ПОЛЯ
+            'is_active'
         ]
         widgets = {
             'bio': forms.Textarea(attrs={
@@ -899,6 +917,15 @@ class StudentProfileEditForm(forms.ModelForm):
                 'placeholder': '100000',
                 'step': '1000'
             }),
+            # ✅ НОВЫЕ ВИДЖЕТЫ
+            'telegram': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': '@username или +998901234567'
+            }),
+            'whatsapp': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': '+998 90 123 45 67'
+            }),
             'is_active': forms.CheckboxInput(attrs={
                 'class': 'form-checkbox-large'
             })
@@ -912,12 +939,16 @@ class StudentProfileEditForm(forms.ModelForm):
             'learning_format': 'Предпочитаемый формат',
             'budget_min': 'Минимальный бюджет (сум/час)',
             'budget_max': 'Максимальный бюджет (сум/час)',
+            'telegram': 'Telegram',  # ✅ НОВЫЙ ЛЕЙБЛ
+            'whatsapp': 'WhatsApp',  # ✅ НОВЫЙ ЛЕЙБЛ
             'is_active': 'Отображать в поиске учеников'
         }
         help_texts = {
             'is_active': 'Если отключено, ваш профиль не будет показываться в поиске',
             'budget_min': 'Минимальная цена, которую готовы платить',
-            'budget_max': 'Максимальная цена, которую готовы платить'
+            'budget_max': 'Максимальная цена, которую готовы платить',
+            'telegram': 'Ваш Telegram username или номер телефона',  # ✅ НОВАЯ ПОДСКАЗКА
+            'whatsapp': 'Номер WhatsApp для связи',  # ✅ НОВАЯ ПОДСКАЗКА
         }
     
     def __init__(self, *args, **kwargs):
