@@ -11,6 +11,80 @@
         padding: 40px 16px;
     }
 
+    /* ✅ НОВОЕ: Стили для виджета просмотров */
+    .views-widget {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        color: white;
+        box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
+    }
+
+    .views-widget-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .views-widget-title {
+        font-size: 18px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .views-widget-icon {
+        font-size: 24px;
+    }
+
+    .views-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+
+    .views-stat-item {
+        background: rgba(255, 255, 255, 0.15);
+        padding: 16px;
+        border-radius: 12px;
+        text-align: center;
+        transition: all 0.3s;
+        backdrop-filter: blur(10px);
+    }
+
+    .views-stat-item:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+    }
+
+    .views-stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .views-stat-label {
+        font-size: 13px;
+        opacity: 0.9;
+    }
+
+    .views-info-text {
+        margin-top: 16px;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        font-size: 14px;
+        line-height: 1.5;
+        backdrop-filter: blur(10px);
+    }
+
+    .views-info-text i {
+        margin-right: 8px;
+    }
+
     /* Алерты для статуса модерации */
     .alert {
         padding: 16px 20px;
@@ -474,12 +548,47 @@
         .certificates-grid {
             grid-template-columns: 1fr;
         }
+
+        /* ✅ НОВОЕ: адаптивность виджета просмотров */
+        .views-stats-grid {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="profile-container">
+    <!-- ✅ НОВОЕ: Виджет статистики просмотров -->
+    <div class="views-widget">
+        <div class="views-widget-header">
+            <div class="views-widget-title">
+                <i class="fas fa-eye views-widget-icon"></i>
+                Статистика просмотров профиля
+            </div>
+        </div>
+        <div class="views-stats-grid">
+            <div class="views-stat-item">
+                <div class="views-stat-value">{{ views_stats.day }}</div>
+                <div class="views-stat-label">За сегодня</div>
+            </div>
+            <div class="views-stat-item">
+                <div class="views-stat-value">{{ views_stats.week }}</div>
+                <div class="views-stat-label">За неделю</div>
+            </div>
+            <div class="views-stat-item">
+                <div class="views-stat-value">{{ views_stats.total }}</div>
+                <div class="views-stat-label">За всё время</div>
+            </div>
+        </div>
+        <div class="views-info-text">
+            <i class="fas fa-info-circle"></i>
+            Ваш профиль просмотрели <strong>{{ views_stats.week }}</strong> раз за последнюю неделю. 
+            Уникальных посетителей: <strong>{{ views_stats.unique_week }}</strong>. 
+            Продолжайте обновлять профиль для привлечения новых учеников!
+        </div>
+    </div>
+
     <!-- Алерты статуса модерации -->
     {% if teacher.moderation_status == 'pending' %}
         <div class="alert alert-warning">

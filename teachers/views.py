@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.db.models import Q, Min, Max
-from .models import TeacherProfile, Subject, City, StudentProfile  # ИЗМЕНЕНО: добавлен StudentProfile
+from .models import TeacherProfile, Subject, City, StudentProfile, ProfileView
 from django.shortcuts import get_object_or_404
 from django.db.models import Q, Min, Max, Avg
 from django.shortcuts import render, redirect, get_object_or_404
@@ -16,6 +16,62 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from .forms import LoginForm, StudentRegistrationForm
 from .models import TeacherProfile, TeacherSubject, Certificate
+
+
+def get_client_ip(request):
+    """Получить IP адрес клиента"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+
+def record_profile_view(request, profile, profile_type):
+    """
+    Записать просмотр профиля
+    
+    Args:
+        request: HTTP запрос
+        profile: объект TeacherProfile или StudentProfile
+        profile_type: 'teacher' или 'student'
+    """
+    # Получаем IP и User Agent
+    ip_address = get_client_ip(request)
+    user_agent = request.META.get('HTTP_USER_AGENT', '')
+    
+    # Получаем текущего пользователя (если авторизован)
+    viewer_user = request.user if request.user.is_authenticated else None
+    
+    # Проверяем, не смотрит ли пользователь свой собственный профиль
+    if viewer_user:
+        if profile_type == 'teacher' and hasattr(viewer_user, 'teacher_profile'):
+            if viewer_user.teacher_profile == profile:
+                return  # Не записываем просмотр своего профиля
+        elif profile_type == 'student' and hasattr(viewer_user, 'student_profile'):
+            if viewer_user.student_profile == profile:
+                return  # Не записываем просмотр своего профиля
+    
+    # Создаем запись о просмотре
+    try:
+        view_data = {
+            'profile_type': profile_type,
+            'viewer_ip': ip_address,
+            'viewer_user': viewer_user,
+            'user_agent': user_agent[:500] if user_agent else '',  # Ограничиваем длину
+        }
+        
+        if profile_type == 'teacher':
+            view_data['teacher_profile'] = profile
+        else:
+            view_data['student_profile'] = profile
+        
+        ProfileView.objects.create(**view_data)
+    except Exception as e:
+        # Логируем ошибку, но не прерываем работу приложения
+        print(f"Error recording profile view: {e}")
+
 
 def home(request):
     """
@@ -102,7 +158,6 @@ def home(request):
     return render(request, 'logic/home.html', context)
 
 
-# НОВАЯ ФУНКЦИЯ: View для отображения учеников
 def students_list(request):
     """
     Страница со списком учеников, которые ищут учителей
@@ -112,7 +167,7 @@ def students_list(request):
     students = StudentProfile.objects.filter(is_active=True).select_related(
         'user', 'city'
     ).prefetch_related(
-        'desired_subjects'  # Предметы, которые хочет изучать
+        'desired_subjects'
     )
     
     # Получаем параметры фильтрации
@@ -189,7 +244,7 @@ def students_list(request):
 
 
 def detail(request, id):
-    """Детальная страница учителя - БЕЗ ИЗМЕНЕНИЙ"""
+    """Детальная страница учителя с подсчетом просмотров"""
     teacher = get_object_or_404(
         TeacherProfile.objects.select_related('user', 'city')
         .prefetch_related(
@@ -201,6 +256,9 @@ def detail(request, id):
         id=id,
         is_active=True
     )
+    
+    # ✅ НОВОЕ: Записываем просмотр профиля
+    record_profile_view(request, teacher, 'teacher')
     
     reviews = teacher.reviews.select_related('student', 'subject').order_by('-created_at')
     
@@ -237,6 +295,60 @@ def detail(request, id):
     }
     
     return render(request, 'logic/teacher_detail.html', context)
+
+
+def student_detail(request, id):
+    """
+    Детальная страница ученика с подсчетом просмотров
+    """
+    student = get_object_or_404(
+        StudentProfile.objects.select_related('user', 'city')
+        .prefetch_related(
+            'desired_subjects',
+            'interests'
+        ),
+        id=id,
+        is_active=True
+    )
+    
+    # ✅ НОВОЕ: Записываем просмотр профиля
+    record_profile_view(request, student, 'student')
+    
+    # Получаем все желаемые предметы
+    desired_subjects = student.desired_subjects.all()
+    
+    # Получаем дополнительные интересы
+    other_interests = student.interests.exclude(
+        id__in=desired_subjects.values_list('id', flat=True)
+    )
+    
+    # Похожие ученики по предметам
+    similar_students = StudentProfile.objects.filter(
+        desired_subjects__in=desired_subjects,
+        is_active=True
+    ).exclude(id=student.id).distinct()[:3]
+    
+    # Получаем учителей, которые преподают нужные предметы
+    suggested_teachers = TeacherProfile.objects.filter(
+        subjects__in=desired_subjects,
+        is_active=True
+    ).distinct().order_by('-rating')[:6]
+    
+    # Проверяем, добавлен ли ученик в избранное учителем
+    is_favorited = False
+    if request.user.is_authenticated and request.user.user_type == 'teacher':
+        pass
+    
+    context = {
+        'student': student,
+        'desired_subjects': desired_subjects,
+        'other_interests': other_interests,
+        'similar_students': similar_students,
+        'suggested_teachers': suggested_teachers,
+        'is_favorited': is_favorited,
+    }
+    
+    return render(request, 'logic/student_detail.html', context)
 
 
 # Остальные функции БЕЗ ИЗМЕНЕНИЙ
@@ -339,7 +451,7 @@ def teacher_register_step2(request):
 
 
 def teacher_register_step3(request):
-    """Шаг 3: Сертификаты (опционально) - БЕЗ ИЗМЕНЕНИЙ"""
+    """Шаг 3: Сертификаты (опционально)"""
     user_id = request.session.get('teacher_registration_user_id')
     
     if not user_id:
@@ -383,7 +495,7 @@ def teacher_register_step3(request):
 
 
 def teacher_register_complete(request):
-    """Завершение регистрации - БЕЗ ИЗМЕНЕНИЙ"""
+    """Завершение регистрации"""
     user_id = request.session.get('teacher_registration_user_id')
     
     if not user_id:
@@ -405,7 +517,7 @@ def teacher_register_complete(request):
 
 
 def remove_certificate(request, certificate_id):
-    """Удаление сертификата во время регистрации - БЕЗ ИЗМЕНЕНИЙ"""
+    """Удаление сертификата во время регистрации"""
     user_id = request.session.get('teacher_registration_user_id')
     
     if not user_id:
@@ -419,64 +531,8 @@ def remove_certificate(request, certificate_id):
     return redirect('teacher_register_step3')
 
 
-
-# НОВАЯ ФУНКЦИЯ: Детальная страница ученика
-def student_detail(request, id):
-    """
-    Детальная страница ученика
-    Показывает полную информацию о ученике, его предпочтениях и контактах
-    """
-    # Получаем профиль ученика с оптимизацией запросов
-    student = get_object_or_404(
-        StudentProfile.objects.select_related('user', 'city')
-        .prefetch_related(
-            'desired_subjects',
-            'interests'
-        ),
-        id=id,
-        is_active=True  # Показываем только активных учеников
-    )
-    
-    # Получаем все желаемые предметы
-    desired_subjects = student.desired_subjects.all()
-    
-    # Получаем дополнительные интересы
-    other_interests = student.interests.exclude(
-        id__in=desired_subjects.values_list('id', flat=True)
-    )
-    
-    # НОВОЕ: Похожие ученики по предметам
-    similar_students = StudentProfile.objects.filter(
-        desired_subjects__in=desired_subjects,
-        is_active=True
-    ).exclude(id=student.id).distinct()[:3]
-    
-    # НОВОЕ: Получаем учителей, которые преподают нужные предметы
-    suggested_teachers = TeacherProfile.objects.filter(
-        subjects__in=desired_subjects,
-        is_active=True
-    ).distinct().order_by('-rating')[:6]
-    
-    # НОВОЕ: Проверяем, добавлен ли ученик в избранное учителем
-    is_favorited = False
-    if request.user.is_authenticated and request.user.user_type == 'teacher':
-        # Здесь можно добавить логику избранного для учителей
-        pass
-    
-    # Форматируем информацию для отображения
-    context = {
-        'student': student,
-        'desired_subjects': desired_subjects,
-        'other_interests': other_interests,
-        'similar_students': similar_students,
-        'suggested_teachers': suggested_teachers,
-        'is_favorited': is_favorited,
-    }
-    
-    return render(request, 'logic/student_detail.html', context)
-
 def login_view(request):
-    """Вход в систему - БЕЗ ИЗМЕНЕНИЙ"""
+    """Вход в систему"""
     if request.user.is_authenticated:
         return redirect('home')
     
@@ -525,7 +581,7 @@ def login_view(request):
 
 @login_required
 def logout_view(request):
-    """Выход из системы - БЕЗ ИЗМЕНЕНИЙ"""
+    """Выход из системы"""
     if request.method == 'POST':
         logout(request)
         messages.success(request, 'Вы успешно вышли из системы')
@@ -535,7 +591,7 @@ def logout_view(request):
 
 
 def register_choose(request):
-    """Выбор типа регистрации - БЕЗ ИЗМЕНЕНИЙ"""
+    """Выбор типа регистрации"""
     if request.user.is_authenticated:
         return redirect('home')
     
@@ -543,7 +599,7 @@ def register_choose(request):
 
 
 def register_student(request):
-    """Регистрация ученика - БЕЗ ИЗМЕНЕНИЙ"""
+    """Регистрация ученика"""
     if request.user.is_authenticated:
         return redirect('home')
     
@@ -569,7 +625,7 @@ def register_student(request):
 
 @login_required
 def profile_view(request):
-    """Просмотр профиля"""
+    """Просмотр профиля с подсчетом статистики просмотров"""
     if request.user.user_type == 'teacher':
         try:
             teacher_profile = request.user.teacher_profile
@@ -582,8 +638,18 @@ def profile_view(request):
                 'reviews'
             ).get(id=teacher_profile.id)
             
+            # ✅ НОВОЕ: Получаем статистику просмотров
+            views_stats = {
+                'total': teacher_profile.get_views_count('all'),
+                'week': teacher_profile.get_views_count('week'),
+                'day': teacher_profile.get_views_count('day'),
+                'unique_total': teacher_profile.get_unique_viewers_count('all'),
+                'unique_week': teacher_profile.get_unique_viewers_count('week'),
+            }
+            
             return render(request, 'logic/teacher_profile.html', {
-                'teacher': teacher_profile
+                'teacher': teacher_profile,
+                'views_stats': views_stats,  # ✅ НОВОЕ
             })
         except TeacherProfile.DoesNotExist:
             messages.warning(request, 'Завершите регистрацию учителя')
@@ -591,39 +657,24 @@ def profile_view(request):
     else:
         try:
             student_profile = request.user.student_profile
+            
+            # ✅ НОВОЕ: Получаем статистику просмотров
+            views_stats = {
+                'total': student_profile.get_views_count('all'),
+                'week': student_profile.get_views_count('week'),
+                'day': student_profile.get_views_count('day'),
+                'unique_total': student_profile.get_unique_viewers_count('all'),
+                'unique_week': student_profile.get_unique_viewers_count('week'),
+            }
+            
             return render(request, 'logic/student_profile.html', {
-                'student': student_profile
+                'student': student_profile,
+                'views_stats': views_stats,  # ✅ НОВОЕ
             })
         except StudentProfile.DoesNotExist:
             StudentProfile.objects.create(user=request.user)
             return redirect('profile')
 
-
-
-@login_required
-def profile_edit(request):
-    """Редактирование профиля - БЕЗ ИЗМЕНЕНИЙ"""
-    if request.user.user_type == 'teacher':
-        messages.info(request, 'Редактирование профиля учителя будет доступно позже')
-        return redirect('profile')
-    else:
-        messages.info(request, 'Редактирование профиля ученика будет доступно позже')
-        return redirect('profile')
-
-
-
-# Замените функцию profile_edit в views.py на эти функции
-
-from .forms import (
-    TeacherRegistrationForm, 
-    TeacherSubjectsForm, 
-    CertificateUploadForm,
-    LoginForm, 
-    StudentRegistrationForm,
-    TeacherProfileEditForm,  # НОВОЕ
-    StudentProfileEditForm,  # НОВОЕ
-    UserProfileEditForm      # НОВОЕ
-)
 
 @login_required
 def profile_edit(request):
@@ -636,6 +687,17 @@ def profile_edit(request):
     else:
         return redirect('student_profile_edit')
 
+
+from .forms import (
+    TeacherRegistrationForm, 
+    TeacherSubjectsForm, 
+    CertificateUploadForm,
+    LoginForm, 
+    StudentRegistrationForm,
+    TeacherProfileEditForm,
+    StudentProfileEditForm,
+    UserProfileEditForm
+)
 
 @login_required
 def teacher_profile_edit(request):
@@ -676,7 +738,6 @@ def student_profile_edit(request):
     try:
         student_profile = request.user.student_profile
     except StudentProfile.DoesNotExist:
-        # Создаем профиль, если его нет
         student_profile = StudentProfile.objects.create(user=request.user)
     
     if request.method == 'POST':
@@ -702,6 +763,8 @@ def student_profile_edit(request):
     }
     return render(request, 'logic/student_profile_edit.html', context)
 
+
+from django.http import JsonResponse
 
 @login_required
 def toggle_profile_status(request):
@@ -744,7 +807,3 @@ def toggle_profile_status(request):
                 return JsonResponse({'success': False, 'error': 'Профиль не найден'})
     
     return JsonResponse({'success': False, 'error': 'Неверный запрос'})
-
-
-# ВАЖНО: Добавьте этот импорт в начало файла
-from django.http import JsonResponse

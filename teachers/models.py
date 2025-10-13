@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.urls import reverse
+from django.utils import timezone
 from PIL import Image
 import uuid
 import datetime
@@ -181,17 +182,13 @@ class TeacherProfile(models.Model):
         verbose_name='Проверил'
     )
     
-    # ... остальные поля ...
-    
     class Meta:
         verbose_name = 'Профиль учителя'
         verbose_name_plural = 'Профили учителей'
         ordering = ['-created_at']
         
     def approve(self, moderator, comment=''):
-        """
-        Одобрить профиль учителя
-        """
+        """Одобрить профиль учителя"""
         self.moderation_status = 'approved'
         self.moderation_comment = comment
         self.moderation_date = timezone.now()
@@ -199,9 +196,7 @@ class TeacherProfile(models.Model):
         self.save()
 
     def reject(self, moderator, comment=''):
-        """
-        Отклонить профиль учителя
-        """
+        """Отклонить профиль учителя"""
         self.moderation_status = 'rejected'
         self.moderation_comment = comment
         self.moderation_date = timezone.now()
@@ -220,7 +215,42 @@ class TeacherProfile(models.Model):
         codes = self.teaching_languages.split(',')
         return [languages_dict.get(code.strip(), code) for code in codes if code.strip()]
 
+    def get_views_count(self, period='all'):
+        """
+        Получить количество просмотров профиля
+        period: 'day', 'week', 'month', 'all'
+        """
+        from datetime import timedelta
+        views = self.profile_views.all()
+        
+        if period == 'day':
+            start_date = timezone.now() - timedelta(days=1)
+            views = views.filter(viewed_at__gte=start_date)
+        elif period == 'week':
+            start_date = timezone.now() - timedelta(weeks=1)
+            views = views.filter(viewed_at__gte=start_date)
+        elif period == 'month':
+            start_date = timezone.now() - timedelta(days=30)
+            views = views.filter(viewed_at__gte=start_date)
+        
+        return views.count()
 
+    def get_unique_viewers_count(self, period='all'):
+        """Получить количество уникальных просмотров (по IP)"""
+        from datetime import timedelta
+        views = self.profile_views.all()
+        
+        if period == 'day':
+            start_date = timezone.now() - timedelta(days=1)
+            views = views.filter(viewed_at__gte=start_date)
+        elif period == 'week':
+            start_date = timezone.now() - timedelta(weeks=1)
+            views = views.filter(viewed_at__gte=start_date)
+        elif period == 'month':
+            start_date = timezone.now() - timedelta(days=30)
+            views = views.filter(viewed_at__gte=start_date)
+        
+        return views.values('viewer_ip').distinct().count()
 
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.get_subjects_display()}"
@@ -269,15 +299,7 @@ class TeacherSubject(models.Model):
         return f"{self.teacher.user.get_full_name()} - {self.subject.name} ({self.hourly_rate} сум/час)"
 
 class StudentProfile(models.Model):
-    """
-    Профиль ученика
-    НОВЫЕ ПОЛЯ ДОБАВЛЕНЫ:
-    - desired_subjects: предметы, которые хочет изучать
-    - budget_min, budget_max: бюджет ученика
-    - learning_format: формат обучения
-    - description: расширенное описание
-    - is_active: активность профиля
-    """
+    """Профиль ученика"""
     EDUCATION_LEVELS = [
         ('elementary', 'Начальная школа (1-4 класс)'),
         ('middle', 'Средняя школа (5-9 класс)'),
@@ -286,7 +308,6 @@ class StudentProfile(models.Model):
         ('adult', 'Взрослый'),
     ]
     
-    # НОВОЕ: Форматы обучения для ученика
     LEARNING_FORMATS = [
         ('online', 'Онлайн'),
         ('offline', 'Офлайн'),
@@ -298,7 +319,6 @@ class StudentProfile(models.Model):
     school_university = models.CharField(max_length=200, blank=True)
     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True)
     
-    # СТАРОЕ ПОЛЕ: переименовано для ясности
     interests = models.ManyToManyField(
         Subject, 
         blank=True, 
@@ -306,7 +326,6 @@ class StudentProfile(models.Model):
         help_text="Интересующие предметы"
     )
     
-    # НОВОЕ: Основные предметы, которые хочет изучать (для отображения в карточке)
     desired_subjects = models.ManyToManyField(
         Subject,
         blank=True,
@@ -316,7 +335,6 @@ class StudentProfile(models.Model):
     
     bio = models.TextField(max_length=500, blank=True, verbose_name="Краткое описание")
     
-    # НОВОЕ: Расширенное описание целей обучения
     description = models.TextField(
         max_length=1000, 
         blank=True,
@@ -324,7 +342,6 @@ class StudentProfile(models.Model):
         help_text="Расскажите о своих целях обучения, уровне подготовки и ожиданиях"
     )
     
-    # НОВОЕ: Бюджет ученика
     budget_min = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -345,7 +362,6 @@ class StudentProfile(models.Model):
         help_text="Максимальная цена, которую готов платить"
     )
     
-    # НОВОЕ: Формат обучения
     learning_format = models.CharField(
         max_length=10,
         choices=LEARNING_FORMATS,
@@ -353,14 +369,12 @@ class StudentProfile(models.Model):
         verbose_name="Предпочитаемый формат обучения"
     )
     
-    # НОВОЕ: Активность профиля (для отображения в поиске)
     is_active = models.BooleanField(
         default=True,
         verbose_name="Активный профиль",
         help_text="Ищет ли ученик учителя в данный момент"
     )
     
-    # НОВОЕ: Доступность для занятий
     available_weekdays = models.CharField(
         max_length=20,
         default='1,2,3,4,5,6,7',
@@ -375,12 +389,8 @@ class StudentProfile(models.Model):
     class Meta:
         verbose_name = 'Профиль ученика'
         verbose_name_plural = 'Профили учеников'
-        ordering = ['-created_at']  # ИЗМЕНЕНО: сортировка по дате создания
+        ordering = ['-created_at']
 
-    def __str__(self):
-        return f"{self.user.get_full_name()} - Ученик"
-    
-    # НОВОЕ: Метод для получения желаемых предметов
     def get_desired_subjects_display(self):
         """Возвращает строку с названиями желаемых предметов"""
         subjects = self.desired_subjects.all()[:3]
@@ -388,7 +398,6 @@ class StudentProfile(models.Model):
             return ", ".join([s.name for s in subjects])
         return "Не указано"
     
-    # НОВОЕ: Метод для получения бюджета в читаемом виде
     def get_budget_display(self):
         """Возвращает строку с бюджетом"""
         if self.budget_min and self.budget_max:
@@ -399,7 +408,6 @@ class StudentProfile(models.Model):
             return f"От {self.budget_min:,.0f} сум/час"
         return "Договорная"
     
-    # НОВОЕ: Метод для получения доступных дней
     def get_available_weekdays_display(self):
         """Возвращает строку с днями недели"""
         days_map = {
@@ -410,6 +418,43 @@ class StudentProfile(models.Model):
             days = self.available_weekdays.split(',')
             return ', '.join([days_map.get(day.strip(), day) for day in days])
         return "Не указано"
+
+    def get_views_count(self, period='all'):
+        """
+        Получить количество просмотров профиля
+        period: 'day', 'week', 'month', 'all'
+        """
+        from datetime import timedelta
+        views = self.profile_views.all()
+        
+        if period == 'day':
+            start_date = timezone.now() - timedelta(days=1)
+            views = views.filter(viewed_at__gte=start_date)
+        elif period == 'week':
+            start_date = timezone.now() - timedelta(weeks=1)
+            views = views.filter(viewed_at__gte=start_date)
+        elif period == 'month':
+            start_date = timezone.now() - timedelta(days=30)
+            views = views.filter(viewed_at__gte=start_date)
+        
+        return views.count()
+
+    def get_unique_viewers_count(self, period='all'):
+        """Получить количество уникальных просмотров (по IP)"""
+        from datetime import timedelta
+        views = self.profile_views.all()
+        
+        if period == 'day':
+            start_date = timezone.now() - timedelta(days=1)
+            views = views.filter(viewed_at__gte=start_date)
+        elif period == 'week':
+            start_date = timezone.now() - timedelta(weeks=1)
+            views = views.filter(viewed_at__gte=start_date)
+        elif period == 'month':
+            start_date = timezone.now() - timedelta(days=30)
+            views = views.filter(viewed_at__gte=start_date)
+        
+        return views.values('viewer_ip').distinct().count()
 
     def __str__(self):
         return f"{self.user.get_full_name()} - Ученик"
@@ -496,3 +541,78 @@ class Favorite(models.Model):
 
     def __str__(self):
         return f"{self.student.get_full_name()} -> {self.teacher.user.get_full_name()}"
+
+
+class ProfileView(models.Model):
+    """
+    Модель для отслеживания просмотров профилей
+    Записывает каждый просмотр профиля учителя или ученика
+    """
+    PROFILE_TYPES = [
+        ('teacher', 'Профиль учителя'),
+        ('student', 'Профиль ученика'),
+    ]
+    
+    # Общие поля
+    profile_type = models.CharField(max_length=10, choices=PROFILE_TYPES, verbose_name='Тип профиля')
+    viewer_ip = models.GenericIPAddressField(verbose_name='IP адрес просмотревшего', null=True, blank=True)
+    viewer_user = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='profile_views_made',
+        verbose_name='Пользователь (если авторизован)'
+    )
+    viewed_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата и время просмотра')
+    
+    # Связи с профилями
+    teacher_profile = models.ForeignKey(
+        TeacherProfile,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='profile_views',
+        verbose_name='Профиль учителя'
+    )
+    student_profile = models.ForeignKey(
+        StudentProfile,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='profile_views',
+        verbose_name='Профиль ученика'
+    )
+    
+    # Дополнительная информация
+    user_agent = models.TextField(blank=True, verbose_name='User Agent браузера')
+    
+    class Meta:
+        verbose_name = 'Просмотр профиля'
+        verbose_name_plural = 'Просмотры профилей'
+        ordering = ['-viewed_at']
+        indexes = [
+            models.Index(fields=['-viewed_at']),
+            models.Index(fields=['teacher_profile', '-viewed_at']),
+            models.Index(fields=['student_profile', '-viewed_at']),
+            models.Index(fields=['viewer_ip', '-viewed_at']),
+        ]
+    
+    def __str__(self):
+        if self.profile_type == 'teacher' and self.teacher_profile:
+            profile_name = self.teacher_profile.user.get_full_name()
+        elif self.profile_type == 'student' and self.student_profile:
+            profile_name = self.student_profile.user.get_full_name()
+        else:
+            profile_name = "Неизвестный профиль"
+        
+        viewer_name = self.viewer_user.get_full_name() if self.viewer_user else f"Гость ({self.viewer_ip})"
+        return f"{viewer_name} просмотрел профиль {profile_name} ({self.viewed_at.strftime('%d.%m.%Y %H:%M')})"
+    
+    def save(self, *args, **kwargs):
+        # Автоматически устанавливаем тип профиля
+        if self.teacher_profile:
+            self.profile_type = 'teacher'
+        elif self.student_profile:
+            self.profile_type = 'student'
+        super().save(*args, **kwargs)

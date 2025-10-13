@@ -60,6 +60,143 @@ class TeacherProfileAdmin(admin.ModelAdmin):
     search_fields = ("user__username", "user__first_name", "user__last_name", "specialization", "university")
 
 
+# admin.py
+from django.contrib import admin
+from .models import ProfileView, TeacherProfile, StudentProfile
+
+# Регистрация модели просмотров профилей
+@admin.register(ProfileView)
+class ProfileViewAdmin(admin.ModelAdmin):
+    """Админка для просмотров профилей"""
+    list_display = [
+        'id', 
+        'profile_type', 
+        'get_profile_name',
+        'get_viewer_name', 
+        'viewer_ip', 
+        'viewed_at'
+    ]
+    list_filter = [
+        'profile_type', 
+        'viewed_at',
+        ('teacher_profile', admin.RelatedOnlyFieldListFilter),
+        ('student_profile', admin.RelatedOnlyFieldListFilter),
+    ]
+    search_fields = [
+        'viewer_ip',
+        'viewer_user__username',
+        'viewer_user__email',
+        'teacher_profile__user__first_name',
+        'teacher_profile__user__last_name',
+        'student_profile__user__first_name',
+        'student_profile__user__last_name',
+    ]
+    readonly_fields = [
+        'profile_type', 
+        'viewer_ip', 
+        'viewer_user', 
+        'viewed_at',
+        'teacher_profile',
+        'student_profile',
+        'user_agent'
+    ]
+    date_hierarchy = 'viewed_at'
+    ordering = ['-viewed_at']
+    list_per_page = 50
+    
+    def get_profile_name(self, obj):
+        """Получить имя просмотренного профиля"""
+        if obj.profile_type == 'teacher' and obj.teacher_profile:
+            return obj.teacher_profile.user.get_full_name()
+        elif obj.profile_type == 'student' and obj.student_profile:
+            return obj.student_profile.user.get_full_name()
+        return "—"
+    get_profile_name.short_description = 'Профиль'
+    
+    def get_viewer_name(self, obj):
+        """Получить имя просмотревшего"""
+        if obj.viewer_user:
+            return f"{obj.viewer_user.get_full_name()} ({obj.viewer_user.user_type})"
+        return f"Гость"
+    get_viewer_name.short_description = 'Кто просмотрел'
+    
+    def has_add_permission(self, request):
+        """Запрещаем создание записей вручную"""
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        """Запрещаем изменение записей"""
+        return False
+
+
+# Добавление статистики просмотров в админку профилей учителей
+class TeacherProfileAdminInline(admin.StackedInline):
+    """Инлайн для отображения статистики просмотров в профиле учителя"""
+    model = ProfileView
+    extra = 0
+    can_delete = False
+    verbose_name = 'Просмотр профиля'
+    verbose_name_plural = 'История просмотров профиля'
+    readonly_fields = ['viewer_user', 'viewer_ip', 'viewed_at', 'user_agent']
+    
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+# Дополнительные методы для админки TeacherProfile (добавить к существующей)
+class TeacherProfileAdminMixin:
+    """Миксин для добавления статистики просмотров в админку"""
+    
+    def get_total_views(self, obj):
+        """Получить общее количество просмотров"""
+        return obj.profile_views.count()
+    get_total_views.short_description = 'Всего просмотров'
+    
+    def get_week_views(self, obj):
+        """Получить просмотры за неделю"""
+        return obj.get_views_count('week')
+    get_week_views.short_description = 'Просмотров за неделю'
+    
+    def get_unique_viewers(self, obj):
+        """Получить количество уникальных просмотров"""
+        return obj.get_unique_viewers_count('all')
+    get_unique_viewers.short_description = 'Уникальных посетителей'
+
+
+# Аналогично для StudentProfile
+class StudentProfileAdminMixin:
+    """Миксин для добавления статистики просмотров в админку"""
+    
+    def get_total_views(self, obj):
+        """Получить общее количество просмотров"""
+        return obj.profile_views.count()
+    get_total_views.short_description = 'Всего просмотров'
+    
+    def get_week_views(self, obj):
+        """Получить просмотры за неделю"""
+        return obj.get_views_count('week')
+    get_week_views.short_description = 'Просмотров за неделю'
+    
+    def get_unique_viewers(self, obj):
+        """Получить количество уникальных просмотров"""
+        return obj.get_unique_viewers_count('all')
+    get_unique_viewers.short_description = 'Уникальных посетителей'
+
+
+# Пример использования в существующей админке:
+"""
+@admin.register(TeacherProfile)
+class TeacherProfileAdmin(TeacherProfileAdminMixin, admin.ModelAdmin):
+    list_display = [
+        'user', 
+        'city', 
+        'rating', 
+        'get_total_views',  # НОВОЕ
+        'get_week_views',   # НОВОЕ
+        'is_active'
+    ]
+    # ... остальные настройки ...
+"""
 # --- TeacherSubject ---
 @admin.register(TeacherSubject)
 class TeacherSubjectAdmin(admin.ModelAdmin):

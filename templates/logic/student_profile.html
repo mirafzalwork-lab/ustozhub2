@@ -11,6 +11,80 @@
         padding: 40px 16px;
     }
 
+    /* ✅ НОВОЕ: Стили для виджета просмотров */
+    .views-widget {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        color: white;
+        box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
+    }
+
+    .views-widget-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .views-widget-title {
+        font-size: 18px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .views-widget-icon {
+        font-size: 24px;
+    }
+
+    .views-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+
+    .views-stat-item {
+        background: rgba(255, 255, 255, 0.15);
+        padding: 16px;
+        border-radius: 12px;
+        text-align: center;
+        transition: all 0.3s;
+        backdrop-filter: blur(10px);
+    }
+
+    .views-stat-item:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+    }
+
+    .views-stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .views-stat-label {
+        font-size: 13px;
+        opacity: 0.9;
+    }
+
+    .views-info-text {
+        margin-top: 16px;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        font-size: 14px;
+        line-height: 1.5;
+        backdrop-filter: blur(10px);
+    }
+
+    .views-info-text i {
+        margin-right: 8px;
+    }
+
     .profile-header {
         background: white;
         border-radius: 16px;
@@ -54,7 +128,7 @@
         gap: 16px;
         font-size: 14px;
         color: #666;
-        flex-wrap: wrap; /* ✏️ ДОБАВЛЕНО: для адаптивности */
+        flex-wrap: wrap;
     }
 
     .profile-meta i {
@@ -65,7 +139,7 @@
         margin-top: 16px;
         display: flex;
         gap: 12px;
-        flex-wrap: wrap; /* ✏️ ДОБАВЛЕНО: для адаптивности */
+        flex-wrap: wrap;
     }
 
     .btn {
@@ -77,9 +151,9 @@
         border: none;
         cursor: pointer;
         transition: all 0.2s;
-        display: inline-flex; /* ✏️ ДОБАВЛЕНО */
-        align-items: center; /* ✏️ ДОБАВЛЕНО */
-        gap: 8px; /* ✏️ ДОБАВЛЕНО: отступ между иконкой и текстом */
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
     }
 
     .btn-primary {
@@ -112,12 +186,11 @@
         font-weight: 700;
         color: #1a1a1a;
         margin-bottom: 20px;
-        display: flex; /* ➕ ДОБАВЛЕНО: для иконок */
-        align-items: center; /* ➕ ДОБАВЛЕНО */
-        gap: 10px; /* ➕ ДОБАВЛЕНО */
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
 
-    /* ➕ ДОБАВЛЕНО: стиль для иконок в заголовках */
     .section-title i {
         color: #10b981;
         font-size: 22px;
@@ -135,7 +208,6 @@
         border-radius: 8px;
     }
 
-    /* ➕ ДОБАВЛЕНО: для элементов на всю ширину */
     .info-item.full-width {
         grid-column: 1 / -1;
     }
@@ -144,7 +216,7 @@
         font-size: 13px;
         color: #999;
         margin-bottom: 4px;
-        font-weight: 500; /* ✏️ ДОБАВЛЕНО */
+        font-weight: 500;
     }
 
     .info-value {
@@ -153,7 +225,7 @@
         font-weight: 500;
     }
 
-    /* ➕ ДОБАВЛЕНО: Блок статистики */
+    /* Блок статистики */
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -186,7 +258,7 @@
         font-weight: 500;
     }
 
-    /* ➕ ДОБАВЛЕНО: Стили для списка предметов */
+    /* Стили для списка предметов */
     .subjects-list {
         display: flex;
         flex-wrap: wrap;
@@ -215,7 +287,7 @@
         font-size: 12px;
     }
 
-    /* ➕ ДОБАВЛЕНО: Стили для блока описания целей */
+    /* Стили для блока описания целей */
     .bio-text {
         padding: 16px;
         background: #f0fdf4;
@@ -226,7 +298,7 @@
         font-size: 15px;
     }
 
-    /* ➕ ДОБАВЛЕНО: Стили для пустого состояния */
+    /* Стили для пустого состояния */
     .empty-state {
         text-align: center;
         padding: 40px 20px;
@@ -250,7 +322,7 @@
             text-align: center;
         }
 
-        .profile-actions { /* ✏️ ДОБАВЛЕНО */
+        .profile-actions {
             justify-content: center;
             width: 100%;
         }
@@ -259,7 +331,12 @@
             grid-template-columns: 1fr;
         }
 
-        .stats-grid { /* ➕ ДОБАВЛЕНО */
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        /* ✅ НОВОЕ: адаптивность виджета просмотров */
+        .views-stats-grid {
             grid-template-columns: 1fr;
         }
     }
@@ -268,7 +345,37 @@
 
 {% block content %}
 <div class="profile-container">
-    <!-- ========== ШАПКА ПРОФИЛЯ (без изменений структуры) ========== -->
+    <!-- ✅ НОВОЕ: Виджет статистики просмотров -->
+    <div class="views-widget">
+        <div class="views-widget-header">
+            <div class="views-widget-title">
+                <i class="fas fa-eye views-widget-icon"></i>
+                Статистика просмотров профиля
+            </div>
+        </div>
+        <div class="views-stats-grid">
+            <div class="views-stat-item">
+                <div class="views-stat-value">{{ views_stats.day }}</div>
+                <div class="views-stat-label">За сегодня</div>
+            </div>
+            <div class="views-stat-item">
+                <div class="views-stat-value">{{ views_stats.week }}</div>
+                <div class="views-stat-label">За неделю</div>
+            </div>
+            <div class="views-stat-item">
+                <div class="views-stat-value">{{ views_stats.total }}</div>
+                <div class="views-stat-label">За всё время</div>
+            </div>
+        </div>
+        <div class="views-info-text">
+            <i class="fas fa-info-circle"></i>
+            Ваш профиль просмотрели <strong>{{ views_stats.week }}</strong> раз за последнюю неделю. 
+            Уникальных посетителей: <strong>{{ views_stats.unique_week }}</strong>. 
+            Это означает, что учителя интересуются вашим профилем!
+        </div>
+    </div>
+
+    <!-- Шапка профиля -->
     <div class="profile-header">
         <div class="profile-avatar">
             {% if user.avatar %}
@@ -285,7 +392,6 @@
                 {% if user.phone %}
                     <span><i class="fas fa-phone"></i> {{ user.phone }}</span>
                 {% endif %}
-                <!-- ➕ ДОБАВЛЕНО: показываем возраст в мета-информации -->
                 {% if user.age %}
                     <span><i class="fas fa-birthday-cake"></i> {{ user.age }} лет</span>
                 {% endif %}
@@ -301,7 +407,7 @@
         </div>
     </div>
 
-    <!-- ➕ ДОБАВЛЕНО: Блок статистики (3 карточки) -->
+    <!-- Блок статистики -->
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-value">{{ user.student_profile.interests.count }}</div>
@@ -317,8 +423,7 @@
         </div>
     </div>
 
-    <!-- ➕ ДОБАВЛЕНО: Блок "Интересующие предметы" -->
-    <!-- Показывается только если студент выбрал предметы при регистрации -->
+    <!-- Блок "Интересующие предметы" -->
     {% if user.student_profile.interests.exists %}
     <div class="profile-section">
         <h2 class="section-title">
@@ -336,28 +441,27 @@
     </div>
     {% endif %}
 
-    <!-- ➕ ДОБАВЛЕНО: Блок "Мои цели обучения" -->
-    <!-- Показывается только если студент заполнил описание целей -->
+    <!-- Блок "Мои цели обучения" -->
     {% if user.student_profile.bio %}
     <div class="profile-section">
         <h2 class="section-title">
             <i class="fas fa-target"></i>
             Мои цели обучения
         </h2>
-        <div style="white-space: pre-wrap; width: 100%; w" class="bio-text">
+        <div style="white-space: pre-wrap; width: 100%;" class="bio-text">
             {{ user.student_profile.bio }}
         </div>
     </div>
     {% endif %}
 
-    <!-- ✏️ РАСШИРЕНО: Блок "Информация о профиле" -->
+    <!-- Блок "Информация о профиле" -->
     <div class="profile-section">
         <h2 class="section-title">
-            <i class="fas fa-info-circle"></i> <!-- ➕ ДОБАВЛЕНО: иконка -->
+            <i class="fas fa-info-circle"></i>
             Информация о профиле
         </h2>
         <div class="info-grid">
-            <!-- Базовые поля (без изменений) -->
+            <!-- Базовые поля -->
             <div class="info-item">
                 <div class="info-label">Имя пользователя</div>
                 <div class="info-value">{{ user.username }}</div>
@@ -379,7 +483,7 @@
             </div>
             {% endif %}
             
-            <!-- ➕ ДОБАВЛЕНО: Уровень образования -->
+            <!-- Уровень образования -->
             {% if user.student_profile.education_level %}
             <div class="info-item">
                 <div class="info-label">Уровень образования</div>
@@ -387,7 +491,7 @@
             </div>
             {% endif %}
             
-            <!-- ➕ ДОБАВЛЕНО: Школа/Университет -->
+            <!-- Школа/Университет -->
             {% if user.student_profile.school_university %}
             <div class="info-item">
                 <div class="info-label">Школа/Университет</div>
@@ -395,7 +499,7 @@
             </div>
             {% endif %}
             
-            <!-- ➕ ДОБАВЛЕНО: Город -->
+            <!-- Город -->
             {% if user.student_profile.city %}
             <div class="info-item">
                 <div class="info-label">Город</div>
@@ -403,7 +507,7 @@
             </div>
             {% endif %}
             
-            <!-- Системные поля (без изменений) -->
+            <!-- Системные поля -->
             <div class="info-item">
                 <div class="info-label">Дата регистрации</div>
                 <div class="info-value">{{ user.date_joined|date:"d.m.Y" }}</div>
@@ -415,7 +519,7 @@
         </div>
     </div>
 
-    <!-- ➕ ДОБАВЛЕНО: Блок призыва к действию если профиль не заполнен -->
+    <!-- Блок призыва к действию если профиль не заполнен -->
     {% if not user.student_profile.interests.exists and not user.student_profile.bio %}
     <div class="profile-section">
         <div class="empty-state">
