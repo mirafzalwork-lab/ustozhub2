@@ -25,8 +25,19 @@ SECRET_KEY = 'django-insecure-rx4raz1u)-1$v=)b66qio%2hn_pxu(!*g38dfkgfr0kg#+p*br
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    "ustozhubedu.uz",
+    "www.ustozhubedu.uz",
+    "localhost",
+    "127.0.0.1",
+    
+]
 
+# Доверенные источники для CSRF (Django 4+ требует схему)
+CSRF_TRUSTED_ORIGINS = [
+    "https://ustozhubedu.uz",
+    "https://www.ustozhubedu.uz",
+]
 
 # Application definition
 
