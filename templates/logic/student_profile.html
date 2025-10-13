@@ -482,6 +482,18 @@
                 <div class="info-value">{{ user.age }} лет</div>
             </div>
             {% endif %}
+            {% if user.student_profile.telegram %}
+            <div class="info-item">
+                <div class="info-label">Telegram</div>
+                <div class="info-value">{{ user.student_profile.telegram }}</div>
+            </div>
+            {% endif %}
+            {% if user.student_profile.whatsapp %}
+            <div class="info-item">
+                <div class="info-label">WhatsApp</div>
+                <div class="info-value">{{ user.student_profile.whatsapp }}</div>
+            </div>
+            {% endif %}
             
             <!-- Уровень образования -->
             {% if user.student_profile.education_level %}
