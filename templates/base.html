@@ -1,7 +1,8 @@
 {% load static %}
 {% load custom_filters %}
+{% load i18n %}
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -232,6 +233,61 @@
         .dropdown-menu.show {
             display: block;
             animation: slideDown 0.2s ease;
+        }
+        /* Language Switcher */
+        .language-switcher {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .language-switcher select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            padding: 6px 32px 6px 12px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #1a1a1a;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 12px;
+            min-width: 90px;
+        }
+
+        .language-switcher select:hover {
+            border-color: #0A2540;
+            background-color: #f8f9fa;
+        }
+
+        .language-switcher select:focus {
+            border-color: #0A2540;
+            box-shadow: 0 0 0 3px rgba(10, 37, 64, 0.1);
+        }
+
+        .language-switcher select option {
+            padding: 8px 12px;
+            background: white;
+            color: #1a1a1a;
+        }
+
+        .language-switcher form {
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            .language-switcher select {
+                min-width: auto;
+                padding: 6px 28px 6px 10px;
+                font-size: 12px;
+            }
         }
 
         @keyframes slideDown {
@@ -526,6 +582,104 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #999;
         }
+
+        /* Language Switcher */
+        .language-switcher {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .language-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #1a1a1a;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .language-btn:hover {
+            border-color: #0A2540;
+            background: #f0f4f8;
+        }
+
+        .language-btn .flag {
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .language-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            min-width: 200px;
+            display: none;
+            z-index: 100;
+            overflow: hidden;
+        }
+
+        .language-dropdown.show {
+            display: block;
+            animation: slideDown 0.2s ease;
+        }
+
+        .language-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: #333;
+            text-decoration: none;
+            transition: background 0.2s;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .language-option:hover {
+            background: #f5f5f5;
+        }
+
+        .language-option.active {
+            background: #e8f4fd;
+            color: #0A2540;
+        }
+
+        .language-option .flag {
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .language-option .check-icon {
+            margin-left: auto;
+            color: #0A2540;
+            font-size: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .language-btn span {
+                display: none;
+            }
+            
+            .language-btn {
+                padding: 8px 12px;
+            }
+        }
     </style>
 
     {% block extra_css %}{% endblock %}
@@ -541,13 +695,11 @@
 
             <!-- Search Bar (Desktop) -->
             <div class="nav-search">
-
                 <input 
                     type="text" 
                     class="search-input" 
-                    placeholder="     Найти учителя или предмет..." 
+                    placeholder="{% trans 'Найти учителя или предмет...' %}" 
                     id="navSearchInput"
-                    
                 >
                 <button class="clear-search" onclick="clearSearch()">
                     <i class="fas fa-times"></i>
@@ -563,16 +715,34 @@
                     <i class="fas fa-bars"></i>
                 </button>
 
+                <!-- Language Switcher -->
+                <!-- Language Switcher -->
+                <div class="language-switcher">
+                    <form action="{% url 'set_language' %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        
+                        <select name="language" onchange="this.form.submit()">
+                            <option value="ru" {% if LANGUAGE_CODE == 'ru' %}selected{% endif %}>🇷🇺 Русский</option>
+                            <option value="uz" {% if LANGUAGE_CODE == 'uz' %}selected{% endif %}>🇺🇿 O'zbekcha</option>
+                            <option value="en" {% if LANGUAGE_CODE == 'en' %}selected{% endif %}>🇺🇸 English</option>
+                        </select>
+                    </form>
+                </div>
+
+
+
+
                 <!-- Become Teacher Button -->
                 <a href="{% url 'teacher_register_step1' %}" class="nav-btn nav-btn-outline">
                     <i class="fas fa-chalkboard-teacher"></i>
-                    <span>Стать учителем</span>
+                    <span>{% trans 'Стать учителем' %}</span>
                 </a>
 
                 {% if user.is_authenticated %}
                     <!-- Authenticated User Menu -->
                     <div class="profile-container">
-                        <button class="profile-btn" onclick="toggleProfileDropdown()">
+                        <button class="profile-btn" onclick="toggleProfileDropdown(event)">
                             <div style="width: 40px; height: 40px;" class="profile-avatar">
                                 {% if user.avatar %}
                                     <img src="{{ user.avatar.url }}" alt="{{ user.get_full_name }}">
@@ -593,29 +763,29 @@
 
                             <a href="{% url 'profile' %}" class="dropdown-item">
                                 <i class="fas fa-user"></i>
-                                <span>Мой профиль</span>
+                                <span>{% trans 'Мой профиль' %}</span>
                             </a>
 
                             {% if user.user_type == 'teacher' %}
                                 <a href="{% url 'profile' %}" class="dropdown-item">
                                     <i class="fas fa-chalkboard"></i>
-                                    <span>Мои занятия</span>
+                                    <span>{% trans 'Мои занятия' %}</span>
                                 </a>
                             {% else %}
                                 <a href="#" class="dropdown-item">
                                     <i class="fas fa-heart"></i>
-                                    <span>Избранное</span>
+                                    <span>{% trans 'Избранное' %}</span>
                                 </a>
                             {% endif %}
 
                             <a href="#" class="dropdown-item">
                                 <i class="fas fa-comments"></i>
-                                <span>Сообщения</span>
+                                <span>{% trans 'Сообщения' %}</span>
                             </a>
 
                             <a href="{% url 'profile_edit' %}" class="dropdown-item">
                                 <i class="fas fa-cog"></i>
-                                <span>Настройки</span>
+                                <span>{% trans 'Настройки' %}</span>
                             </a>
 
                             <div class="dropdown-divider"></div>
@@ -624,7 +794,7 @@
                                 {% csrf_token %}
                                 <button type="submit" class="dropdown-item danger" style="width: 100%; border: none; background: none; text-align: left; cursor: pointer;">
                                     <i class="fas fa-sign-out-alt"></i>
-                                    <span>Выйти</span>
+                                    <span>{% trans 'Выйти' %}</span>
                                 </button>
                             </form>
                         </div>
@@ -633,11 +803,11 @@
                     <!-- Guest User Buttons -->
                     <a href="{% url 'login' %}" class="nav-btn">
                         <i class="fas fa-sign-in-alt"></i>
-                        <span>Войти</span>
+                        <span>{% trans 'Войти' %}</span>
                     </a>
                     <a href="{% url 'register_choose' %}" class="nav-btn nav-btn-primary">
                         <i class="fas fa-user-plus"></i>
-                        <span>Регистрация</span>
+                        <span>{% trans 'Регистрация' %}</span>
                     </a>
                 {% endif %}
             </div>
@@ -647,7 +817,7 @@
     <!-- Mobile Menu -->
     <div class="mobile-menu" id="mobileMenu">
         <div class="mobile-menu-header">
-            <h3>Меню</h3>
+            <h3>{% trans 'Меню' %}</h3>
             <button class="mobile-menu-close" onclick="toggleMobileMenu()">
                 <i class="fas fa-times"></i>
             </button>
@@ -658,49 +828,63 @@
                 <input 
                     type="text" 
                     class="search-input" 
-                    placeholder="Поиск..." 
+                    placeholder="{% trans 'Поиск...' %}" 
                     id="mobileSearchInput"
                     style="width: 100%;"
                 >
             </div>
 
+            <!-- Mobile Language Switcher -->
+            <div class="language-switcher" style="margin-bottom: 16px; padding: 0 16px;">
+                <form action="{% url 'set_language' %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    
+                    <select name="language" onchange="this.form.submit()" style="width: 100%;">
+                        <option value="ru" {% if LANGUAGE_CODE == 'ru' %}selected{% endif %}>🇷🇺 Русский</option>
+                        <option value="uz" {% if LANGUAGE_CODE == 'uz' %}selected{% endif %}>🇺🇿 O'zbekcha</option>
+                        <option value="en" {% if LANGUAGE_CODE == 'en' %}selected{% endif %}>🇺🇸 English</option>
+                    </select>
+                </form>
+            </div>
+
             {% if user.is_authenticated %}
                 <a href="{% url 'profile' %}" class="mobile-menu-item">
                     <i class="fas fa-user"></i>
-                    <span>Мой профиль</span>
+                    <span>{% trans 'Мой профиль' %}</span>
                 </a>
                 <a href="#" class="mobile-menu-item">
                     <i class="fas fa-comments"></i>
-                    <span>Сообщения</span>
+                    <span>{% trans 'Сообщения' %}</span>
                 </a>
                 <a href="#" class="mobile-menu-item">
                     <i class="fas fa-heart"></i>
-                    <span>Избранное</span>
+                    <span>{% trans 'Избранное' %}</span>
                 </a>
                 <a href="{% url 'teacher_register_step1' %}" class="mobile-menu-item">
                     <i class="fas fa-chalkboard-teacher"></i>
-                    <span>Стать учителем</span>
+                    <span>{% trans 'Стать учителем' %}</span>
                 </a>
                 <div style="height: 1px; background: #f0f0f0; margin: 16px 0;"></div>
                 <form method="post" action="{% url 'logout' %}">
                     {% csrf_token %}
                     <button type="submit" class="mobile-menu-item" style="width: 100%; border: none; background: none; color: #dc3545; text-align: left;">
                         <i class="fas fa-sign-out-alt"></i>
-                        <span>Выйти</span>
+                        <span>{% trans 'Выйти' %}</span>
                     </button>
                 </form>
             {% else %}
                 <a href="{% url 'login' %}" class="mobile-menu-item">
                     <i class="fas fa-sign-in-alt"></i>
-                    <span>Войти</span>
+                    <span>{% trans 'Войти' %}</span>
                 </a>
                 <a href="{% url 'register_choose' %}" class="mobile-menu-item">
                     <i class="fas fa-user-plus"></i>
-                    <span>Регистрация</span>
+                    <span>{% trans 'Регистрация' %}</span>
                 </a>
                 <a href="{% url 'teacher_register_step1' %}" class="mobile-menu-item">
                     <i class="fas fa-chalkboard-teacher"></i>
-                    <span>Стать учителем</span>
+                    <span>{% trans 'Стать учителем' %}</span>
                 </a>
             {% endif %}
         </div>
@@ -716,7 +900,7 @@
         <div class="footer-container">
             <div class="footer-section">
                 <h3>UstozHub</h3>
-                <p>Платформа №1 для поиска квалифицированных преподавателей в Узбекистане.</p>
+                <p>{% trans 'Платформа №1 для поиска квалифицированных преподавателей в Узбекистане.' %}</p>
                 <div class="social-links">
                     <a href="#" class="social-link" aria-label="Telegram">
                         <i class="fab fa-telegram-plane"></i>
@@ -731,35 +915,35 @@
             </div>
 
             <div class="footer-section">
-                <h3>Ученикам</h3>
-                <a href="{% url 'home' %}">Найти учителя</a>
-                <a href="#">Онлайн обучение</a>
-                <a href="#">Популярные предметы</a>
-                <a href="#">Как это работает</a>
+                <h3>{% trans 'Ученикам' %}</h3>
+                <a href="{% url 'home' %}">{% trans 'Найти учителя' %}</a>
+                <a href="#">{% trans 'Онлайн обучение' %}</a>
+                <a href="#">{% trans 'Популярные предметы' %}</a>
+                <a href="#">{% trans 'Как это работает' %}</a>
             </div>
 
             <div class="footer-section">
-                <h3>Учителям</h3>
-                <a href="{% url 'teacher_register_step1' %}">Стать учителем</a>
-                <a href="#">Преимущества</a>
-                <a href="#">Правила платформы</a>
-                <a href="#">FAQ для учителей</a>
+                <h3>{% trans 'Учителям' %}</h3>
+                <a href="{% url 'teacher_register_step1' %}">{% trans 'Стать учителем' %}</a>
+                <a href="#">{% trans 'Преимущества' %}</a>
+                <a href="#">{% trans 'Правила платформы' %}</a>
+                <a href="#">{% trans 'FAQ для учителей' %}</a>
             </div>
 
             <div class="footer-section">
-                <h3>Поддержка</h3>
+                <h3>{% trans 'Поддержка' %}</h3>
                 <a href="mailto:info@ustozhub.uz">info@ustozhubedu.uz</a>
                 <a href="tel:+998901234567">+998 94 218 26 09</a>
-                <a href="#">Центр помощи</a>
-                <a href="#">Связаться с нами</a>
+                <a href="#">{% trans 'Центр помощи' %}</a>
+                <a href="#">{% trans 'Связаться с нами' %}</a>
             </div>
         </div>
 
         <div class="footer-bottom">
-            <p>&copy; 2025 UstozHub. Все права защищены.</p>
+            <p>&copy; 2025 UstozHub. {% trans 'Все права защищены.' %}</p>
             <div class="footer-links-inline">
-                <a href="#">Политика конфиденциальности</a>
-                <a href="#">Условия использования</a>
+                <a href="#">{% trans 'Политика конфиденциальности' %}</a>
+                <a href="#">{% trans 'Условия использования' %}</a>
                 <a href="#">Cookies</a>
             </div>
         </div>
@@ -806,20 +990,18 @@
         }
 
         // Profile dropdown toggle
-        function toggleProfileDropdown() {
+        function toggleProfileDropdown(event) {
+            event.stopPropagation();
             const dropdown = document.getElementById('profileDropdown');
+            const languageDropdown = document.getElementById('languageDropdown');
+            
+            // Закрываем language dropdown если открыт
+            if (languageDropdown) {
+                languageDropdown.classList.remove('show');
+            }
+            
             dropdown.classList.toggle('show');
         }
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function(event) {
-            const profileContainer = document.querySelector('.profile-container');
-            const dropdown = document.getElementById('profileDropdown');
-            
-            if (dropdown && !profileContainer.contains(event.target)) {
-                dropdown.classList.remove('show');
-            }
-        });
 
         // Mobile menu toggle
         function toggleMobileMenu() {
@@ -836,6 +1018,40 @@
                 document.body.style.overflow = '';
             }
         });
+
+        // Language switcher toggle
+      // Language switcher toggle
+function toggleLanguageDropdown(event) {
+    event.stopPropagation();
+    const dropdown = document.getElementById('languageDropdown');
+    const profileDropdown = document.getElementById('profileDropdown');
+    
+    // Закрываем profile dropdown, если открыт
+    if (profileDropdown) {
+        profileDropdown.classList.remove('show');
+    }
+
+    dropdown.classList.toggle('show');
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(event) {
+    const languageSwitcher = document.querySelector('.language-switcher');
+    const languageDropdown = document.getElementById('languageDropdown');
+    const profileContainer = document.querySelector('.profile-container');
+    const profileDropdown = document.getElementById('profileDropdown');
+
+    // Закрываем language dropdown, если клик вне его
+    if (languageDropdown && languageSwitcher && !languageSwitcher.contains(event.target)) {
+        languageDropdown.classList.remove('show');
+    }
+
+    // Закрываем profile dropdown, если клик вне него
+    if (profileDropdown && profileContainer && !profileContainer.contains(event.target)) {
+        profileDropdown.classList.remove('show');
+    }
+});
+
     </script>
 
     {% block extra_js %}{% endblock %}

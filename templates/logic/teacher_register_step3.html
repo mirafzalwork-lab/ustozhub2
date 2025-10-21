@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}Регистрация учителя - Шаг 3 из 3{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Регистрация учителя - Шаг 3 из 3" %}{% endblock %}
 
 {% block content %}
 <style>
@@ -583,8 +584,8 @@
 
 <div class="register-container">
     <div class="register-header">
-        <h1 class="register-title">Сертификаты и достижения</h1>
-        <p class="register-subtitle">Добавьте сертификаты для повышения доверия (необязательно)</p>
+        <h1 class="register-title">{% trans 'Сертификаты и достижения' %}</h1>
+        <p class="register-subtitle">{% trans 'Добавьте сертификаты для повышения доверия (необязательно)' %}</p>
     </div>
 
     <!-- Progress Steps -->
@@ -597,17 +598,17 @@
                 <div class="step-circle completed">
                     <i class="fas fa-check"></i>
                 </div>
-                <span class="step-label completed">Личные данные</span>
+                <span class="step-label completed">{% trans 'Личные данные' %}</span>
             </div>
             <div class="step-item">
                 <div class="step-circle completed">
                     <i class="fas fa-check"></i>
                 </div>
-                <span class="step-label completed">Предметы и цены</span>
+                <span class="step-label completed">{% trans 'Предметы и цены' %}</span>
             </div>
             <div class="step-item">
                 <div class="step-circle active">3</div>
-                <span class="step-label active">Сертификаты</span>
+                <span class="step-label active">{% trans 'Сертификаты' %}</span>
             </div>
         </div>
     </div>
@@ -617,8 +618,8 @@
         <div class="info-banner optional">
             <i class="fas fa-star"></i>
             <div class="info-banner-content">
-                <h3>Этот шаг необязателен</h3>
-                <p>Сертификаты повышают доверие учеников и помогают выделиться среди других учителей. Вы можете добавить их сейчас или позже в личном кабинете.</p>
+                <h3>{% trans 'Этот шаг необязателен' %}</h3>
+                <p>{% trans 'Сертификаты повышают доверие учеников и помогают выделиться среди других учителей. Вы можете добавить их сейчас или позже в личном кабинете.' %}</p>
             </div>
         </div>
 
@@ -633,7 +634,7 @@
 
         {% if form.errors %}
             <div class="form-errors">
-                <strong>Ошибка при загрузке:</strong>
+                <strong>{% trans 'Ошибка при загрузке' %}:</strong>
                 {{ form.errors }}
             </div>
         {% endif %}
@@ -642,7 +643,7 @@
         <div class="upload-section">
             <h2 class="section-title">
                 <i class="fas fa-cloud-upload-alt"></i>
-                Добавить сертификат
+                {% trans 'Добавить сертификат' %}
             </h2>
 
             <form method="POST" enctype="multipart/form-data" id="certificateForm">
@@ -658,7 +659,7 @@
                     {% endif %}
                     <div class="form-help">
                         <i class="fas fa-info-circle"></i>
-                        Например: "Сертификат IELTS", "Диплом магистра"
+                        {% trans 'Например: "Сертификат IELTS", "Диплом магистра"' %}
                     </div>
                 </div>
 
@@ -672,7 +673,7 @@
                     {% endif %}
                     <div class="form-help">
                         <i class="fas fa-info-circle"></i>
-                        Организация, выдавшая сертификат
+                        {% trans 'Организация, выдавшая сертификат' %}
                     </div>
                 </div>
 
@@ -686,9 +687,9 @@
                             <i class="fas fa-file-upload"></i>
                         </div>
                         <div class="upload-text">
-                            <h4>Перетащите файл сюда</h4>
-                            <p>или нажмите для выбора</p>
-                            <span class="file-types">Форматы: PDF, JPG, PNG (макс. 5 МБ)</span>
+                            <h4>{% trans 'Перетащите файл сюда' %}</h4>
+                            <p>{% trans 'или нажмите для выбора' %}</p>
+                            <span class="file-types">{% trans 'Форматы: PDF, JPG, PNG (макс. 5 МБ)' %}</span>
                         </div>
                     </div>
                     
@@ -703,7 +704,7 @@
 
                 <button type="submit" name="add_more" class="btn-add-more">
                     <i class="fas fa-plus-circle"></i>
-                    Добавить сертификат
+                    {% trans 'Добавить сертификат' %}
                 </button>
             </form>
         </div>
@@ -712,7 +713,7 @@
         <div class="certificates-list">
             <h2 class="section-title">
                 <i class="fas fa-certificate"></i>
-                Загруженные сертификаты
+                {% trans 'Загруженные сертификаты' %}
                 <span style="font-size: 14px; font-weight: 400; color: #666; margin-left: auto;">
                     ({{ certificates|length }})
                 </span>
@@ -735,14 +736,14 @@
                             {% if certificate.file %}
                                 <a href="{{ certificate.file.url }}" target="_blank" class="btn-view">
                                     <i class="fas fa-eye"></i>
-                                    Просмотр
+                                    {% trans 'Просмотр' %}
                                 </a>
                             {% endif %}
-                            <form method="POST" action="{% url 'remove_certificate' certificate.id %}" style="display: inline;">
+                            <form method="POST" action="{% url 'remove_certificate' certificate.id %}" style="display: inline;" onsubmit="return confirmDelete();">
                                 {% csrf_token %}
-                                <button type="submit" class="btn-remove" onclick="return confirm('Удалить этот сертификат?')">
+                                <button type="submit" class="btn-remove">
                                     <i class="fas fa-trash-alt"></i>
-                                    Удалить
+                                    {% trans 'Удалить' %}
                                 </button>
                             </form>
                         </div>
@@ -751,7 +752,7 @@
             {% else %}
                 <div class="empty-state">
                     <i class="fas fa-inbox"></i>
-                    <p>Сертификаты еще не добавлены</p>
+                    <p>{% trans 'Сертификаты еще не добавлены' %}</p>
                 </div>
             {% endif %}
         </div>
@@ -759,19 +760,19 @@
         <!-- Actions -->
         <div class="form-actions">
             <a href="{% url 'teacher_register_step2' %}" class="btn-back">
-                <i class="fas fa-arrow-left"></i> Назад
+                <i class="fas fa-arrow-left"></i> {% trans 'Назад' %}
             </a>
             
             <div style="display: flex; gap: 12px;">
                 <form method="POST" style="display: inline;">
                     {% csrf_token %}
                     <button type="submit" name="skip" class="btn-skip">
-                        Пропустить <i class="fas fa-arrow-right"></i>
+                        {% trans 'Пропустить' %} <i class="fas fa-arrow-right"></i>
                     </button>
                 </form>
                 
                 <a href="{% url 'teacher_register_complete' %}" class="btn-finish">
-                    <i class="fas fa-check"></i> Завершить
+                    <i class="fas fa-check"></i> {% trans 'Завершить' %}
                 </a>
             </div>
         </div>
@@ -779,6 +780,11 @@
 </div>
 
 <script>
+    // Confirm delete function
+    function confirmDelete() {
+        return confirm('{% trans "Удалить этот сертификат?" %}');
+    }
+
     // File input handling
     const fileInput = document.getElementById('id_file');
     const uploadArea = document.getElementById('uploadArea');
@@ -824,14 +830,14 @@
 
         if (!name || !issuer || !file) {
             e.preventDefault();
-            alert('Пожалуйста, заполните все поля и выберите файл');
+            alert('{% trans "Пожалуйста, заполните все поля и выберите файл" %}');
             return false;
         }
 
         // Check file size (5MB max)
         if (fileInput.files[0].size > 5 * 1024 * 1024) {
             e.preventDefault();
-            alert('Размер файла не должен превышать 5 МБ');
+            alert('{% trans "Размер файла не должен превышать 5 МБ" %}');
             return false;
         }
 
@@ -839,7 +845,7 @@
         const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
         if (!allowedTypes.includes(fileInput.files[0].type)) {
             e.preventDefault();
-            alert('Разрешены только файлы форматов: PDF, JPG, PNG');
+            alert('{% trans "Разрешены только файлы форматов: PDF, JPG, PNG" %}');
             return false;
         }
     });

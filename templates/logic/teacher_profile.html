@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
 {% load custom_filters %}
+{% load i18n %}
 
-{% block title %}Мой профиль - UstozHub{% endblock %}
+{% block title %}{% trans "Мой профиль" %} - UstozHub{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -564,28 +565,26 @@
         <div class="views-widget-header">
             <div class="views-widget-title">
                 <i class="fas fa-eye views-widget-icon"></i>
-                Статистика просмотров профиля
+                {% trans 'Статистика просмотров профиля' %}
             </div>
         </div>
         <div class="views-stats-grid">
             <div class="views-stat-item">
                 <div class="views-stat-value">{{ views_stats.day }}</div>
-                <div class="views-stat-label">За сегодня</div>
+                <div class="views-stat-label">{% trans 'За сегодня' %}</div>
             </div>
             <div class="views-stat-item">
                 <div class="views-stat-value">{{ views_stats.week }}</div>
-                <div class="views-stat-label">За неделю</div>
+                <div class="views-stat-label">{% trans 'За неделю' %}</div>
             </div>
             <div class="views-stat-item">
                 <div class="views-stat-value">{{ views_stats.total }}</div>
-                <div class="views-stat-label">За всё время</div>
+                <div class="views-stat-label">{% trans 'За всё время' %}</div>
             </div>
         </div>
         <div class="views-info-text">
             <i class="fas fa-info-circle"></i>
-            Ваш профиль просмотрели <strong>{{ views_stats.week }}</strong> раз за последнюю неделю. 
-            Уникальных посетителей: <strong>{{ views_stats.unique_week }}</strong>. 
-            Продолжайте обновлять профиль для привлечения новых учеников!
+            {% blocktrans with week=views_stats.week unique=views_stats.unique_week %}Ваш профиль просмотрели <strong>{{ week }}</strong> раз за последнюю неделю. Уникальных посетителей: <strong>{{ unique }}</strong>. Продолжайте обновлять профиль для привлечения новых учеников!{% endblocktrans %}
         </div>
     </div>
 
@@ -594,19 +593,19 @@
         <div class="alert alert-warning">
             <i class="fas fa-clock"></i>
             <div>
-                <strong>Ваш профиль на модерации</strong><br>
-                Администрация проверит ваш профиль в ближайшее время. После одобрения вы сможете получать запросы от учеников и ваш профиль будет виден в поиске.
+                <strong>{% trans 'Ваш профиль на модерации' %}</strong><br>
+                {% trans 'Администрация проверит ваш профиль в ближайшее время. После одобрения вы сможете получать запросы от учеников и ваш профиль будет виден в поиске.' %}
             </div>
         </div>
     {% elif teacher.moderation_status == 'rejected' %}
         <div class="alert alert-danger">
             <i class="fas fa-exclamation-triangle"></i>
             <div>
-                <strong>Профиль отклонен</strong><br>
+                <strong>{% trans 'Профиль отклонен' %}</strong><br>
                 {% if teacher.moderation_comment %}
                     {{ teacher.moderation_comment }}
                 {% else %}
-                    Пожалуйста, свяжитесь с поддержкой для уточнения причины отклонения.
+                    {% trans 'Пожалуйста, свяжитесь с поддержкой для уточнения причины отклонения.' %}
                 {% endif %}
             </div>
         </div>
@@ -614,8 +613,8 @@
         <div class="alert alert-success">
             <i class="fas fa-check-circle"></i>
             <div>
-                <strong>Профиль одобрен!</strong><br>
-                Ваш профиль виден в поиске. Вы можете получать запросы от учеников.
+                <strong>{% trans 'Профиль одобрен!' %}</strong><br>
+                {% trans 'Ваш профиль виден в поиске. Вы можете получать запросы от учеников.' %}
             </div>
         </div>
     {% endif %}
@@ -624,11 +623,11 @@
     <div class="profile-header">
         <span class="status-badge status-{{ teacher.moderation_status }}">
             {% if teacher.moderation_status == 'pending' %}
-                <i class="fas fa-clock"></i> На модерации
+                <i class="fas fa-clock"></i> {% trans 'На модерации' %}
             {% elif teacher.moderation_status == 'approved' %}
-                <i class="fas fa-check-circle"></i> Одобрено
+                <i class="fas fa-check-circle"></i> {% trans 'Одобрено' %}
             {% else %}
-                <i class="fas fa-times-circle"></i> Отклонено
+                <i class="fas fa-times-circle"></i> {% trans 'Отклонено' %}
             {% endif %}
         </span>
 
@@ -647,8 +646,8 @@
                 {{ teacher.get_education_level_display }}
             </p>
             <div class="profile-meta">
-                <span><i class="fas fa-briefcase"></i> {{ teacher.experience_years }} лет опыта</span>
-                <span><i class="fas fa-star"></i> {{ teacher.rating }} рейтинг</span>
+                <span><i class="fas fa-briefcase"></i> {{ teacher.experience_years }} {% trans 'лет опыта' %}</span>
+                <span><i class="fas fa-star"></i> {{ teacher.rating }} {% trans 'рейтинг' %}</span>
                 <span><i class="fas fa-map-marker-alt"></i> {{ teacher.city|default:"Не указан" }}</span>
                 {% if user.phone %}
                     <span><i class="fas fa-phone"></i> {{ user.phone }}</span>
@@ -656,13 +655,13 @@
             </div>
             <div class="profile-actions">
                 <a href="{% url 'teacher_profile_edit' %}" class="btn btn-primary">
-                    <i class="fas fa-edit"></i> Редактировать профиль
+                    <i class="fas fa-edit"></i> {% trans 'Редактировать профиль' %}
                 </a>
                 <a href="{% url 'home' %}" class="btn btn-success">
-                    <i class="fas fa-eye"></i> Посмотреть как видят ученики
+                    <i class="fas fa-eye"></i> {% trans 'Посмотреть как видят ученики' %}
                 </a>
                 <a href="{% url 'logout' %}" class="btn btn-secondary">
-                    <i class="fas fa-sign-out-alt"></i> Выйти
+                    <i class="fas fa-sign-out-alt"></i> {% trans 'Выйти' %}
                 </a>
             </div>
         </div>
@@ -673,22 +672,22 @@
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-users"></i></div>
             <div class="stat-value">{{ teacher.total_students }}</div>
-            <div class="stat-label">Всего учеников</div>
+            <div class="stat-label">{% trans 'Всего учеников' %}</div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-star"></i></div>
             <div class="stat-value">{{ teacher.rating }}</div>
-            <div class="stat-label">Рейтинг</div>
+            <div class="stat-label">{% trans 'Рейтинг' %}</div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-comment"></i></div>
             <div class="stat-value">{{ teacher.total_reviews }}</div>
-            <div class="stat-label">Отзывов</div>
+            <div class="stat-label">{% trans 'Отзывов' %}</div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-book"></i></div>
             <div class="stat-value">{{ teacher.teachersubject_set.count }}</div>
-            <div class="stat-label">Предметов</div>
+            <div class="stat-label">{% trans 'Предметов' %}</div>
         </div>
     </div>
 
@@ -697,7 +696,7 @@
     <div class="profile-section">
         <h2 class="section-title">
             <i class="fas fa-user"></i>
-            О себе
+            {% trans 'О себе' %}
         </h2>
         <div class="bio-text">{{ teacher.bio }}</div>
     </div>
@@ -708,7 +707,7 @@
     <div class="profile-section">
         <h2 class="section-title">
             <i class="fas fa-book-open"></i>
-            Мои предметы и цены
+            {% trans 'Мои предметы и цены' %}
         </h2>
         <div class="subjects-grid">
             {% for ts in teacher.teachersubject_set.all %}
@@ -718,12 +717,12 @@
                     {{ ts.subject.name }}
                 </div>
                 <div class="subject-price">
-                    {{ ts.hourly_rate|floatformat:0 }} <span>сум/час</span>
+                    {{ ts.hourly_rate|floatformat:0 }} <span>{% trans 'сум/час' %}</span>
                 </div>
                 {% if ts.is_free_trial %}
                     <span class="free-trial-badge">
                         <i class="fas fa-gift"></i>
-                        Пробное занятие бесплатно
+                        {% trans 'Пробное занятие бесплатно' %}
                     </span>
                 {% endif %}
                 {% if ts.description %}
@@ -739,28 +738,28 @@
     <div class="profile-section">
         <h2 class="section-title">
             <i class="fas fa-graduation-cap"></i>
-            Образование и опыт
+            {% trans 'Образование и опыт' %}
         </h2>
         <div class="info-grid">
             <div class="info-item">
-                <div class="info-label">Уровень образования</div>
+                <div class="info-label">{% trans 'Уровень образования' %}</div>
                 <div class="info-value">{{ teacher.get_education_level_display }}</div>
             </div>
             {% if teacher.university %}
             <div class="info-item">
-                <div class="info-label">Учебное заведение</div>
+                <div class="info-label">{% trans 'Учебное заведение' %}</div>
                 <div class="info-value">{{ teacher.university }}</div>
             </div>
             {% endif %}
             {% if teacher.specialization %}
             <div class="info-item">
-                <div class="info-label">Специализация</div>
+                <div class="info-label">{% trans 'Специализация' %}</div>
                 <div class="info-value">{{ teacher.specialization }}</div>
             </div>
             {% endif %}
             <div class="info-item">
-                <div class="info-label">Опыт преподавания</div>
-                <div class="info-value">{{ teacher.experience_years }} лет</div>
+                <div class="info-label">{% trans 'Опыт преподавания' %}</div>
+                <div class="info-value">{{ teacher.experience_years }} {% trans 'лет' %}</div>
             </div>
         </div>
     </div>
@@ -770,7 +769,7 @@
     <div class="profile-section">
         <h2 class="section-title">
             <i class="fas fa-language"></i>
-            Языки преподавания
+            {% trans 'Языки преподавания' %}
         </h2>
         <div class="languages-list">
             {% for lang in teacher.get_teaching_languages_list %}
@@ -787,25 +786,25 @@
     <div class="profile-section">
         <h2 class="section-title">
             <i class="fas fa-calendar-alt"></i>
-            Формат и расписание
+            {% trans 'Формат и расписание' %}
         </h2>
         <div class="info-grid">
             <div class="info-item">
-                <div class="info-label">Формат обучения</div>
+                <div class="info-label">{% trans 'Формат обучения' %}</div>
                 <div class="info-value">{{ teacher.get_teaching_format_display }}</div>
             </div>
             <div class="info-item">
-                <div class="info-label">Город</div>
+                <div class="info-label">{% trans 'Город' %}</div>
                 <div class="info-value">{{ teacher.city|default:"Не указан" }}</div>
             </div>
             <div class="info-item">
-                <div class="info-label">Время работы</div>
+                <div class="info-label">{% trans 'Время работы' %}</div>
                 <div class="info-value">
                     {{ teacher.available_from|time:"H:i" }} - {{ teacher.available_to|time:"H:i" }}
                 </div>
             </div>
             <div class="info-item full-width">
-                <div class="info-label">Рабочие дни</div>
+                <div class="info-label">{% trans 'Рабочие дни' %}</div>
                 <div class="weekdays-list">
                     {% for day in teacher.get_available_weekdays_display|split:", " %}
                         <span class="weekday-badge">{{ day }}</span>
@@ -819,30 +818,30 @@
     <div class="profile-section">
         <h2 class="section-title">
             <i class="fas fa-phone"></i>
-            Контактная информация
+            {% trans 'Контактная информация' %}
         </h2>
         <div class="info-grid">
             {% if user.email %}
             <div class="info-item">
-                <div class="info-label">Email</div>
+                <div class="info-label">{% trans 'Email' %}</div>
                 <div class="info-value">{{ user.email }}</div>
             </div>
             {% endif %}
             {% if user.phone %}
             <div class="info-item">
-                <div class="info-label">Телефон</div>
+                <div class="info-label">{% trans 'Телефон' %}</div>
                 <div class="info-value">{{ user.phone }}</div>
             </div>
             {% endif %}
             {% if teacher.telegram %}
             <div class="info-item">
-                <div class="info-label">Telegram</div>
+                <div class="info-label">{% trans 'Telegram' %}</div>
                 <div class="info-value">{{ teacher.telegram }}</div>
             </div>
             {% endif %}
             {% if teacher.whatsapp %}
             <div class="info-item">
-                <div class="info-label">WhatsApp</div>
+                <div class="info-label">{% trans 'WhatsApp' %}</div>
                 <div class="info-value">{{ teacher.whatsapp }}</div>
             </div>
             {% endif %}
@@ -854,7 +853,7 @@
     <div class="profile-section">
         <h2 class="section-title">
             <i class="fas fa-certificate"></i>
-            Сертификаты и дипломы
+            {% trans 'Сертификаты и дипломы' %}
         </h2>
         <div class="certificates-grid">
             {% for cert in teacher.certificates.all %}
@@ -866,7 +865,7 @@
                 <div class="certificate-issuer">{{ cert.issuer }}</div>
                 {% if cert.file %}
                     <a href="{{ cert.file.url }}" target="_blank" class="btn btn-secondary" style="margin-top: 12px; font-size: 13px;">
-                        <i class="fas fa-download"></i> Скачать
+                        <i class="fas fa-download"></i> {% trans 'Скачать' %}
                     </a>
                 {% endif %}
             </div>
@@ -879,34 +878,34 @@
     <div class="profile-section">
         <h2 class="section-title">
             <i class="fas fa-info-circle"></i>
-            Системная информация
+            {% trans 'Системная информация' %}
         </h2>
         <div class="info-grid">
             <div class="info-item">
-                <div class="info-label">Имя пользователя</div>
+                <div class="info-label">{% trans 'Имя пользователя' %}</div>
                 <div class="info-value">{{ user.username }}</div>
             </div>
             <div class="info-item">
-                <div class="info-label">Дата регистрации</div>
+                <div class="info-label">{% trans 'Дата регистрации' %}</div>
                 <div class="info-value">{{ user.date_joined|date:"d.m.Y" }}</div>
             </div>
             <div class="info-item">
-                <div class="info-label">Статус профиля</div>
+                <div class="info-label">{% trans 'Статус профиля' %}</div>
                 <div class="info-value">
                     {% if teacher.is_active %}
-                        <span style="color: #10b981;">✓ Активен</span>
+                        <span style="color: #10b981;">✓ {% trans 'Активен' %}</span>
                     {% else %}
-                        <span style="color: #dc3545;">✗ Неактивен</span>
+                        <span style="color: #dc3545;">✗ {% trans 'Неактивен' %}</span>
                     {% endif %}
                 </div>
             </div>
             <div class="info-item">
-                <div class="info-label">Рекомендуемый</div>
+                <div class="info-label">{% trans 'Рекомендуемый' %}</div>
                 <div class="info-value">
                     {% if teacher.is_featured %}
-                        <span style="color: #10b981;">✓ Да</span>
+                        <span style="color: #10b981;">✓ {% trans 'Да' %}</span>
                     {% else %}
-                        <span style="color: #666;">✗ Нет</span>
+                        <span style="color: #666;">✗ {% trans 'Нет' %}</span>
                     {% endif %}
                 </div>
             </div>

@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load i18n %}
 
-{% block title %}Вход - UstozHub{% endblock %}
+{% block title %}{% trans 'Вход' %} - UstozHub{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -209,8 +210,8 @@
 <div class="auth-container">
     <div class="auth-card">
         <div class="auth-header">
-            <h1>Вход в UstozHub</h1>
-            <p>Войдите чтобы продолжить</p>
+            <h1>{% trans 'Вход в UstozHub' %}</h1>
+            <p>{% trans 'Войдите чтобы продолжить' %}</p>
         </div>
 
         {% if messages %}
@@ -263,18 +264,18 @@
                         {{ form.remember_me.label }}
                     </label>
                 </div>
-                <a href="#" class="forgot-link">Забыли пароль?</a>
+                <a href="#" class="forgot-link">{% trans 'Забыли пароль?' %}</a>
             </div>
 
             <button type="submit" class="submit-btn">
-                <i class="fas fa-sign-in-alt"></i> Войти
+                <i class="fas fa-sign-in-alt"></i> {% trans 'Войти' %}
             </button>
         </form>
 
-        <div class="divider">или</div>
+        <div class="divider">{% trans 'или' %}</div>
 
         <div class="register-link">
-            Нет аккаунта? <a href="{% url 'register_choose' %}">Зарегистрироваться</a>
+            {% trans 'Нет аккаунта?' %} <a href="{% url 'register_choose' %}">{% trans 'Зарегистрироваться' %}</a>
         </div>
     </div>
 </div>
@@ -285,7 +286,7 @@
     document.getElementById('loginForm').addEventListener('submit', function(e) {
         const btn = this.querySelector('.submit-btn');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Вход...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% trans "Вход..." %}';
     });
 </script>
 {% endblock %}

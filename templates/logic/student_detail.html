@@ -1,17 +1,17 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}{{ student.user.get_full_name }} - Профиль ученика - UstozHub{% endblock %}
+{% load i18n %}
+{% block title %}{{ student.user.get_full_name }} - {% trans "Профиль ученика" %} - UstozHub{% endblock %}
 
 {% block content %}
 <style>
-    /* Основной контейнер */
+    /* ВСЕ СТИЛИ ОСТАЮТСЯ БЕЗ ИЗМЕНЕНИЙ */
     .detail-container {
         max-width: 1200px;
         margin: 0 auto;
         padding: 30px 20px;
     }
 
-    /* Навигация "хлебные крошки" */
     .breadcrumb {
         display: flex;
         align-items: center;
@@ -35,7 +35,6 @@
         color: #ccc;
     }
 
-    /* Основная сетка */
     .detail-grid {
         display: grid;
         grid-template-columns: 1fr 360px;
@@ -43,14 +42,12 @@
         align-items: start;
     }
 
-    /* Левая колонка - основная информация */
     .main-column {
         display: flex;
         flex-direction: column;
         gap: 24px;
     }
 
-    /* Карточка профиля */
     .profile-card {
         background: white;
         border-radius: 16px;
@@ -147,7 +144,6 @@
         font-size: 16px;
     }
 
-    /* Секции контента */
     .content-section {
         background: white;
         border-radius: 12px;
@@ -170,19 +166,17 @@
         font-size: 22px;
     }
 
-    /* Описание целей */
     .description-text {
-    color: #444;
-    font-size: 15px;
-    line-height: 1.8;
-    white-space: pre-wrap;
-    word-wrap: break-word;      /* Перенос длинных слов */
-    overflow-wrap: anywhere;    /* Современный аналог для надёжности */
-    max-height: 280px;          /* Ограничиваем высоту блока */
-    overflow-y: auto;           /* Вертикальный скролл только если текста слишком много */
-}
+        color: #444;
+        font-size: 15px;
+        line-height: 1.8;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        overflow-wrap: anywhere;
+        max-height: 280px;
+        overflow-y: auto;
+    }
 
-    /* Список предметов */
     .subjects-list {
         display: flex;
         flex-wrap: wrap;
@@ -213,7 +207,6 @@
         font-size: 16px;
     }
 
-    /* Таблица информации */
     .info-table {
         width: 100%;
     }
@@ -248,7 +241,6 @@
         font-weight: 500;
     }
 
-    /* Правая колонка - контакты и действия */
     .sidebar-column {
         display: flex;
         flex-direction: column;
@@ -257,7 +249,6 @@
         top: 90px;
     }
 
-    /* Карточка бюджета */
     .budget-card {
         background: linear-gradient(135deg, #10B981, #059669);
         border-radius: 16px;
@@ -284,7 +275,6 @@
         opacity: 0.8;
     }
 
-    /* Карточка контактов */
     .contact-card {
         background: white;
         border-radius: 12px;
@@ -315,6 +305,7 @@
         justify-content: center;
         gap: 10px;
         margin-bottom: 12px;
+        text-decoration: none;
     }
 
     .contact-btn-primary:hover {
@@ -338,6 +329,7 @@
         align-items: center;
         justify-content: center;
         gap: 8px;
+        text-decoration: none;
     }
 
     .contact-btn-secondary:hover {
@@ -346,7 +338,6 @@
         background: rgba(16, 185, 129, 0.05);
     }
 
-    /* Карточка похожих учеников */
     .similar-card {
         background: white;
         border-radius: 12px;
@@ -420,7 +411,6 @@
         color: #666;
     }
 
-    /* Секция рекомендуемых учителей */
     .teachers-section {
         background: white;
         border-radius: 12px;
@@ -500,7 +490,6 @@
         font-weight: 500;
     }
 
-    /* Пустое состояние */
     .empty-state {
         text-align: center;
         padding: 30px;
@@ -513,7 +502,6 @@
         margin-bottom: 12px;
     }
 
-    /* Адаптивность */
     @media (max-width: 1024px) {
         .detail-grid {
             grid-template-columns: 1fr;
@@ -572,9 +560,9 @@
 <div class="detail-container">
     <!-- Хлебные крошки -->
     <nav class="breadcrumb">
-        <a href="{% url 'home' %}">Главная</a>
+        <a href="{% url 'home' %}">{% trans "Главная" %}</a>
         <span class="breadcrumb-separator">/</span>
-        <a href="{% url 'students_list' %}">Ученики</a>
+        <a href="{% url 'students_list' %}">{% trans "Ученики" %}</a>
         <span class="breadcrumb-separator">/</span>
         <span>{{ student.user.get_full_name|default:student.user.username }}</span>
     </nav>
@@ -611,7 +599,7 @@
                             {% endif %}
                             <span class="badge">
                                 <i class="fas fa-user-check"></i>
-                                Активный поиск
+                                {% trans "Активный поиск" %}
                             </span>
                         </div>
 
@@ -625,12 +613,12 @@
                             {% if student.user.age %}
                                 <div class="meta-item-large">
                                     <i class="fas fa-calendar-alt"></i>
-                                    <span>{{ student.user.age }} лет</span>
+                                    <span>{{ student.user.age }} {% trans "лет" %}</span>
                                 </div>
                             {% endif %}
                             <div class="meta-item-large">
                                 <i class="fas fa-clock"></i>
-                                <span>Зарегистрирован {{ student.created_at|date:"d.m.Y" }}</span>
+                                <span>{% trans "Зарегистрирован" %} {{ student.created_at|date:"d.m.Y" }}</span>
                             </div>
                         </div>
                     </div>
@@ -642,7 +630,7 @@
                 <div class="content-section">
                     <h2 class="section-title">
                         <i class="fas fa-bullseye"></i>
-                        Цели и пожелания
+                        {% trans "Цели и пожелания" %}
                     </h2>
                     <p class="description-text">{{ student.description|default:student.bio }}</p>
                 </div>
@@ -653,7 +641,7 @@
                 <div class="content-section">
                     <h2 class="section-title">
                         <i class="fas fa-book-open"></i>
-                        Хочет изучать ({{ desired_subjects.count }})
+                        {% trans "Хочет изучать" %} ({{ desired_subjects.count }})
                     </h2>
                     <div class="subjects-list">
                         {% for subject in desired_subjects %}
@@ -670,14 +658,14 @@
             <div class="content-section">
                 <h2 class="section-title">
                     <i class="fas fa-info-circle"></i>
-                    Дополнительная информация
+                    {% trans "Дополнительная информация" %}
                 </h2>
                 <div class="info-table">
                     {% if student.school_university %}
                         <div class="info-row">
                             <div class="info-label">
                                 <i class="fas fa-university"></i>
-                                Учебное заведение
+                                {% trans "Учебное заведение" %}
                             </div>
                             <div class="info-value">{{ student.school_university }}</div>
                         </div>
@@ -686,7 +674,7 @@
                     <div class="info-row">
                         <div class="info-label">
                             <i class="fas fa-desktop"></i>
-                            Формат занятий
+                            {% trans "Формат занятий" %}
                         </div>
                         <div class="info-value">{{ student.get_learning_format_display }}</div>
                     </div>
@@ -695,7 +683,7 @@
                         <div class="info-row">
                             <div class="info-label">
                                 <i class="fas fa-calendar-week"></i>
-                                Доступные дни
+                                {% trans "Доступные дни" %}
                             </div>
                             <div class="info-value">{{ student.get_available_weekdays_display }}</div>
                         </div>
@@ -705,7 +693,7 @@
                         <div class="info-row">
                             <div class="info-label">
                                 <i class="fas fa-phone"></i>
-                                Телефон
+                                {% trans "Телефон" %}
                             </div>
                             <div class="info-value">{{ student.user.phone }}</div>
                         </div>
@@ -715,18 +703,17 @@
                         <div class="info-row">
                             <div class="info-label">
                                 <i class="fas fa-envelope"></i>
-                                Email
+                                {% trans "Email" %}
                             </div>
                             <div class="info-value">{{ student.user.email }}</div>
                         </div>
                     {% endif %}
 
-                    <!-- ✅ НОВЫЕ БЛОКИ: Контакты для связи -->
                     {% if student.telegram %}
                         <div class="info-row">
                             <div class="info-label">
                                 <i class="fab fa-telegram"></i>
-                                Telegram
+                                {% trans "Telegram" %}
                             </div>
                             <div class="info-value">
                                 {{ student.telegram }}
@@ -738,7 +725,7 @@
                         <div class="info-row">
                             <div class="info-label">
                                 <i class="fab fa-whatsapp"></i>
-                                WhatsApp
+                                {% trans "WhatsApp" %}
                             </div>
                             <div class="info-value">
                                 <a href="https://wa.me/{{ student.whatsapp|cut:' '|cut:'+'|cut:'-' }}" 
@@ -749,49 +736,42 @@
                             </div>
                         </div>
                     {% endif %}
+                </div>
 
-
-                <h3 class="contact-title">Связаться с учеником</h3>
+                <h3 class="contact-title" style="margin-top: 24px;">{% trans "Связаться с учеником" %}</h3>
                 
-               
                 {% if student.telegram or student.whatsapp or student.user.phone %}
-                    <!-- ✅ TELEGRAM -->
-       
-                        {%  if student.telegram  %}
-                            <a style="color: #0088cc; text-decoration: none;" href="https://t.me/{{ student.telegram }}" 
-                               target="_blank" 
-                               class="contact-btn-primary">
-                                <i class="fab fa-telegram"></i>
-                                Написать в Telegram
-                            </a>
-                        {% endif %}
+                    {% if student.telegram %}
+                        <a href="https://t.me/{{ student.telegram }}" 
+                           target="_blank" 
+                           class="contact-btn-primary">
+                            <i class="fab fa-telegram"></i>
+                            {% trans "Написать в Telegram" %}
+                        </a>
                     {% endif %}
 
-                    <!-- ✅ WHATSAPP -->
                     {% if student.whatsapp %}
-                        <a style="color: #25D366; text-decoration: none;" href="https://wa.me/{{ student.whatsapp|cut:' '|cut:'+'|cut:'-' }}" 
+                        <a href="https://wa.me/{{ student.whatsapp|cut:' '|cut:'+'|cut:'-' }}" 
                            target="_blank" 
                            class="contact-btn-secondary" 
                            style="background: #25D366; color: white; border-color: #25D366;">
                             <i class="fab fa-whatsapp"></i>
-                            Написать в WhatsApp
+                            {% trans "Написать в WhatsApp" %}
                         </a>
                     {% endif %}
 
-                    <!-- ТЕЛЕФОН -->
                     {% if student.user.phone %}
-                        <a style="color: #25D366; text-decoration: none;" href="tel:{{ student.user.phone }}" 
+                        <a href="tel:{{ student.user.phone }}" 
                            class="contact-btn-secondary">
                             <i class="fas fa-phone"></i>
-                            Позвонить
+                            {% trans "Позвонить" %}
                         </a>
                     {% endif %}
-         
+                {% else %}
                     <p style="text-align: center; color: #999; font-size: 14px; padding: 20px;">
-                        Ученик не указал контактные данные
+                        {% trans "Ученик не указал контактные данные" %}
                     </p>
-
-                </div>
+                {% endif %}
             </div>
 
             <!-- Другие интересы -->
@@ -799,7 +779,7 @@
                 <div class="content-section">
                     <h2 class="section-title">
                         <i class="fas fa-star"></i>
-                        Дополнительные интересы
+                        {% trans "Дополнительные интересы" %}
                     </h2>
                     <div class="subjects-list">
                         {% for interest in other_interests %}
@@ -817,7 +797,7 @@
                 <div class="teachers-section">
                     <h2 class="section-title">
                         <i class="fas fa-chalkboard-teacher"></i>
-                        Подходящие учителя ({{ suggested_teachers.count }})
+                        {% trans "Подходящие учителя" %} ({{ suggested_teachers.count }})
                     </h2>
                     <div class="teachers-grid">
                         {% for teacher in suggested_teachers %}
@@ -852,26 +832,26 @@
         <div class="sidebar-column">
             <!-- Карточка бюджета -->
             <div class="budget-card">
-                <div class="budget-label">Бюджет ученика</div>
+                <div class="budget-label">{% trans "Бюджет ученика" %}</div>
                 <div class="budget-amount">{{ student.get_budget_display }}</div>
                 {% if student.budget_min or student.budget_max %}
-                    <div class="budget-period">готов платить за час</div>
+                    <div class="budget-period">{% trans "готов платить за час" %}</div>
                 {% endif %}
             </div>
 
             <!-- Карточка контактов -->
             <div class="contact-card">
-                <h3 class="contact-title">Связаться с учеником</h3>
+                <h3 class="contact-title">{% trans "Связаться с учеником" %}</h3>
                 
-                <button class="contact-btn-primary" onclick="alert('Функция в разработке')">
+                <button class="contact-btn-primary" onclick="alert('{% trans "Функция в разработке" %}')">
                     <i class="fas fa-paper-plane"></i>
-                    Отправить сообщение
+                    {% trans "Отправить сообщение" %}
                 </button>
 
                 {% if student.user.phone %}
                     <button class="contact-btn-secondary" onclick="window.location.href='tel:{{ student.user.phone }}'">
                         <i class="fas fa-phone"></i>
-                        Позвонить
+                        {% trans "Позвонить" %}
                     </button>
                 {% endif %}
             </div>
@@ -879,7 +859,7 @@
             <!-- Похожие ученики -->
             {% if similar_students %}
                 <div class="similar-card">
-                    <h3 class="similar-title">Похожие ученики</h3>
+                    <h3 class="similar-title">{% trans "Похожие ученики" %}</h3>
                     <div class="similar-list">
                         {% for similar in similar_students %}
                             <a href="{% url 'student_detail' similar.id %}" class="similar-item">
@@ -904,10 +884,8 @@
 </div>
 
 <script>
-    // Кнопка "Назад"
     document.addEventListener('DOMContentLoaded', function() {
-        // Можно добавить дополнительный функционал
-        console.log('Страница профиля ученика загружена');
+        console.log('{% trans "Страница профиля ученика загружена" %}');
     });
 </script>
 {% endblock %}

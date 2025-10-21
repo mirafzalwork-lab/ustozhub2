@@ -1,8 +1,10 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}{{ teacher.user.get_full_name }} - Учитель на UstozHub{% endblock %}
+{% load i18n %}
 {% load custom_filters %}
+{% block title %}{{ teacher.user.get_full_name }} - {% trans 'Учитель на UstozHub' %}{% endblock %}
 {% block content %}
+<!-- teacher detail page -->
 <style>
     .detail-container {
         max-width: 1400px;
@@ -1083,10 +1085,10 @@
     <!-- Breadcrumbs -->
     <div class="breadcrumbs">
         <a href="{% url 'home' %}">
-            <i class="fas fa-home"></i> Главная
+            <i class="fas fa-home"></i> {% trans 'Главная' %}
         </a>
         <span class="breadcrumb-separator">/</span>
-        <a href="{% url 'home' %}">Учителя</a>
+        <a href="{% url 'home' %}">{% trans 'Учителя' %}</a>
         <span class="breadcrumb-separator">/</span>
         <span>{{ teacher.user.get_full_name }}</span>
     </div>
@@ -1108,7 +1110,7 @@
                     <div class="teacher-header-info">
                         <h1 class="teacher-name-large">{{ teacher.user.get_full_name|default:teacher.user.username }}</h1>
                         <p class="teacher-title">
-                            {{ teacher.get_education_level_display }} • {{ teacher.experience_years }} лет опыта
+                            {{ teacher.get_education_level_display }} • {{ teacher.experience_years }} {% trans 'лет опыта' %}
                         </p>
 
                         <div class="teacher-rating-large">
@@ -1122,17 +1124,17 @@
                                 {% endfor %}
                             </div>
                             <span class="rating-number">{{ teacher.rating|floatformat:1 }}</span>
-                            <span class="rating-details">({{ teacher.total_reviews }} отзывов)</span>
+                            <span class="rating-details">({{ teacher.total_reviews }} {% trans 'отзывов' %})</span>
                         </div>
 
                         <div class="teacher-stats">
                             <div class="stat-item">
                                 <i class="fas fa-graduation-cap"></i>
-                                <span><span class="stat-value">{{ teacher.total_students }}+</span> учеников</span>
+                                <span><span class="stat-value">{{ teacher.total_students }}+</span> {% trans 'учеников' %}</span>
                             </div>
                             <div class="stat-item">
                                 <i class="fas fa-map-marker-alt"></i>
-                                <span>{{ teacher.city.name|default:"Онлайн" }}</span>
+                                <span>{{ teacher.city.name|default:_('Онлайн') }}</span>
                             </div>
                             <div class="stat-item">
                                 <i class="fas fa-clock"></i>
@@ -1149,7 +1151,7 @@
                                         {% elif langs|length > 2 %}
                                             {{ langs.0 }}, {{ langs.1 }} +{{ langs|length|add:"-2" }}
                                         {% else %}
-                                            Не указаны
+                                            {% trans 'Не указаны' %}
                                         {% endif %}
                                     {% endwith %}
                                 </span>
@@ -1159,12 +1161,12 @@
                         <div class="teacher-badges">
                             {% if teacher.user.is_verified %}
                                 <span class="badge badge-verified">
-                                    <i class="fas fa-check-circle"></i> Верифицирован
+                                    <i class="fas fa-check-circle"></i> {% trans 'Верифицирован' %}
                                 </span>
                             {% endif %}
                             {% if teacher.is_featured %}
                                 <span class="badge badge-featured">
-                                    <i class="fas fa-star"></i> Топ преподаватель
+                                    <i class="fas fa-star"></i> {% trans 'Топ преподаватель' %}
                                 </span>
                             {% endif %}
                             <span class="badge badge-format">
@@ -1179,7 +1181,7 @@
             <div class="content-card">
                 <h2 class="card-title">
                     <i class="fas fa-user"></i>
-                    О преподавателе
+                    {% trans 'О преподавателе' %}
                 </h2>
                 <p class="bio-text">{{ teacher.bio }}</p>
             </div>
@@ -1188,7 +1190,7 @@
             <div class="content-card">
                 <h2 class="card-title">
                     <i class="fas fa-book"></i>
-                    Предметы и цены
+                    {% trans 'Предметы и цены' %}
                 </h2>
                 <div class="subjects-grid">
                     {% for ts in teacher.teachersubject_set.all %}
@@ -1207,17 +1209,17 @@
                                 </div>
                             </div>
                             <div class="subject-price">
-                                <div class="price-value">{{ ts.hourly_rate|floatformat:0 }} сум</div>
-                                <div class="price-label">за час</div>
+                                <div class="price-value">{{ ts.hourly_rate|floatformat:0 }} {% trans 'сум' %}</div>
+                                <div class="price-label">{% trans 'за час' %}</div>
                                 {% if ts.is_free_trial %}
-                                    <span class="trial-badge">Пробный урок бесплатно</span>
+                                    <span class="trial-badge">{% trans 'Пробный урок бесплатно' %}</span>
                                 {% endif %}
                             </div>
                         </div>
                     {% empty %}
                         <div class="empty-state">
                             <i class="fas fa-book"></i>
-                            <p>Предметы не указаны</p>
+                            <p>{% trans 'Предметы не указаны' %}</p>
                         </div>
                     {% endfor %}
                 </div>
@@ -1227,7 +1229,7 @@
             <div class="content-card">
                 <h2 class="card-title">
                     <i class="fas fa-graduation-cap"></i>
-                    Образование
+                    {% trans 'Образование' %}
                 </h2>
                 <div class="education-list">
                     <div class="education-item">
@@ -1236,7 +1238,7 @@
                             <div class="education-institution">{{ teacher.university }}</div>
                         {% endif %}
                         {% if teacher.specialization %}
-                            <div class="education-specialization">Специализация: {{ teacher.specialization }}</div>
+                            <div class="education-specialization">{% trans 'Специализация:' %} {{ teacher.specialization }}</div>
                         {% endif %}
                     </div>
                 </div>
@@ -1247,7 +1249,7 @@
                 <div class="content-card">
                     <h2 class="card-title">
                         <i class="fas fa-certificate"></i>
-                        Сертификаты и достижения
+                        {% trans 'Сертификаты и достижения' %}
                     </h2>
                     <div class="certificates-grid">
                         {% for cert in teacher.certificates.all %}
@@ -1264,27 +1266,27 @@
             <div class="content-card">
                 <h2 class="card-title">
                     <i class="fas fa-star"></i>
-                    Отзывы ({{ reviews.count }})
+                    {% trans 'Отзывы' %} ({{ reviews.count }})
                 </h2>
 
                 {% if rating_stats.avg_knowledge %}
                     <div class="rating-breakdown">
                         <div class="rating-row">
-                            <span class="rating-label">Знание предмета</span>
+                            <span class="rating-label">{% trans 'Знание предмета' %}</span>
                             <div class="rating-bar">
                                 <div class="rating-bar-fill" style="width: {{ rating_stats.avg_knowledge|floatformat:0|add:"0" }}%"></div>
                             </div>
                             <span class="rating-value-small">{{ rating_stats.avg_knowledge|floatformat:1 }}</span>
                         </div>
                         <div class="rating-row">
-                            <span class="rating-label">Коммуникабельность</span>
+                            <span class="rating-label">{% trans 'Коммуникабельность' %}</span>
                             <div class="rating-bar">
                                 <div class="rating-bar-fill" style="width: {{ rating_stats.avg_communication|floatformat:0|add:"0" }}%"></div>
                             </div>
                             <span class="rating-value-small">{{ rating_stats.avg_communication|floatformat:1 }}</span>
                         </div>
                         <div class="rating-row">
-                            <span class="rating-label">Пунктуальность</span>
+                            <span class="rating-label">{% trans 'Пунктуальность' %}</span>
                             <div class="rating-bar">
                                 <div class="rating-bar-fill" style="width: {{ rating_stats.avg_punctuality|floatformat:0|add:"0" }}%"></div>
                             </div>
@@ -1308,7 +1310,7 @@
                                     <div class="reviewer-details">
                                         <div class="reviewer-name">{{ review.student.get_full_name|default:review.student.username }}</div>
                                         <div class="review-meta">
-                                            {{ review.created_at|date:"d.m.Y" }} • {{ review.subject.name|default:"Общий отзыв" }}
+                                            {{ review.created_at|date:"d.m.Y" }} • {{ review.subject.name|default:_('Общий отзыв') }}
                                         </div>
                                     </div>
                                 </div>
@@ -1327,14 +1329,14 @@
                             {% endif %}
                             {% if review.is_verified %}
                                 <span class="review-verified">
-                                    <i class="fas fa-check-circle"></i> Проверенный отзыв
+                                    <i class="fas fa-check-circle"></i> {% trans 'Проверенный отзыв' %}
                                 </span>
                             {% endif %}
                         </div>
                     {% empty %}
                         <div class="empty-state">
                             <i class="fas fa-comments"></i>
-                            <p>Пока нет отзывов</p>
+                            <p>{% trans 'Пока нет отзывов' %}</p>
                         </div>
                     {% endfor %}
                 </div>
@@ -1347,45 +1349,45 @@
                 <!-- Booking Card -->
                 <div class="booking-card">
                     <div class="booking-header">
-                        <div class="booking-price">Стоимость занятий</div>
+                        <div class="booking-price">{% trans 'Стоимость занятий' %}</div>
                         {% with min_price=teacher.get_min_price %}
                             <div class="booking-amount">
                                 {% if min_price > 0 %}
-                                    от {{ min_price|floatformat:0 }} сум
+                                    {% trans 'от' %} {{ min_price|floatformat:0 }} {% trans 'сум' %}
                                 {% else %}
-                                    Договорная
+                                    {% trans 'Договорная' %}
                                 {% endif %}
                             </div>
-                            <div class="booking-period">за час</div>
+                            <div class="booking-period">{% trans 'за час' %}</div>
                         {% endwith %}
                     </div>
 
                     <div class="booking-actions">
                         <button class="btn-primary" onclick="contactTeacher()">
                             <i class="fas fa-comment-dots"></i>
-                            Написать сообщение
+                            {% trans 'Написать сообщение' %}
                         </button>
                         
                         <button class="btn-secondary" onclick="bookLesson()">
                             <i class="fas fa-calendar-check"></i>
-                            Записаться на урок
+                            {% trans 'Записаться на урок' %}
                         </button>
 
                         <button class="btn-favorite {% if is_favorite %}active{% endif %}" onclick="toggleFavorite({{ teacher.id }})">
                             <i class="{% if is_favorite %}fas{% else %}far{% endif %} fa-heart"></i>
-                            {% if is_favorite %}В избранном{% else %}В избранное{% endif %}
+                            {% if is_favorite %}{% trans 'В избранном' %}{% else %}{% trans 'В избранное' %}{% endif %}
                         </button>
                     </div>
 
                     <div class="booking-note">
                         <i class="fas fa-shield-alt"></i>
-                        Безопасная сделка через платформу
+                        {% trans 'Безопасная сделка через платформу' %}
                     </div>
                 </div>
 
                 <!-- Contact Info -->
                 <div class="contact-card">
-                    <h3 class="contact-title">Контактная информация</h3>
+                    <h3 class="contact-title">{% trans 'Контактная информация' %}</h3>
                     <div class="contact-list">
                         {% if teacher.user.phone %}
                             <div class="contact-item">
@@ -1424,7 +1426,7 @@
 
                 <!-- Availability -->
                 <div class="availability-card">
-                    <h3 class="contact-title">Доступность</h3>
+                    <h3 class="contact-title">{% trans 'Доступность' %}</h3>
                     <div class="availability-info">
                         <div class="availability-item">
                             <i class="fas fa-calendar"></i>
@@ -1444,7 +1446,7 @@
                 <!-- Similar Teachers -->
                 {% if similar_teachers %}
                     <div class="contact-card">
-                        <h3 class="contact-title">Похожие преподаватели</h3>
+                        <h3 class="contact-title">{% trans 'Похожие преподаватели' %}</h3>
                         <div class="similar-teachers-grid">
                             {% for similar in similar_teachers %}
                                 <div class="similar-teacher-card" onclick="window.location.href='{% url 'teacher_detail' similar.id %}'">
@@ -1466,7 +1468,7 @@
                                         </div>
                                     </div>
                                     <div class="similar-teacher-price">
-                                        от {{ similar.get_min_price|floatformat:0 }} сум/час
+                                        {% trans 'от' %} {{ similar.get_min_price|floatformat:0 }} {% trans 'сум/час' %}
                                     </div>
                                 </div>
                             {% endfor %}
@@ -1493,15 +1495,15 @@
                 if (data.success) {
                     location.reload();
                 } else {
-                    alert('Произошла ошибка');
+                    alert('{% trans "Произошла ошибка" %}');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Произошла ошибка при добавлении в избранное');
+                alert('{% trans "Произошла ошибка при добавлении в избранное" %}');
             });
         {% else %}
-            if (confirm('Войдите в систему, чтобы добавить в избранное')) {
+            if (confirm('{% trans "Войдите в систему, чтобы добавить в избранное" %}')) {
                 window.location.href = '{% url "login" %}?next={{ request.path }}';
             }
         {% endif %}
@@ -1509,9 +1511,9 @@
 
     function contactTeacher() {
         {% if user.is_authenticated %}
-            alert('Функция отправки сообщений будет доступна в следующей версии');
+            alert('{% trans "Функция отправки сообщений будет доступна в следующей версии" %}');
         {% else %}
-            if (confirm('Войдите в систему, чтобы связаться с учителем')) {
+            if (confirm('{% trans "Войдите в систему, чтобы связаться с учителем" %}')) {
                 window.location.href = '{% url "login" %}?next={{ request.path }}';
             }
         {% endif %}
@@ -1519,9 +1521,9 @@
 
     function bookLesson() {
         {% if user.is_authenticated %}
-            alert('Функция бронирования будет доступна в следующей версии');
+            alert('{% trans "Функция бронирования будет доступна в следующей версии" %}');
         {% else %}
-            if (confirm('Войдите в систему, чтобы записаться на урок')) {
+            if (confirm('{% trans "Войдите в систему, чтобы записаться на урок" %}')) {
                 window.location.href = '{% url "login" %}?next={{ request.path }}';
             }
         {% endif %}

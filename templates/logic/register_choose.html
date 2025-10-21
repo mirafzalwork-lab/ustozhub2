@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load i18n %}
 
-{% block title %}Регистрация - UstozHub{% endblock %}
+{% block title %}{% trans 'Registration' %} - UstozHub{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -162,8 +163,8 @@
 <div class="choose-container">
     <div class="choose-content">
         <div class="choose-header">
-            <h1>Добро пожаловать в UstozHub</h1>
-            <p>Выберите тип аккаунта для регистрации</p>
+            <h1>{% trans "Welcome to UstozHub" %}</h1>
+            <p>{% trans "Choose your account type to register" %}</p>
         </div>
 
         <div class="choose-cards">
@@ -171,34 +172,34 @@
                 <div class="card-icon student">
                     <i class="fas fa-user-graduate"></i>
                 </div>
-                <h2 class="card-title">Я ученик</h2>
+                <h2 class="card-title">{% trans "I am a student" %}</h2>
                 <p class="card-description">
-                    Ищете квалифицированного преподавателя? Зарегистрируйтесь как ученик
+                    {% trans "Looking for a qualified teacher? Register as a student" %}
                 </p>
                 <div class="card-features">
                     <div class="feature-item">
                         <div class="feature-icon">
                             <i class="fas fa-check"></i>
                         </div>
-                        <span>Найти учителя по любому предмету</span>
+                        <span>{% trans "Find teachers for any subject" %}</span>
                     </div>
                     <div class="feature-item">
                         <div class="feature-icon">
                             <i class="fas fa-check"></i>
                         </div>
-                        <span>Читать отзывы других учеников</span>
+                        <span>{% trans "Read reviews from other students" %}</span>
                     </div>
                     <div class="feature-item">
                         <div class="feature-icon">
                             <i class="fas fa-check"></i>
                         </div>
-                        <span>Связаться с учителем напрямую</span>
+                        <span>{% trans "Contact teachers directly" %}</span>
                     </div>
                     <div class="feature-item">
                         <div class="feature-icon">
                             <i class="fas fa-check"></i>
                         </div>
-                        <span>Сохранять избранных учителей</span>
+                        <span>{% trans "Save favorite teachers" %}</span>
                     </div>
                 </div>
             </a>
@@ -207,41 +208,41 @@
                 <div class="card-icon teacher">
                     <i class="fas fa-chalkboard-teacher"></i>
                 </div>
-                <h2 class="card-title">Я учитель</h2>
+                <h2 class="card-title">{% trans "I am a teacher" %}</h2>
                 <p class="card-description">
-                    Преподаете? Создайте профиль учителя и найдите учеников
+                    {% trans "Are you teaching? Create a teacher profile and find students" %}
                 </p>
                 <div class="card-features">
                     <div class="feature-item">
                         <div class="feature-icon">
                             <i class="fas fa-check"></i>
                         </div>
-                        <span>Создать профессиональный профиль</span>
+                        <span>{% trans "Create a professional profile" %}</span>
                     </div>
                     <div class="feature-item">
                         <div class="feature-icon">
                             <i class="fas fa-check"></i>
                         </div>
-                        <span>Установить свои цены</span>
+                        <span>{% trans "Set your own prices" %}</span>
                     </div>
                     <div class="feature-item">
                         <div class="feature-icon">
                             <i class="fas fa-check"></i>
                         </div>
-                        <span>Получать запросы от учеников</span>
+                        <span>{% trans "Receive requests from students" %}</span>
                     </div>
                     <div class="feature-item">
                         <div class="feature-icon">
                             <i class="fas fa-check"></i>
                         </div>
-                        <span>Управлять расписанием</span>
+                        <span>{% trans "Manage your schedule" %}</span>
                     </div>
                 </div>
             </a>
         </div>
 
         <div class="login-link">
-            Уже есть аккаунт? <a href="{% url 'login' %}">Войти</a>
+            {% trans "Already have an account?" %} <a href="{% url 'login' %}">{% trans "Log in" %}</a>
         </div>
     </div>
 </div>

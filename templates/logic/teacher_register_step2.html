@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load form_filter %}
+{% load i18n %}
 
-{% block title %}Регистрация учителя - Шаг 2 из 3{% endblock %}
+{% block title %}{% trans "Регистрация учителя - Шаг 2 из 3" %}{% endblock %}
 
 {% block content %}
 <style>
@@ -484,8 +485,8 @@
 
 <div class="register-container">
     <div class="register-header">
-        <h1 class="register-title">Предметы и цены</h1>
-        <p class="register-subtitle">Укажите предметы, которые вы преподаете, и стоимость занятий</p>
+        <h1 class="register-title">{% trans 'Предметы и цены' %}</h1>
+        <p class="register-subtitle">{% trans 'Укажите предметы, которые вы преподаете, и стоимость занятий' %}</p>
     </div>
 
     <!-- Progress Steps -->
@@ -498,15 +499,15 @@
                 <div class="step-circle completed">
                     <i class="fas fa-check"></i>
                 </div>
-                <span class="step-label completed">Личные данные</span>
+                <span class="step-label completed">{% trans 'Личные данные' %}</span>
             </div>
             <div class="step-item">
                 <div class="step-circle active">2</div>
-                <span class="step-label active">Предметы и цены</span>
+                <span class="step-label active">{% trans 'Предметы и цены' %}</span>
             </div>
             <div class="step-item">
                 <div class="step-circle">3</div>
-                <span class="step-label">Сертификаты</span>
+                <span class="step-label">{% trans 'Сертификаты' %}</span>
             </div>
         </div>
     </div>
@@ -516,8 +517,8 @@
         <div class="info-banner">
             <i class="fas fa-lightbulb"></i>
             <div class="info-banner-content">
-                <h3>Совет по ценообразованию</h3>
-                <p>Укажите честную цену, основанную на вашем опыте. Средняя цена на платформе: 50,000 - 150,000 сум/час. Вы можете добавить до 5 предметов.</p>
+                <h3>{% trans 'Совет по ценообразованию' %}</h3>
+                <p>{% trans 'Укажите честную цену, основанную на вашем опыте. Средняя цена на платформе: 50,000 - 150,000 сум/час. Вы можете добавить до 5 предметов.' %}</p>
             </div>
         </div>
 
@@ -545,16 +546,16 @@
                     <div class="subject-card-header">
                         <div class="subject-number">
                             <span class="subject-badge">1</span>
-                            Предмет 1
+                            {% trans 'Предмет' %} 1
                         </div>
                         <button type="button" class="remove-subject" onclick="removeSubject(1)" style="display: none;">
-                            <i class="fas fa-times"></i> Удалить
+                            <i class="fas fa-times"></i> {% trans 'Удалить' %}
                         </button>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">
-                            Предмет <span class="required">*</span>
+                            {% trans 'Предмет' %} <span class="required">*</span>
                         </label>
                         {{ form.subject_1 }}
                         {% if form.subject_1.errors %}
@@ -565,18 +566,18 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">
-                                Цена за час <span class="required">*</span>
+                                {% trans 'Цена за час' %} <span class="required">*</span>
                             </label>
                             <div class="price-input-wrapper">
                                 {{ form.hourly_rate_1 }}
-                                <span class="currency-label">сум</span>
+                                <span class="currency-label">{% trans 'сум' %}</span>
                             </div>
                             {% if form.hourly_rate_1.errors %}
                                 <div class="field-error">{{ form.hourly_rate_1.errors.0 }}</div>
                             {% endif %}
                             <div class="form-help">
                                 <i class="fas fa-info-circle"></i>
-                                Укажите цену в узбекских сумах
+                                {% trans 'Укажите цену в узбекских сумах' %}
                             </div>
                         </div>
 
@@ -585,7 +586,7 @@
                             <div class="checkbox-group">
                                 {{ form.is_free_trial_1 }}
                                 <label for="{{ form.is_free_trial_1.id_for_label }}">
-                                    Бесплатное пробное занятие
+                                    {% trans 'Бесплатное пробное занятие' %}
                                 </label>
                             </div>
                         </div>
@@ -593,7 +594,7 @@
 
                     <div class="form-group">
                         <label class="form-label">
-                            Дополнительная информация
+                            {% trans 'Дополнительная информация' %}
                         </label>
                         {{ form.description_1 }}
                         {% if form.description_1.errors %}
@@ -601,7 +602,7 @@
                         {% endif %}
                         <div class="form-help">
                             <i class="fas fa-info-circle"></i>
-                            Опишите особенности преподавания этого предмета
+                            {% trans 'Опишите особенности преподавания этого предмета' %}
                         </div>
                     </div>
                 </div>
@@ -612,16 +613,16 @@
                     <div class="subject-card-header">
                         <div class="subject-number">
                             <span class="subject-badge">{{ i }}</span>
-                            Предмет {{ i }}
+                            {% trans 'Предмет' %} {{ i }}
                         </div>
                         <button type="button" class="remove-subject" onclick="removeSubject({{ i }})">
-                            <i class="fas fa-times"></i> Удалить
+                            <i class="fas fa-times"></i> {% trans 'Удалить' %}
                         </button>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">
-                            Предмет
+                            {% trans 'Предмет' %}
                         </label>
                         {% get_form_field form "subject_" i %}
                     </div>
@@ -629,11 +630,11 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">
-                                Цена за час
+                                {% trans 'Цена за час' %}
                             </label>
                             <div class="price-input-wrapper">
                                 {% get_form_field form "hourly_rate_" i %}
-                                <span class="currency-label">сум</span>
+                                <span class="currency-label">{% trans 'сум' %}</span>
                             </div>
                         </div>
 
@@ -642,7 +643,7 @@
                             <div class="checkbox-group">
                                 {% get_form_field form "is_free_trial_" i %}
                                 <label for="id_is_free_trial_{{ i }}">
-                                    Бесплатное пробное занятие
+                                    {% trans 'Бесплатное пробное занятие' %}
                                 </label>
                             </div>
                         </div>
@@ -650,7 +651,7 @@
 
                     <div class="form-group">
                         <label class="form-label">
-                            Дополнительная информация
+                            {% trans 'Дополнительная информация' %}
                         </label>
                         {% get_form_field form "description_" i %}
                     </div>
@@ -660,16 +661,16 @@
 
             <button type="button" class="add-subject-btn" id="addSubjectBtn" onclick="addSubject()">
                 <i class="fas fa-plus-circle"></i>
-                Добавить еще предмет
+                {% trans 'Добавить еще предмет' %}
             </button>
 
             <!-- Actions -->
             <div class="form-actions">
                 <a href="{% url 'teacher_register_step1' %}" class="btn-back">
-                    <i class="fas fa-arrow-left"></i> Назад
+                    <i class="fas fa-arrow-left"></i> {% trans 'Назад' %}
                 </a>
                 <button type="submit" class="btn-next" id="submitBtn">
-                    Далее <i class="fas fa-arrow-right"></i>
+                    {% trans 'Далее' %} <i class="fas fa-arrow-right"></i>
                 </button>
             </div>
         </form>
@@ -689,7 +690,7 @@
     // Функция добавления предмета
     function addSubject() {
         if (activeSubjects >= maxSubjects) {
-            alert('Максимум 5 предметов');
+            alert('{% trans "Максимум 5 предметов" %}');
             return;
         }
 
@@ -712,7 +713,7 @@
     // Функция удаления предмета
     function removeSubject(num) {
         if (num === 1) {
-            alert('Первый предмет удалить нельзя');
+            alert('{% trans "Первый предмет удалить нельзя" %}');
             return;
         }
 
@@ -755,11 +756,11 @@
             if (activeSubjects >= maxSubjects) {
                 addBtn.disabled = true;
                 addBtn.style.opacity = '0.5';
-                addBtn.innerHTML = '<i class="fas fa-check"></i> Максимум предметов добавлено';
+                addBtn.innerHTML = '<i class="fas fa-check"></i> {% trans "Максимум предметов добавлено" %}';
             } else {
                 addBtn.disabled = false;
                 addBtn.style.opacity = '1';
-                addBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Добавить еще предмет';
+                addBtn.innerHTML = '<i class="fas fa-plus-circle"></i> {% trans "Добавить еще предмет" %}';
             }
         }
     }
@@ -789,7 +790,7 @@
                 if (subjectSelect && subjectSelect.value) {
                     // Проверяем цену
                     if (!priceInput || !priceInput.value || parseFloat(priceInput.value) <= 0) {
-                        errors.push(`Предмет ${i}: укажите цену`);
+                        errors.push(`{% trans "Предмет" %} ${i}: {% trans "укажите цену" %}`);
                     } else {
                         hasValidSubject = true;
                     }
@@ -802,8 +803,8 @@
     if (!hasValidSubject) {
         e.preventDefault();
         const message = errors.length > 0
-            ? 'Ошибки:\n' + errors.join('\n')
-            : 'Добавьте хотя бы один предмет с ценой';
+            ? '{% trans "Ошибки" %}:\n' + errors.join('\n')
+            : '{% trans "Добавьте хотя бы один предмет с ценой" %}';
         alert(message);
         return false;
     }

@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}Главная - UstozHub{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Главная" %} - UstozHub{% endblock %}
 
 {% block content %}
 <style>
@@ -502,51 +503,51 @@
     <div class="tabs-wrapper">
         <button class="tab-button active" onclick="window.location.href='{% url 'home' %}'">
             <i class="fas fa-chalkboard-teacher"></i>
-            <span>Учителя</span>
+            <span>{% trans 'Учителя' %}</span>
         </button>
         <button class="tab-button" onclick="window.location.href='{% url 'students_list' %}'">
             <i class="fas fa-user-graduate"></i>
-            <span>Ученики</span>
+            <span>{% trans 'Ученики' %}</span>
         </button>
     </div>
 </div>
 
 <div class="page-container">
     <div class="page-header">
-        <h1 class="page-title">Найдите репетитора по Data Science онлайн</h1>
-        <p class="page-description">Используйте фильтры поиска, чтобы найти репетиторов по Data Science в соответствии с вашим бюджетом и потребностями. Развивайтесь быстрее с индивидуальным подходом!</p>
+        <h1 class="page-title">{% trans 'Найдите квалифицированного учителя онлайн' %}</h1>
+        <p class="page-description">{% trans 'Используйте фильтры поиска, чтобы найти учителей в соответствии с вашим бюджетом и потребностями. Развивайтесь быстрее с индивидуальным подходом!' %}</p>
     </div>
 
     <button class="mobile-filters-toggle" onclick="toggleFilters()">
-        <i class="fas fa-filter"></i> Фильтры
+        <i class="fas fa-filter"></i> {% trans 'Фильтры' %}
     </button>
 
     <div class="content-layout">
         <!-- Filters Sidebar - БЕЗ ИЗМЕНЕНИЙ -->
         <aside class="filters-sidebar" id="filtersSidebar">
             <div class="filters-header">
-                <h3 class="filters-title">Фильтры</h3>
-                <button class="reset-filters" onclick="resetFilters()">Сбросить</button>
+                <h3 class="filters-title">{% trans 'Фильтры' %}</h3>
+                <button class="reset-filters" onclick="resetFilters()">{% trans 'Сбросить' %}</button>
             </div>
 
             <form method="GET" action="" id="filtersForm">
                 <div class="filter-group">
                     <label class="filter-label">
-                        <i class="fas fa-search"></i> Поиск
+                        <i class="fas fa-search"></i> {% trans 'Поиск' %}
                     </label>
                     <input type="text" 
                            name="search" 
                            class="search-input" 
-                           placeholder="Имя учителя..."
+                           placeholder="{% trans 'Имя учителя...' %}"
                            value="{{ search_query|default:'' }}">
                 </div>
 
                 <div class="filter-group">
                     <label class="filter-label">
-                        <i class="fas fa-book"></i> Предмет
+                        <i class="fas fa-book"></i> {% trans 'Предмет' %}
                     </label>
                     <select name="subject" class="filter-select">
-                        <option value="">Все предметы</option>
+                        <option value="">{% trans 'Все предметы' %}</option>
                         {% for subject in subjects %}
                             <option value="{{ subject.id }}" {% if selected_subject == subject.id|stringformat:"s" %}selected{% endif %}>
                                 {{ subject.name }}
@@ -557,10 +558,10 @@
 
                 <div class="filter-group">
                     <label class="filter-label">
-                        <i class="fas fa-map-marker-alt"></i> Город
+                        <i class="fas fa-map-marker-alt"></i> {% trans 'Город' %}
                     </label>
                     <select name="city" class="filter-select">
-                        <option value="">Все города</option>
+                        <option value="">{% trans 'Все города' %}</option>
                         {% for city in cities %}
                             <option value="{{ city.id }}" {% if selected_city == city.id|stringformat:"s" %}selected{% endif %}>
                                 {{ city.name }}
@@ -571,10 +572,10 @@
 
                 <div class="filter-group">
                     <label class="filter-label">
-                        <i class="fas fa-desktop"></i> Формат обучения
+                        <i class="fas fa-desktop"></i> {% trans 'Формат обучения' %}
                     </label>
                     <select name="format" class="filter-select">
-                        <option value="">Любой</option>
+                        <option value="">{% trans 'Любой' %}</option>
                         {% for value, label in teaching_formats %}
                             <option value="{{ value }}" {% if selected_format == value %}selected{% endif %}>
                                 {{ label }}
@@ -585,30 +586,30 @@
 
                 <div class="filter-group">
                     <label class="filter-label">
-                        <i class="fas fa-dollar-sign"></i> Цена за час (сум)
+                        <i class="fas fa-dollar-sign"></i> {% trans 'Цена за час (сум)' %}
                     </label>
                     <div class="price-inputs">
                         <input type="number" 
                                name="min_price" 
                                class="price-input" 
-                               placeholder="От"
+                               placeholder="{% trans 'От' %}"
                                value="{{ selected_min_price|default:'' }}">
                         <input type="number" 
                                name="max_price" 
                                class="price-input" 
-                               placeholder="До"
+                               placeholder="{% trans 'До' %}"
                                value="{{ selected_max_price|default:'' }}">
                     </div>
                 </div>
 
                 <div class="filter-group">
                     <label class="filter-label">
-                        <i class="fas fa-star"></i> Рейтинг
+                        <i class="fas fa-star"></i> {% trans 'Рейтинг' %}
                     </label>
                     <div class="rating-options">
                         <label class="rating-option">
                             <input type="radio" name="min_rating" value="" {% if not selected_min_rating %}checked{% endif %}>
-                            <span>Любой</span>
+                            <span>{% trans 'Любой' %}</span>
                         </label>
                         <label class="rating-option">
                             <input type="radio" name="min_rating" value="4" {% if selected_min_rating == "4" %}checked{% endif %}>
@@ -625,19 +626,19 @@
 
                 <div class="filter-group">
                     <label class="filter-label">
-                        <i class="fas fa-clock"></i> Опыт (лет)
+                        <i class="fas fa-clock"></i> {% trans 'Опыт (лет)' %}
                     </label>
                     <select name="min_experience" class="filter-select">
-                        <option value="">Любой</option>
-                        <option value="1" {% if selected_min_experience == "1" %}selected{% endif %}>От 1 года</option>
-                        <option value="3" {% if selected_min_experience == "3" %}selected{% endif %}>От 3 лет</option>
-                        <option value="5" {% if selected_min_experience == "5" %}selected{% endif %}>От 5 лет</option>
-                        <option value="10" {% if selected_min_experience == "10" %}selected{% endif %}>От 10 лет</option>
+                        <option value="">{% trans 'Любой' %}</option>
+                        <option value="1" {% if selected_min_experience == "1" %}selected{% endif %}>{% trans 'От 1 года' %}</option>
+                        <option value="3" {% if selected_min_experience == "3" %}selected{% endif %}>{% trans 'От 3 лет' %}</option>
+                        <option value="5" {% if selected_min_experience == "5" %}selected{% endif %}>{% trans 'От 5 лет' %}</option>
+                        <option value="10" {% if selected_min_experience == "10" %}selected{% endif %}>{% trans 'От 10 лет' %}</option>
                     </select>
                 </div>
 
                 <button type="submit" class="apply-filters-btn">
-                    Применить фильтры
+                    {% trans 'Применить фильтры' %}
                 </button>
             </form>
         </aside>
@@ -646,8 +647,8 @@
         <section class="teachers-section">
             <div class="results-header">
                 <span class="results-count">
-                    Найдено: <strong>{{ teachers.count }}</strong> 
-                    {% if teachers.count == 1 %}учитель{% elif teachers.count < 5 %}учителя{% else %}учителей{% endif %}
+                    {% trans 'Найдено:' %} <strong>{{ teachers.count }}</strong> 
+                    {% if teachers.count == 1 %}{% trans 'учитель' %}{% elif teachers.count < 5 %}{% trans 'учителя' %}{% else %}{% trans 'учителей' %}{% endif %}
                 </span>
             </div>
 
@@ -692,7 +693,7 @@
                                 </div>
                                 <div class="meta-item">
                                     <i class="fas fa-clock"></i>
-                                    <span>{{ teacher.experience_years }} лет</span>
+                                    <span>{{ teacher.experience_years }} {% trans 'лет' %}</span>
                                 </div>
                             </div>
 
@@ -701,16 +702,16 @@
                                     {% with min_price=teacher.get_min_price %}
                                         <div class="teacher-price">
                                             {% if min_price > 0 %}
-                                                {{ min_price|floatformat:0 }} сум
+                                                {{ min_price|floatformat:0 }} {% trans 'сум' %}
                                             {% else %}
-                                                Договорная
+                                                {% trans 'Договорная' %}
                                             {% endif %}
                                         </div>
-                                        <div class="price-period">за час</div>
+                                        <div class="price-period">{% trans 'за час' %}</div>
                                     {% endwith %}
                                 </div>
                                 <button class="contact-btn" onclick="event.stopPropagation()">
-                                    <i class="fas fa-comment"></i> Написать
+                                    <i class="fas fa-comment"></i> {% trans 'Написать' %}
                                 </button>
                             </div>
                         </div>
@@ -719,8 +720,8 @@
             {% else %}
                 <div class="no-results">
                     <i class="fas fa-search"></i>
-                    <h3>Учителя не найдены</h3>
-                    <p>Попробуйте изменить параметры фильтрации</p>
+                    <h3>{% trans 'Учителя не найдены' %}</h3>
+                    <p>{% trans 'Попробуйте изменить параметры фильтрации' %}</p>
                 </div>
             {% endif %}
         </section>

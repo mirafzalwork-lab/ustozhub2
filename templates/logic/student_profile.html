@@ -1,7 +1,8 @@
 <!-- templates/logic/student_profile.html -->
 {% extends 'base.html' %}
+{% load i18n %}
 
-{% block title %}Мой профиль - UstozHub{% endblock %}
+{% block title %}{% trans "Мой профиль" %} - UstozHub{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -350,28 +351,26 @@
         <div class="views-widget-header">
             <div class="views-widget-title">
                 <i class="fas fa-eye views-widget-icon"></i>
-                Статистика просмотров профиля
+                {% trans 'Статистика просмотров профиля' %}
             </div>
         </div>
         <div class="views-stats-grid">
             <div class="views-stat-item">
                 <div class="views-stat-value">{{ views_stats.day }}</div>
-                <div class="views-stat-label">За сегодня</div>
+                <div class="views-stat-label">{% trans 'За сегодня' %}</div>
             </div>
             <div class="views-stat-item">
                 <div class="views-stat-value">{{ views_stats.week }}</div>
-                <div class="views-stat-label">За неделю</div>
+                <div class="views-stat-label">{% trans 'За неделю' %}</div>
             </div>
             <div class="views-stat-item">
                 <div class="views-stat-value">{{ views_stats.total }}</div>
-                <div class="views-stat-label">За всё время</div>
+                <div class="views-stat-label">{% trans 'За всё время' %}</div>
             </div>
         </div>
         <div class="views-info-text">
             <i class="fas fa-info-circle"></i>
-            Ваш профиль просмотрели <strong>{{ views_stats.week }}</strong> раз за последнюю неделю. 
-            Уникальных посетителей: <strong>{{ views_stats.unique_week }}</strong>. 
-            Это означает, что учителя интересуются вашим профилем!
+            {% blocktrans with week=views_stats.week unique=views_stats.unique_week %}Ваш профиль просмотрели <strong>{{ week }}</strong> раз за последнюю неделю. Уникальных посетителей: <strong>{{ unique }}</strong>. Это означает, что учителя интересуются вашим профилем!{% endblocktrans %}
         </div>
     </div>
 
@@ -387,21 +386,21 @@
         <div class="profile-info">
             <h1>{{ user.get_full_name|default:user.username }}</h1>
             <div class="profile-meta">
-                <span><i class="fas fa-user-graduate"></i> Ученик</span>
+                <span><i class="fas fa-user-graduate"></i> {% trans 'Ученик' %}</span>
                 <span><i class="fas fa-envelope"></i> {{ user.email }}</span>
                 {% if user.phone %}
                     <span><i class="fas fa-phone"></i> {{ user.phone }}</span>
                 {% endif %}
                 {% if user.age %}
-                    <span><i class="fas fa-birthday-cake"></i> {{ user.age }} лет</span>
+                    <span><i class="fas fa-birthday-cake"></i> {{ user.age }} {% trans 'лет' %}</span>
                 {% endif %}
             </div>
             <div class="profile-actions">
                 <a href="{% url 'student_profile_edit' %}" class="btn btn-primary">
-                    <i class="fas fa-edit"></i> Редактировать профиль
+                    <i class="fas fa-edit"></i> {% trans 'Редактировать профиль' %}
                 </a>
                 <a href="{% url 'logout' %}" class="btn btn-secondary">
-                    <i class="fas fa-sign-out-alt"></i> Выйти
+                    <i class="fas fa-sign-out-alt"></i> {% trans 'Выйти' %}
                 </a>
             </div>
         </div>
@@ -411,15 +410,15 @@
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-value">{{ user.student_profile.interests.count }}</div>
-            <div class="stat-label">Интересующих предметов</div>
+            <div class="stat-label">{% trans 'Интересующих предметов' %}</div>
         </div>
         <div class="stat-card">
             <div class="stat-value">{{ user.favorites.count }}</div>
-            <div class="stat-label">Избранных учителей</div>
+            <div class="stat-label">{% trans 'Избранных учителей' %}</div>
         </div>
         <div class="stat-card">
             <div class="stat-value">{{ user.conversations.count }}</div>
-            <div class="stat-label">Активных переписок</div>
+            <div class="stat-label">{% trans 'Активных переписок' %}</div>
         </div>
     </div>
 
@@ -428,7 +427,7 @@
     <div class="profile-section">
         <h2 class="section-title">
             <i class="fas fa-book"></i>
-            Интересующие предметы
+            {% trans 'Интересующие предметы' %}
         </h2>
         <div class="subjects-list">
             {% for subject in user.student_profile.interests.all %}
@@ -446,7 +445,7 @@
     <div class="profile-section">
         <h2 class="section-title">
             <i class="fas fa-target"></i>
-            Мои цели обучения
+            {% trans 'Мои цели обучения' %}
         </h2>
         <div style="white-space: pre-wrap; width: 100%;" class="bio-text">
             {{ user.student_profile.bio }}
@@ -458,12 +457,12 @@
     <div class="profile-section">
         <h2 class="section-title">
             <i class="fas fa-info-circle"></i>
-            Информация о профиле
+            {% trans 'Информация о профиле' %}
         </h2>
         <div class="info-grid">
             <!-- Базовые поля -->
             <div class="info-item">
-                <div class="info-label">Имя пользователя</div>
+                <div class="info-label">{% trans 'Имя пользователя' %}</div>
                 <div class="info-value">{{ user.username }}</div>
             </div>
             <div class="info-item">
@@ -472,14 +471,14 @@
             </div>
             {% if user.phone %}
             <div class="info-item">
-                <div class="info-label">Телефон</div>
+                <div class="info-label">{% trans 'Телефон' %}</div>
                 <div class="info-value">{{ user.phone }}</div>
             </div>
             {% endif %}
             {% if user.age %}
             <div class="info-item">
-                <div class="info-label">Возраст</div>
-                <div class="info-value">{{ user.age }} лет</div>
+                <div class="info-label">{% trans 'Возраст' %}</div>
+                <div class="info-value">{{ user.age }} {% trans 'лет' %}</div>
             </div>
             {% endif %}
             {% if user.student_profile.telegram %}
@@ -498,7 +497,7 @@
             <!-- Уровень образования -->
             {% if user.student_profile.education_level %}
             <div class="info-item">
-                <div class="info-label">Уровень образования</div>
+                <div class="info-label">{% trans 'Уровень образования' %}</div>
                 <div class="info-value">{{ user.student_profile.get_education_level_display }}</div>
             </div>
             {% endif %}
@@ -506,7 +505,7 @@
             <!-- Школа/Университет -->
             {% if user.student_profile.school_university %}
             <div class="info-item">
-                <div class="info-label">Школа/Университет</div>
+                <div class="info-label">{% trans 'Школа/Университет' %}</div>
                 <div class="info-value">{{ user.student_profile.school_university }}</div>
             </div>
             {% endif %}
@@ -514,19 +513,19 @@
             <!-- Город -->
             {% if user.student_profile.city %}
             <div class="info-item">
-                <div class="info-label">Город</div>
+                <div class="info-label">{% trans 'Город' %}</div>
                 <div class="info-value">{{ user.student_profile.city }}</div>
             </div>
             {% endif %}
             
             <!-- Системные поля -->
             <div class="info-item">
-                <div class="info-label">Дата регистрации</div>
+                <div class="info-label">{% trans 'Дата регистрации' %}</div>
                 <div class="info-value">{{ user.date_joined|date:"d.m.Y" }}</div>
             </div>
             <div class="info-item">
-                <div class="info-label">Тип аккаунта</div>
-                <div class="info-value">Ученик</div>
+                <div class="info-label">{% trans 'Тип аккаунта' %}</div>
+                <div class="info-value">{% trans 'Ученик' %}</div>
             </div>
         </div>
     </div>
@@ -536,9 +535,9 @@
     <div class="profile-section">
         <div class="empty-state">
             <i class="fas fa-graduation-cap"></i>
-            <p>Завершите заполнение профиля для лучшего подбора учителей</p>
+            <p>{% trans 'Завершите заполнение профиля для лучшего подбора учителей' %}</p>
             <a href="{% url 'profile_edit' %}" class="btn btn-primary">
-                <i class="fas fa-edit"></i> Заполнить профиль
+                <i class="fas fa-edit"></i> {% trans 'Заполнить профиль' %}
             </a>
         </div>
     </div>

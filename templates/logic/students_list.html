@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}Ученики - UstozHub{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Ученики" %} - UstozHub{% endblock %}
 
 {% block content %}
 <style>
@@ -452,11 +453,11 @@
     <div class="tabs-wrapper">
         <button class="tab-button" onclick="window.location.href='{% url 'home' %}'">
             <i class="fas fa-chalkboard-teacher"></i>
-            <span>Учителя</span>
+            <span>{% trans 'Учителя' %}</span>
         </button>
         <button class="tab-button active">
             <i class="fas fa-user-graduate"></i>
-            <span>Ученики</span>
+            <span>{% trans 'Ученики' %}</span>
         </button>
     </div>
 </div>
@@ -464,42 +465,42 @@
 <div class="page-container">
     <!-- НОВОЕ: Заголовок для страницы учеников -->
     <div class="page-header">
-        <h1 class="page-title">Ученики ищут учителей</h1>
-        <p class="page-description">Найдите учеников, которым нужна ваша помощь. Свяжитесь с ними напрямую и начните преподавать!</p>
+        <h1 class="page-title">{% trans 'Ученики ищут учителей' %}</h1>
+        <p class="page-description">{% trans 'Найдите учеников, которым нужна ваша помощь. Свяжитесь с ними напрямую и начните преподавать!' %}</p>
     </div>
 
     <button class="mobile-filters-toggle" onclick="toggleFilters()">
-        <i class="fas fa-filter"></i> Фильтры
+        <i class="fas fa-filter"></i> {% trans 'Фильтры' %}
     </button>
 
     <div class="content-layout">
         <!-- НОВОЕ: Боковая панель фильтров для учеников -->
         <aside class="filters-sidebar" id="filtersSidebar">
             <div class="filters-header">
-                <h3 class="filters-title">Фильтры</h3>
-                <button class="reset-filters" onclick="resetFilters()">Сбросить</button>
+                <h3 class="filters-title">{% trans 'Фильтры' %}</h3>
+                <button class="reset-filters" onclick="resetFilters()">{% trans 'Сбросить' %}</button>
             </div>
 
             <form method="GET" action="" id="filtersForm">
                 <!-- Поиск -->
                 <div class="filter-group">
                     <label class="filter-label">
-                        <i class="fas fa-search"></i> Поиск
+                        <i class="fas fa-search"></i> {% trans 'Поиск' %}
                     </label>
                     <input type="text" 
                            name="search" 
                            class="search-input" 
-                           placeholder="Имя ученика..."
+                           placeholder="{% trans 'Имя ученика...' %}"
                            value="{{ search_query|default:'' }}">
                 </div>
 
                 <!-- Предмет -->
                 <div class="filter-group">
                     <label class="filter-label">
-                        <i class="fas fa-book"></i> Предмет для изучения
+                        <i class="fas fa-book"></i> {% trans 'Предмет для изучения' %}
                     </label>
                     <select name="subject" class="filter-select">
-                        <option value="">Все предметы</option>
+                        <option value="">{% trans 'Все предметы' %}</option>
                         {% for subject in subjects %}
                             <option value="{{ subject.id }}" {% if selected_subject == subject.id|stringformat:"s" %}selected{% endif %}>
                                 {{ subject.name }}
@@ -511,10 +512,10 @@
                 <!-- Город -->
                 <div class="filter-group">
                     <label class="filter-label">
-                        <i class="fas fa-map-marker-alt"></i> Город
+                        <i class="fas fa-map-marker-alt"></i> {% trans 'Город' %}
                     </label>
                     <select name="city" class="filter-select">
-                        <option value="">Все города</option>
+                        <option value="">{% trans 'Все города' %}</option>
                         {% for city in cities %}
                             <option value="{{ city.id }}" {% if selected_city == city.id|stringformat:"s" %}selected{% endif %}>
                                 {{ city.name }}
@@ -526,10 +527,10 @@
                 <!-- Формат обучения -->
                 <div class="filter-group">
                     <label class="filter-label">
-                        <i class="fas fa-desktop"></i> Формат обучения
+                        <i class="fas fa-desktop"></i> {% trans 'Формат обучения' %}
                     </label>
                     <select name="format" class="filter-select">
-                        <option value="">Любой</option>
+                        <option value="">{% trans 'Любой' %}</option>
                         {% for value, label in learning_formats %}
                             <option value="{{ value }}" {% if selected_format == value %}selected{% endif %}>
                                 {{ label }}
@@ -541,10 +542,10 @@
                 <!-- Уровень образования -->
                 <div class="filter-group">
                     <label class="filter-label">
-                        <i class="fas fa-graduation-cap"></i> Уровень образования
+                        <i class="fas fa-graduation-cap"></i> {% trans 'Уровень образования' %}
                     </label>
                     <select name="education_level" class="filter-select">
-                        <option value="">Любой</option>
+                        <option value="">{% trans 'Любой' %}</option>
                         {% for value, label in education_levels %}
                             <option value="{{ value }}" {% if selected_education_level == value %}selected{% endif %}>
                                 {{ label }}
@@ -556,24 +557,24 @@
                 <!-- Бюджет ученика -->
                 <div class="filter-group">
                     <label class="filter-label">
-                        <i class="fas fa-dollar-sign"></i> Бюджет ученика (сум/час)
+                        <i class="fas fa-dollar-sign"></i> {% trans 'Бюджет ученика (сум/час)' %}
                     </label>
                     <div class="price-inputs">
                         <input type="number" 
                                name="min_budget" 
                                class="price-input" 
-                               placeholder="От"
+                               placeholder="{% trans 'От' %}"
                                value="{{ selected_min_budget|default:'' }}">
                         <input type="number" 
                                name="max_budget" 
                                class="price-input" 
-                               placeholder="До"
+                               placeholder="{% trans 'До' %}"
                                value="{{ selected_max_budget|default:'' }}">
                     </div>
                 </div>
 
                 <button type="submit" class="apply-filters-btn">
-                    Применить фильтры
+                    {% trans 'Применить фильтры' %}
                 </button>
             </form>
         </aside>
@@ -582,8 +583,8 @@
         <section class="students-section">
             <div class="results-header">
                 <span class="results-count">
-                    Найдено: <strong>{{ students.count }}</strong> 
-                    {% if students.count == 1 %}ученик{% elif students.count < 5 %}ученика{% else %}учеников{% endif %}
+                    {% trans 'Найдено:' %} <strong>{{ students.count }}</strong> 
+                    {% if students.count == 1 %}{% trans 'ученик' %}{% elif students.count < 5 %}{% trans 'ученика' %}{% else %}{% trans 'учеников' %}{% endif %}
                 </span>
             </div>
 
@@ -626,7 +627,7 @@
 
                             <!-- Описание -->
                             <p class="student-description">
-                                {{ student.description|default:student.bio|default:"Ищу учителя для изучения новых предметов"|truncatewords:20 }}
+                                {{ student.description|default:student.bio|default:_("Ищу учителя для изучения новых предметов")|truncatewords:20 }}
                             </p>
 
                             <!-- Метаинформация -->
@@ -658,11 +659,11 @@
                                         {{ student.get_budget_display }}
                                     </div>
                                     {% if student.budget_min or student.budget_max %}
-                                        <div class="budget-period">готов платить</div>
+                                        <div class="budget-period">{% trans 'готов платить' %}</div>
                                     {% endif %}
                                 </div>
                                 <button class="contact-btn" onclick="event.stopPropagation()">
-                                    <i class="fas fa-paper-plane"></i> Связаться
+                                    <i class="fas fa-paper-plane"></i> {% trans 'Связаться' %}
                                 </button>
                             </div>
                         </div>
@@ -671,8 +672,8 @@
             {% else %}
                 <div class="no-results">
                     <i class="fas fa-user-graduate"></i>
-                    <h3>Ученики не найдены</h3>
-                    <p>Попробуйте изменить параметры фильтрации</p>
+                    <h3>{% trans 'Ученики не найдены' %}</h3>
+                    <p>{% trans 'Попробуйте изменить параметры фильтрации' %}</p>
                 </div>
             {% endif %}
         </section>

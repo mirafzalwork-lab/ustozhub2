@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}Регистрация учителя - Шаг 1 из 3{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Teacher Registration - Step 1 of 3" %}{% endblock %}
 
 {% block content %}
 <style>
@@ -426,8 +427,8 @@
 
 <div class="register-container">
     <div class="register-header">
-        <h1 class="register-title">Станьте учителем на UstozHub</h1>
-        <p class="register-subtitle">Поделитесь своими знаниями и помогите ученикам достичь успеха</p>
+        <h1 class="register-title">{% trans "Become a teacher on UstozHub" %}</h1>
+        <p class="register-subtitle">{% trans "Share your knowledge and help students achieve success" %}</p>
     </div>
 
     <!-- Progress Steps -->
@@ -438,15 +439,15 @@
         <div class="steps-container">
             <div class="step-item">
                 <div class="step-circle active">1</div>
-                <span class="step-label active">Личные данные</span>
+                <span class="step-label active">{% trans "Personal information" %}</span>
             </div>
             <div class="step-item">
                 <div class="step-circle">2</div>
-                <span class="step-label">Предметы и цены</span>
+                <span class="step-label">{% trans "Subjects and prices" %}</span>
             </div>
             <div class="step-item">
                 <div class="step-circle">3</div>
-                <span class="step-label">Сертификаты</span>
+                <span class="step-label">{% trans "Certificates" %}</span>
             </div>
         </div>
     </div>
@@ -466,7 +467,7 @@
             <div class="form-section">
                 <h2 class="section-title">
                     <i class="fas fa-user"></i>
-                    Личная информация
+                    {% trans "Personal information" %}
                 </h2>
 
                 <div class="form-row">
@@ -500,7 +501,7 @@
                         {% if form.username.errors %}
                             <div class="field-error">{{ form.username.errors.0 }}</div>
                         {% endif %}
-                        <div class="form-help">Будет использоваться для входа</div>
+                        <div class="form-help">{% trans "Will be used for login" %}</div>
                     </div>
 
                     <div class="form-group">
@@ -575,7 +576,7 @@
             <div class="form-section">
                 <h2 class="section-title">
                     <i class="fas fa-graduation-cap"></i>
-                    Образование и опыт
+                    {% trans "Education and experience" %}
                 </h2>
 
                 <div class="form-group">
@@ -633,41 +634,40 @@
                     {% endif %}
                 </div>
             </div>
-            <!-- Добавьте этот блок ПОСЛЕ блока "Образование и опыт" и ПЕРЕД блоком "Местоположение и формат" -->
 
-<!-- Языки преподавания -->
-        <div class="form-section">
-            <h2 class="section-title">
-                <i class="fas fa-language"></i>
-                Языки преподавания
-            </h2>
+            <!-- Языки преподавания -->
+            <div class="form-section">
+                <h2 class="section-title">
+                    <i class="fas fa-language"></i>
+                    {% trans "Teaching languages" %}
+                </h2>
 
-            <div class="form-group">
-                <label class="form-label">
-                    {{ form.teaching_languages.label }} <span class="required">*</span>
-                </label>
-                <div class="weekdays-grid">
-                    {% for choice in form.teaching_languages %}
-                        <div class="weekday-item">
-                            {{ choice.tag }}
-                            <label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
-                        </div>
-                    {% endfor %}
+                <div class="form-group">
+                    <label class="form-label">
+                        {{ form.teaching_languages.label }} <span class="required">*</span>
+                    </label>
+                    <div class="weekdays-grid">
+                        {% for choice in form.teaching_languages %}
+                            <div class="weekday-item">
+                                {{ choice.tag }}
+                                <label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if form.teaching_languages.errors %}
+                        <div class="field-error">{{ form.teaching_languages.errors.0 }}</div>
+                    {% endif %}
+                    {% if form.teaching_languages.help_text %}
+                        <div class="form-help">{{ form.teaching_languages.help_text }}</div>
+                    {% endif %}
                 </div>
-                {% if form.teaching_languages.errors %}
-                    <div class="field-error">{{ form.teaching_languages.errors.0 }}</div>
-                {% endif %}
-                {% if form.teaching_languages.help_text %}
-                    <div class="form-help">{{ form.teaching_languages.help_text }}</div>
-                {% endif %}
             </div>
-        </div>
 
             <!-- Местоположение и формат -->
             <div class="form-section">
                 <h2 class="section-title">
                     <i class="fas fa-map-marker-alt"></i>
-                    Местоположение и формат обучения
+                    {% trans "Location and teaching format" %}
                 </h2>
 
                 <div class="form-row">
@@ -697,7 +697,7 @@
             <div class="form-section">
                 <h2 class="section-title">
                     <i class="fas fa-phone"></i>
-                    Дополнительные контакты
+                    {% trans "Additional contacts" %}
                 </h2>
 
                 <div class="form-row">
@@ -727,7 +727,7 @@
             <div class="form-section">
                 <h2 class="section-title">
                     <i class="fas fa-clock"></i>
-                    Время работы
+                    {% trans "Working hours" %}
                 </h2>
 
                 <div class="time-inputs">
@@ -775,7 +775,7 @@
                 <div class="checkbox-group">
                     {{ form.terms_accepted }}
                     <label for="{{ form.terms_accepted.id_for_label }}">
-                        Я принимаю <a href="#">условия использования</a> и <a href="#">политику конфиденциальности</a>
+                        {% trans "I accept the" %} <a href="#">{% trans "terms of use" %}</a> {% trans "and" %} <a href="#">{% trans "privacy policy" %}</a>
                     </label>
                 </div>
                 {% if form.terms_accepted.errors %}
@@ -786,10 +786,10 @@
             <!-- Actions -->
             <div class="form-actions">
                 <a href="{% url 'home' %}" class="btn-back">
-                    <i class="fas fa-arrow-left"></i> Отмена
+                    <i class="fas fa-arrow-left"></i> {% trans "Cancel" %}
                 </a>
                 <button type="submit" class="btn-next">
-                    Далее <i class="fas fa-arrow-right"></i>
+                    {% trans "Next" %} <i class="fas fa-arrow-right"></i>
                 </button>
             </div>
         </form>
@@ -827,7 +827,7 @@
 
         if (!isValid) {
             e.preventDefault();
-            alert('Пожалуйста, заполните все обязательные поля');
+            alert('{% trans "Please fill in all required fields" %}');
         }
     });
 </script>
