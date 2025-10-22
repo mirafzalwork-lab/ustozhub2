@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: UstozHub 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-21 18:50+0500\n"
+"POT-Creation-Date: 2025-10-21 19:08+0500\n"
 "Language-Team: English\n"
 "Language: en\n"
 "MIME-Version: 1.0\n"
@@ -12,74 +12,118 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: teachers/forms.py:14 teachers/forms.py:24 teachers/forms.py:43
-#: teachers/forms.py:74 teachers/forms.py:88 teachers/forms.py:97
-#: teachers/forms.py:107 teachers/forms.py:118 teachers/forms.py:131
-#: teachers/forms.py:139 teachers/forms.py:143 teachers/forms.py:149
-#: teachers/forms.py:159 teachers/forms.py:169 teachers/forms.py:179
-#: teachers/forms.py:189 teachers/forms.py:208 teachers/forms.py:217
-#: teachers/forms.py:323 teachers/forms.py:341 teachers/forms.py:349
-#: teachers/forms.py:441 teachers/forms.py:451 teachers/forms.py:460
-#: teachers/forms.py:470 teachers/forms.py:481 teachers/forms.py:491
-#: teachers/forms.py:495 teachers/forms.py:502 teachers/forms.py:512
-#: teachers/forms.py:527 teachers/forms.py:537 teachers/forms.py:548
-#: teachers/forms.py:560 teachers/forms.py:575 teachers/forms.py:589
-#: teachers/forms.py:600 teachers/forms.py:620 teachers/forms.py:630
-#: teachers/forms.py:731 teachers/forms.py:745 teachers/forms.py:848
-#: teachers/forms.py:857 teachers/forms.py:875
-msgid "label="
-msgstr ""
+#: teachers/forms.py:27 teachers/forms.py:454
+msgid "Фамилия"
+msgstr "Last Name"
 
-#: teachers/forms.py:33 templates/logic/student_detail.html:706
+#: teachers/forms.py:46 teachers/forms.py:473
+#: templates/logic/student_detail.html:696
+#: templates/logic/student_profile.html:474
+#: templates/logic/teacher_profile.html:832
+msgid "Телефон"
+msgstr "Phone"
+
+#: teachers/forms.py:142 teachers/forms.py:494 templates/logic/home.html:561
+#: templates/logic/student_profile.html:516
+#: templates/logic/students_list.html:515
+#: templates/logic/teacher_profile.html:797
+msgid "Город"
+msgstr "City"
+
+#: teachers/forms.py:162 teachers/forms.py:592
+#: templates/logic/student_detail.html:716
+#: templates/logic/teacher_profile.html:838
+msgid "Telegram"
+msgstr "Telegram"
+
+#: teachers/forms.py:172 teachers/forms.py:603
+#: templates/logic/student_detail.html:728
+#: templates/logic/teacher_profile.html:844
+msgid "WhatsApp"
+msgstr "WhatsApp"
+
+#: teachers/forms.py:444
+msgid "Имя"
+msgstr "First Name"
+
+#: teachers/forms.py:463 templates/logic/student_detail.html:706
 #: templates/logic/teacher_profile.html:826
 msgid "Email"
 msgstr "Email"
 
-#: teachers/forms.py:54 templates/logic/student_profile.html:480
+#: teachers/forms.py:484 templates/logic/student_profile.html:480
 msgid "Возраст"
 msgstr "Age"
 
-#: teachers/forms.py:63
-msgid "Фото профиля"
-msgstr "Profile Photo"
+#: teachers/forms.py:505
+msgid "Предметы, которые хочу изучать"
+msgstr "Subjects I Want to Learn"
 
-#: teachers/forms.py:68
-msgid "Рекомендуемый размер: 300x300px"
-msgstr "Recommended size: 300x300px"
+#: teachers/forms.py:515
+msgid "Расскажите о ваших целях"
+msgstr "Tell About Your Goals"
 
-#: teachers/forms.py:80 teachers/forms.py:132 teachers/forms.py:506
-#: teachers/forms.py:518 teachers/forms.py:567 teachers/forms.py:582
-#: teachers/forms.py:594 teachers/forms.py:605 teachers/forms.py:624
-#: teachers/forms.py:861
-msgid "help_text="
-msgstr ""
+#: teachers/forms.py:530 templates/logic/student_profile.html:500
+#: templates/logic/students_list.html:545
+#: templates/logic/teacher_profile.html:745
+msgid "Уровень образования"
+msgstr "Education Level"
 
-#: teachers/forms.py:246 teachers/forms.py:252 teachers/forms.py:258
-#: teachers/forms.py:265 teachers/forms.py:373 teachers/forms.py:659
-#: teachers/forms.py:665 teachers/forms.py:671 teachers/forms.py:673
-#: teachers/forms.py:683 teachers/forms.py:1048 teachers/forms.py:1057
-msgid "ValidationError("
-msgstr ""
+#: teachers/forms.py:540 templates/logic/student_profile.html:508
+msgid "Школа/Университет"
+msgstr "School/University"
 
-#: teachers/forms.py:408
-msgid "Имя пользователя или Email"
-msgstr "Username or Email"
+#: teachers/forms.py:551
+msgid "Предпочитаемый формат обучения"
+msgstr "Preferred Learning Format"
 
-#: teachers/forms.py:411
-msgid "Введите имя пользователя или email"
-msgstr "Enter username or email"
+#: teachers/forms.py:563
+msgid "Минимальный бюджет (сум/час)"
+msgstr "Minimum Budget (sum/hour)"
 
-#: teachers/forms.py:417
-msgid "Пароль"
-msgstr "Password"
+#: teachers/forms.py:578
+msgid "Максимальный бюджет (сум/час)"
+msgstr "Maximum Budget (sum/hour)"
 
-#: teachers/forms.py:420
-msgid "Введите пароль"
-msgstr "Enter password"
+#: teachers/forms.py:614
+msgid "Понедельник"
+msgstr "Monday"
 
-#: teachers/forms.py:427
-msgid "Запомнить меня"
-msgstr "Remember me"
+#: teachers/forms.py:615
+msgid "Вторник"
+msgstr "Tuesday"
+
+#: teachers/forms.py:616
+msgid "Среда"
+msgstr "Wednesday"
+
+#: teachers/forms.py:617
+msgid "Четверг"
+msgstr "Thursday"
+
+#: teachers/forms.py:618
+msgid "Пятница"
+msgstr "Friday"
+
+#: teachers/forms.py:619
+msgid "Суббота"
+msgstr "Saturday"
+
+#: teachers/forms.py:620
+msgid "Воскресенье"
+msgstr "Sunday"
+
+#: teachers/forms.py:623
+msgid "Доступные дни для занятий"
+msgstr "Available Days for Classes"
+
+#: teachers/forms.py:633
+msgid "Я принимаю условия использования и политику конфиденциальности"
+msgstr "I accept the terms of use and privacy policy"
+
+#: teachers/forms.py:646
+msgid "Username"
+msgstr "Username"
 
 # ========== BASE TEMPLATE ==========
 #: templates/base.html:701
@@ -259,12 +303,6 @@ msgstr "Subject"
 msgid "Все предметы"
 msgstr "All Subjects"
 
-#: templates/logic/home.html:561 templates/logic/student_profile.html:516
-#: templates/logic/students_list.html:515
-#: templates/logic/teacher_profile.html:797
-msgid "Город"
-msgstr "City"
-
 #: templates/logic/home.html:564 templates/logic/students_list.html:518
 msgid "Все города"
 msgstr "All Cities"
@@ -396,7 +434,7 @@ msgstr "or"
 msgid "Нет аккаунта?"
 msgstr "No account?"
 
-#: templates/logic/login.html:278
+#: templates/logic/login.html:278 templates/logic/register_student.html:643
 msgid "Зарегистрироваться"
 msgstr "Sign Up"
 
@@ -473,6 +511,241 @@ msgstr "Already have an account?"
 msgid "Log in"
 msgstr "Log in"
 
+#: templates/logic/student_profile_edit.html:5
+msgid "Student Profile Edit"
+msgstr "Student Profile Edit"
+
+#: templates/logic/student_profile_edit.html:341
+msgid "Display in search:"
+msgstr "Display in search:"
+
+#: templates/logic/student_profile_edit.html:370
+msgid "Personal Information"
+msgstr "Personal Information"
+
+#: templates/logic/student_profile_edit.html:374
+msgid "Profile Photo"
+msgstr "Profile Photo"
+
+#: templates/logic/student_profile_edit.html:470
+msgid "Subjects and Learning Goals"
+msgstr "Subjects and Learning Goals"
+
+#: templates/logic/student_profile_edit.html:519
+msgid "Additional Interests"
+msgstr "Additional Interests"
+
+#: templates/logic/student_profile_edit.html:527
+msgid "Learning Preferences"
+msgstr "Learning Preferences"
+
+#: templates/logic/student_profile_edit.html:579
+msgid "Save Changes"
+msgstr "Save Changes"
+
+#: templates/logic/student_profile_edit.html:618
+msgid "activated"
+msgstr "activated"
+
+#: templates/logic/student_profile_edit.html:618
+msgid "deactivated"
+msgstr "deactivated"
+
+#: templates/logic/student_profile_edit.html:619
+msgid "Profile"
+msgstr "Profile"
+
+#: templates/logic/student_profile_edit.html:622
+msgid "Error changing status"
+msgstr "Error changing status"
+
+#: templates/logic/student_profile_edit.html:628
+msgid "An error occurred"
+msgstr "An error occurred"
+
+#: templates/logic/student_profile_edit.html:658
+msgid "Select at least one subject to study"
+msgstr "Select at least one subject to study"
+
+#: templates/logic/student_profile_edit.html:667
+msgid "Maximum budget must be greater than minimum"
+msgstr "Maximum budget must be greater than minimum"
+
+#: templates/logic/teacher_register_complete.html:4
+msgid "Registration Completed"
+msgstr "Registration Completed"
+
+#: templates/logic/teacher_register_complete.html:258
+msgid "Under Moderation"
+msgstr "Under Moderation"
+
+#: templates/logic/teacher_register_complete.html:261
+msgid "Thank you for registering!"
+msgstr "Thank you for registering!"
+
+#: templates/logic/teacher_register_complete.html:264
+msgid "Your teacher registration application has been successfully submitted. Our team will review your information and contact you shortly."
+msgstr "Your teacher registration application has been successfully submitted. Our team will review your information and contact you shortly."
+
+#: templates/logic/teacher_register_complete.html:270
+msgid "What happens next?"
+msgstr "What happens next?"
+
+#: templates/logic/teacher_register_complete.html:272
+msgid "Your application will be reviewed by an administrator within <strong>24 hours</strong>. We will check:"
+msgstr "Your application will be reviewed by an administrator within <strong>24 hours</strong>. We will check:"
+
+#: templates/logic/teacher_register_complete.html:274
+msgid "Accuracy of the information provided"
+msgstr "Accuracy of the information provided"
+
+#: templates/logic/teacher_register_complete.html:275
+msgid "Compliance with platform requirements"
+msgstr "Compliance with platform requirements"
+
+#: templates/logic/teacher_register_complete.html:276
+msgid "Quality of profile completion"
+msgstr "Quality of profile completion"
+
+#: templates/logic/teacher_register_complete.html:278
+msgid "After approval, you will receive a notification at <strong>{{ email }}</strong> and will be able to start working on the platform."
+msgstr "After approval, you will receive a notification at <strong>{{ email }}</strong> and will be able to start working on the platform."
+
+#: templates/logic/teacher_register_complete.html:282
+msgid "Moderation Process"
+msgstr "Moderation Process"
+
+#: templates/logic/teacher_register_complete.html:289
+msgid "Application Submitted"
+msgstr "Application Submitted"
+
+#: templates/logic/teacher_register_complete.html:290
+msgid "Your data has been received and is in the review queue"
+msgstr "Your data has been received and is in the review queue"
+
+#: templates/logic/teacher_register_complete.html:299
+msgid "Review (up to 24 hours)"
+msgstr "Review (up to 24 hours)"
+
+#: templates/logic/teacher_register_complete.html:300
+msgid "An administrator will review your application"
+msgstr "An administrator will review your application"
+
+#: templates/logic/teacher_register_complete.html:309
+msgid "Notification"
+msgstr "Notification"
+
+#: templates/logic/teacher_register_complete.html:310
+msgid "You will receive an email with the review result"
+msgstr "You will receive an email with the review result"
+
+#: templates/logic/teacher_register_complete.html:319
+msgid "Start Working"
+msgstr "Start Working"
+
+#: templates/logic/teacher_register_complete.html:320
+msgid "After approval, your profile will appear on the platform"
+msgstr "After approval, your profile will appear on the platform"
+
+#: templates/logic/teacher_register_complete.html:328
+msgid "Go to Home"
+msgstr "Go to Home"
+
+#: templates/logic/teacher_register_complete.html:332
+msgid "Contact Us"
+msgstr "Contact Us"
+
+#: templates/logic/teacher_register_complete.html:337
+msgid "Have questions? Contact us:"
+msgstr "Have questions? Contact us:"
+
+#: templates/logic/register_student.html:5
+#: templates/logic/register_student.html:334
+msgid "Регистрация ученика"
+msgstr "Sign Up"
+
+#: templates/logic/register_student.html:335
+msgid "Заполните форму для создания аккаунта"
+msgstr "Fill out the form to create an account"
+
+#: templates/logic/register_student.html:353
+msgid "Личная информация"
+msgstr "System Information"
+
+#: templates/logic/register_student.html:386
+msgid "Это имя будет использоваться для входа"
+msgstr "Enter username or email"
+
+#: templates/logic/register_student.html:460
+msgid "Предметы и цели обучения"
+msgstr "Subject to Learn"
+
+#: templates/logic/register_student.html:486
+#: templates/logic/register_student.html:666
+msgid "символов"
+msgstr "characters"
+
+#: templates/logic/register_student.html:496
+msgid "Контакты для связи"
+msgstr "Contact Information"
+
+#: templates/logic/register_student.html:499
+msgid ""
+"Укажите удобные способы связи, чтобы учителя могли легко с вами связаться"
+msgstr "Specify convenient contact methods so teachers can easily reach you"
+
+#: templates/logic/register_student.html:528
+msgid ""
+"Эти данные не обязательны, но помогут учителям быстрее связаться с вами для "
+"обсуждения деталей обучения"
+msgstr "This information is optional, but will help teachers contact you faster to discuss learning details"
+
+#: templates/logic/register_student.html:540
+msgid "Предпочтения по обучению"
+msgstr "Subject to Learn"
+
+#: templates/logic/register_student.html:578
+msgid ""
+"Указание бюджета поможет учителям понять ваши возможности. Можно не "
+"указывать и договориться отдельно."
+msgstr "Specifying a budget will help teachers understand your capabilities. You can skip this and negotiate separately."
+
+#: templates/logic/register_student.html:605
+msgid "Безопасность"
+msgstr "Availability"
+
+#: templates/logic/register_student.html:616
+msgid "Минимум 8 символов"
+msgstr "Maximum 5 Subjects"
+
+#: templates/logic/register_student.html:633
+msgid "Я принимаю"
+msgstr "I accept"
+
+#: templates/logic/register_student.html:633
+msgid "условия использования"
+msgstr "Terms of Use"
+
+#: templates/logic/register_student.html:633
+msgid "и"
+msgstr "and"
+
+#: templates/logic/register_student.html:633
+msgid "политику конфиденциальности"
+msgstr "Privacy Policy"
+
+#: templates/logic/register_student.html:649
+msgid "Назад к выбору типа аккаунта"
+msgstr "Back to account type selection"
+
+#: templates/logic/register_student.html:691
+msgid "Максимальный бюджет должен быть больше минимального"
+msgstr "Maximum budget must be greater than minimum"
+
+#: templates/logic/register_student.html:705
+msgid "Регистрация..."
+msgstr "Sign Up"
+
 # ========== STUDENT DETAIL PAGE ==========
 #: templates/logic/student_detail.html:4
 msgid "Профиль ученика"
@@ -512,22 +785,6 @@ msgstr "Lesson Format"
 #: templates/logic/student_detail.html:686
 msgid "Доступные дни"
 msgstr "Available Days"
-
-#: templates/logic/student_detail.html:696
-#: templates/logic/student_profile.html:474
-#: templates/logic/teacher_profile.html:832
-msgid "Телефон"
-msgstr "Phone"
-
-#: templates/logic/student_detail.html:716
-#: templates/logic/teacher_profile.html:838
-msgid "Telegram"
-msgstr "Telegram"
-
-#: templates/logic/student_detail.html:728
-#: templates/logic/teacher_profile.html:844
-msgid "WhatsApp"
-msgstr "WhatsApp"
 
 #: templates/logic/student_detail.html:741
 #: templates/logic/student_detail.html:844
@@ -653,16 +910,6 @@ msgstr "Profile Information"
 #: templates/logic/teacher_profile.html:885
 msgid "Имя пользователя"
 msgstr "Username"
-
-#: templates/logic/student_profile.html:500
-#: templates/logic/students_list.html:545
-#: templates/logic/teacher_profile.html:745
-msgid "Уровень образования"
-msgstr "Education Level"
-
-#: templates/logic/student_profile.html:508
-msgid "Школа/Университет"
-msgstr "School/University"
 
 #: templates/logic/student_profile.html:523
 #: templates/logic/teacher_profile.html:889
@@ -990,8 +1237,6 @@ msgid "Образование и опыт"
 msgstr "Education and Experience"
 
 #: templates/logic/teacher_profile.html:756
-#, fuzzy
-#| msgid "Специализация:"
 msgid "Специализация"
 msgstr "Specialization:"
 
@@ -1117,6 +1362,7 @@ msgstr "and"
 msgid "privacy policy"
 msgstr "privacy policy"
 
+#: templates/logic/student_profile_edit.html:576
 #: templates/logic/teacher_register_step1.html:789
 msgid "Cancel"
 msgstr "Cancel"
@@ -1145,8 +1391,6 @@ msgstr "Personal Data"
 
 #: templates/logic/teacher_register_step2.html:510
 #: templates/logic/teacher_register_step3.html:611
-#, fuzzy
-#| msgid "Сертификаты и дипломы"
 msgid "Сертификаты"
 msgstr "Certificates and Diplomas"
 
@@ -1310,14 +1554,29 @@ msgstr "File size should not exceed 5 MB"
 msgid "Разрешены только файлы форматов: PDF, JPG, PNG"
 msgstr "Only files in formats: PDF, JPG, PNG are allowed"
 
+#~ msgid "Фото профиля"
+#~ msgstr "Profile Photo"
+
+#~ msgid "Рекомендуемый размер: 300x300px"
+#~ msgstr "Recommended size: 300x300px"
+
+#~ msgid "Имя пользователя или Email"
+#~ msgstr "Username or Email"
+
+#~ msgid "Пароль"
+#~ msgstr "Password"
+
+#~ msgid "Введите пароль"
+#~ msgstr "Enter password"
+
+#~ msgid "Запомнить меня"
+#~ msgstr "Remember me"
+
 #~ msgid "First name"
 #~ msgstr "First name"
 
 #~ msgid "Last name"
 #~ msgstr "Last name"
-
-#~ msgid "Username"
-#~ msgstr "Username"
 
 #~ msgid "Age"
 #~ msgstr "Age"
@@ -1357,9 +1616,3 @@ msgstr "Only files in formats: PDF, JPG, PNG are allowed"
 
 #~ msgid "Available to"
 #~ msgstr "Available to"
-
-#~ msgid "Available weekdays"
-#~ msgstr "Available weekdays"
-
-#~ msgid "Учитель"
-#~ msgstr "Teacher"

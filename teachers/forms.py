@@ -1,39 +1,37 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.core.exceptions import ValidationError
-from .models import User, TeacherProfile, Subject, City, Certificate, TeacherSubject
+from django.utils.translation import gettext_lazy as _
+from .models import User, TeacherProfile, StudentProfile, Subject, City, Certificate, TeacherSubject
 
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.core.exceptions import ValidationError
-from .models import User, StudentProfile, Subject
 
 class TeacherRegistrationForm(UserCreationForm):
-    """Форма регистрации пользователя как учителя - ИСПРАВЛЕННАЯ"""
+    """Форма регистрации пользователя как учителя"""
     
     # ========== ЛИЧНАЯ ИНФОРМАЦИЯ ==========
     first_name = forms.CharField(
         max_length=150,
         required=True,
-        label='Имя',
+        label=_('Имя'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': 'Введите ваше имя'
+            'placeholder': _('Введите ваше имя')
         })
     )
     
     last_name = forms.CharField(
         max_length=150,
         required=True,
-        label='Фамилия',
+        label=_('Фамилия'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': 'Введите вашу фамилию'
+            'placeholder': _('Введите вашу фамилию')
         })
     )
     
     email = forms.EmailField(
         required=True,
-        label='Email',
+        label=_('Email'),
         widget=forms.EmailInput(attrs={
             'class': 'form-input',
             'placeholder': 'example@mail.com'
@@ -42,8 +40,8 @@ class TeacherRegistrationForm(UserCreationForm):
     
     phone = forms.CharField(
         max_length=20,
-        required=True,
-        label='Телефон',
+        required=False,
+        label=_('Телефон'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
             'placeholder': '+998 90 123 45 67'
@@ -53,8 +51,8 @@ class TeacherRegistrationForm(UserCreationForm):
     age = forms.IntegerField(
         min_value=18,
         max_value=100,
-        required=True,
-        label='Возраст',
+        required=False,
+        label=_('Возраст'),
         widget=forms.NumberInput(attrs={
             'class': 'form-input',
             'placeholder': '25'
@@ -63,32 +61,32 @@ class TeacherRegistrationForm(UserCreationForm):
     
     avatar = forms.ImageField(
         required=False,
-        label='Фото профиля',
+        label=_('Фото профиля'),
         widget=forms.FileInput(attrs={
             'class': 'form-file',
             'accept': 'image/*'
         }),
-        help_text='Рекомендуемый размер: 300x300px'
+        help_text=_('Рекомендуемый размер: 300x300px')
     )
     
     # ========== ПРОФЕССИОНАЛЬНАЯ ИНФОРМАЦИЯ ==========
     bio = forms.CharField(
         required=False,
-        label='О себе',
+        label=_('О себе'),
         widget=forms.Textarea(attrs={
             'class': 'form-textarea',
-            'placeholder': 'Расскажите о своем опыте, методике преподавания, достижениях...',
+            'placeholder': _('Расскажите о своем опыте, методике преподавания, достижениях...'),
             'rows': 5
         }),
-        help_text='Минимум 100 символов',
-        min_length=100,
+        help_text=_('Минимум 50 символов'),
+        min_length=50,
         max_length=1000
     )
     
     education_level = forms.ChoiceField(
         choices=TeacherProfile.EDUCATION_LEVELS,
         required=False,
-        label='Уровень образования',
+        label=_('Уровень образования'),
         widget=forms.Select(attrs={
             'class': 'form-select'
         })
@@ -97,20 +95,20 @@ class TeacherRegistrationForm(UserCreationForm):
     university = forms.CharField(
         max_length=200,
         required=False,
-        label='Учебное заведение',
+        label=_('Учебное заведение'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': 'Название университета/института'
+            'placeholder': _('Название университета/института')
         })
     )
     
     specialization = forms.CharField(
         max_length=200,
-        required=True,
-        label='Специализация',
+        required=False,
+        label=_('Специализация'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': 'Ваша специальность'
+            'placeholder': _('Ваша специальность')
         })
     )
     
@@ -118,7 +116,7 @@ class TeacherRegistrationForm(UserCreationForm):
         min_value=0,
         max_value=50,
         required=True,
-        label='Опыт преподавания (лет)',
+        label=_('Опыт преподавания (лет)'),
         widget=forms.NumberInput(attrs={
             'class': 'form-input',
             'placeholder': '5'
@@ -131,25 +129,25 @@ class TeacherRegistrationForm(UserCreationForm):
         widget=forms.CheckboxSelectMultiple(attrs={
             'class': 'language-checkbox'
         }),
-        label='Языки преподавания',
-        help_text='Выберите один или несколько языков'
+        label=_('Языки преподавания'),
+        help_text=_('Выберите один или несколько языков')
     )
     
     # ========== МЕСТОПОЛОЖЕНИЕ И ФОРМАТ ==========
     city = forms.ModelChoiceField(
         queryset=City.objects.filter(is_active=True),
         required=False,
-        label='Город',
+        label=_('Город'),
         widget=forms.Select(attrs={
             'class': 'form-select'
         }),
-        empty_label='Выберите город'
+        empty_label=_('Выберите город')
     )
     
     teaching_format = forms.ChoiceField(
         choices=TeacherProfile.TEACHING_FORMATS,
         required=True,
-        label='Формат обучения',
+        label=_('Формат обучения'),
         widget=forms.Select(attrs={
             'class': 'form-select'
         })
@@ -159,17 +157,17 @@ class TeacherRegistrationForm(UserCreationForm):
     telegram = forms.CharField(
         max_length=100,
         required=False,
-        label='Telegram',
+        label=_('Telegram'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': '@username или номер телефона'
+            'placeholder': _('@username или номер телефона')
         })
     )
     
     whatsapp = forms.CharField(
         max_length=20,
         required=False,
-        label='WhatsApp',
+        label=_('WhatsApp'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
             'placeholder': '+998 90 123 45 67'
@@ -179,7 +177,7 @@ class TeacherRegistrationForm(UserCreationForm):
     # ========== ВРЕМЯ РАБОТЫ ==========
     available_from = forms.TimeField(
         required=True,
-        label='Доступен с',
+        label=_('Доступен с'),
         widget=forms.TimeInput(attrs={
             'class': 'form-input',
             'type': 'time'
@@ -189,7 +187,7 @@ class TeacherRegistrationForm(UserCreationForm):
     
     available_to = forms.TimeField(
         required=True,
-        label='Доступен до',
+        label=_('Доступен до'),
         widget=forms.TimeInput(attrs={
             'class': 'form-input',
             'type': 'time'
@@ -199,16 +197,16 @@ class TeacherRegistrationForm(UserCreationForm):
     
     available_weekdays = forms.MultipleChoiceField(
         choices=[
-            ('1', 'Понедельник'),
-            ('2', 'Вторник'),
-            ('3', 'Среда'),
-            ('4', 'Четверг'),
-            ('5', 'Пятница'),
-            ('6', 'Суббота'),
-            ('7', 'Воскресенье'),
+            ('1', _('Понедельник')),
+            ('2', _('Вторник')),
+            ('3', _('Среда')),
+            ('4', _('Четверг')),
+            ('5', _('Пятница')),
+            ('6', _('Суббота')),
+            ('7', _('Воскресенье')),
         ],
         required=True,
-        label='Рабочие дни',
+        label=_('Рабочие дни'),
         widget=forms.CheckboxSelectMultiple(attrs={
             'class': 'form-checkbox'
         })
@@ -217,7 +215,7 @@ class TeacherRegistrationForm(UserCreationForm):
     # ========== СОГЛАСИЕ ==========
     terms_accepted = forms.BooleanField(
         required=True,
-        label='Я принимаю условия использования и политику конфиденциальности',
+        label=_('Я принимаю условия использования и политику конфиденциальности'),
         widget=forms.CheckboxInput(attrs={
             'class': 'form-checkbox'
         })
@@ -232,40 +230,39 @@ class TeacherRegistrationForm(UserCreationForm):
         super().__init__(*args, **kwargs)
         self.fields['username'].widget.attrs.update({
             'class': 'form-input',
-            'placeholder': 'Имя пользователя'
+            'placeholder': _('Имя пользователя')
         })
         self.fields['password1'].widget.attrs.update({
             'class': 'form-input',
-            'placeholder': 'Введите пароль'
+            'placeholder': _('Введите пароль')
         })
         self.fields['password2'].widget.attrs.update({
             'class': 'form-input',
-            'placeholder': 'Повторите пароль'
+            'placeholder': _('Повторите пароль')
         })
     
     def clean_email(self):
         email = self.cleaned_data.get('email')
         if email and User.objects.filter(email=email).exists():
-            raise ValidationError('Этот email уже используется')
+            raise ValidationError(_('Этот email уже используется'))
         return email
     
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
         if phone and User.objects.filter(phone=phone).exists():
-            raise ValidationError('Этот номер телефона уже используется')
+            raise ValidationError(_('Этот номер телефона уже используется'))
         return phone
     
     def clean_available_weekdays(self):
         days = self.cleaned_data.get('available_weekdays')
         if not days:
-            raise ValidationError('Выберите хотя бы один рабочий день')
+            raise ValidationError(_('Выберите хотя бы один рабочий день'))
         return ','.join(days)
     
     def clean_teaching_languages(self):
-        """✅ ДОБАВЛЕНО: валидация языков"""
         languages = self.cleaned_data.get('teaching_languages')
         if not languages:
-            raise ValidationError('Выберите хотя бы один язык преподавания')
+            raise ValidationError(_('Выберите хотя бы один язык преподавания'))
         return languages
     
     def save(self, commit=True):
@@ -278,10 +275,8 @@ class TeacherRegistrationForm(UserCreationForm):
         if commit:
             user.save()
             
-            # ✅ ИСПРАВЛЕНО: Преобразуем список в строку ДО создания профиля
             languages_str = ','.join(self.cleaned_data['teaching_languages'])
 
-            # Создаем профиль учителя со статусом "на модерации"
             teacher_profile = TeacherProfile.objects.create(
                 user=user,
                 bio=self.cleaned_data['bio'],
@@ -305,32 +300,31 @@ class TeacherRegistrationForm(UserCreationForm):
 
 
 class TeacherSubjectsForm(forms.Form):
-    """Форма для добавления предметов и цен (второй шаг регистрации)"""
+    """Форма для добавления предметов и цен"""
     
     def __init__(self, *args, **kwargs):
         teacher = kwargs.pop('teacher', None)
         super().__init__(*args, **kwargs)
         
-        # Динамически создаем поля для предметов
         subjects = Subject.objects.filter(is_active=True)
         
-        for i in range(1, 6):  # До 5 предметов
+        for i in range(1, 6):
             self.fields[f'subject_{i}'] = forms.ModelChoiceField(
                 queryset=subjects,
                 required=False,
-                label=f'Предмет {i}',
+                label=_('Предмет %(number)d') % {'number': i},
                 widget=forms.Select(attrs={
                     'class': 'form-select',
                     'onchange': f'togglePriceField({i})'
                 }),
-                empty_label='Выберите предмет'
+                empty_label=_('Выберите предмет')
             )
             
             self.fields[f'hourly_rate_{i}'] = forms.DecimalField(
                 max_digits=10,
                 decimal_places=2,
                 required=False,
-                label=f'Цена за час (сум)',
+                label=_('Цена за час (сум)'),
                 min_value=0,
                 widget=forms.NumberInput(attrs={
                     'class': 'form-input',
@@ -341,7 +335,7 @@ class TeacherSubjectsForm(forms.Form):
             
             self.fields[f'is_free_trial_{i}'] = forms.BooleanField(
                 required=False,
-                label='Бесплатное пробное занятие',
+                label=_('Бесплатное пробное занятие'),
                 widget=forms.CheckboxInput(attrs={
                     'class': 'form-checkbox'
                 })
@@ -349,11 +343,11 @@ class TeacherSubjectsForm(forms.Form):
             
             self.fields[f'description_{i}'] = forms.CharField(
                 required=False,
-                label='Описание',
+                label=_('Описание'),
                 widget=forms.Textarea(attrs={
                     'class': 'form-textarea',
                     'rows': 2,
-                    'placeholder': 'Дополнительная информация о преподавании этого предмета'
+                    'placeholder': _('Дополнительная информация о преподавании этого предмета')
                 }),
                 max_length=500
             )
@@ -361,7 +355,6 @@ class TeacherSubjectsForm(forms.Form):
     def clean(self):
         cleaned_data = super().clean()
         
-        # Проверяем, что добавлен хотя бы один предмет
         has_subject = False
         for i in range(1, 6):
             subject = cleaned_data.get(f'subject_{i}')
@@ -370,16 +363,16 @@ class TeacherSubjectsForm(forms.Form):
             if subject:
                 has_subject = True
                 if not hourly_rate or hourly_rate <= 0:
-                    raise ValidationError(f'Укажите цену для предмета {i}')
+                    raise ValidationError(_('Укажите цену для предмета %(number)d') % {'number': i})
         
         if not has_subject:
-            raise ValidationError('Добавьте хотя бы один предмет')
+            raise ValidationError(_('Добавьте хотя бы один предмет'))
         
         return cleaned_data
 
 
 class CertificateUploadForm(forms.ModelForm):
-    """Форма для загрузки сертификатов (опциональный третий шаг)"""
+    """Форма для загрузки сертификатов"""
     
     class Meta:
         model = Certificate
@@ -387,11 +380,11 @@ class CertificateUploadForm(forms.ModelForm):
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-input',
-                'placeholder': 'Название сертификата'
+                'placeholder': _('Название сертификата')
             }),
             'issuer': forms.TextInput(attrs={
                 'class': 'form-input',
-                'placeholder': 'Кто выдал'
+                'placeholder': _('Кто выдал')
             }),
             'file': forms.FileInput(attrs={
                 'class': 'form-file',
@@ -399,35 +392,35 @@ class CertificateUploadForm(forms.ModelForm):
             })
         }
         labels = {
-            'name': 'Название сертификата',
-            'issuer': 'Организация/учреждение',
-            'file': 'Файл сертификата'
+            'name': _('Название сертификата'),
+            'issuer': _('Организация/учреждение'),
+            'file': _('Файл сертификата')
         }
 
 
 class LoginForm(AuthenticationForm):
     """Форма входа"""
     username = forms.CharField(
-        label='Имя пользователя или Email',
+        label=_('Имя пользователя или Email'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': 'Введите имя пользователя или email',
+            'placeholder': _('Введите имя пользователя или email'),
             'autofocus': True
         })
     )
     
     password = forms.CharField(
-        label='Пароль',
+        label=_('Пароль'),
         widget=forms.PasswordInput(attrs={
             'class': 'form-input',
-            'placeholder': 'Введите пароль'
+            'placeholder': _('Введите пароль')
         })
     )
     
     remember_me = forms.BooleanField(
         required=False,
         initial=True,
-        label='Запомнить меня',
+        label=_('Запомнить меня'),
         widget=forms.CheckboxInput(attrs={
             'class': 'form-checkbox'
         })
@@ -435,32 +428,31 @@ class LoginForm(AuthenticationForm):
 
 
 class StudentRegistrationForm(UserCreationForm):
-    """Форма регистрации ученика с добавленными полями Telegram и WhatsApp"""
+    """Форма регистрации ученика"""
     
-    # Личная информация
     first_name = forms.CharField(
         max_length=150,
         required=True,
-        label='Имя',
+        label=_('Имя'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': 'Введите ваше имя'
+            'placeholder': _('Введите ваше имя')
         })
     )
     
     last_name = forms.CharField(
         max_length=150,
         required=True,
-        label='Фамилия',
+        label=_('Фамилия'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': 'Введите вашу фамилию'
+            'placeholder': _('Введите вашу фамилию')
         })
     )
     
     email = forms.EmailField(
         required=False,
-        label='Email',
+        label=_('Email'),
         widget=forms.EmailInput(attrs={
             'class': 'form-input',
             'placeholder': 'example@mail.com'
@@ -470,7 +462,7 @@ class StudentRegistrationForm(UserCreationForm):
     phone = forms.CharField(
         max_length=20,
         required=True,
-        label='Телефон',
+        label=_('Телефон'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
             'placeholder': '+998 90 123 45 67'
@@ -481,7 +473,7 @@ class StudentRegistrationForm(UserCreationForm):
         min_value=10,
         max_value=100,
         required=False,
-        label='Возраст',
+        label=_('Возраст'),
         widget=forms.NumberInput(attrs={
             'class': 'form-input',
             'placeholder': '18'
@@ -491,146 +483,136 @@ class StudentRegistrationForm(UserCreationForm):
     city = forms.ModelChoiceField(
         queryset=City.objects.filter(is_active=True),
         required=False,
-        label='Город',
+        label=_('Город'),
         widget=forms.Select(attrs={
             'class': 'form-select'
         }),
-        empty_label='Выберите город'
+        empty_label=_('Выберите город')
     )
     
-    # Предметы для изучения
     interests = forms.ModelMultipleChoiceField(
         queryset=Subject.objects.filter(is_active=True),
         required=True,
-        label='Предметы, которые хочу изучать',
+        label=_('Предметы, которые хочу изучать'),
         widget=forms.CheckboxSelectMultiple(attrs={
             'class': 'subject-checkbox'
         }),
-        help_text='Выберите один или несколько предметов'
+        help_text=_('Выберите один или несколько предметов')
     )
     
-    # Описание целей обучения
     bio = forms.CharField(
         required=False,
-        label='Расскажите о ваших целях',
+        label=_('Расскажите о ваших целях'),
         widget=forms.Textarea(attrs={
             'class': 'form-textarea',
-            'placeholder': 'Например: Хочу подготовиться к экзаменам, улучшить знания по математике, изучить английский с нуля...',
+            'placeholder': _('Например: Хочу подготовиться к экзаменам, улучшить знания по математике, изучить английский с нуля...'),
             'rows': 4
         }),
-        help_text='Минимум 20 символов - это поможет учителям лучше понять ваши потребности',
+        help_text=_('Минимум 20 символов - это поможет учителям лучше понять ваши потребности'),
         min_length=20,
         max_length=1000
     )
     
-    # Уровень образования
     education_level = forms.ChoiceField(
         choices=StudentProfile.EDUCATION_LEVELS,
         required=False,
-        label='Уровень образования',
+        label=_('Уровень образования'),
         widget=forms.Select(attrs={
             'class': 'form-select'
         })
     )
     
-    # Школа/Университет
     school_university = forms.CharField(
         max_length=200,
         required=False,
-        label='Школа/Университет',
+        label=_('Школа/Университет'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': 'Название вашей школы или университета'
+            'placeholder': _('Название вашей школы или университета')
         })
     )
     
-    # Формат обучения
     learning_format = forms.ChoiceField(
         choices=StudentProfile.LEARNING_FORMATS,
         required=True,
-        label='Предпочитаемый формат обучения',
+        label=_('Предпочитаемый формат обучения'),
         widget=forms.Select(attrs={
             'class': 'form-select'
         }),
         initial='both'
     )
     
-    # Бюджет минимальный
     budget_min = forms.DecimalField(
         max_digits=10,
         decimal_places=2,
         required=False,
-        label='Минимальный бюджет (сум/час)',
+        label=_('Минимальный бюджет (сум/час)'),
         min_value=0,
         widget=forms.NumberInput(attrs={
             'class': 'form-input',
             'placeholder': '30000',
             'step': '1000'
         }),
-        help_text='Минимальная цена, которую готовы платить'
+        help_text=_('Минимальная цена, которую готовы платить')
     )
     
-    # Бюджет максимальный
     budget_max = forms.DecimalField(
         max_digits=10,
         decimal_places=2,
         required=False,
-        label='Максимальный бюджет (сум/час)',
+        label=_('Максимальный бюджет (сум/час)'),
         min_value=0,
         widget=forms.NumberInput(attrs={
             'class': 'form-input',
             'placeholder': '100000',
             'step': '1000'
         }),
-        help_text='Максимальная цена, которую готовы платить'
+        help_text=_('Максимальная цена, которую готовы платить')
     )
     
-    # ✅ НОВЫЕ ПОЛЯ: Контакты для связи
     telegram = forms.CharField(
         max_length=100,
         required=False,
-        label='Telegram',
+        label=_('Telegram'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': '@username или +998901234567'
+            'placeholder': _('@username или +998901234567')
         }),
-        help_text='Укажите ваш Telegram для удобной связи с учителями'
+        help_text=_('Укажите ваш Telegram для удобной связи с учителями')
     )
     
     whatsapp = forms.CharField(
         max_length=20,
         required=False,
-        label='WhatsApp',
+        label=_('WhatsApp'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
             'placeholder': '+998 90 123 45 67'
         }),
-        help_text='Укажите номер WhatsApp для связи'
+        help_text=_('Укажите номер WhatsApp для связи')
     )
     
-    # Доступные дни недели
     available_weekdays = forms.MultipleChoiceField(
         choices=[
-            ('1', 'Понедельник'),
-            ('2', 'Вторник'),
-            ('3', 'Среда'),
-            ('4', 'Четверг'),
-            ('5', 'Пятница'),
-            ('6', 'Суббота'),
-            ('7', 'Воскресенье'),
+            ('1', _('Понедельник')),
+            ('2', _('Вторник')),
+            ('3', _('Среда')),
+            ('4', _('Четверг')),
+            ('5', _('Пятница')),
+            ('6', _('Суббота')),
+            ('7', _('Воскресенье')),
         ],
         required=False,
-        label='Доступные дни для занятий',
+        label=_('Доступные дни для занятий'),
         widget=forms.CheckboxSelectMultiple(attrs={
             'class': 'weekday-checkbox'
         }),
-        help_text='Выберите удобные дни для занятий'
+        help_text=_('Выберите удобные дни для занятий')
     )
     
-    # Согласие
     terms_accepted = forms.BooleanField(
         required=True,
-        label='Я принимаю условия использования и политику конфиденциальности',
+        label=_('Я принимаю условия использования и политику конфиденциальности'),
         widget=forms.CheckboxInput(attrs={
             'class': 'form-checkbox'
         })
@@ -645,35 +627,35 @@ class StudentRegistrationForm(UserCreationForm):
         super().__init__(*args, **kwargs)
         self.fields['username'].widget.attrs.update({
             'class': 'form-input',
-            'placeholder': 'Имя пользователя'
+            'placeholder': _('Имя пользователя')
         })
         self.fields['password1'].widget.attrs.update({
             'class': 'form-input',
-            'placeholder': 'Введите пароль'
+            'placeholder': _('Введите пароль')
         })
         self.fields['password2'].widget.attrs.update({
             'class': 'form-input',
-            'placeholder': 'Повторите пароль'
+            'placeholder': _('Повторите пароль')
         })
         
     def clean_email(self):
         email = self.cleaned_data.get('email')
         if email and User.objects.filter(email=email).exists():
-            raise ValidationError('Этот email уже используется')
+            raise ValidationError(_('Этот email уже используется'))
         return email
     
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
         if phone and User.objects.filter(phone=phone).exists():
-            raise ValidationError('Этот номер телефона уже используется')
+            raise ValidationError(_('Этот номер телефона уже используется'))
         return phone
     
     def clean_interests(self):
         interests = self.cleaned_data.get('interests')
         if not interests:
-            raise ValidationError('Выберите хотя бы один предмет')
+            raise ValidationError(_('Выберите хотя бы один предмет'))
         if interests.count() > 10:
-            raise ValidationError('Можно выбрать максимум 10 предметов')
+            raise ValidationError(_('Можно выбрать максимум 10 предметов'))
         return interests
     
     def clean(self):
@@ -681,9 +663,8 @@ class StudentRegistrationForm(UserCreationForm):
         budget_min = cleaned_data.get('budget_min')
         budget_max = cleaned_data.get('budget_max')
         
-        # Проверка, что максимальный бюджет больше минимального
         if budget_min and budget_max and budget_min > budget_max:
-            raise ValidationError('Максимальный бюджет должен быть больше минимального')
+            raise ValidationError(_('Максимальный бюджет должен быть больше минимального'))
         
         return cleaned_data
     
@@ -697,7 +678,6 @@ class StudentRegistrationForm(UserCreationForm):
         if commit:
             user.save()
             
-            # Создаем профиль ученика с ВСЕМИ полями, включая новые telegram и whatsapp
             student_profile = StudentProfile.objects.create(
                 user=user,
                 bio=self.cleaned_data.get('bio', ''),
@@ -708,13 +688,12 @@ class StudentRegistrationForm(UserCreationForm):
                 learning_format=self.cleaned_data.get('learning_format', 'both'),
                 budget_min=self.cleaned_data.get('budget_min'),
                 budget_max=self.cleaned_data.get('budget_max'),
-                telegram=self.cleaned_data.get('telegram', ''),  # ✅ НОВОЕ ПОЛЕ
-                whatsapp=self.cleaned_data.get('whatsapp', ''),  # ✅ НОВОЕ ПОЛЕ
+                telegram=self.cleaned_data.get('telegram', ''),
+                whatsapp=self.cleaned_data.get('whatsapp', ''),
                 available_weekdays=','.join(self.cleaned_data.get('available_weekdays', [])) if self.cleaned_data.get('available_weekdays') else '1,2,3,4,5,6,7',
                 is_active=True
             )
             
-            # Связываем выбранные предметы
             interests = self.cleaned_data['interests']
             student_profile.interests.set(interests)
             student_profile.desired_subjects.set(interests)
@@ -731,21 +710,21 @@ class TeacherProfileEditForm(forms.ModelForm):
         widget=forms.CheckboxSelectMultiple(attrs={
             'class': 'language-checkbox'
         }),
-        label='Языки преподавания'
+        label=_('Языки преподавания')
     )
     
     available_weekdays = forms.MultipleChoiceField(
         choices=[
-            ('1', 'Понедельник'),
-            ('2', 'Вторник'),
-            ('3', 'Среда'),
-            ('4', 'Четверг'),
-            ('5', 'Пятница'),
-            ('6', 'Суббота'),
-            ('7', 'Воскресенье'),
+            ('1', _('Понедельник')),
+            ('2', _('Вторник')),
+            ('3', _('Среда')),
+            ('4', _('Четверг')),
+            ('5', _('Пятница')),
+            ('6', _('Суббота')),
+            ('7', _('Воскресенье')),
         ],
         required=True,
-        label='Рабочие дни',
+        label=_('Рабочие дни'),
         widget=forms.CheckboxSelectMultiple(attrs={
             'class': 'weekday-checkbox'
         })
@@ -762,16 +741,16 @@ class TeacherProfileEditForm(forms.ModelForm):
             'bio': forms.Textarea(attrs={
                 'class': 'form-textarea',
                 'rows': 5,
-                'placeholder': 'Расскажите о своем опыте преподавания...'
+                'placeholder': _('Расскажите о своем опыте преподавания...')
             }),
             'education_level': forms.Select(attrs={'class': 'form-select'}),
             'university': forms.TextInput(attrs={
                 'class': 'form-input',
-                'placeholder': 'Название университета'
+                'placeholder': _('Название университета')
             }),
             'specialization': forms.TextInput(attrs={
                 'class': 'form-input',
-                'placeholder': 'Ваша специальность'
+                'placeholder': _('Ваша специальность')
             }),
             'experience_years': forms.NumberInput(attrs={
                 'class': 'form-input',
@@ -801,27 +780,26 @@ class TeacherProfileEditForm(forms.ModelForm):
             })
         }
         labels = {
-            'bio': 'О себе',
-            'education_level': 'Уровень образования',
-            'university': 'Учебное заведение',
-            'specialization': 'Специализация',
-            'experience_years': 'Опыт преподавания (лет)',
-            'city': 'Город',
-            'teaching_format': 'Формат обучения',
-            'telegram': 'Telegram',
-            'whatsapp': 'WhatsApp',
-            'available_from': 'Доступен с',
-            'available_to': 'Доступен до',
-            'is_active': 'Отображать в поиске учителей'
+            'bio': _('О себе'),
+            'education_level': _('Уровень образования'),
+            'university': _('Учебное заведение'),
+            'specialization': _('Специализация'),
+            'experience_years': _('Опыт преподавания (лет)'),
+            'city': _('Город'),
+            'teaching_format': _('Формат обучения'),
+            'telegram': _('Telegram'),
+            'whatsapp': _('WhatsApp'),
+            'available_from': _('Доступен с'),
+            'available_to': _('Доступен до'),
+            'is_active': _('Отображать в поиске учителей')
         }
         help_texts = {
-            'is_active': 'Если отключено, ваш профиль не будет показываться в поиске'
+            'is_active': _('Если отключено, ваш профиль не будет показываться в поиске')
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Заполняем начальные значения для MultipleChoiceField
         if self.instance and self.instance.pk:
             if self.instance.teaching_languages:
                 self.initial['teaching_languages'] = self.instance.teaching_languages.split(',')
@@ -832,7 +810,6 @@ class TeacherProfileEditForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
         
-        # Преобразуем списки в строки
         instance.teaching_languages = ','.join(self.cleaned_data['teaching_languages'])
         instance.available_weekdays = ','.join(self.cleaned_data['available_weekdays'])
         
@@ -843,12 +820,12 @@ class TeacherProfileEditForm(forms.ModelForm):
 
 
 class StudentProfileEditForm(forms.ModelForm):
-    """Форма редактирования профиля ученика с добавленными полями Telegram и WhatsApp"""
+    """Форма редактирования профиля ученика"""
     
     interests = forms.ModelMultipleChoiceField(
         queryset=Subject.objects.filter(is_active=True),
         required=False,
-        label='Интересующие предметы',
+        label=_('Интересующие предметы'),
         widget=forms.CheckboxSelectMultiple(attrs={
             'class': 'subject-checkbox'
         })
@@ -857,25 +834,25 @@ class StudentProfileEditForm(forms.ModelForm):
     desired_subjects = forms.ModelMultipleChoiceField(
         queryset=Subject.objects.filter(is_active=True),
         required=True,
-        label='Предметы для изучения',
+        label=_('Предметы для изучения'),
         widget=forms.CheckboxSelectMultiple(attrs={
             'class': 'subject-checkbox'
         }),
-        help_text='Выберите предметы, которые хотите изучать'
+        help_text=_('Выберите предметы, которые хотите изучать')
     )
     
     available_weekdays = forms.MultipleChoiceField(
         choices=[
-            ('1', 'Понедельник'),
-            ('2', 'Вторник'),
-            ('3', 'Среда'),
-            ('4', 'Четверг'),
-            ('5', 'Пятница'),
-            ('6', 'Суббота'),
-            ('7', 'Воскресенье'),
+            ('1', _('Понедельник')),
+            ('2', _('Вторник')),
+            ('3', _('Среда')),
+            ('4', _('Четверг')),
+            ('5', _('Пятница')),
+            ('6', _('Суббота')),
+            ('7', _('Воскресенье')),
         ],
         required=False,
-        label='Доступные дни для занятий',
+        label=_('Доступные дни для занятий'),
         widget=forms.CheckboxSelectMultiple(attrs={
             'class': 'weekday-checkbox'
         })
@@ -886,24 +863,24 @@ class StudentProfileEditForm(forms.ModelForm):
         fields = [
             'bio', 'description', 'education_level', 'school_university',
             'city', 'learning_format', 'budget_min', 'budget_max',
-            'telegram', 'whatsapp',  # ✅ НОВЫЕ ПОЛЯ
+            'telegram', 'whatsapp',
             'is_active'
         ]
         widgets = {
             'bio': forms.Textarea(attrs={
                 'class': 'form-textarea',
                 'rows': 3,
-                'placeholder': 'Краткое описание...'
+                'placeholder': _('Краткое описание...')
             }),
             'description': forms.Textarea(attrs={
                 'class': 'form-textarea',
                 'rows': 5,
-                'placeholder': 'Расскажите о своих целях обучения...'
+                'placeholder': _('Расскажите о своих целях обучения...')
             }),
             'education_level': forms.Select(attrs={'class': 'form-select'}),
             'school_university': forms.TextInput(attrs={
                 'class': 'form-input',
-                'placeholder': 'Название школы/университета'
+                'placeholder': _('Название школы/университета')
             }),
             'city': forms.Select(attrs={'class': 'form-select'}),
             'learning_format': forms.Select(attrs={'class': 'form-select'}),
@@ -917,10 +894,9 @@ class StudentProfileEditForm(forms.ModelForm):
                 'placeholder': '100000',
                 'step': '1000'
             }),
-            # ✅ НОВЫЕ ВИДЖЕТЫ
             'telegram': forms.TextInput(attrs={
                 'class': 'form-input',
-                'placeholder': '@username или +998901234567'
+                'placeholder': _('@username или +998901234567')
             }),
             'whatsapp': forms.TextInput(attrs={
                 'class': 'form-input',
@@ -931,30 +907,29 @@ class StudentProfileEditForm(forms.ModelForm):
             })
         }
         labels = {
-            'bio': 'Краткое описание',
-            'description': 'Подробное описание целей',
-            'education_level': 'Уровень образования',
-            'school_university': 'Школа/Университет',
-            'city': 'Город',
-            'learning_format': 'Предпочитаемый формат',
-            'budget_min': 'Минимальный бюджет (сум/час)',
-            'budget_max': 'Максимальный бюджет (сум/час)',
-            'telegram': 'Telegram',  # ✅ НОВЫЙ ЛЕЙБЛ
-            'whatsapp': 'WhatsApp',  # ✅ НОВЫЙ ЛЕЙБЛ
-            'is_active': 'Отображать в поиске учеников'
+            'bio': _('Краткое описание'),
+            'description': _('Подробное описание целей'),
+            'education_level': _('Уровень образования'),
+            'school_university': _('Школа/Университет'),
+            'city': _('Город'),
+            'learning_format': _('Предпочитаемый формат'),
+            'budget_min': _('Минимальный бюджет (сум/час)'),
+            'budget_max': _('Максимальный бюджет (сум/час)'),
+            'telegram': _('Telegram'),
+            'whatsapp': _('WhatsApp'),
+            'is_active': _('Отображать в поиске учеников')
         }
         help_texts = {
-            'is_active': 'Если отключено, ваш профиль не будет показываться в поиске',
-            'budget_min': 'Минимальная цена, которую готовы платить',
-            'budget_max': 'Максимальная цена, которую готовы платить',
-            'telegram': 'Ваш Telegram username или номер телефона',  # ✅ НОВАЯ ПОДСКАЗКА
-            'whatsapp': 'Номер WhatsApp для связи',  # ✅ НОВАЯ ПОДСКАЗКА
+            'is_active': _('Если отключено, ваш профиль не будет показываться в поиске'),
+            'budget_min': _('Минимальная цена, которую готовы платить'),
+            'budget_max': _('Максимальная цена, которую готовы платить'),
+            'telegram': _('Ваш Telegram username или номер телефона'),
+            'whatsapp': _('Номер WhatsApp для связи'),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Заполняем начальные значения
         if self.instance and self.instance.pk:
             self.initial['interests'] = self.instance.interests.all()
             self.initial['desired_subjects'] = self.instance.desired_subjects.all()
@@ -969,7 +944,7 @@ class StudentProfileEditForm(forms.ModelForm):
         
         if budget_min and budget_max and budget_min > budget_max:
             raise forms.ValidationError(
-                'Максимальный бюджет должен быть больше минимального'
+                _('Максимальный бюджет должен быть больше минимального')
             )
         
         return cleaned_data
@@ -977,17 +952,14 @@ class StudentProfileEditForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
         
-        # Преобразуем список дней в строку
         weekdays = self.cleaned_data.get('available_weekdays', [])
         instance.available_weekdays = ','.join(weekdays) if weekdays else '1,2,3,4,5,6,7'
         
         if commit:
             instance.save()
             
-            # Сохраняем связи Many-to-Many
             self.save_m2m()
             
-            # Обновляем предметы
             interests = self.cleaned_data.get('interests', [])
             desired_subjects = self.cleaned_data.get('desired_subjects', [])
             
@@ -1006,11 +978,11 @@ class UserProfileEditForm(forms.ModelForm):
         widgets = {
             'first_name': forms.TextInput(attrs={
                 'class': 'form-input',
-                'placeholder': 'Ваше имя'
+                'placeholder': _('Ваше имя')
             }),
             'last_name': forms.TextInput(attrs={
                 'class': 'form-input',
-                'placeholder': 'Ваша фамилия'
+                'placeholder': _('Ваша фамилия')
             }),
             'email': forms.EmailInput(attrs={
                 'class': 'form-input',
@@ -1031,31 +1003,29 @@ class UserProfileEditForm(forms.ModelForm):
             })
         }
         labels = {
-            'first_name': 'Имя',
-            'last_name': 'Фамилия',
-            'email': 'Email',
-            'phone': 'Телефон',
-            'age': 'Возраст',
-            'avatar': 'Фото профиля'
+            'first_name': _('Имя'),
+            'last_name': _('Фамилия'),
+            'email': _('Email'),
+            'phone': _('Телефон'),
+            'age': _('Возраст'),
+            'avatar': _('Фото профиля')
         }
         help_texts = {
-            'avatar': 'Рекомендуемый размер: 300x300px'
+            'avatar': _('Рекомендуемый размер: 300x300px')
         }
     
     def clean_email(self):
         email = self.cleaned_data.get('email')
         if email:
-            # Проверяем, не используется ли email другим пользователем
             existing = User.objects.filter(email=email).exclude(pk=self.instance.pk)
             if existing.exists():
-                raise forms.ValidationError('Этот email уже используется')
+                raise forms.ValidationError(_('Этот email уже используется'))
         return email
     
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
         if phone:
-            # Проверяем, не используется ли телефон другим пользователем
             existing = User.objects.filter(phone=phone).exclude(pk=self.instance.pk)
             if existing.exists():
-                raise forms.ValidationError('Этот номер телефона уже используется')
+                raise forms.ValidationError(_('Этот номер телефона уже используется'))
         return phone

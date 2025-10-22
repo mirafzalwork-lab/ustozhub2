@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load i18n %}
 
-{% block title %}Регистрация ученика - UstozHub{% endblock %}
+{% block title %}{% trans "Регистрация ученика" %} - UstozHub{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -330,8 +331,8 @@
             <div class="icon">
                 <i class="fas fa-user-graduate"></i>
             </div>
-            <h1>Регистрация ученика</h1>
-            <p>Заполните форму для создания аккаунта</p>
+            <h1>{% trans "Регистрация ученика" %}</h1>
+            <p>{% trans "Заполните форму для создания аккаунта" %}</p>
         </div>
 
         {% if messages %}
@@ -349,7 +350,7 @@
             <div class="form-section">
                 <h3 class="section-title">
                     <i class="fas fa-user"></i>
-                    Личная информация
+                    {% trans "Личная информация" %}
                 </h3>
 
                 <div class="form-row">
@@ -382,7 +383,7 @@
                     {% if form.username.errors %}
                         <div class="error-message">{{ form.username.errors.0 }}</div>
                     {% endif %}
-                    <div class="help-text">Это имя будет использоваться для входа</div>
+                    <div class="help-text">{% trans "Это имя будет использоваться для входа" %}</div>
                 </div>
 
                 <div class="form-row">
@@ -456,7 +457,7 @@
             <div class="form-section">
                 <h3 class="section-title">
                     <i class="fas fa-book"></i>
-                    Предметы и цели обучения
+                    {% trans "Предметы и цели обучения" %}
                 </h3>
 
                 <div class="form-group full-width">
@@ -482,7 +483,7 @@
                         {{ form.bio.label }}
                     </label>
                     {{ form.bio }}
-                    <div class="char-counter" id="bioCounter">0 / 1000 символов</div>
+                    <div class="char-counter" id="bioCounter">0 / 1000 {% trans "символов" %}</div>
                     {% if form.bio.errors %}
                         <div class="error-message">{{ form.bio.errors.0 }}</div>
                     {% endif %}
@@ -492,10 +493,10 @@
                         <div class="form-section">
                             <h3 class="section-title">
                                 <i class="fas fa-address-book"></i>
-                                Контакты для связи
+                                {% trans "Контакты для связи" %}
                             </h3>
                             <p style="color: #666; font-size: 14px; margin-bottom: 16px;">
-                                Укажите удобные способы связи, чтобы учителя могли легко с вами связаться
+                                {% trans "Укажите удобные способы связи, чтобы учителя могли легко с вами связаться" %}
                             </p>
             
                             <div class="form-row">
@@ -524,7 +525,7 @@
             
                             <div style="background: #f0fdf4; border: 1px solid #d1fae5; border-radius: 8px; padding: 12px; font-size: 13px; color: #059669; margin-top: 12px; display: flex; align-items: center; gap: 8px;">
                                 <i class="fas fa-info-circle"></i>
-                                <span>Эти данные не обязательны, но помогут учителям быстрее связаться с вами для обсуждения деталей обучения</span>
+                                <span>{% trans "Эти данные не обязательны, но помогут учителям быстрее связаться с вами для обсуждения деталей обучения" %}</span>
                             </div>
                         </div>
             
@@ -536,7 +537,7 @@
             <div class="form-section">
                 <h3 class="section-title">
                     <i class="fas fa-cog"></i>
-                    Предпочтения по обучению
+                    {% trans "Предпочтения по обучению" %}
                 </h3>
 
                 <div class="form-group full-width">
@@ -575,7 +576,7 @@
 
                 <div class="budget-note">
                     <i class="fas fa-info-circle"></i>
-                    <span>Указание бюджета поможет учителям понять ваши возможности. Можно не указывать и договориться отдельно.</span>
+                    <span>{% trans "Указание бюджета поможет учителям понять ваши возможности. Можно не указывать и договориться отдельно." %}</span>
                 </div>
 
                 <div class="form-group full-width">
@@ -601,7 +602,7 @@
             <div class="form-section">
                 <h3 class="section-title">
                     <i class="fas fa-lock"></i>
-                    Безопасность
+                    {% trans "Безопасность" %}
                 </h3>
 
                 <div class="form-group">
@@ -612,7 +613,7 @@
                     {% if form.password1.errors %}
                         <div class="error-message">{{ form.password1.errors.0 }}</div>
                     {% endif %}
-                    <div class="help-text">Минимум 8 символов</div>
+                    <div class="help-text">{% trans "Минимум 8 символов" %}</div>
                 </div>
 
                 <div class="form-group">
@@ -629,7 +630,7 @@
             <div class="checkbox-group">
                 {{ form.terms_accepted }}
                 <label class="checkbox-label" for="id_terms_accepted">
-                    Я принимаю <a href="#">условия использования</a> и <a href="#">политику конфиденциальности</a>
+                    {% trans "Я принимаю" %} <a href="#">{% trans "условия использования" %}</a> {% trans "и" %} <a href="#">{% trans "политику конфиденциальности" %}</a>
                 </label>
             </div>
             {% if form.terms_accepted.errors %}
@@ -639,13 +640,13 @@
             {% endif %}
 
             <button type="submit" class="submit-btn">
-                <i class="fas fa-user-plus"></i> Зарегистрироваться
+                <i class="fas fa-user-plus"></i> {% trans "Зарегистрироваться" %}
             </button>
         </form>
 
         <div class="back-link">
             <a href="{% url 'register_choose' %}">
-                <i class="fas fa-arrow-left"></i> Назад к выбору типа аккаунта
+                <i class="fas fa-arrow-left"></i> {% trans "Назад к выбору типа аккаунта" %}
             </a>
         </div>
     </div>
@@ -662,7 +663,7 @@
         function updateCounter() {
             const length = bioField.value.length;
             const maxLength = 1000;
-            charCounter.textContent = `${length} / ${maxLength} символов`;
+            charCounter.textContent = `${length} / ${maxLength} {% trans "символов" %}`;
             
             if (length < 20) {
                 charCounter.className = 'char-counter error';
@@ -687,7 +688,7 @@
             const max = parseFloat(budgetMax.value) || 0;
             
             if (min > 0 && max > 0 && min > max) {
-                budgetMax.setCustomValidity('Максимальный бюджет должен быть больше минимального');
+                budgetMax.setCustomValidity('{% trans "Максимальный бюджет должен быть больше минимального" %}');
             } else {
                 budgetMax.setCustomValidity('');
             }
@@ -701,7 +702,7 @@
     document.getElementById('registerForm').addEventListener('submit', function(e) {
         const btn = this.querySelector('.submit-btn');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Регистрация...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% trans "Регистрация..." %}';
     });
 </script>
 {% endblock %}

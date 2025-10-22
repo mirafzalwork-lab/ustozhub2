@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load i18n %}
 
-{% block title %}Редактирование профиля ученика - UstozHub{% endblock %}
+{% block title %}{% trans 'Student Profile Edit' %} - UstozHub{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -337,10 +338,10 @@
 {% block content %}
 <div class="edit-container">
     <div class="edit-header">
-        <h1 class="edit-title">Редактирование профиля ученика</h1>
+        <h1 class="edit-title">{% trans 'Student Profile Edit' %}</h1>
         
         <div class="status-toggle">
-            <span class="status-text">Отображение в поиске:</span>
+            <span class="status-text">{% trans 'Display in search:' %}</span>
             <label class="toggle-switch">
                 <input type="checkbox" 
                        id="profileToggle" 
@@ -366,11 +367,11 @@
         <div class="form-card">
             <h2 class="section-title">
                 <i class="fas fa-user"></i>
-                Личная информация
+                {% trans 'Personal Information' %}
             </h2>
 
             <div class="form-group full-width">
-                <label class="form-label">Фото профиля</label>
+                <label class="form-label">{% trans 'Profile Photo' %}</label>
                 <div class="avatar-upload">
                     <div class="current-avatar">
                         {% if user.avatar %}
@@ -466,7 +467,7 @@
         <div class="form-card">
             <h2 class="section-title">
                 <i class="fas fa-book"></i>
-                Предметы и цели обучения
+                {% trans 'Subjects and Learning Goals' %}
             </h2>
 
             <div class="form-group full-width">
@@ -515,7 +516,7 @@
                 {% if profile_form.interests.errors %}
                     <div class="error-message">{{ profile_form.interests.errors.0 }}</div>
                 {% endif %}
-                <div class="help-text">Дополнительные интересы</div>
+                <div class="help-text">{% trans 'Additional Interests' %}</div>
             </div>
         </div>
 
@@ -523,7 +524,7 @@
         <div class="form-card">
             <h2 class="section-title">
                 <i class="fas fa-cog"></i>
-                Предпочтения по обучению
+                {% trans 'Learning Preferences' %}
             </h2>
 
             <div class="form-group full-width">
@@ -572,10 +573,10 @@
 
         <div class="action-buttons">
             <a href="{% url 'profile' %}" class="btn btn-secondary">
-                <i class="fas fa-times"></i> Отмена
+                <i class="fas fa-times"></i> {% trans 'Cancel' %}
             </a>
             <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Сохранить изменения
+                <i class="fas fa-save"></i> {% trans 'Save Changes' %}
             </button>
         </div>
     </form>
@@ -614,17 +615,17 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                const statusText = isActive ? 'активен' : 'деактивирован';
-                showNotification(`Профиль ${statusText}`, 'success');
+                const statusText = isActive ? '{% trans "activated" %}' : '{% trans "deactivated" %}';
+                showNotification(`{% trans "Profile" %} ${statusText}`, 'success');
             } else {
                 checkbox.checked = !isActive;
-                showNotification('Ошибка при изменении статуса', 'error');
+                showNotification('{% trans "Error changing status" %}', 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
             checkbox.checked = !isActive;
-            showNotification('Произошла ошибка', 'error');
+            showNotification('{% trans "An error occurred" %}', 'error');
         });
     }
 
@@ -654,7 +655,7 @@
         
         if (desiredSubjects.length === 0) {
             e.preventDefault();
-            showNotification('Выберите хотя бы один предмет для изучения', 'error');
+            showNotification('{% trans "Select at least one subject to study" %}', 'error');
             return false;
         }
 
@@ -663,7 +664,7 @@
 
         if (budgetMin > 0 && budgetMax > 0 && budgetMin > budgetMax) {
             e.preventDefault();
-            showNotification('Максимальный бюджет должен быть больше минимального', 'error');
+            showNotification('{% trans "Maximum budget must be greater than minimum" %}', 'error');
             return false;
         }
     });

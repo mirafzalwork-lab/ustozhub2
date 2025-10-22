@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}Регистрация завершена - UstozHub{% endblock %}
+{% load i18n %}
+{% block title %}{% trans 'Registration Completed' %} - UstozHub{% endblock %}
 
 {% block content %}
 <style>
@@ -254,39 +255,39 @@
     <div class="complete-card">
         <span class="status-badge">
             <i class="fas fa-clock"></i>
-            На модерации
+            {% trans 'Under Moderation' %}
         </span>
 
-        <h1 class="complete-title">Спасибо за регистрацию!</h1>
+        <h1 class="complete-title">{% trans 'Thank you for registering!' %}</h1>
         
         <p class="complete-message">
-            Ваша заявка на регистрацию учителя успешно отправлена. Наша команда проверит ваши данные и свяжется с вами в ближайшее время.
+            {% trans 'Your teacher registration application has been successfully submitted. Our team will review your information and contact you shortly.' %}
         </p>
 
         <div class="info-box">
             <div class="info-box-title">
                 <i class="fas fa-info-circle"></i>
-                Что дальше?
+                {% trans 'What happens next?' %}
             </div>
-            <p>Ваша заявка будет проверена администратором в течение <strong>24 часов</strong>. Мы проверим:</p>
+            <p>{% blocktrans %}Your application will be reviewed by an administrator within <strong>24 hours</strong>. We will check:{% endblocktrans %}</p>
             <ul>
-                <li>Достоверность предоставленной информации</li>
-                <li>Соответствие требованиям платформы</li>
-                <li>Качество заполнения профиля</li>
+                <li>{% trans 'Accuracy of the information provided' %}</li>
+                <li>{% trans 'Compliance with platform requirements' %}</li>
+                <li>{% trans 'Quality of profile completion' %}</li>
             </ul>
-            <p style="margin-top: 12px;">После одобрения вы получите уведомление на email <strong>{{ teacher.user.email }}</strong> и сможете начать работу на платформе.</p>
+            <p style="margin-top: 12px;">{% blocktrans with email=teacher.user.email %}After approval, you will receive a notification at <strong>{{ email }}</strong> and will be able to start working on the platform.{% endblocktrans %}</p>
         </div>
 
         <div class="timeline">
-            <div class="timeline-title">Процесс модерации</div>
+            <div class="timeline-title">{% trans 'Moderation Process' %}</div>
             
             <div class="timeline-item">
                 <div class="timeline-icon">
                     <i class="fas fa-check"></i>
                 </div>
                 <div class="timeline-content">
-                    <div class="timeline-label">Заявка отправлена</div>
-                    <div class="timeline-text">Ваши данные получены и находятся в очереди на проверку</div>
+                    <div class="timeline-label">{% trans 'Application Submitted' %}</div>
+                    <div class="timeline-text">{% trans 'Your data has been received and is in the review queue' %}</div>
                 </div>
             </div>
 
@@ -295,8 +296,8 @@
                     <i class="fas fa-search"></i>
                 </div>
                 <div class="timeline-content">
-                    <div class="timeline-label">Проверка (до 24 часов)</div>
-                    <div class="timeline-text">Администратор проверит вашу заявку</div>
+                    <div class="timeline-label">{% trans 'Review (up to 24 hours)' %}</div>
+                    <div class="timeline-text">{% trans 'An administrator will review your application' %}</div>
                 </div>
             </div>
 
@@ -305,8 +306,8 @@
                     <i class="fas fa-bell"></i>
                 </div>
                 <div class="timeline-content">
-                    <div class="timeline-label">Уведомление</div>
-                    <div class="timeline-text">Вы получите email с результатом проверки</div>
+                    <div class="timeline-label">{% trans 'Notification' %}</div>
+                    <div class="timeline-text">{% trans 'You will receive an email with the review result' %}</div>
                 </div>
             </div>
 
@@ -315,8 +316,8 @@
                     <i class="fas fa-rocket"></i>
                 </div>
                 <div class="timeline-content">
-                    <div class="timeline-label">Начало работы</div>
-                    <div class="timeline-text">После одобрения ваш профиль появится на платформе</div>
+                    <div class="timeline-label">{% trans 'Start Working' %}</div>
+                    <div class="timeline-text">{% trans 'After approval, your profile will appear on the platform' %}</div>
                 </div>
             </div>
         </div>
@@ -324,17 +325,17 @@
         <div class="actions-grid">
             <a href="{% url 'home' %}" class="action-btn btn-secondary">
                 <i class="fas fa-home"></i>
-                На главную
+                {% trans 'Go to Home' %}
             </a>
             <a href="mailto:info@ustozhub.uz" class="action-btn btn-primary">
                 <i class="fas fa-envelope"></i>
-                Написать нам
+                {% trans 'Contact Us' %}
             </a>
         </div>
 
         <div class="contact-info">
-            Есть вопросы? Свяжитесь с нами: 
-            <a href="mailto:info@ustozhub.uz">info@ustozhub.uz</a> или 
+            {% trans 'Have questions? Contact us:' %} 
+            <a href="mailto:info@ustozhub.uz">info@ustozhub.uz</a> {% trans 'or' %} 
             <a href="tel:+998901234567">+998 90 123 45 67</a>
         </div>
     </div>
