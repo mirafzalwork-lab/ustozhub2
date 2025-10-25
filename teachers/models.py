@@ -558,6 +558,79 @@ class Favorite(models.Model):
         return f"{self.student.get_full_name()} -> {self.teacher.user.get_full_name()}"
 
 
+class TelegramUser(models.Model):
+    """Модель для хранения Telegram-пользователей"""
+    user = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='telegram_user',
+        null=True,
+        blank=True,
+        verbose_name='Связанный пользователь'
+    )
+    telegram_id = models.BigIntegerField(
+        unique=True,
+        verbose_name='Telegram ID',
+        help_text='Уникальный ID пользователя в Telegram'
+    )
+    telegram_username = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name='Username в Telegram'
+    )
+    first_name = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name='Имя в Telegram'
+    )
+    last_name = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name='Фамилия в Telegram'
+    )
+    language_code = models.CharField(
+        max_length=10,
+        blank=True,
+        null=True,
+        verbose_name='Язык интерфейса'
+    )
+    
+    # Настройки уведомлений
+    notifications_enabled = models.BooleanField(
+        default=True,
+        verbose_name='Уведомления включены'
+    )
+    
+    # Статистика
+    started_bot = models.BooleanField(
+        default=False,
+        verbose_name='Нажал Start в боте'
+    )
+    last_interaction = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Последнее взаимодействие'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата регистрации в боте'
+    )
+    
+    class Meta:
+        verbose_name = 'Telegram пользователь'
+        verbose_name_plural = 'Telegram пользователи'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['telegram_id']),
+            models.Index(fields=['telegram_username']),
+        ]
+    
+    def __str__(self):
+        if self.user:
+            return f"@{self.telegram_username or self.telegram_id} ({self.user.get_full_name()})"
+        return f"@{self.telegram_username or self.telegram_id} (Не привязан)"
+
+
 class ProfileView(models.Model):
     """
     Модель для отслеживания просмотров профилей

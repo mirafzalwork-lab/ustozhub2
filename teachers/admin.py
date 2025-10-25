@@ -60,9 +60,8 @@ class TeacherProfileAdmin(admin.ModelAdmin):
     search_fields = ("user__username", "user__first_name", "user__last_name", "specialization", "university")
 
 
-# admin.py
-from django.contrib import admin
-from .models import ProfileView, TeacherProfile, StudentProfile
+# Импорт для ProfileView
+from .models import ProfileView
 
 # Регистрация модели просмотров профилей
 @admin.register(ProfileView)
@@ -249,3 +248,113 @@ class ReviewAdmin(admin.ModelAdmin):
 class FavoriteAdmin(admin.ModelAdmin):
     list_display = ("student", "teacher", "created_at")
     search_fields = ("student__username", "teacher__user__username")
+
+
+# --- TelegramUser (Telegram integration) ---
+from .models import TelegramUser
+from django.shortcuts import render, redirect
+from django.urls import path
+from django.contrib import messages
+from telegram_bot.notifications import send_telegram_broadcast
+
+@admin.register(TelegramUser)
+class TelegramUserAdmin(admin.ModelAdmin):
+    list_display = ("user", "telegram_id", "telegram_username", "first_name", 
+                   "last_name", "notifications_enabled", "started_bot", "created_at")
+    list_filter = ("notifications_enabled", "started_bot")
+    search_fields = ("user__username", "telegram_id", "telegram_username", "first_name", "last_name")
+    
+    # Добавляем массовые действия
+    actions = ['send_broadcast_message']
+    
+    def send_broadcast_message(self, request, queryset):
+        """Отправить сообщение выбранным пользователям"""
+        if 'apply' in request.POST:
+            message = request.POST.get('message')
+            
+            # Отправляем сообщения
+            count = 0
+            for tg_user in queryset.filter(notifications_enabled=True):
+                from telegram_bot.notifications import notification_service
+                success = notification_service.send_message_sync(
+                    telegram_id=tg_user.telegram_id,
+                    text=message
+                )
+                if success:
+                    count += 1
+            
+            self.message_user(
+                request,
+                f"Сообщение успешно отправлено {count} пользователям",
+                messages.SUCCESS
+            )
+            return redirect(request.get_full_path())
+        
+        return render(request, 'admin/send_broadcast.html', {
+            'users': queryset,
+            'title': 'Отправить сообщение пользователям'
+        })
+    
+    send_broadcast_message.short_description = "Отправить сообщение выбранным"
+    
+    # Добавляем кнопку "Отправить всем"
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('send-all/', self.admin_site.admin_view(self.send_all_view), 
+                 name='send_broadcast_all'),
+        ]
+        return custom_urls + urls
+    
+    def send_all_view(self, request):
+        """Форма для отправки сообщения всем"""
+        if request.method == 'POST':
+            message = request.POST.get('message')
+            user_type = request.POST.get('user_type', 'all')
+            
+            # Получаем пользователей в зависимости от фильтра
+            queryset = TelegramUser.objects.filter(
+                notifications_enabled=True,
+                started_bot=True
+            )
+            
+            # Применяем фильтр по типу пользователя
+            if user_type == 'teacher':
+                queryset = queryset.filter(user__user_type='teacher')
+            elif user_type == 'student':
+                queryset = queryset.filter(user__user_type='student')
+            
+            # Получаем список telegram_id
+            telegram_ids = list(queryset.values_list('telegram_id', flat=True))
+            
+            # Отправляем сообщения напрямую по telegram_id
+            from telegram_bot.notifications import notification_service
+            import asyncio
+            
+            stats = {'success': 0, 'failed': 0, 'total': len(telegram_ids)}
+            
+            for telegram_id in telegram_ids:
+                success = notification_service.send_message_sync(
+                    telegram_id=telegram_id,
+                    text=message
+                )
+                if success:
+                    stats['success'] += 1
+                else:
+                    stats['failed'] += 1
+            
+            self.message_user(
+                request,
+                f"✅ Успешно: {stats['success']}, ❌ Ошибок: {stats['failed']}, 📊 Всего: {stats['total']}",
+                messages.SUCCESS if stats['failed'] == 0 else messages.WARNING
+            )
+            return redirect('..')
+        
+        context = {
+            'title': 'Массовая рассылка',
+            'opts': self.model._meta,
+        }
+        return render(request, 'admin/send_broadcast_all.html', context)
+    
+    # Используем кастомный шаблон для списка
+    change_list_template = "admin/telegram_user_changelist.html"

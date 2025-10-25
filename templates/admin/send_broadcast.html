@@ -1,0 +1,115 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .broadcast-form {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .broadcast-form textarea {
+        width: 100%;
+        min-height: 200px;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .users-list {
+        margin: 20px 0;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+    .users-list ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .users-list li {
+        padding: 8px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .users-list li:last-child {
+        border-bottom: none;
+    }
+    .submit-row {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #ddd;
+    }
+    .button-group {
+        display: flex;
+        gap: 10px;
+    }
+    .help-text {
+        color: #666;
+        font-size: 13px;
+        margin-top: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="broadcast-form">
+    <h1>📬 Отправить сообщение пользователям</h1>
+    
+    <div class="users-list">
+        <h3>📋 Получатели ({{ users|length }} польз.):</h3>
+        <ul>
+            {% for user in users %}
+            <li>
+                <strong>{{ user.first_name }} {{ user.last_name }}</strong>
+                {% if user.telegram_username %}
+                    (@{{ user.telegram_username }})
+                {% endif %}
+                - ID: {{ user.telegram_id }}
+                {% if not user.notifications_enabled %}
+                    <span style="color: #999;">⚠️ Уведомления отключены</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        
+        <div style="margin-bottom: 20px;">
+            <label for="message" style="display: block; font-weight: bold; margin-bottom: 8px;">
+                💬 Текст сообщения:
+            </label>
+            <textarea 
+                name="message" 
+                id="message" 
+                required
+                placeholder="Введите текст сообщения...&#10;&#10;Поддерживается Markdown форматирование:&#10;*жирный текст*&#10;_курсив_&#10;`код`&#10;[ссылка](http://example.com)"
+            ></textarea>
+            <p class="help-text">
+                💡 Поддерживается Markdown форматирование
+            </p>
+        </div>
+
+        <div class="submit-row">
+            <div class="button-group">
+                <input 
+                    type="submit" 
+                    value="📤 Отправить сообщение" 
+                    class="default" 
+                    name="apply"
+                />
+                <a href="{% url 'admin:teachers_telegramuser_changelist' %}" class="button cancel-link">
+                    Отмена
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

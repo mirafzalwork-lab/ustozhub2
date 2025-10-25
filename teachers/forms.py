@@ -224,7 +224,7 @@ class TeacherRegistrationForm(UserCreationForm):
     class Meta:
         model = User
         fields = ['username', 'email', 'password1', 'password2', 'first_name', 
-                  'last_name', 'phone', 'age', 'avatar']
+                'last_name', 'phone', 'age', 'avatar']
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -494,8 +494,10 @@ class StudentRegistrationForm(UserCreationForm):
         queryset=Subject.objects.filter(is_active=True),
         required=True,
         label=_('Предметы, которые хочу изучать'),
-        widget=forms.CheckboxSelectMultiple(attrs={
-            'class': 'subject-checkbox'
+        widget=forms.SelectMultiple(attrs={
+            'class': 'subject-select-multiple',
+            'data-placeholder': _('Начните вводить название предмета...'),
+            'style': 'display: none;'  # Будет заменен на кастомный виджет
         }),
         help_text=_('Выберите один или несколько предметов')
     )
@@ -621,7 +623,7 @@ class StudentRegistrationForm(UserCreationForm):
     class Meta:
         model = User
         fields = ['username', 'email', 'password1', 'password2', 'first_name', 
-                  'last_name', 'phone', 'age']
+                'last_name', 'phone', 'age']
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

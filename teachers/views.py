@@ -7,6 +7,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .forms import (
     TeacherRegistrationForm, 
     TeacherSubjectsForm, 
@@ -129,6 +130,20 @@ def home(request):
     # Убираем дубликаты и сортируем
     teachers = teachers.distinct().order_by('-rating', '-created_at')
     
+    # ========== ПАГИНАЦИЯ ==========
+    # Создаем объект пагинатора (12 учителей на страницу)
+    paginator = Paginator(teachers, 12)
+    page = request.GET.get('page', 1)
+    
+    try:
+        teachers_page = paginator.page(page)
+    except PageNotAnInteger:
+        # Если page не является целым числом, показываем первую страницу
+        teachers_page = paginator.page(1)
+    except EmptyPage:
+        # Если page выходит за пределы диапазона, показываем последнюю страницу
+        teachers_page = paginator.page(paginator.num_pages)
+    
     # Данные для фильтров
     all_subjects = Subject.objects.filter(is_active=True).order_by('name')
     all_cities = City.objects.filter(is_active=True).order_by('name')
@@ -140,7 +155,8 @@ def home(request):
     )
     
     context = {
-        'teachers': teachers,
+        'teachers': teachers_page,  # Изменено: теперь используем объект Page
+        'total_teachers': paginator.count,  # Общее количество учителей
         'subjects': all_subjects,
         'cities': all_cities,
         'teaching_formats': TeacherProfile.TEACHING_FORMATS,
@@ -211,6 +227,20 @@ def students_list(request):
     # Убираем дубликаты и сортируем по дате создания (новые сначала)
     students = students.distinct().order_by('-created_at')
     
+    # ========== ПАГИНАЦИЯ ==========
+    # Создаем объект пагинатора (12 учеников на страницу)
+    paginator = Paginator(students, 12)
+    page = request.GET.get('page', 1)
+    
+    try:
+        students_page = paginator.page(page)
+    except PageNotAnInteger:
+        # Если page не является целым числом, показываем первую страницу
+        students_page = paginator.page(1)
+    except EmptyPage:
+        # Если page выходит за пределы диапазона, показываем последнюю страницу
+        students_page = paginator.page(paginator.num_pages)
+    
     # Данные для фильтров
     all_subjects = Subject.objects.filter(is_active=True).order_by('name')
     all_cities = City.objects.filter(is_active=True).order_by('name')
@@ -225,7 +255,8 @@ def students_list(request):
     )
     
     context = {
-        'students': students,
+        'students': students_page,  # Изменено: теперь используем объект Page
+        'total_students': paginator.count,  # Общее количество учеников
         'subjects': all_subjects,
         'cities': all_cities,
         'learning_formats': StudentProfile.LEARNING_FORMATS,

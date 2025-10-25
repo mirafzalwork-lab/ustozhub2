@@ -394,6 +394,71 @@
         margin-bottom: 20px;
     }
 
+    /* ========== СТИЛИ ПАГИНАЦИИ ========== */
+    .pagination-wrapper {
+        margin-top: 40px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .page-link {
+        min-width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 12px;
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        color: #10B981;
+        font-weight: 600;
+        font-size: 14px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .page-link:hover {
+        background: #10B981;
+        color: white;
+        border-color: #10B981;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.15);
+    }
+
+    .page-link.current {
+        background: #10B981;
+        color: white;
+        border-color: #10B981;
+        cursor: default;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    }
+
+    .page-link.first,
+    .page-link.last,
+    .page-link.prev,
+    .page-link.next {
+        font-size: 16px;
+    }
+
+    .page-info {
+        font-size: 14px;
+        color: #666;
+        font-weight: 500;
+        text-align: center;
+    }
+
     /* Адаптивность */
     @media (max-width: 1024px) {
         .content-layout {
@@ -583,8 +648,8 @@
         <section class="students-section">
             <div class="results-header">
                 <span class="results-count">
-                    {% trans 'Найдено:' %} <strong>{{ students.count }}</strong> 
-                    {% if students.count == 1 %}{% trans 'ученик' %}{% elif students.count < 5 %}{% trans 'ученика' %}{% else %}{% trans 'учеников' %}{% endif %}
+                    {% trans 'Найдено:' %} <strong>{{ total_students }}</strong> 
+                    {% if total_students == 1 %}{% trans 'ученик' %}{% elif total_students < 5 %}{% trans 'ученика' %}{% else %}{% trans 'учеников' %}{% endif %}
                 </span>
             </div>
 
@@ -669,6 +734,43 @@
                         </div>
                     {% endfor %}
                 </div>
+                
+                <!-- ========== ПАГИНАЦИЯ ========== -->
+                {% if students.has_other_pages %}
+                <div class="pagination-wrapper">
+                    <div class="pagination">
+                        {% if students.has_previous %}
+                            <a href="?page=1{% if request.GET.subject %}&subject={{ request.GET.subject }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.format %}&format={{ request.GET.format }}{% endif %}{% if request.GET.education_level %}&education_level={{ request.GET.education_level }}{% endif %}{% if request.GET.min_budget %}&min_budget={{ request.GET.min_budget }}{% endif %}{% if request.GET.max_budget %}&max_budget={{ request.GET.max_budget }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="page-link first">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                            <a href="?page={{ students.previous_page_number }}{% if request.GET.subject %}&subject={{ request.GET.subject }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.format %}&format={{ request.GET.format }}{% endif %}{% if request.GET.education_level %}&education_level={{ request.GET.education_level }}{% endif %}{% if request.GET.min_budget %}&min_budget={{ request.GET.min_budget }}{% endif %}{% if request.GET.max_budget %}&max_budget={{ request.GET.max_budget }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="page-link prev">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        {% endif %}
+
+                        {% for num in students.paginator.page_range %}
+                            {% if students.number == num %}
+                                <span class="page-link current">{{ num }}</span>
+                            {% elif num > students.number|add:'-3' and num < students.number|add:'3' %}
+                                <a href="?page={{ num }}{% if request.GET.subject %}&subject={{ request.GET.subject }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.format %}&format={{ request.GET.format }}{% endif %}{% if request.GET.education_level %}&education_level={{ request.GET.education_level }}{% endif %}{% if request.GET.min_budget %}&min_budget={{ request.GET.min_budget }}{% endif %}{% if request.GET.max_budget %}&max_budget={{ request.GET.max_budget }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="page-link">{{ num }}</a>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if students.has_next %}
+                            <a href="?page={{ students.next_page_number }}{% if request.GET.subject %}&subject={{ request.GET.subject }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.format %}&format={{ request.GET.format }}{% endif %}{% if request.GET.education_level %}&education_level={{ request.GET.education_level }}{% endif %}{% if request.GET.min_budget %}&min_budget={{ request.GET.min_budget }}{% endif %}{% if request.GET.max_budget %}&max_budget={{ request.GET.max_budget }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="page-link next">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                            <a href="?page={{ students.paginator.num_pages }}{% if request.GET.subject %}&subject={{ request.GET.subject }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.format %}&format={{ request.GET.format }}{% endif %}{% if request.GET.education_level %}&education_level={{ request.GET.education_level }}{% endif %}{% if request.GET.min_budget %}&min_budget={{ request.GET.min_budget }}{% endif %}{% if request.GET.max_budget %}&max_budget={{ request.GET.max_budget }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="page-link last">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                    <div class="page-info">
+                        {% trans 'Страница' %} {{ students.number }} {% trans 'из' %} {{ students.paginator.num_pages }}
+                    </div>
+                </div>
+                {% endif %}
+                <!-- ========== КОНЕЦ ПАГИНАЦИИ ========== -->
             {% else %}
                 <div class="no-results">
                     <i class="fas fa-user-graduate"></i>

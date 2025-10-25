@@ -5,6 +5,9 @@ from .views import (
     login_view, students_list, logout_view, register_choose, register_student,
     teacher_profile_edit, student_profile_edit, toggle_profile_status
 )
+from .telegram_views import (
+    telegram_auth, link_telegram_account, telegram_status, toggle_notifications
+)
 
 urlpatterns = [
     path('', home, name='home'),
@@ -26,4 +29,10 @@ urlpatterns = [
     path('profile/edit/teacher/', teacher_profile_edit, name='teacher_profile_edit'),
     path('profile/edit/student/', student_profile_edit, name='student_profile_edit'),
     path('profile/toggle-status/', toggle_profile_status, name='toggle_profile_status'),
+    
+    # Telegram API
+    path('api/telegram/auth/', telegram_auth, name='telegram_auth'),
+    path('api/telegram/link/', link_telegram_account, name='link_telegram_account'),
+    path('api/telegram/status/', telegram_status, name='telegram_status'),
+    path('api/telegram/notifications/toggle/', toggle_notifications, name='toggle_telegram_notifications'),
 ]

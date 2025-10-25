@@ -77,7 +77,7 @@
 
         .search-input {
             width: 100%;
-            padding: 10px 40px 10px 40px;
+            padding: 10px 45px 10px 16px;
             border: 1px solid #e0e0e0;
             border-radius: 24px;
             font-size: 14px;
@@ -94,15 +94,24 @@
 
         .search-icon {
             position: absolute;
-            left: 14px;
+            right: 16px;
             top: 50%;
             transform: translateY(-50%);
             color: #999;
+            pointer-events: none;
+            z-index: 1;
+            font-size: 14px;
+            transition: opacity 0.2s;
+        }
+
+        /* Скрываем иконку поиска когда есть текст */
+        .search-input:not(:placeholder-shown) ~ .search-icon {
+            opacity: 0;
         }
 
         .clear-search {
             position: absolute;
-            right: 12px;
+            right: 14px;
             top: 50%;
             transform: translateY(-50%);
             background: none;
@@ -111,6 +120,7 @@
             cursor: pointer;
             display: none;
             padding: 4px;
+            z-index: 2;
         }
 
         .search-input:not(:placeholder-shown) ~ .clear-search {
@@ -241,52 +251,118 @@
             align-items: center;
         }
 
-        .language-switcher select {
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            padding: 6px 32px 6px 12px;
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 500;
-            color: #1a1a1a;
-            cursor: pointer;
-            transition: all 0.2s;
-            outline: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-            background-size: 12px;
-            min-width: 90px;
-        }
-
-        .language-switcher select:hover {
-            border-color: #0A2540;
-            background-color: #f8f9fa;
-        }
-
-        .language-switcher select:focus {
-            border-color: #0A2540;
-            box-shadow: 0 0 0 3px rgba(10, 37, 64, 0.1);
-        }
-
-        .language-switcher select option {
-            padding: 8px 12px;
-            background: white;
-            color: #1a1a1a;
-        }
-
         .language-switcher form {
             margin: 0;
         }
 
+        .language-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #1a1a1a;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            position: relative;
+            min-width: 110px;
+            justify-content: space-between;
+        }
+
+        .language-btn:hover {
+            border-color: #0A2540;
+            background: #f8f9fa;
+        }
+
+        .language-btn .flag-icon {
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .language-btn .lang-text {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .language-btn .dropdown-arrow {
+            font-size: 10px;
+            color: #666;
+            transition: transform 0.2s;
+        }
+
+        .language-switcher.active .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        /* Language Dropdown */
+        .language-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            min-width: 180px;
+            display: none;
+            z-index: 100;
+            overflow: hidden;
+            border: 1px solid #e0e0e0;
+        }
+
+        .language-dropdown.show {
+            display: block;
+            animation: slideDown 0.2s ease;
+        }
+
+        .language-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            background: white;
+            width: 100%;
+            text-align: left;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .language-option:hover {
+            background: #f5f5f5;
+        }
+
+        .language-option.active {
+            background: #e8f4fd;
+            color: #0A2540;
+        }
+
+        .language-option .flag-icon {
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .language-option .check-icon {
+            margin-left: auto;
+            color: #0A2540;
+            font-size: 16px;
+        }
+
         @media (max-width: 768px) {
-            .language-switcher select {
+            .language-btn {
+                padding: 8px 12px;
                 min-width: auto;
-                padding: 6px 28px 6px 10px;
-                font-size: 12px;
+            }
+            
+            .language-btn .lang-text {
+                display: none;
             }
         }
 
@@ -582,104 +658,6 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #999;
         }
-
-        /* Language Switcher */
-        .language-switcher {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .language-btn {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 14px;
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 500;
-            color: #1a1a1a;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-
-        .language-btn:hover {
-            border-color: #0A2540;
-            background: #f0f4f8;
-        }
-
-        .language-btn .flag {
-            font-size: 18px;
-            line-height: 1;
-        }
-
-        .language-dropdown {
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            min-width: 200px;
-            display: none;
-            z-index: 100;
-            overflow: hidden;
-        }
-
-        .language-dropdown.show {
-            display: block;
-            animation: slideDown 0.2s ease;
-        }
-
-        .language-option {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            color: #333;
-            text-decoration: none;
-            transition: background 0.2s;
-            cursor: pointer;
-            border: none;
-            background: none;
-            width: 100%;
-            text-align: left;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .language-option:hover {
-            background: #f5f5f5;
-        }
-
-        .language-option.active {
-            background: #e8f4fd;
-            color: #0A2540;
-        }
-
-        .language-option .flag {
-            font-size: 20px;
-            line-height: 1;
-        }
-
-        .language-option .check-icon {
-            margin-left: auto;
-            color: #0A2540;
-            font-size: 16px;
-        }
-
-        @media (max-width: 768px) {
-            .language-btn span {
-                display: none;
-            }
-            
-            .language-btn {
-                padding: 8px 12px;
-            }
-        }
     </style>
 
     {% block extra_css %}{% endblock %}
@@ -701,10 +679,11 @@
                     placeholder="{% trans 'Найти учителя или предмет...' %}" 
                     id="navSearchInput"
                 >
+                <i class="fas fa-search search-icon"></i>
+
                 <button class="clear-search" onclick="clearSearch()">
                     <i class="fas fa-times"></i>
                 </button>
-                <i class="fas fa-search search-icon"></i>
             </div>
             
 
@@ -716,18 +695,48 @@
                 </button>
 
                 <!-- Language Switcher -->
-                <!-- Language Switcher -->
-                <div class="language-switcher">
-                    <form action="{% url 'set_language' %}" method="post">
-                        {% csrf_token %}
-                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                        
-                        <select name="language" onchange="this.form.submit()">
-                            <option value="ru" {% if LANGUAGE_CODE == 'ru' %}selected{% endif %}>🇷🇺 Русский</option>
-                            <option value="uz" {% if LANGUAGE_CODE == 'uz' %}selected{% endif %}>🇺🇿 O'zbekcha</option>
-                            <option value="en" {% if LANGUAGE_CODE == 'en' %}selected{% endif %}>🇺🇸 English</option>
-                        </select>
-                    </form>
+                <div class="language-switcher" id="languageSwitcher">
+                    <button class="language-btn" onclick="toggleLanguageDropdown(event)">
+                        <span class="flag-icon">
+                            {% if LANGUAGE_CODE == 'ru' %}🇷🇺{% elif LANGUAGE_CODE == 'uz' %}🇺🇿{% else %}🇺🇸{% endif %}
+                        </span>
+                        <span class="lang-text">
+                            {% if LANGUAGE_CODE == 'ru' %}Русский{% elif LANGUAGE_CODE == 'uz' %}O'zbekcha{% else %}English{% endif %}
+                        </span>
+                        <i class="fas fa-chevron-down dropdown-arrow"></i>
+                    </button>
+                    
+                    <div class="language-dropdown" id="languageDropdown">
+                        <form action="{% url 'set_language' %}" method="post" id="languageForm">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <input type="hidden" name="language" id="selectedLanguage">
+                            
+                            <button type="button" class="language-option {% if LANGUAGE_CODE == 'ru' %}active{% endif %}" onclick="changeLanguage('ru')">
+                                <span class="flag-icon">🇷🇺</span>
+                                <span>Русский</span>
+                                {% if LANGUAGE_CODE == 'ru' %}
+                                <i class="fas fa-check check-icon"></i>
+                                {% endif %}
+                            </button>
+                            
+                            <button type="button" class="language-option {% if LANGUAGE_CODE == 'uz' %}active{% endif %}" onclick="changeLanguage('uz')">
+                                <span class="flag-icon">🇺🇿</span>
+                                <span>O'zbekcha</span>
+                                {% if LANGUAGE_CODE == 'uz' %}
+                                <i class="fas fa-check check-icon"></i>
+                                {% endif %}
+                            </button>
+                            
+                            <button type="button" class="language-option {% if LANGUAGE_CODE == 'en' %}active{% endif %}" onclick="changeLanguage('en')">
+                                <span class="flag-icon">🇺🇸</span>
+                                <span>English</span>
+                                {% if LANGUAGE_CODE == 'en' %}
+                                <i class="fas fa-check check-icon"></i>
+                                {% endif %}
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
 
@@ -835,16 +844,37 @@
             </div>
 
             <!-- Mobile Language Switcher -->
-            <div class="language-switcher" style="margin-bottom: 16px; padding: 0 16px;">
-                <form action="{% url 'set_language' %}" method="post">
+            <div style="margin-bottom: 16px; padding: 0 16px;">
+                <form action="{% url 'set_language' %}" method="post" id="mobileLanguageForm">
                     {% csrf_token %}
                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <input type="hidden" name="language" id="mobileSelectedLanguage">
                     
-                    <select name="language" onchange="this.form.submit()" style="width: 100%;">
-                        <option value="ru" {% if LANGUAGE_CODE == 'ru' %}selected{% endif %}>🇷🇺 Русский</option>
-                        <option value="uz" {% if LANGUAGE_CODE == 'uz' %}selected{% endif %}>🇺🇿 O'zbekcha</option>
-                        <option value="en" {% if LANGUAGE_CODE == 'en' %}selected{% endif %}>🇺🇸 English</option>
-                    </select>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <button type="button" class="language-option {% if LANGUAGE_CODE == 'ru' %}active{% endif %}" onclick="changeMobileLanguage('ru')" style="width: 100%;">
+                            <span class="flag-icon">🇷🇺</span>
+                            <span>Русский</span>
+                            {% if LANGUAGE_CODE == 'ru' %}
+                            <i class="fas fa-check check-icon"></i>
+                            {% endif %}
+                        </button>
+                        
+                        <button type="button" class="language-option {% if LANGUAGE_CODE == 'uz' %}active{% endif %}" onclick="changeMobileLanguage('uz')" style="width: 100%;">
+                            <span class="flag-icon">🇺🇿</span>
+                            <span>O'zbekcha</span>
+                            {% if LANGUAGE_CODE == 'uz' %}
+                            <i class="fas fa-check check-icon"></i>
+                            {% endif %}
+                        </button>
+                        
+                        <button type="button" class="language-option {% if LANGUAGE_CODE == 'en' %}active{% endif %}" onclick="changeMobileLanguage('en')" style="width: 100%;">
+                            <span class="flag-icon">🇺🇸</span>
+                            <span>English</span>
+                            {% if LANGUAGE_CODE == 'en' %}
+                            <i class="fas fa-check check-icon"></i>
+                            {% endif %}
+                        </button>
+                    </div>
                 </form>
             </div>
 
@@ -1020,37 +1050,51 @@
         });
 
         // Language switcher toggle
-      // Language switcher toggle
-function toggleLanguageDropdown(event) {
-    event.stopPropagation();
-    const dropdown = document.getElementById('languageDropdown');
-    const profileDropdown = document.getElementById('profileDropdown');
-    
-    // Закрываем profile dropdown, если открыт
-    if (profileDropdown) {
-        profileDropdown.classList.remove('show');
-    }
+        function toggleLanguageDropdown(event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('languageDropdown');
+            const switcher = document.getElementById('languageSwitcher');
+            const profileDropdown = document.getElementById('profileDropdown');
+            
+            // Закрываем profile dropdown, если открыт
+            if (profileDropdown) {
+                profileDropdown.classList.remove('show');
+            }
 
-    dropdown.classList.toggle('show');
-}
+            dropdown.classList.toggle('show');
+            switcher.classList.toggle('active');
+        }
 
-// Close dropdowns when clicking outside
-document.addEventListener('click', function(event) {
-    const languageSwitcher = document.querySelector('.language-switcher');
-    const languageDropdown = document.getElementById('languageDropdown');
-    const profileContainer = document.querySelector('.profile-container');
-    const profileDropdown = document.getElementById('profileDropdown');
+        // Change language function
+        function changeLanguage(lang) {
+            document.getElementById('selectedLanguage').value = lang;
+            document.getElementById('languageForm').submit();
+        }
 
-    // Закрываем language dropdown, если клик вне его
-    if (languageDropdown && languageSwitcher && !languageSwitcher.contains(event.target)) {
-        languageDropdown.classList.remove('show');
-    }
+        // Change language function for mobile
+        function changeMobileLanguage(lang) {
+            document.getElementById('mobileSelectedLanguage').value = lang;
+            document.getElementById('mobileLanguageForm').submit();
+        }
 
-    // Закрываем profile dropdown, если клик вне него
-    if (profileDropdown && profileContainer && !profileContainer.contains(event.target)) {
-        profileDropdown.classList.remove('show');
-    }
-});
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            const languageSwitcher = document.querySelector('.language-switcher');
+            const languageDropdown = document.getElementById('languageDropdown');
+            const profileContainer = document.querySelector('.profile-container');
+            const profileDropdown = document.getElementById('profileDropdown');
+
+            // Закрываем language dropdown, если клик вне его
+            if (languageDropdown && languageSwitcher && !languageSwitcher.contains(event.target)) {
+                languageDropdown.classList.remove('show');
+                languageSwitcher.classList.remove('active');
+            }
+
+            // Закрываем profile dropdown, если клик вне него
+            if (profileDropdown && profileContainer && !profileContainer.contains(event.target)) {
+                profileDropdown.classList.remove('show');
+            }
+        });
 
     </script>
 

@@ -84,18 +84,13 @@ DATABASES = {
 }
 
 # Password validation
+# Упрощенная валидация паролей - только минимальная длина 4 символа
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        'OPTIONS': {
+            'min_length': 4,
+        }
     },
 ]
 
@@ -140,3 +135,19 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 default_app_config = 'teachers.apps.TeachersConfig'
+
+# =============================================================================
+# TELEGRAM BOT SETTINGS
+# =============================================================================
+
+# Токен вашего Telegram бота (получите от @BotFather)
+TELEGRAM_BOT_TOKEN = '6599919259:AAGqnQXsjUaXoaSjFqisVy-QmRaDdlgVxdI'  # ЗАМЕНИТЕ НА ВАШ ТОКЕН!
+
+# URL вашего сайта (для кнопок и WebApp)
+SITE_URL = 'https://ustozhubedu.uz'
+
+# URL для Telegram WebApp (будет открываться при нажатии на кнопку в боте)
+TELEGRAM_WEBAPP_URL = f'{SITE_URL}'
+
+# Webhook URL для Telegram (если будете использовать webhook вместо polling)
+# TELEGRAM_WEBHOOK_URL = f'{SITE_URL}/api/telegram/webhook/'

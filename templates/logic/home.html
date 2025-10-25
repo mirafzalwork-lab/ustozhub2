@@ -444,6 +444,71 @@
         margin-bottom: 20px;
     }
 
+    /* ========== СТИЛИ ПАГИНАЦИИ ========== */
+    .pagination-wrapper {
+        margin-top: 40px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .page-link {
+        min-width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 12px;
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        color: #0A2540;
+        font-weight: 600;
+        font-size: 14px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .page-link:hover {
+        background: #0A2540;
+        color: white;
+        border-color: #0A2540;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(10, 37, 64, 0.15);
+    }
+
+    .page-link.current {
+        background: #0A2540;
+        color: white;
+        border-color: #0A2540;
+        cursor: default;
+        box-shadow: 0 4px 12px rgba(10, 37, 64, 0.2);
+    }
+
+    .page-link.first,
+    .page-link.last,
+    .page-link.prev,
+    .page-link.next {
+        font-size: 16px;
+    }
+
+    .page-info {
+        font-size: 14px;
+        color: #666;
+        font-weight: 500;
+        text-align: center;
+    }
+
     @media (max-width: 1024px) {
         .content-layout {
             grid-template-columns: 1fr;
@@ -643,12 +708,12 @@
             </form>
         </aside>
 
-        <!-- Teachers List - БЕЗ ИЗМЕНЕНИЙ -->
+        <!-- Teachers List -->
         <section class="teachers-section">
             <div class="results-header">
                 <span class="results-count">
-                    {% trans 'Найдено:' %} <strong>{{ teachers.count }}</strong> 
-                    {% if teachers.count == 1 %}{% trans 'учитель' %}{% elif teachers.count < 5 %}{% trans 'учителя' %}{% else %}{% trans 'учителей' %}{% endif %}
+                    {% trans 'Найдено:' %} <strong>{{ total_teachers }}</strong> 
+                    {% if total_teachers == 1 %}{% trans 'учитель' %}{% elif total_teachers < 5 %}{% trans 'учителя' %}{% else %}{% trans 'учителей' %}{% endif %}
                 </span>
             </div>
 
@@ -717,6 +782,43 @@
                         </div>
                     {% endfor %}
                 </div>
+                
+                <!-- ========== ПАГИНАЦИЯ ========== -->
+                {% if teachers.has_other_pages %}
+                <div class="pagination-wrapper">
+                    <div class="pagination">
+                        {% if teachers.has_previous %}
+                            <a href="?page=1{% if request.GET.subject %}&subject={{ request.GET.subject }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.format %}&format={{ request.GET.format }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% if request.GET.min_rating %}&min_rating={{ request.GET.min_rating }}{% endif %}{% if request.GET.min_experience %}&min_experience={{ request.GET.min_experience }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="page-link first">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                            <a href="?page={{ teachers.previous_page_number }}{% if request.GET.subject %}&subject={{ request.GET.subject }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.format %}&format={{ request.GET.format }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% if request.GET.min_rating %}&min_rating={{ request.GET.min_rating }}{% endif %}{% if request.GET.min_experience %}&min_experience={{ request.GET.min_experience }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="page-link prev">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        {% endif %}
+
+                        {% for num in teachers.paginator.page_range %}
+                            {% if teachers.number == num %}
+                                <span class="page-link current">{{ num }}</span>
+                            {% elif num > teachers.number|add:'-3' and num < teachers.number|add:'3' %}
+                                <a href="?page={{ num }}{% if request.GET.subject %}&subject={{ request.GET.subject }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.format %}&format={{ request.GET.format }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% if request.GET.min_rating %}&min_rating={{ request.GET.min_rating }}{% endif %}{% if request.GET.min_experience %}&min_experience={{ request.GET.min_experience }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="page-link">{{ num }}</a>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if teachers.has_next %}
+                            <a href="?page={{ teachers.next_page_number }}{% if request.GET.subject %}&subject={{ request.GET.subject }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.format %}&format={{ request.GET.format }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% if request.GET.min_rating %}&min_rating={{ request.GET.min_rating }}{% endif %}{% if request.GET.min_experience %}&min_experience={{ request.GET.min_experience }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="page-link next">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                            <a href="?page={{ teachers.paginator.num_pages }}{% if request.GET.subject %}&subject={{ request.GET.subject }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.format %}&format={{ request.GET.format }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% if request.GET.min_rating %}&min_rating={{ request.GET.min_rating }}{% endif %}{% if request.GET.min_experience %}&min_experience={{ request.GET.min_experience }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="page-link last">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                    <div class="page-info">
+                        {% trans 'Страница' %} {{ teachers.number }} {% trans 'из' %} {{ teachers.paginator.num_pages }}
+                    </div>
+                </div>
+                {% endif %}
+                <!-- ========== КОНЕЦ ПАГИНАЦИИ ========== -->
             {% else %}
                 <div class="no-results">
                     <i class="fas fa-search"></i>
