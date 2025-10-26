@@ -273,11 +273,65 @@
         box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
         transition: all 0.3s ease;
         cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        /* ⚡ НОВОЕ: Анимация появления */
+        animation: fadeInUp 0.6s ease-out backwards;
     }
 
+    /* ⚡ НОВОЕ: Плавное появление карточек */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* ⚡ НОВОЕ: Задержка для каждой карточки */
+    .teacher-card:nth-child(1) { animation-delay: 0.05s; }
+    .teacher-card:nth-child(2) { animation-delay: 0.1s; }
+    .teacher-card:nth-child(3) { animation-delay: 0.15s; }
+    .teacher-card:nth-child(4) { animation-delay: 0.2s; }
+    .teacher-card:nth-child(5) { animation-delay: 0.25s; }
+    .teacher-card:nth-child(6) { animation-delay: 0.3s; }
+    .teacher-card:nth-child(7) { animation-delay: 0.35s; }
+    .teacher-card:nth-child(8) { animation-delay: 0.4s; }
+    .teacher-card:nth-child(9) { animation-delay: 0.45s; }
+    .teacher-card:nth-child(10) { animation-delay: 0.5s; }
+    .teacher-card:nth-child(11) { animation-delay: 0.55s; }
+    .teacher-card:nth-child(12) { animation-delay: 0.6s; }
+
     .teacher-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 6px 20px rgba(10, 37, 64, 0.12);
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 8px 25px rgba(10, 37, 64, 0.15);
+    }
+
+    /* ⚡ НОВОЕ: Эффект блеска при наведении */
+    .teacher-card::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+            45deg,
+            transparent,
+            transparent 40%,
+            rgba(255, 255, 255, 0.3) 50%,
+            transparent 60%,
+            transparent
+        );
+        transform: translateX(-100%) translateY(-100%) rotate(45deg);
+        transition: transform 0.6s;
+    }
+
+    .teacher-card:hover::after {
+        transform: translateX(100%) translateY(100%) rotate(45deg);
     }
 
     .teacher-header {
@@ -299,6 +353,34 @@
         font-weight: 700;
         flex-shrink: 0;
         overflow: hidden;
+        /* ⚡ НОВОЕ: Анимация аватара */
+        transition: transform 0.3s ease;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+
+    /* ⚡ НОВОЕ: Разнообразные градиенты для аватаров */
+    .teacher-card:nth-child(3n+1) .teacher-avatar {
+        background: linear-gradient(135deg, #667EEA, #764BA2);
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    .teacher-card:nth-child(3n+2) .teacher-avatar {
+        background: linear-gradient(135deg, #FC466B, #3F5EFB);
+        box-shadow: 0 2px 8px rgba(252, 70, 107, 0.3);
+    }
+
+    .teacher-card:nth-child(3n) .teacher-avatar {
+        background: linear-gradient(135deg, #11998E, #38EF7D);
+        box-shadow: 0 2px 8px rgba(17, 153, 142, 0.3);
+    }
+
+    .teacher-card:nth-child(4n) .teacher-avatar {
+        background: linear-gradient(135deg, #FE6B8B, #FF8E53);
+        box-shadow: 0 2px 8px rgba(254, 107, 139, 0.3);
+    }
+
+    .teacher-card:hover .teacher-avatar {
+        transform: scale(1.1) rotate(5deg);
     }
 
     .teacher-avatar img {
@@ -327,15 +409,36 @@
 
     .rating-star {
         color: #FCD34D;
+        /* ⚡ НОВОЕ: Анимация звезды */
+        animation: starPulse 2s ease-in-out infinite;
+        filter: drop-shadow(0 0 3px rgba(252, 211, 77, 0.5));
+    }
+
+    /* ⚡ НОВОЕ: Пульсация звезды */
+    @keyframes starPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    .teacher-card:hover .rating-star {
+        animation: starSpin 0.5s ease-in-out;
+        transform: rotate(360deg);
+    }
+
+    @keyframes starSpin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
 
     .rating-value {
         font-weight: 600;
         color: #0A2540;
+        font-size: 15px;
     }
 
     .rating-count {
         color: #999;
+        font-size: 13px;
     }
 
     .teacher-subjects {
@@ -352,6 +455,25 @@
         border-radius: 12px;
         font-size: 12px;
         font-weight: 500;
+        /* ⚡ НОВОЕ: Анимация появления */
+        animation: fadeIn 0.5s ease-out backwards;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
+    .subject-tag:nth-child(1) { animation-delay: 0.1s; }
+    .subject-tag:nth-child(2) { animation-delay: 0.15s; }
+    .subject-tag:nth-child(3) { animation-delay: 0.2s; }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.8); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    .subject-tag:hover {
+        background: rgba(59, 130, 246, 0.2);
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
     }
 
     .teacher-description {
@@ -404,7 +526,7 @@
 
     .contact-btn {
         padding: 8px 16px;
-        background: #0A2540;
+        background: linear-gradient(135deg, #0A2540, #1e4a72);
         color: white;
         border: none;
         border-radius: 6px;
@@ -412,10 +534,38 @@
         font-weight: 500;
         cursor: pointer;
         transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(10, 37, 64, 0.3);
+    }
+
+    /* ⚡ НОВОЕ: Эффект волны при наведении */
+    .contact-btn::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+    }
+
+    .contact-btn:hover::before {
+        width: 300px;
+        height: 300px;
     }
 
     .contact-btn:hover {
-        background: #1e4a72;
+        background: linear-gradient(135deg, #1e4a72, #2d5f8d);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(10, 37, 64, 0.4);
+    }
+
+    .contact-btn:active {
+        transform: translateY(0);
     }
 
     .no-results {

@@ -225,11 +225,66 @@
         transition: all 0.3s ease;
         cursor: pointer;
         border-left: 4px solid #10B981; /* Зеленый акцент для отличия от учителей */
+        position: relative;
+        overflow: hidden;
+        /* ⚡ НОВОЕ: Анимация появления */
+        animation: fadeInUp 0.6s ease-out backwards;
     }
 
+    /* ⚡ НОВОЕ: Плавное появление карточек */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* ⚡ НОВОЕ: Задержка для каждой карточки */
+    .student-card:nth-child(1) { animation-delay: 0.05s; }
+    .student-card:nth-child(2) { animation-delay: 0.1s; }
+    .student-card:nth-child(3) { animation-delay: 0.15s; }
+    .student-card:nth-child(4) { animation-delay: 0.2s; }
+    .student-card:nth-child(5) { animation-delay: 0.25s; }
+    .student-card:nth-child(6) { animation-delay: 0.3s; }
+    .student-card:nth-child(7) { animation-delay: 0.35s; }
+    .student-card:nth-child(8) { animation-delay: 0.4s; }
+    .student-card:nth-child(9) { animation-delay: 0.45s; }
+    .student-card:nth-child(10) { animation-delay: 0.5s; }
+    .student-card:nth-child(11) { animation-delay: 0.55s; }
+    .student-card:nth-child(12) { animation-delay: 0.6s; }
+
     .student-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 6px 20px rgba(10, 37, 64, 0.12);
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
+        border-left-width: 6px;
+    }
+
+    /* ⚡ НОВОЕ: Эффект блеска при наведении */
+    .student-card::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+            45deg,
+            transparent,
+            transparent 40%,
+            rgba(16, 185, 129, 0.2) 50%,
+            transparent 60%,
+            transparent
+        );
+        transform: translateX(-100%) translateY(-100%) rotate(45deg);
+        transition: transform 0.6s;
+    }
+
+    .student-card:hover::after {
+        transform: translateX(100%) translateY(100%) rotate(45deg);
     }
 
     .student-header {
@@ -251,6 +306,34 @@
         font-weight: 700;
         flex-shrink: 0;
         overflow: hidden;
+        /* ⚡ НОВОЕ: Анимация аватара */
+        transition: transform 0.3s ease;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    /* ⚡ НОВОЕ: Разнообразные градиенты для аватаров учеников */
+    .student-card:nth-child(3n+1) .student-avatar {
+        background: linear-gradient(135deg, #A8E063, #56AB2F);
+        box-shadow: 0 2px 8px rgba(168, 224, 99, 0.3);
+    }
+
+    .student-card:nth-child(3n+2) .student-avatar {
+        background: linear-gradient(135deg, #30CFD0, #330867);
+        box-shadow: 0 2px 8px rgba(48, 207, 208, 0.3);
+    }
+
+    .student-card:nth-child(3n) .student-avatar {
+        background: linear-gradient(135deg, #FDBB2D, #22C1C3);
+        box-shadow: 0 2px 8px rgba(253, 187, 45, 0.3);
+    }
+
+    .student-card:nth-child(4n) .student-avatar {
+        background: linear-gradient(135deg, #FA709A, #FEE140);
+        box-shadow: 0 2px 8px rgba(250, 112, 154, 0.3);
+    }
+
+    .student-card:hover .student-avatar {
+        transform: scale(1.1) rotate(-5deg);
     }
 
     .student-avatar img {
@@ -298,6 +381,25 @@
         border-radius: 12px;
         font-size: 12px;
         font-weight: 500;
+        /* ⚡ НОВОЕ: Анимация появления */
+        animation: fadeIn 0.5s ease-out backwards;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .subject-tag:nth-child(1) { animation-delay: 0.1s; }
+    .subject-tag:nth-child(2) { animation-delay: 0.15s; }
+    .subject-tag:nth-child(3) { animation-delay: 0.2s; }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.8); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    .subject-tag:hover {
+        background: rgba(16, 185, 129, 0.2);
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
     }
 
     /* НОВОЕ: Описание ученика */
@@ -354,7 +456,7 @@
 
     .contact-btn {
         padding: 8px 16px;
-        background: #10B981;
+        background: linear-gradient(135deg, #10B981, #059669);
         color: white;
         border: none;
         border-radius: 6px;
@@ -362,10 +464,38 @@
         font-weight: 500;
         cursor: pointer;
         transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    /* ⚡ НОВОЕ: Эффект волны при наведении */
+    .contact-btn::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+    }
+
+    .contact-btn:hover::before {
+        width: 300px;
+        height: 300px;
     }
 
     .contact-btn:hover {
-        background: #059669;
+        background: linear-gradient(135deg, #059669, #047857);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .contact-btn:active {
+        transform: translateY(0);
     }
 
     .no-results {
