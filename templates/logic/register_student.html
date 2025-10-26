@@ -217,30 +217,6 @@
         font-weight: 400;
     }
 
-    .clear-search-btn {
-        background: #ef4444;
-        border: none;
-        border-radius: 50%;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        cursor: pointer;
-        transition: all 0.2s;
-        flex-shrink: 0;
-    }
-
-    .clear-search-btn:hover {
-        background: #dc2626;
-        transform: scale(1.1);
-    }
-
-    .clear-search-btn:active {
-        transform: scale(0.95);
-    }
-
     .selected-badge {
         padding: 6px 14px;
         background: linear-gradient(135deg, #10b981 0%, #059669 100%);
@@ -251,53 +227,10 @@
         white-space: nowrap;
         box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
         transition: all 0.2s;
-        flex-shrink: 0;
     }
 
     .selected-badge:hover {
         transform: scale(1.05);
-    }
-
-    /* Быстрые фильтры */
-    .quick-filters {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 12px;
-    }
-
-    .filter-btn {
-        flex: 1;
-        padding: 12px 16px;
-        border: 2px solid #e0e0e0;
-        background: white;
-        border-radius: 10px;
-        font-size: 14px;
-        font-weight: 500;
-        color: #666;
-        cursor: pointer;
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        min-height: 48px; /* Минимум для тач-таргета */
-    }
-
-    .filter-btn:hover {
-        border-color: #10b981;
-        background: #f0fdf4;
-        color: #059669;
-    }
-
-    .filter-btn.active {
-        border-color: #10b981;
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: white;
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    }
-
-    .filter-btn i {
-        font-size: 16px;
     }
 
     /* Индикатор найденных результатов */
@@ -431,71 +364,22 @@
 
     /* Мобильная адаптация для предметов */
     @media (max-width: 640px) {
+        .subject-checkbox {
+            grid-template-columns: 1fr;
+        }
+        
         .subject-search-box {
-            padding: 16px 18px;
             flex-wrap: wrap;
         }
-
-        .subject-search-box > i {
-            font-size: 20px;
-        }
-
-        .subject-search {
-            font-size: 16px; /* Предотвращает zoom на iOS */
-            min-height: 44px;
-        }
-
-        .clear-search-btn {
-            width: 36px;
-            height: 36px;
-        }
-
+        
         .selected-badge {
             width: 100%;
             text-align: center;
-            margin-top: 10px;
-            font-size: 14px;
-            padding: 10px 16px;
-        }
-
-        .quick-filters {
-            margin-bottom: 16px;
-        }
-
-        .filter-btn {
-            padding: 14px 16px;
-            font-size: 15px;
-            min-height: 52px; /* Больше для пальцев */
-        }
-
-        .filter-btn i {
-            font-size: 18px;
-        }
-
-        .subject-checkbox {
-            grid-template-columns: 1fr;
-            gap: 12px;
-        }
-
-        .subject-checkbox label {
-            padding: 16px 18px; /* Больше для удобного нажатия */
-            font-size: 15px;
-            min-height: 56px; /* Минимум 56px для тач-таргета */
-        }
-
-        .subject-checkbox input[type="checkbox"] {
-            width: 24px;
-            height: 24px;
+            margin-top: 8px;
         }
 
         #subjectCheckboxes {
-            max-height: 320px;
-            padding: 12px;
-        }
-
-        .search-results-hint {
-            padding: 12px 16px;
-            font-size: 14px;
+            max-height: 300px;
         }
     }
 
@@ -794,20 +678,7 @@
                             placeholder="{% trans 'Начните вводить название предмета...' %}"
                             autocomplete="off"
                         >
-                        <button type="button" class="clear-search-btn" id="clearSearchBtn" style="display: none;">
-                            <i class="fas fa-times"></i>
-                        </button>
                         <span class="selected-badge" id="selectedBadge">0 {% trans 'выбрано' %}</span>
-                    </div>
-                    
-                    <!-- Быстрые фильтры для мобильных -->
-                    <div class="quick-filters">
-                        <button type="button" class="filter-btn" id="showAllBtn">
-                            <i class="fas fa-list"></i> {% trans 'Все' %}
-                        </button>
-                        <button type="button" class="filter-btn active" id="showSelectedBtn">
-                            <i class="fas fa-check-circle"></i> {% trans 'Только выбранные' %}
-                        </button>
                     </div>
                     
                     <!-- Индикатор результатов поиска -->
@@ -1062,37 +933,24 @@
     const selectedBadge = document.getElementById('selectedBadge');
     const searchResultsHint = document.getElementById('searchResultsHint');
     const searchResultsText = document.getElementById('searchResultsText');
-    const clearSearchBtn = document.getElementById('clearSearchBtn');
-    const showAllBtn = document.getElementById('showAllBtn');
-    const showSelectedBtn = document.getElementById('showSelectedBtn');
     const checkboxList = subjectsContainer.querySelector('ul');
     
     if (searchInput && checkboxList) {
         const allItems = checkboxList.querySelectorAll('li');
         const totalSubjects = allItems.length;
-        let currentFilter = 'all'; // 'all' или 'selected'
         
         // 🔍 Живой поиск с мгновенной фильтрацией
-        function performSearch() {
-            const searchTerm = searchInput.value.toLowerCase().trim();
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
             let foundCount = 0;
             let firstMatch = null;
             
-            // Показываем/скрываем кнопку очистки
-            clearSearchBtn.style.display = searchTerm ? 'flex' : 'none';
-            
             // Фильтруем и подсвечиваем совпадения
             allItems.forEach((item, index) => {
-                const checkbox = item.querySelector('input[type="checkbox"]');
                 const label = item.querySelector('label');
                 const text = label.textContent.toLowerCase();
-                const isChecked = checkbox.checked;
                 
-                // Учитываем и поиск, и фильтр
-                const matchesSearch = searchTerm === '' || text.includes(searchTerm);
-                const matchesFilter = currentFilter === 'all' || (currentFilter === 'selected' && isChecked);
-                
-                if (matchesSearch && matchesFilter) {
+                if (searchTerm === '' || text.includes(searchTerm)) {
                     item.classList.remove('hidden');
                     
                     // Подсвечиваем только если есть поисковый запрос
@@ -1106,7 +964,6 @@
                         }
                     } else {
                         item.classList.remove('highlight');
-                        foundCount++;
                     }
                 } else {
                     item.classList.add('hidden');
@@ -1118,7 +975,7 @@
             if (searchTerm !== '') {
                 if (foundCount > 0) {
                     searchResultsHint.classList.add('show');
-                    searchResultsText.innerHTML = `{% trans "Найдено:" %} <strong>${foundCount}</strong> {% trans "предметов" %}`;
+                    searchResultsText.innerHTML = `{% trans "Найдено:" %} <strong>${foundCount}</strong> {% trans "из" %} ${totalSubjects} {% trans "предметов" %}`;
                     
                     // Прокручиваем к первому найденному
                     if (firstMatch) {
@@ -1128,42 +985,11 @@
                     }
                 } else {
                     searchResultsHint.classList.add('show');
-                    searchResultsText.innerHTML = `<i class="fas fa-exclamation-circle"></i> {% trans "Ничего не найдено" %}`;
+                    searchResultsText.innerHTML = `<i class="fas fa-exclamation-circle"></i> {% trans "Ничего не найдено. Попробуйте другой запрос." %}`;
                 }
             } else {
-                if (currentFilter === 'selected') {
-                    searchResultsHint.classList.add('show');
-                    searchResultsText.innerHTML = `{% trans "Показано:" %} <strong>${foundCount}</strong> {% trans "выбранных" %}`;
-                } else {
-                    searchResultsHint.classList.remove('show');
-                }
+                searchResultsHint.classList.remove('show');
             }
-        }
-        
-        searchInput.addEventListener('input', performSearch);
-        
-        // Кнопка очистки поиска
-        clearSearchBtn.addEventListener('click', function() {
-            searchInput.value = '';
-            clearSearchBtn.style.display = 'none';
-            performSearch();
-            searchInput.focus();
-        });
-        
-        // Фильтр "Все"
-        showAllBtn.addEventListener('click', function() {
-            currentFilter = 'all';
-            showAllBtn.classList.add('active');
-            showSelectedBtn.classList.remove('active');
-            performSearch();
-        });
-        
-        // Фильтр "Только выбранные"
-        showSelectedBtn.addEventListener('click', function() {
-            currentFilter = 'selected';
-            showSelectedBtn.classList.add('active');
-            showAllBtn.classList.remove('active');
-            performSearch();
         });
         
         // Обновление счетчика выбранных
@@ -1177,11 +1003,6 @@
             setTimeout(() => {
                 selectedBadge.style.transform = 'scale(1)';
             }, 200);
-            
-            // Обновляем фильтр если активен "Только выбранные"
-            if (currentFilter === 'selected') {
-                performSearch();
-            }
         }
         
         // Отслеживание изменений чекбоксов
@@ -1189,7 +1010,7 @@
             if (e.target.type === 'checkbox') {
                 updateSelectedCount();
                 
-                // Визуальная обратная связь
+                // Звуковая обратная связь (визуальная)
                 const item = e.target.closest('li');
                 if (e.target.checked) {
                     item.style.transform = 'scale(1.05)';
@@ -1200,17 +1021,13 @@
             }
         });
         
-        // Инициализация
+        // Инициализация счетчика
         updateSelectedCount();
-        showAllBtn.classList.add('active');
-        showSelectedBtn.classList.remove('active');
         
-        // Фокус на поле поиска при загрузке (для удобства на десктопе)
-        if (window.innerWidth > 768) {
-            setTimeout(() => {
-                searchInput.focus();
-            }, 500);
-        }
+        // Фокус на поле поиска при загрузке (для удобства)
+        setTimeout(() => {
+            searchInput.focus();
+        }, 500);
     }
 </script>
 {% endblock %}
