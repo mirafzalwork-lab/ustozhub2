@@ -177,34 +177,44 @@
         align-items: center;
         gap: 12px;
         padding: 14px 18px;
-        background: white;
+        background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
         border: 2px solid #e0e0e0;
         border-radius: 12px;
         margin-bottom: 16px;
-        transition: all 0.2s;
+        transition: all 0.3s ease;
     }
 
     .subject-search-box:focus-within {
         border-color: #10b981;
-        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+        background: white;
+        transform: translateY(-2px);
     }
 
     .subject-search-box > i {
         color: #10b981;
-        font-size: 16px;
+        font-size: 18px;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
     }
 
     .subject-search {
         flex: 1;
         border: none;
         outline: none;
-        font-size: 15px;
+        font-size: 16px;
         color: #333;
         background: transparent;
+        font-weight: 500;
     }
 
     .subject-search::placeholder {
-        color: #999;
+        color: #10b981;
+        font-weight: 400;
     }
 
     .selected-badge {
@@ -215,7 +225,57 @@
         font-size: 13px;
         font-weight: 600;
         white-space: nowrap;
-        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        transition: all 0.2s;
+    }
+
+    .selected-badge:hover {
+        transform: scale(1.05);
+    }
+
+    /* Индикатор найденных результатов */
+    .search-results-hint {
+        display: none;
+        padding: 8px 16px;
+        background: #f0fdf4;
+        border-left: 4px solid #10b981;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        font-size: 14px;
+        color: #059669;
+        font-weight: 500;
+        animation: slideDown 0.3s ease;
+    }
+
+    .search-results-hint.show {
+        display: block;
+    }
+
+    .search-results-hint i {
+        margin-right: 8px;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Подсветка совпадений */
+    .subject-checkbox li.highlight label {
+        border-color: #10b981;
+        background: #f0fdf4;
+        animation: highlightPulse 0.5s ease;
+    }
+
+    @keyframes highlightPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.02); }
     }
 
     /* ✅ Контейнер чекбоксов */
@@ -615,10 +675,16 @@
                             type="text" 
                             id="subjectSearchInput" 
                             class="subject-search" 
-                            placeholder="{% trans 'Начните вводить название предмета...' %}"
+                            placeholder="{% trans '🔍 Начните вводить... (например: мат, рус, англ)' %}"
                             autocomplete="off"
                         >
                         <span class="selected-badge" id="selectedBadge">0 {% trans 'выбрано' %}</span>
+                    </div>
+                    
+                    <!-- Индикатор результатов поиска -->
+                    <div class="search-results-hint" id="searchResultsHint">
+                        <i class="fas fa-check-circle"></i>
+                        <span id="searchResultsText"></span>
                     </div>
                     
                     <!-- Чекбоксы предметов -->
@@ -860,29 +926,70 @@
     });
 
     // ========================================
-    // Поиск и фильтрация предметов
+    // 🔥 УМНЫЙ ПОИСК ПРЕДМЕТОВ С ЖИВЫМИ ПОДСКАЗКАМИ
     // ========================================
     const searchInput = document.getElementById('subjectSearchInput');
     const subjectsContainer = document.getElementById('subjectCheckboxes');
     const selectedBadge = document.getElementById('selectedBadge');
+    const searchResultsHint = document.getElementById('searchResultsHint');
+    const searchResultsText = document.getElementById('searchResultsText');
     const checkboxList = subjectsContainer.querySelector('ul');
     
     if (searchInput && checkboxList) {
-        // Поиск предметов
+        const allItems = checkboxList.querySelectorAll('li');
+        const totalSubjects = allItems.length;
+        
+        // 🔍 Живой поиск с мгновенной фильтрацией
         searchInput.addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase().trim();
-            const items = checkboxList.querySelectorAll('li');
+            let foundCount = 0;
+            let firstMatch = null;
             
-            items.forEach(item => {
+            // Фильтруем и подсвечиваем совпадения
+            allItems.forEach((item, index) => {
                 const label = item.querySelector('label');
                 const text = label.textContent.toLowerCase();
                 
-                if (text.includes(searchTerm)) {
+                if (searchTerm === '' || text.includes(searchTerm)) {
                     item.classList.remove('hidden');
+                    
+                    // Подсвечиваем только если есть поисковый запрос
+                    if (searchTerm !== '') {
+                        item.classList.add('highlight');
+                        foundCount++;
+                        
+                        // Запоминаем первое совпадение
+                        if (firstMatch === null) {
+                            firstMatch = item;
+                        }
+                    } else {
+                        item.classList.remove('highlight');
+                    }
                 } else {
                     item.classList.add('hidden');
+                    item.classList.remove('highlight');
                 }
             });
+            
+            // Показываем индикатор результатов
+            if (searchTerm !== '') {
+                if (foundCount > 0) {
+                    searchResultsHint.classList.add('show');
+                    searchResultsText.innerHTML = `{% trans "Найдено:" %} <strong>${foundCount}</strong> {% trans "из" %} ${totalSubjects} {% trans "предметов" %}`;
+                    
+                    // Прокручиваем к первому найденному
+                    if (firstMatch) {
+                        setTimeout(() => {
+                            firstMatch.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }, 100);
+                    }
+                } else {
+                    searchResultsHint.classList.add('show');
+                    searchResultsText.innerHTML = `<i class="fas fa-exclamation-circle"></i> {% trans "Ничего не найдено. Попробуйте другой запрос." %}`;
+                }
+            } else {
+                searchResultsHint.classList.remove('show');
+            }
         });
         
         // Обновление счетчика выбранных
@@ -890,17 +997,37 @@
             const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
             const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
             selectedBadge.textContent = checkedCount + ' {% trans "выбрано" %}';
+            
+            // Анимация при изменении
+            selectedBadge.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                selectedBadge.style.transform = 'scale(1)';
+            }, 200);
         }
         
         // Отслеживание изменений чекбоксов
         checkboxList.addEventListener('change', function(e) {
             if (e.target.type === 'checkbox') {
                 updateSelectedCount();
+                
+                // Звуковая обратная связь (визуальная)
+                const item = e.target.closest('li');
+                if (e.target.checked) {
+                    item.style.transform = 'scale(1.05)';
+                    setTimeout(() => {
+                        item.style.transform = 'scale(1)';
+                    }, 200);
+                }
             }
         });
         
         // Инициализация счетчика
         updateSelectedCount();
+        
+        // Фокус на поле поиска при загрузке (для удобства)
+        setTimeout(() => {
+            searchInput.focus();
+        }, 500);
     }
 </script>
 {% endblock %}
