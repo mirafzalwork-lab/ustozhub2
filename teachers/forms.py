@@ -230,7 +230,7 @@ class TeacherRegistrationForm(UserCreationForm):
         super().__init__(*args, **kwargs)
         self.fields['username'].widget.attrs.update({
             'class': 'form-input',
-            'placeholder': _('Имя пользователя')
+            'placeholder': 'username'
         })
         self.fields['password1'].widget.attrs.update({
             'class': 'form-input',
@@ -627,7 +627,7 @@ class StudentRegistrationForm(UserCreationForm):
         super().__init__(*args, **kwargs)
         self.fields['username'].widget.attrs.update({
             'class': 'form-input',
-            'placeholder': _('Имя пользователя')
+            'placeholder': 'username'
         })
         self.fields['password1'].widget.attrs.update({
             'class': 'form-input',
