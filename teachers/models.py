@@ -186,6 +186,14 @@ class TeacherProfile(models.Model):
         verbose_name = 'Профиль учителя'
         verbose_name_plural = 'Профили учителей'
         ordering = ['-created_at']
+        # ⚡ ОПТИМИЗАЦИЯ: Индексы для ускорения поиска и фильтрации
+        indexes = [
+            models.Index(fields=['-rating', '-created_at']),  # Для сортировки на главной
+            models.Index(fields=['is_active', 'moderation_status']),  # Для фильтров
+            models.Index(fields=['city', 'is_active']),  # Для фильтра по городу
+            models.Index(fields=['teaching_format']),  # Для фильтра формата
+            models.Index(fields=['experience_years']),  # Для фильтра опыта
+        ]
         
     def approve(self, moderator, comment=''):
         """Одобрить профиль учителя"""
@@ -256,9 +264,12 @@ class TeacherProfile(models.Model):
         return f"{self.user.get_full_name()} - {self.get_subjects_display()}"
 
     def get_subjects_display(self):
-        return ", ".join([ts.subject.name for ts in self.teachersubject_set.all()[:3]])
+        # ⚡ ОПТИМИЗАЦИЯ: Используем select_related для избежания N+1
+        subjects = self.teachersubject_set.select_related('subject').all()[:3]
+        return ", ".join([ts.subject.name for ts in subjects])
 
     def get_min_price(self):
+        # ⚡ ОПТИМИЗАЦИЯ: Используем values для более быстрого запроса
         min_price = self.teachersubject_set.aggregate(
             min_price=models.Min('hourly_rate')
         )['min_price']
@@ -294,6 +305,11 @@ class TeacherSubject(models.Model):
         unique_together = ['teacher', 'subject']
         verbose_name = 'Предмет учителя'
         verbose_name_plural = 'Предметы учителей'
+        # ⚡ ОПТИМИЗАЦИЯ: Индексы для фильтрации по цене
+        indexes = [
+            models.Index(fields=['teacher', 'hourly_rate']),  # Для фильтра по цене
+            models.Index(fields=['subject']),  # Для фильтра по предмету
+        ]
 
     def __str__(self):
         return f"{self.teacher.user.get_full_name()} - {self.subject.name} ({self.hourly_rate} сум/час)"
@@ -405,10 +421,19 @@ class StudentProfile(models.Model):
         verbose_name = 'Профиль ученика'
         verbose_name_plural = 'Профили учеников'
         ordering = ['-created_at']
+        # ⚡ ОПТИМИЗАЦИЯ: Индексы для ускорения поиска и фильтрации
+        indexes = [
+            models.Index(fields=['is_active', '-created_at']),  # Для списка учеников
+            models.Index(fields=['city', 'is_active']),  # Для фильтра по городу
+            models.Index(fields=['learning_format']),  # Для фильтра формата
+            models.Index(fields=['education_level']),  # Для фильтра уровня образования
+            models.Index(fields=['budget_min', 'budget_max']),  # Для фильтра бюджета
+        ]
 
     def get_desired_subjects_display(self):
         """Возвращает строку с названиями желаемых предметов"""
-        subjects = self.desired_subjects.all()[:3]
+        # ⚡ ОПТИМИЗАЦИЯ: Используем only для загрузки только нужных полей
+        subjects = self.desired_subjects.only('name')[:3]
         if subjects:
             return ", ".join([s.name for s in subjects])
         return "Не указано"

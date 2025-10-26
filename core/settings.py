@@ -151,3 +151,20 @@ TELEGRAM_WEBAPP_URL = f'{SITE_URL}'
 
 # Webhook URL для Telegram (если будете использовать webhook вместо polling)
 # TELEGRAM_WEBHOOK_URL = f'{SITE_URL}/api/telegram/webhook/'
+
+# =============================================================================
+# ⚡ ОПТИМИЗАЦИЯ: КЭШИРОВАНИЕ
+# =============================================================================
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'teacherhub-cache',
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+        }
+    }
+}
+
+# Время кэширования (в секундах)
+CACHE_TTL = 60 * 15  # 15 минут для фильтров

@@ -58,3 +58,40 @@ def send_message_notification(sender, instance, created, **kwargs):
         # Не прерываем создание сообщения даже если уведомление не отправлено
         logger.error(f"Ошибка отправки уведомления о сообщении: {e}")
 
+
+# =============================================================================
+# ⚡ ОПТИМИЗАЦИЯ: Автоматический сброс кэша при изменении данных
+# =============================================================================
+
+from django.db.models.signals import post_delete
+from django.core.cache import cache
+from .models import Subject, City, TeacherSubject, StudentProfile
+
+
+@receiver([post_save, post_delete], sender=Subject)
+def clear_subjects_cache(sender, **kwargs):
+    """Сбрасывает кэш предметов при их изменении"""
+    cache.delete('all_subjects')
+    logger.info("Кэш предметов очищен")
+
+
+@receiver([post_save, post_delete], sender=City)
+def clear_cities_cache(sender, **kwargs):
+    """Сбрасывает кэш городов при их изменении"""
+    cache.delete('all_cities')
+    logger.info("Кэш городов очищен")
+
+
+@receiver([post_save, post_delete], sender=TeacherSubject)
+def clear_price_range_cache(sender, **kwargs):
+    """Сбрасывает кэш диапазона цен при изменении предметов учителей"""
+    cache.delete('price_range')
+    logger.info("Кэш диапазона цен очищен")
+
+
+@receiver([post_save, post_delete], sender=StudentProfile)
+def clear_budget_range_cache(sender, **kwargs):
+    """Сбрасывает кэш диапазона бюджета при изменении профилей учеников"""
+    cache.delete('budget_range')
+    logger.info("Кэш диапазона бюджета очищен")
+

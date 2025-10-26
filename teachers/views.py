@@ -8,6 +8,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.core.cache import cache  # ⚡ ОПТИМИЗАЦИЯ: Кэширование
+from django.conf import settings  # ⚡ ОПТИМИЗАЦИЯ: Для CACHE_TTL
 from .forms import (
     TeacherRegistrationForm, 
     TeacherSubjectsForm, 
@@ -144,15 +146,25 @@ def home(request):
         # Если page выходит за пределы диапазона, показываем последнюю страницу
         teachers_page = paginator.page(paginator.num_pages)
     
-    # Данные для фильтров
-    all_subjects = Subject.objects.filter(is_active=True).order_by('name')
-    all_cities = City.objects.filter(is_active=True).order_by('name')
+    # ⚡ ОПТИМИЗАЦИЯ: Кэширование данных для фильтров
+    all_subjects = cache.get('all_subjects')
+    if all_subjects is None:
+        all_subjects = list(Subject.objects.filter(is_active=True).only('id', 'name').order_by('name'))
+        cache.set('all_subjects', all_subjects, getattr(settings, 'CACHE_TTL', 900))
     
-    # Получаем диапазон цен для слайдера
-    price_range = TeacherProfile.objects.filter(is_active=True).aggregate(
-        min_price=Min('teachersubject__hourly_rate'),
-        max_price=Max('teachersubject__hourly_rate')
-    )
+    all_cities = cache.get('all_cities')
+    if all_cities is None:
+        all_cities = list(City.objects.filter(is_active=True).only('id', 'name').order_by('name'))
+        cache.set('all_cities', all_cities, getattr(settings, 'CACHE_TTL', 900))
+    
+    # ⚡ ОПТИМИЗАЦИЯ: Кэширование диапазона цен
+    price_range = cache.get('price_range')
+    if price_range is None:
+        price_range = TeacherProfile.objects.filter(is_active=True).aggregate(
+            min_price=Min('teachersubject__hourly_rate'),
+            max_price=Max('teachersubject__hourly_rate')
+        )
+        cache.set('price_range', price_range, getattr(settings, 'CACHE_TTL', 900))
     
     context = {
         'teachers': teachers_page,  # Изменено: теперь используем объект Page
@@ -241,18 +253,28 @@ def students_list(request):
         # Если page выходит за пределы диапазона, показываем последнюю страницу
         students_page = paginator.page(paginator.num_pages)
     
-    # Данные для фильтров
-    all_subjects = Subject.objects.filter(is_active=True).order_by('name')
-    all_cities = City.objects.filter(is_active=True).order_by('name')
+    # ⚡ ОПТИМИЗАЦИЯ: Кэширование данных для фильтров (используем те же кэшированные данные)
+    all_subjects = cache.get('all_subjects')
+    if all_subjects is None:
+        all_subjects = list(Subject.objects.filter(is_active=True).only('id', 'name').order_by('name'))
+        cache.set('all_subjects', all_subjects, getattr(settings, 'CACHE_TTL', 900))
     
-    # Получаем диапазон бюджета для слайдера
-    budget_range = StudentProfile.objects.filter(
-        is_active=True,
-        budget_max__isnull=False
-    ).aggregate(
-        min_budget=Min('budget_min'),
-        max_budget=Max('budget_max')
-    )
+    all_cities = cache.get('all_cities')
+    if all_cities is None:
+        all_cities = list(City.objects.filter(is_active=True).only('id', 'name').order_by('name'))
+        cache.set('all_cities', all_cities, getattr(settings, 'CACHE_TTL', 900))
+    
+    # ⚡ ОПТИМИЗАЦИЯ: Кэширование диапазона бюджета
+    budget_range = cache.get('budget_range')
+    if budget_range is None:
+        budget_range = StudentProfile.objects.filter(
+            is_active=True,
+            budget_max__isnull=False
+        ).aggregate(
+            min_budget=Min('budget_min'),
+            max_budget=Max('budget_max')
+        )
+        cache.set('budget_range', budget_range, getattr(settings, 'CACHE_TTL', 900))
     
     context = {
         'students': students_page,  # Изменено: теперь используем объект Page

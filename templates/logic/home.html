@@ -720,7 +720,7 @@
             {% if teachers %}
                 <div class="teachers-grid">
                     {% for teacher in teachers %}
-                        <div class="teacher-card" onclick="window.location.href=''">
+                        <div class="teacher-card" onclick="window.location.href='{% url 'teacher_detail' teacher.id %}'" style="cursor: pointer;">
                             <div class="teacher-header">
                                 <div class="teacher-avatar">
                                     {% if teacher.user.avatar %}
@@ -731,7 +731,7 @@
                                 </div>
                                 <div class="teacher-info">
                                     <h3 class="teacher-name">
-                                       <a style="text-decoration: none; color: inherit;" href="{% url 'teacher_detail' teacher.id %}">{{ teacher.user.get_full_name|default:teacher.user.username }}</a>
+                                        {{ teacher.user.get_full_name|default:teacher.user.username }}
                                     </h3>
                                     <div class="teacher-rating">
                                         <i class="fas fa-star rating-star"></i>

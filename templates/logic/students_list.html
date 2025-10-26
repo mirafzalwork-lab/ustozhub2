@@ -656,7 +656,7 @@
             {% if students %}
                 <div class="students-grid">
                     {% for student in students %}
-                        <div class="student-card">
+                        <div class="student-card" onclick="window.location.href='{% url 'student_detail' student.id %}'" style="cursor: pointer;">
                             <!-- Заголовок карточки -->
                             <div class="student-header">
                                 <div class="student-avatar">
@@ -668,7 +668,7 @@
                                 </div>
                                 <div class="student-info">
                                     <h3 class="student-name">
-                                       <a style="text-decoration: none; color: inherit;" href="{% url 'student_detail' student.id %}">{{ student.user.get_full_name|default:student.user.username }}</a>
+                                        {{ student.user.get_full_name|default:student.user.username }}
                                     </h3>
                                     {% if student.education_level %}
                                         <span class="student-level">
