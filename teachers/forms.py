@@ -494,10 +494,8 @@ class StudentRegistrationForm(UserCreationForm):
         queryset=Subject.objects.filter(is_active=True),
         required=True,
         label=_('Предметы, которые хочу изучать'),
-        widget=forms.SelectMultiple(attrs={
-            'class': 'subject-select-multiple',
-            'data-placeholder': _('Начните вводить название предмета...'),
-            'style': 'display: none;'  # Будет заменен на кастомный виджет
+        widget=forms.CheckboxSelectMultiple(attrs={
+            'class': 'subject-checkbox'
         }),
         help_text=_('Выберите один или несколько предметов')
     )
