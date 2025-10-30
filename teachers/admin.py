@@ -255,7 +255,7 @@ from .models import TelegramUser
 from django.shortcuts import render, redirect
 from django.urls import path
 from django.contrib import messages
-from telegram_bot.notifications import send_telegram_broadcast
+from .admin_telegram_service import admin_telegram_service
 
 @admin.register(TelegramUser)
 class TelegramUserAdmin(admin.ModelAdmin):
@@ -265,37 +265,154 @@ class TelegramUserAdmin(admin.ModelAdmin):
     search_fields = ("user__username", "telegram_id", "telegram_username", "first_name", "last_name")
     
     # Добавляем массовые действия
-    actions = ['send_broadcast_message']
+    actions = ['send_broadcast_message', 'send_to_django_users']
     
     def send_broadcast_message(self, request, queryset):
         """Отправить сообщение выбранным пользователям"""
         if 'apply' in request.POST:
             message = request.POST.get('message')
             
-            # Отправляем сообщения
-            count = 0
-            for tg_user in queryset.filter(notifications_enabled=True):
-                from telegram_bot.notifications import notification_service
-                success = notification_service.send_message_sync(
-                    telegram_id=tg_user.telegram_id,
-                    text=message
+            if not message:
+                self.message_user(
+                    request,
+                    "❌ Пожалуйста, введите текст сообщения",
+                    messages.ERROR
                 )
-                if success:
-                    count += 1
+                return redirect(request.get_full_path())
             
-            self.message_user(
-                request,
-                f"Сообщение успешно отправлено {count} пользователям",
-                messages.SUCCESS
+            # Используем новый сервис для отправки
+            stats = admin_telegram_service.send_to_selected_users(
+                telegram_users=list(queryset),
+                message=message
             )
+            
+            # Формируем сообщение с детальной статистикой
+            try:
+                if stats['failed'] > 0:
+                    message_text = (
+                        f"📊 **Результаты отправки:**\n"
+                        f"✅ Успешно: {stats['success']}\n"
+                        f"❌ Ошибок: {stats['failed']}\n"
+                        f"📊 Всего: {stats['total']}\n\n"
+                        f"💡 **Причины ошибок:**\n"
+                    )
+                    
+                    # Добавляем детали ошибок
+                    failed_details = [detail for detail in stats['details'] if detail['status'] == 'failed']
+                    for detail in failed_details[:5]:  # Показываем первые 5 ошибок
+                        message_text += f"• {detail['user']}: {detail['reason']}\n"
+                    
+                    if len(failed_details) > 5:
+                        message_text += f"... и еще {len(failed_details) - 5} ошибок\n"
+                    
+                    self.message_user(request, message_text, messages.WARNING)
+                else:
+                    self.message_user(
+                        request,
+                        f"✅ Сообщение успешно отправлено всем {stats['success']} пользователям!",
+                        messages.SUCCESS
+                    )
+            except Exception as e:
+                # Если не удается отправить сообщение через Django messages
+                print(f"DEBUG: Не удалось отправить сообщение через Django messages: {e}")
+                # Можно добавить альтернативный способ уведомления
+            
             return redirect(request.get_full_path())
         
         return render(request, 'admin/send_broadcast.html', {
             'users': queryset,
-            'title': 'Отправить сообщение пользователям'
+            'title': 'Отправить сообщение пользователям',
+            'stats': admin_telegram_service.get_user_status_info()
         })
     
-    send_broadcast_message.short_description = "Отправить сообщение выбранным"
+    send_broadcast_message.short_description = "📤 Отправить сообщение выбранным пользователям"
+    
+    def send_to_django_users(self, request, queryset):
+        """Отправить сообщение Django пользователям через Telegram"""
+        if 'apply' in request.POST:
+            message = request.POST.get('message')
+            
+            if not message:
+                self.message_user(
+                    request,
+                    "❌ Пожалуйста, введите текст сообщения",
+                    messages.ERROR
+                )
+                return redirect(request.get_full_path())
+            
+            # Получаем Django пользователей из выбранных Telegram пользователей
+            django_users = []
+            for tg_user in queryset:
+                if tg_user.user:
+                    django_users.append(tg_user.user)
+            
+            if not django_users:
+                self.message_user(
+                    request,
+                    "❌ Среди выбранных пользователей нет привязанных к Django аккаунтам",
+                    messages.ERROR
+                )
+                return redirect(request.get_full_path())
+            
+            # Отправляем сообщения Django пользователям
+            stats = {'success': 0, 'failed': 0, 'total': len(django_users), 'details': []}
+            
+            for django_user in django_users:
+                success = admin_telegram_service.send_to_django_user(
+                    django_user=django_user,
+                    message=message
+                )
+                
+                if success:
+                    stats['success'] += 1
+                    stats['details'].append({
+                        'user': f"{django_user.username} ({django_user.get_full_name() or 'нет имени'})",
+                        'status': 'success',
+                        'reason': 'Отправлено успешно'
+                    })
+                else:
+                    stats['failed'] += 1
+                    stats['details'].append({
+                        'user': f"{django_user.username} ({django_user.get_full_name() or 'нет имени'})",
+                        'status': 'failed',
+                        'reason': 'Не найден Telegram пользователь или не готов к получению'
+                    })
+            
+            # Формируем сообщение с результатами
+            if stats['failed'] > 0:
+                message_text = (
+                    f"📊 **Результаты отправки Django пользователям:**\n"
+                    f"✅ Успешно: {stats['success']}\n"
+                    f"❌ Ошибок: {stats['failed']}\n"
+                    f"📊 Всего: {stats['total']}\n\n"
+                    f"💡 **Причины ошибок:**\n"
+                )
+                
+                failed_details = [detail for detail in stats['details'] if detail['status'] == 'failed']
+                for detail in failed_details[:5]:
+                    message_text += f"• {detail['user']}: {detail['reason']}\n"
+                
+                if len(failed_details) > 5:
+                    message_text += f"... и еще {len(failed_details) - 5} ошибок\n"
+                
+                self.message_user(request, message_text, messages.WARNING)
+            else:
+                self.message_user(
+                    request,
+                    f"✅ Сообщение успешно отправлено всем {stats['success']} Django пользователям!",
+                    messages.SUCCESS
+                )
+            
+            return redirect(request.get_full_path())
+        
+        return render(request, 'admin/send_broadcast.html', {
+            'users': queryset.filter(user__isnull=False),
+            'title': 'Отправить сообщение Django пользователям',
+            'stats': admin_telegram_service.get_user_status_info(),
+            'django_mode': True
+        })
+    
+    send_to_django_users.short_description = "👤 Отправить сообщение Django пользователям"
     
     # Добавляем кнопку "Отправить всем"
     def get_urls(self):
@@ -312,47 +429,55 @@ class TelegramUserAdmin(admin.ModelAdmin):
             message = request.POST.get('message')
             user_type = request.POST.get('user_type', 'all')
             
-            # Получаем пользователей в зависимости от фильтра
-            queryset = TelegramUser.objects.filter(
-                notifications_enabled=True,
-                started_bot=True
-            )
-            
-            # Применяем фильтр по типу пользователя
-            if user_type == 'teacher':
-                queryset = queryset.filter(user__user_type='teacher')
-            elif user_type == 'student':
-                queryset = queryset.filter(user__user_type='student')
-            
-            # Получаем список telegram_id
-            telegram_ids = list(queryset.values_list('telegram_id', flat=True))
-            
-            # Отправляем сообщения напрямую по telegram_id
-            from telegram_bot.notifications import notification_service
-            import asyncio
-            
-            stats = {'success': 0, 'failed': 0, 'total': len(telegram_ids)}
-            
-            for telegram_id in telegram_ids:
-                success = notification_service.send_message_sync(
-                    telegram_id=telegram_id,
-                    text=message
+            if not message:
+                self.message_user(
+                    request,
+                    "❌ Пожалуйста, введите текст сообщения",
+                    messages.ERROR
                 )
-                if success:
-                    stats['success'] += 1
-                else:
-                    stats['failed'] += 1
+                return redirect('..')
             
-            self.message_user(
-                request,
-                f"✅ Успешно: {stats['success']}, ❌ Ошибок: {stats['failed']}, 📊 Всего: {stats['total']}",
-                messages.SUCCESS if stats['failed'] == 0 else messages.WARNING
+            # Используем новый сервис для массовой рассылки
+            stats = admin_telegram_service.send_to_all_started_users(
+                message=message,
+                user_type=user_type if user_type != 'all' else None
             )
+            
+            # Формируем сообщение с результатами
+            if stats['failed'] > 0:
+                message_text = (
+                    f"📊 **Результаты массовой рассылки:**\n"
+                    f"✅ Успешно: {stats['success']}\n"
+                    f"❌ Ошибок: {stats['failed']}\n"
+                    f"📊 Всего: {stats['total']}\n\n"
+                    f"💡 **Причины ошибок:**\n"
+                )
+                
+                # Добавляем детали ошибок
+                failed_details = [detail for detail in stats['details'] if detail['status'] == 'failed']
+                for detail in failed_details[:5]:  # Показываем первые 5 ошибок
+                    message_text += f"• {detail['user']}: {detail['reason']}\n"
+                
+                if len(failed_details) > 5:
+                    message_text += f"... и еще {len(failed_details) - 5} ошибок\n"
+                
+                self.message_user(request, message_text, messages.WARNING)
+            else:
+                self.message_user(
+                    request,
+                    f"✅ Массовая рассылка завершена успешно!\n📊 Отправлено: {stats['success']} пользователям",
+                    messages.SUCCESS
+                )
+            
             return redirect('..')
+        
+        # Получаем статистику для отображения
+        stats = admin_telegram_service.get_user_status_info()
         
         context = {
             'title': 'Массовая рассылка',
             'opts': self.model._meta,
+            'stats': stats
         }
         return render(request, 'admin/send_broadcast_all.html', context)
     

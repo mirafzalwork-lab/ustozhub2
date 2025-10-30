@@ -68,7 +68,20 @@
     <h1>📢 Массовая рассылка</h1>
     
     <div class="warning-box">
-        ⚠️ <strong>Внимание!</strong> Сообщение будет отправлено всем пользователям, у которых включены уведомления.
+        ⚠️ <strong>Внимание!</strong> Сообщение будет отправлено всем пользователям, которые:
+        <ul style="margin: 8px 0 0 20px;">
+            <li>✅ Запустили бота командой /start</li>
+            <li>✅ Включили уведомления</li>
+        </ul>
+        {% if stats %}
+        <div style="margin-top: 15px; padding: 10px; background: #e7f3ff; border-radius: 4px;">
+            <strong>📊 Статистика получателей:</strong><br>
+            Всего пользователей: {{ stats.total }}<br>
+            Запустили бота: {{ stats.started_bot }}<br>
+            Включили уведомления: {{ stats.notifications_enabled }}<br>
+            <strong style="color: #2e7d32;">Готовы к получению: {{ stats.ready }}</strong>
+        </div>
+        {% endif %}
     </div>
 
     <form method="post">

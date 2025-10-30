@@ -583,6 +583,20 @@ class Favorite(models.Model):
         return f"{self.student.get_full_name()} -> {self.teacher.user.get_full_name()}"
 
 
+class FavoriteStudent(models.Model):
+    """Избранные ученики у учителя"""
+    teacher = models.ForeignKey(TeacherProfile, on_delete=models.CASCADE, related_name='favorite_students')
+    student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE, related_name='favorited_by_teachers')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['teacher', 'student']
+        verbose_name = 'Избранный ученик'
+        verbose_name_plural = 'Избранные ученики'
+
+    def __str__(self):
+        return f"{self.teacher.user.get_full_name()} -> {self.student.user.get_full_name()}"
+
 class TelegramUser(models.Model):
     """Модель для хранения Telegram-пользователей"""
     user = models.OneToOneField(

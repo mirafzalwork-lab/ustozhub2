@@ -9,6 +9,7 @@ from typing import Optional
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import TelegramError
 from django.conf import settings
+from django.db import models
 from teachers.models import TelegramUser, User
 
 logger = logging.getLogger(__name__)
@@ -102,10 +103,25 @@ class TelegramNotificationService:
         """
         try:
             # Получаем Telegram профиль пользователя
+            # Сначала ищем привязанного пользователя
             telegram_user = TelegramUser.objects.filter(
                 user=recipient_user,
-                notifications_enabled=True
+                notifications_enabled=True,
+                started_bot=True
             ).first()
+            
+            # Если не найден привязанный, ищем по email/username среди непривязанных
+            if not telegram_user:
+                # Попробуем найти по email или username среди непривязанных пользователей
+                telegram_user = TelegramUser.objects.filter(
+                    notifications_enabled=True,
+                    started_bot=True,
+                    user__isnull=True
+                ).filter(
+                    models.Q(telegram_username__icontains=recipient_user.username) |
+                    models.Q(first_name__icontains=recipient_user.first_name) |
+                    models.Q(last_name__icontains=recipient_user.last_name)
+                ).first()
             
             if not telegram_user:
                 logger.info(f"Пользователь {recipient_user.username} не подключил Telegram или отключил уведомления")
@@ -146,15 +162,58 @@ class TelegramNotificationService:
     def notify_new_message_sync(self, recipient_user: User, sender_name: str, message_preview: str = "") -> bool:
         """Синхронная версия notify_new_message"""
         try:
-            try:
-                loop = asyncio.get_event_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
+            # Получаем Telegram профиль пользователя
+            # Сначала ищем привязанного пользователя
+            telegram_user = TelegramUser.objects.filter(
+                user=recipient_user,
+                notifications_enabled=True,
+                started_bot=True
+            ).first()
             
-            return loop.run_until_complete(
-                self.notify_new_message(recipient_user, sender_name, message_preview)
+            # Если не найден привязанный, ищем по email/username среди непривязанных
+            if not telegram_user:
+                # Попробуем найти по email или username среди непривязанных пользователей
+                telegram_user = TelegramUser.objects.filter(
+                    notifications_enabled=True,
+                    started_bot=True,
+                    user__isnull=True
+                ).filter(
+                    models.Q(telegram_username__icontains=recipient_user.username) |
+                    models.Q(first_name__icontains=recipient_user.first_name) |
+                    models.Q(last_name__icontains=recipient_user.last_name)
+                ).first()
+            
+            if not telegram_user:
+                logger.info(f"Пользователь {recipient_user.username} не подключил Telegram или отключил уведомления")
+                return False
+            
+            # Формируем текст уведомления
+            notification_text = (
+                f"💬 **Новое сообщение!**\n\n"
+                f"От: **{sender_name}**\n"
             )
+            
+            if message_preview:
+                # Обрезаем превью если слишком длинное
+                preview = message_preview[:100] + "..." if len(message_preview) > 100 else message_preview
+                notification_text += f"\n_{preview}_\n"
+            
+            notification_text += f"\n👉 Войдите на сайт, чтобы прочитать и ответить!"
+            
+            # Создаем кнопку для перехода на сайт
+            keyboard = [[InlineKeyboardButton(
+                "📬 Открыть сообщения",
+                url=settings.SITE_URL  # Прямая ссылка на сайт
+            )]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            # Отправляем уведомление синхронно
+            return self.send_message_sync(
+                telegram_id=telegram_user.telegram_id,
+                text=notification_text,
+                reply_markup=reply_markup
+            )
+            
         except Exception as e:
             logger.error(f"Ошибка в notify_new_message_sync: {e}")
             return False

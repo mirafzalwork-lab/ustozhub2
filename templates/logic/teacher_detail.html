@@ -1483,7 +1483,7 @@
 <script>
     function toggleFavorite(teacherId) {
         {% if user.is_authenticated %}
-            fetch(`/api/favorites/toggle/${teacherId}/`, {
+            fetch('{% url "toggle_favorite_teacher" 0 %}'.replace('0', teacherId), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

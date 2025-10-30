@@ -19,6 +19,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from .forms import LoginForm, StudentRegistrationForm
 from .models import TeacherProfile, TeacherSubject, Certificate
+from .models import Favorite, FavoriteStudent
 
 
 def get_client_ip(request):
@@ -97,10 +98,19 @@ def home(request):
     min_rating = request.GET.get('min_rating')
     min_experience = request.GET.get('min_experience')
     search_query = request.GET.get('search')
+    suggest = request.GET.get('suggest')
     
     # Применяем фильтры
     if subject_id:
         teachers = teachers.filter(subjects__id=subject_id)
+    elif suggest and request.user.is_authenticated and request.user.user_type == 'student':
+        # Авто-подбор по желаемым предметам ученика
+        try:
+            desired_subjects = request.user.student_profile.desired_subjects.all()
+            if desired_subjects.exists():
+                teachers = teachers.filter(subjects__in=desired_subjects)
+        except StudentProfile.DoesNotExist:
+            pass
     
     if city_id:
         teachers = teachers.filter(city_id=city_id)
@@ -181,6 +191,7 @@ def home(request):
         'selected_min_rating': min_rating,
         'selected_min_experience': min_experience,
         'search_query': search_query,
+        'suggest': suggest,
     }
     
     return render(request, 'logic/home.html', context)
@@ -389,8 +400,14 @@ def student_detail(request, id):
     
     # Проверяем, добавлен ли ученик в избранное учителем
     is_favorited = False
-    if request.user.is_authenticated and request.user.user_type == 'teacher':
-        pass
+    if request.user.is_authenticated and request.user.user_type == 'teacher' and hasattr(request.user, 'teacher_profile'):
+        try:
+            is_favorited = FavoriteStudent.objects.filter(
+                teacher=request.user.teacher_profile,
+                student=student
+            ).exists()
+        except Exception:
+            is_favorited = False
     
     context = {
         'student': student,
@@ -666,7 +683,7 @@ def register_student(request):
                 request,
                 'Регистрация прошла успешно! Добро пожаловать в UstozHub!'
             )
-            return redirect('profile')
+            return redirect(f"{reverse('home')}?suggest=1")
     else:
         form = StudentRegistrationForm()
     
@@ -818,6 +835,7 @@ def student_profile_edit(request):
 
 
 from django.http import JsonResponse
+from django.urls import reverse
 
 @login_required
 def toggle_profile_status(request):
@@ -860,3 +878,95 @@ def toggle_profile_status(request):
                 return JsonResponse({'success': False, 'error': 'Профиль не найден'})
     
     return JsonResponse({'success': False, 'error': 'Неверный запрос'})
+
+
+@login_required
+def toggle_favorite_teacher(request, teacher_id):
+    """Студент добавляет/удаляет учителя в избранное"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Неверный метод'})
+
+    if request.user.user_type != 'student':
+        return JsonResponse({'success': False, 'error': 'Доступ запрещен'})
+
+    teacher = get_object_or_404(TeacherProfile, id=teacher_id, is_active=True)
+
+    fav, created = Favorite.objects.get_or_create(student=request.user, teacher=teacher)
+    if not created:
+        fav.delete()
+        return JsonResponse({'success': True, 'favorited': False})
+    return JsonResponse({'success': True, 'favorited': True})
+
+
+@login_required
+def toggle_favorite_student(request, student_id):
+    """Учитель добавляет/удаляет ученика в избранное"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Неверный метод'})
+
+    if request.user.user_type != 'teacher' or not hasattr(request.user, 'teacher_profile'):
+        return JsonResponse({'success': False, 'error': 'Доступ запрещен'})
+
+    teacher_profile = request.user.teacher_profile
+    student = get_object_or_404(StudentProfile, id=student_id, is_active=True)
+
+    fav, created = FavoriteStudent.objects.get_or_create(teacher=teacher_profile, student=student)
+    if not created:
+        fav.delete()
+        return JsonResponse({'success': True, 'favorited': False})
+    return JsonResponse({'success': True, 'favorited': True})
+
+
+@login_required
+def my_favorite_teachers(request):
+    """Список избранных учителей для ученика"""
+    if request.user.user_type != 'student':
+        messages.error(request, 'Доступ запрещен')
+        return redirect('home')
+
+    favorites = Favorite.objects.select_related('teacher__user', 'teacher__city').filter(student=request.user)
+    teachers = [f.teacher for f in favorites]
+    return render(request, 'logic/favorites_teachers.html', {'teachers': teachers})
+
+
+@login_required
+def my_favorite_students(request):
+    """Список избранных учеников для учителя"""
+    if request.user.user_type != 'teacher' or not hasattr(request.user, 'teacher_profile'):
+        messages.error(request, 'Доступ запрещен')
+        return redirect('home')
+
+    favorites = FavoriteStudent.objects.select_related('student__user', 'student__city').filter(teacher=request.user.teacher_profile)
+    students = [f.student for f in favorites]
+    return render(request, 'logic/favorites_students.html', {'students': students})
+
+
+@login_required
+def student_suggestions(request):
+    """Страница с подходящими учителями для текущего ученика сразу после регистрации"""
+    if request.user.user_type != 'student':
+        messages.error(request, 'Доступ запрещен')
+        return redirect('home')
+
+    try:
+        student = request.user.student_profile
+    except StudentProfile.DoesNotExist:
+        messages.warning(request, 'Заполните профиль ученика')
+        return redirect('student_profile_edit')
+
+    desired_subjects = student.desired_subjects.all()
+
+    teachers = TeacherProfile.objects.filter(
+        is_active=True,
+        subjects__in=desired_subjects
+    ).select_related('user', 'city').prefetch_related('teachersubject_set__subject').distinct().order_by('-rating', '-created_at')[:24]
+
+    # fallback: если нет указанных предметов, показать топ-учителей
+    if not teachers:
+        teachers = TeacherProfile.objects.filter(is_active=True).select_related('user', 'city').prefetch_related('teachersubject_set__subject').order_by('-rating', '-created_at')[:12]
+
+    return render(request, 'logic/student_suggestions.html', {
+        'student': student,
+        'teachers': teachers,
+        'desired_subjects': desired_subjects,
+    })

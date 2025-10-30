@@ -830,6 +830,14 @@
 
         <!-- Правая колонка -->
         <div class="sidebar-column">
+            {% if user.is_authenticated and user.user_type == 'teacher' %}
+            <div class="contact-card" style="border:2px solid #fde68a;">
+                <button class="contact-btn-secondary" style="border-color:#f59e0b; color:#b45309;" onclick="toggleFavoriteStudent({{ student.id }})">
+                    <i class="{% if is_favorited %}fas{% else %}far{% endif %} fa-heart"></i>
+                    {% if is_favorited %}{% trans "В избранном" %}{% else %}{% trans "Добавить в избранное" %}{% endif %}
+                </button>
+            </div>
+            {% endif %}
             <!-- Карточка бюджета -->
             <div class="budget-card">
                 <div class="budget-label">{% trans "Бюджет ученика" %}</div>
@@ -887,5 +895,24 @@
     document.addEventListener('DOMContentLoaded', function() {
         console.log('{% trans "Страница профиля ученика загружена" %}');
     });
+
+    function toggleFavoriteStudent(studentId) {
+        fetch('{% url "toggle_favorite_student" 0 %}'.replace('0', studentId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || '{% trans "Произошла ошибка" %}');
+            }
+        })
+        .catch(() => alert('{% trans "Произошла ошибка" %}'));
+    }
 </script>
 {% endblock %}

@@ -50,9 +50,9 @@ def send_message_notification(sender, instance, created, **kwargs):
         )
         
         if success:
-            logger.info(f"Уведомление отправлено пользователю {recipient.username}")
+            logger.info(f"✅ Уведомление отправлено пользователю {recipient.username} ({recipient.get_full_name()})")
         else:
-            logger.warning(f"Не удалось отправить уведомление пользователю {recipient.username}")
+            logger.warning(f"❌ Не удалось отправить уведомление пользователю {recipient.username} ({recipient.get_full_name()}) - возможно, не запустил бота или отключил уведомления")
             
     except Exception as e:
         # Не прерываем создание сообщения даже если уведомление не отправлено

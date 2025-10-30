@@ -53,6 +53,13 @@
         font-size: 13px;
         margin-top: 8px;
     }
+    .warning-box {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
 </style>
 {% endblock %}
 
@@ -60,7 +67,55 @@
 <div class="broadcast-form">
     <h1>📬 Отправить сообщение пользователям</h1>
     
+    <div class="warning-box">
+        <strong>💡 Важно:</strong> Сообщения будут отправлены только пользователям, которые:
+        <ul style="margin: 8px 0 0 20px;">
+            <li>✅ Включили уведомления</li>
+            <li>✅ Запустили бота командой /start</li>
+        </ul>
+        {% if stats %}
+        <div style="margin-top: 15px; padding: 10px; background: #e7f3ff; border-radius: 4px;">
+            <strong>📊 Статистика получателей:</strong><br>
+            Всего пользователей: {{ stats.total }}<br>
+            Запустили бота: {{ stats.started_bot }}<br>
+            Включили уведомления: {{ stats.notifications_enabled }}<br>
+            <strong style="color: #2e7d32;">Готовы к получению: {{ stats.ready }}</strong>
+        </div>
+        {% endif %}
+    </div>
+    
     <div class="users-list">
+        {% if django_mode %}
+        <h3>📋 Django пользователи ({{ users|length }} чел.):</h3>
+        <ul>
+            {% for user in users %}
+            <li>
+                <strong>{{ user.user.username }}</strong>
+                {% if user.user.get_full_name %}
+                    ({{ user.user.get_full_name }})
+                {% endif %}
+                {% if user.user.email %}
+                    - {{ user.user.email }}
+                {% endif %}
+                <br>
+                <small>
+                    Telegram: {{ user.first_name }} {{ user.last_name }}
+                    {% if user.telegram_username %}
+                        (@{{ user.telegram_username }})
+                    {% endif %}
+                    - ID: {{ user.telegram_id }}
+                    {% if not user.notifications_enabled %}
+                        <span style="color: #ff6b6b;">⚠️ Уведомления отключены</span>
+                    {% elif not user.started_bot %}
+                        <span style="color: #ffa726;">⚠️ Не запустил бота (/start)</span>
+                    {% else %}
+                        <span style="color: #4caf50;">✅ Готов к получению</span>
+                    {% endif %}
+                </small>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
         <h3>📋 Получатели ({{ users|length }} польз.):</h3>
         <ul>
             {% for user in users %}
@@ -71,11 +126,16 @@
                 {% endif %}
                 - ID: {{ user.telegram_id }}
                 {% if not user.notifications_enabled %}
-                    <span style="color: #999;">⚠️ Уведомления отключены</span>
+                    <span style="color: #ff6b6b;">⚠️ Уведомления отключены</span>
+                {% elif not user.started_bot %}
+                    <span style="color: #ffa726;">⚠️ Не запустил бота (/start)</span>
+                {% else %}
+                    <span style="color: #4caf50;">✅ Готов к получению</span>
                 {% endif %}
             </li>
             {% endfor %}
         </ul>
+        {% endif %}
     </div>
 
     <form method="post">

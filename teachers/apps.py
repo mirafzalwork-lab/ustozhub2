@@ -8,3 +8,4 @@ class TeachersConfig(AppConfig):
     def ready(self):
         """Импортируем signals при запуске приложения"""
         import teachers.signals  # noqa
+        

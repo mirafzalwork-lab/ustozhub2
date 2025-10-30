@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans 'Мои избранные ученики' %} - UstozHub{% endblock %}
+
+{% block content %}
+<div style="max-width:1200px;margin:0 auto;padding:32px 16px;">
+  <h1 style="font-size:24px;font-weight:700;margin-bottom:16px;">{% trans 'Мои избранные ученики' %}</h1>
+  {% if students %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;">
+      {% for s in students %}
+        <a href="{% url 'student_detail' s.id %}" style="display:block;padding:16px;background:#f8f9fa;border-radius:12px;text-decoration:none;color:inherit;border:2px solid #e9ecef;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:48px;height:48px;border-radius:50%;background:#10B981;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;overflow:hidden;">
+              {% if s.user.avatar %}
+                <img src="{{ s.user.avatar.url }}" alt="{{ s.user.get_full_name }}" style="width:100%;height:100%;object-fit:cover;">
+              {% else %}
+                {{ s.user.first_name.0|default:"У" }}
+              {% endif %}
+            </div>
+            <div style="flex:1;">
+              <div style="font-weight:700;">{{ s.user.get_full_name|default:s.user.username }}</div>
+              <div style="font-size:12px;color:#666;">{{ s.get_desired_subjects_display }}</div>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div style="text-align:center;color:#999;padding:32px;">
+      <i class="fas fa-user" style="font-size:40px;color:#ddd;"></i>
+      <p>{% trans 'Список избранных пуст' %}</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+
