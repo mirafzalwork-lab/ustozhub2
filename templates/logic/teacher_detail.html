@@ -1368,15 +1368,24 @@
                             {% trans 'Написать сообщение' %}
                         </button>
                         
+                        {% if user.is_authenticated and user != teacher.user %}
+                        <a href="{% url 'start_conversation' user_id=teacher.user.id %}" class="btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-comment-dots"></i>
+                            {% trans 'Написать сообщение' %}
+                        </a>
+                        {% endif %}
+
                         <button class="btn-secondary" onclick="bookLesson()">
                             <i class="fas fa-calendar-check"></i>
                             {% trans 'Записаться на урок' %}
                         </button>
 
+                        {% if user.is_authenticated %}
                         <button class="btn-favorite {% if is_favorite %}active{% endif %}" onclick="toggleFavorite({{ teacher.id }})">
                             <i class="{% if is_favorite %}fas{% else %}far{% endif %} fa-heart"></i>
                             {% if is_favorite %}{% trans 'В избранном' %}{% else %}{% trans 'В избранное' %}{% endif %}
                         </button>
+                        {% endif %}
                     </div>
 
                     <div class="booking-note">
@@ -1511,7 +1520,12 @@
 
     function contactTeacher() {
         {% if user.is_authenticated %}
-            alert('{% trans "Функция отправки сообщений будет доступна в следующей версии" %}');
+            {% if user.user_type == 'student' %}
+                // Ученик может написать учителю
+                window.location.href = '{% url "start_conversation" user_id=teacher.user.id %}';
+            {% else %}
+                alert('{% trans "Учителя не могут писать другим учителям" %}');
+            {% endif %}
         {% else %}
             if (confirm('{% trans "Войдите в систему, чтобы связаться с учителем" %}')) {
                 window.location.href = '{% url "login" %}?next={{ request.path }}';

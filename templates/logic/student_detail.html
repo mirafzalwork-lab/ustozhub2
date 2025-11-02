@@ -851,10 +851,22 @@
             <div class="contact-card">
                 <h3 class="contact-title">{% trans "Связаться с учеником" %}</h3>
                 
-                <button class="contact-btn-primary" onclick="alert('{% trans "Функция в разработке" %}')">
-                    <i class="fas fa-paper-plane"></i>
-                    {% trans "Отправить сообщение" %}
-                </button>
+                {% if user.is_authenticated and user.user_type == 'teacher' %}
+                    <a href="{% url 'start_conversation' user_id=student.user.id %}" class="contact-btn-primary" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
+                        <i class="fas fa-paper-plane"></i>
+                        {% trans "Отправить сообщение" %}
+                    </a>
+                {% elif user.is_authenticated %}
+                    <button class="contact-btn-primary" onclick="alert('{% trans "Ученики не могут писать другим ученикам" %}')" style="opacity: 0.6; cursor: not-allowed;">
+                        <i class="fas fa-paper-plane"></i>
+                        {% trans "Отправить сообщение" %}
+                    </button>
+                {% else %}
+                    <button class="contact-btn-primary" onclick="if(confirm('{% trans "Войдите в систему, чтобы связаться с учеником" %}')) window.location.href='{% url 'login' %}?next={{ request.path }}';">
+                        <i class="fas fa-paper-plane"></i>
+                        {% trans "Отправить сообщение" %}
+                    </button>
+                {% endif %}
 
                 {% if student.user.phone %}
                     <button class="contact-btn-secondary" onclick="window.location.href='tel:{{ student.user.phone }}'">

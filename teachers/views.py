@@ -13,13 +13,14 @@ from django.conf import settings  # ⚡ ОПТИМИЗАЦИЯ: Для CACHE_TTL
 from .forms import (
     TeacherRegistrationForm, 
     TeacherSubjectsForm, 
-    CertificateUploadForm
+    CertificateUploadForm,
+    MessageForm
 )
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from .forms import LoginForm, StudentRegistrationForm
-from .models import TeacherProfile, TeacherSubject, Certificate
-from .models import Favorite, FavoriteStudent
+from .models import TeacherProfile, TeacherSubject, Certificate, User
+from .models import Favorite, FavoriteStudent, Conversation, Message
 
 
 def get_client_ip(request):
@@ -836,6 +837,7 @@ def student_profile_edit(request):
 
 from django.http import JsonResponse
 from django.urls import reverse
+from django.utils import timezone
 
 @login_required
 def toggle_profile_status(request):
@@ -970,3 +972,358 @@ def student_suggestions(request):
         'teachers': teachers,
         'desired_subjects': desired_subjects,
     })
+
+
+# =============================================================================
+# СИСТЕМА СООБЩЕНИЙ МЕЖДУ УЧИТЕЛЯМИ И УЧЕНИКАМИ
+# =============================================================================
+
+@login_required
+def conversations_list(request):
+    """
+    Список всех переписок пользователя
+    Для учителя: переписки с учениками
+    Для ученика: переписки с учителями
+    """
+    user = request.user
+    
+    if user.user_type == 'teacher':
+        try:
+            teacher_profile = user.teacher_profile
+            # Получаем все переписки учителя с учениками
+            conversations = Conversation.objects.filter(
+                teacher=teacher_profile,
+                is_active=True
+            ).select_related(
+                'student',
+                'subject'
+            ).prefetch_related(
+                'messages__sender'
+            ).order_by('-updated_at')
+        except TeacherProfile.DoesNotExist:
+            messages.warning(request, 'Завершите регистрацию учителя')
+            return redirect('teacher_register_step1')
+    else:
+        # Для ученика
+        try:
+            student_profile = user.student_profile
+        except StudentProfile.DoesNotExist:
+            messages.warning(request, 'Заполните профиль ученика')
+            return redirect('student_profile_edit')
+        
+        # Получаем все переписки ученика с учителями
+        conversations = Conversation.objects.filter(
+            student=user,
+            is_active=True
+        ).select_related(
+            'teacher__user',
+            'teacher__city',
+            'subject'
+        ).prefetch_related(
+            'messages__sender'
+        ).order_by('-updated_at')
+    
+    # Получаем последнее сообщение и количество непрочитанных для каждой переписки
+    conversations_with_info = []
+    for conv in conversations:
+        last_message = conv.messages.first()
+        if user.user_type == 'teacher':
+            unread_count = conv.messages.filter(is_read=False).exclude(sender=user).count()
+        else:
+            unread_count = conv.messages.filter(is_read=False).exclude(sender=user).count()
+        
+        conversations_with_info.append({
+            'conversation': conv,
+            'last_message': last_message,
+            'unread_count': unread_count
+        })
+    
+    return render(request, 'logic/conversations_list.html', {
+        'conversations': conversations_with_info,
+        'user_type': user.user_type
+    })
+
+
+@login_required
+def conversation_detail(request, conversation_id):
+    """
+    Детальная страница переписки с сообщениями
+    """
+    user = request.user
+    
+    try:
+        # Получаем переписку с проверкой доступа
+        if user.user_type == 'teacher':
+            conversation = get_object_or_404(
+                Conversation.objects.select_related(
+                    'teacher__user',
+                    'student',
+                    'subject'
+                ),
+                id=conversation_id,
+                teacher=user.teacher_profile,
+                is_active=True
+            )
+            other_user = conversation.student
+        else:
+            conversation = get_object_or_404(
+                Conversation.objects.select_related(
+                    'teacher__user',
+                    'student',
+                    'subject'
+                ),
+                id=conversation_id,
+                student=user,
+                is_active=True
+            )
+            other_user = conversation.teacher.user
+        
+        # Получаем сообщения переписки
+        messages_list = conversation.messages.select_related('sender').order_by('created_at')
+        
+        # Отмечаем сообщения как прочитанные (которые не от текущего пользователя)
+        conversation.messages.filter(
+            is_read=False
+        ).exclude(
+            sender=user
+        ).update(is_read=True)
+        
+        # Форма для отправки нового сообщения
+        if request.method == 'POST':
+            form = MessageForm(request.POST)
+            if form.is_valid():
+                message = form.save(commit=False)
+                message.conversation = conversation
+                message.sender = user
+                message.save()
+                
+                # Обновляем время последнего обновления переписки
+                conversation.save()  # updated_at обновится автоматически
+                
+                messages.success(request, 'Сообщение отправлено!')
+                return redirect('conversation_detail', conversation_id=conversation_id)
+            else:
+                messages.error(request, 'Ошибка при отправке сообщения')
+        else:
+            form = MessageForm()
+        
+        return render(request, 'logic/conversation_detail.html', {
+            'conversation': conversation,
+            'messages': messages_list,
+            'other_user': other_user,
+            'form': form,
+            'user_type': user.user_type
+        })
+        
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Ошибка в conversation_detail: {e}")
+        messages.error(request, 'Переписка не найдена или доступ запрещен')
+        return redirect('conversations_list')
+
+
+@login_required
+def start_conversation(request, user_id):
+    """
+    Начать новую переписку с пользователем
+    Ученик может начать переписку с учителем
+    Учитель может начать переписку с учеником
+    """
+    current_user = request.user
+    target_user = get_object_or_404(User, id=user_id)
+    
+    # Проверяем, что пользователи не пытаются писать сами себе
+    if current_user == target_user:
+        messages.error(request, 'Вы не можете писать себе')
+        return redirect('home')
+    
+    # Определяем, кто учитель, а кто ученик
+    if current_user.user_type == 'teacher':
+        teacher_profile = current_user.teacher_profile
+        student = target_user
+        
+        # Проверяем, что целевой пользователь - ученик
+        if target_user.user_type != 'student':
+            messages.error(request, 'Вы можете писать только ученикам')
+            return redirect('home')
+    else:
+        # Текущий пользователь - ученик
+        if target_user.user_type != 'teacher':
+            messages.error(request, 'Вы можете писать только учителям')
+            return redirect('home')
+        
+        try:
+            teacher_profile = target_user.teacher_profile
+        except TeacherProfile.DoesNotExist:
+            messages.error(request, 'Профиль учителя не найден')
+            return redirect('home')
+        
+        student = current_user
+    
+    # Проверяем, существует ли уже переписка
+    conversation, created = Conversation.objects.get_or_create(
+        teacher=teacher_profile,
+        student=student,
+        defaults={'is_active': True}
+    )
+    
+    if not created and not conversation.is_active:
+        # Если переписка была деактивирована, активируем её
+        conversation.is_active = True
+        conversation.save()
+    
+    # Редирект на страницу переписки
+    return redirect('conversation_detail', conversation_id=conversation.id)
+
+
+@login_required
+def send_message_ajax(request, conversation_id):
+    """
+    AJAX endpoint для отправки сообщения
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Только POST запросы'})
+    
+    user = request.user
+    
+    try:
+        # Проверяем доступ к переписке
+        if user.user_type == 'teacher':
+            conversation = get_object_or_404(
+                Conversation,
+                id=conversation_id,
+                teacher=user.teacher_profile,
+                is_active=True
+            )
+        else:
+            conversation = get_object_or_404(
+                Conversation,
+                id=conversation_id,
+                student=user,
+                is_active=True
+            )
+        
+        # Проверяем форму
+        form = MessageForm(request.POST)
+        if form.is_valid():
+            message = form.save(commit=False)
+            message.conversation = conversation
+            message.sender = user
+            message.save()
+            
+            # Обновляем время последнего обновления переписки
+            conversation.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': {
+                    'id': message.id,
+                    'content': message.content,
+                    'sender': user.get_full_name() or user.username,
+                    'sender_id': user.id,
+                    'created_at': message.created_at.strftime('%d.%m.%Y %H:%M')
+                }
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': form.errors
+            })
+            
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Ошибка в send_message_ajax: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Произошла ошибка при отправке сообщения'
+        })
+
+
+@login_required
+def mark_messages_read(request, conversation_id):
+    """
+    Отметить сообщения как прочитанные (AJAX)
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Только POST запросы'})
+    
+    user = request.user
+    
+    try:
+        # Проверяем доступ к переписке
+        if user.user_type == 'teacher':
+            conversation = get_object_or_404(
+                Conversation,
+                id=conversation_id,
+                teacher=user.teacher_profile
+            )
+        else:
+            conversation = get_object_or_404(
+                Conversation,
+                id=conversation_id,
+                student=user
+            )
+        
+        # Отмечаем все непрочитанные сообщения (не от текущего пользователя) как прочитанные
+        updated = conversation.messages.filter(
+            is_read=False
+        ).exclude(
+            sender=user
+        ).update(is_read=True)
+        
+        return JsonResponse({
+            'success': True,
+            'updated_count': updated
+        })
+        
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Ошибка в mark_messages_read: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Произошла ошибка'
+        })
+
+
+@login_required
+def delete_conversation(request, conversation_id):
+    """
+    Удалить (деактивировать) переписку
+    """
+    if request.method != 'POST':
+        messages.error(request, 'Неверный метод запроса')
+        return redirect('conversations_list')
+    
+    user = request.user
+    
+    try:
+        # Проверяем доступ к переписке
+        if user.user_type == 'teacher':
+            conversation = get_object_or_404(
+                Conversation,
+                id=conversation_id,
+                teacher=user.teacher_profile
+            )
+        else:
+            conversation = get_object_or_404(
+                Conversation,
+                id=conversation_id,
+                student=user
+            )
+        
+        # Деактивируем переписку вместо удаления
+        conversation.is_active = False
+        conversation.save()
+        
+        messages.success(request, 'Переписка удалена')
+        return redirect('conversations_list')
+        
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Ошибка в delete_conversation: {e}")
+        messages.error(request, 'Ошибка при удалении переписки')
+        return redirect('conversations_list')

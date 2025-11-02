@@ -176,6 +176,60 @@
             color: #0A2540;
         }
 
+        /* Messages Icon Button - Always Visible */
+        .messages-icon-btn {
+            position: relative;
+            padding: 10px;
+            background: none;
+            border: none;
+            border-radius: 50%;
+            font-size: 20px;
+            color: #1a1a1a;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            width: 44px;
+            height: 44px;
+        }
+
+        .messages-icon-btn:hover {
+            background: #f5f5f5;
+        }
+
+        .messages-icon-btn i {
+            font-size: 20px;
+        }
+
+        /* Messages Unread Badge */
+        .messages-badge {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: #dc3545;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: 700;
+            min-width: 18px;
+            text-align: center;
+            line-height: 1.2;
+            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
         /* Profile Button & Dropdown */
         .profile-container {
             position: relative;
@@ -592,8 +646,14 @@
                 display: none;
             }
 
+            /* Скрываем текст у обычных кнопок */
             .nav-btn span {
                 display: none;
+            }
+
+            /* Иконка сообщений всегда видима */
+            .messages-icon-btn {
+                display: inline-flex;
             }
         }
 
@@ -615,8 +675,28 @@
                 display: block;
             }
 
-            .nav-actions .nav-btn:not(.nav-btn-primary) {
+            /* Скрываем обычные кнопки, но оставляем иконку сообщений */
+            .nav-actions .nav-btn:not(.nav-btn-primary):not(.messages-icon-btn) {
                 display: none;
+            }
+
+            /* Иконка сообщений остаётся видимой на мобильных */
+            .messages-icon-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+
+            .messages-icon-btn i {
+                font-size: 18px;
+            }
+
+            .messages-badge {
+                top: 4px;
+                right: 4px;
+                font-size: 9px;
+                padding: 1px 5px;
+                min-width: 16px;
             }
 
             main {
@@ -749,6 +829,16 @@
                 </a>
 
                 {% if user.is_authenticated %}
+                    <!-- Messages Icon Button - Always Visible -->
+                    <a href="{% url 'conversations_list' %}" class="messages-icon-btn" title="{% trans 'Сообщения' %}">
+                        <i class="fas fa-envelope"></i>
+                        {% if unread_messages_count > 0 %}
+                            <span class="messages-badge">{{ unread_messages_count }}</span>
+                        {% endif %}
+                    </a>
+                {% endif %}
+
+                {% if user.is_authenticated %}
                     <!-- Authenticated User Menu -->
                     <div class="profile-container">
                         <button class="profile-btn" onclick="toggleProfileDropdown(event)">
@@ -787,7 +877,7 @@
                                 </a>
                             {% endif %}
 
-                            <a href="#" class="dropdown-item">
+                            <a href="{% url 'conversations_list' %}" class="dropdown-item">
                                 <i class="fas fa-comments"></i>
                                 <span>{% trans 'Сообщения' %}</span>
                             </a>
@@ -883,9 +973,14 @@
                     <i class="fas fa-user"></i>
                     <span>{% trans 'Мой профиль' %}</span>
                 </a>
-                <a href="#" class="mobile-menu-item">
-                    <i class="fas fa-comments"></i>
+                <a href="{% url 'conversations_list' %}" class="mobile-menu-item" style="position: relative;">
+                    <i class="fas fa-envelope"></i>
                     <span>{% trans 'Сообщения' %}</span>
+                    {% if unread_messages_count > 0 %}
+                        <span style="position: absolute; right: 16px; background: #dc3545; color: white; border-radius: 12px; padding: 2px 8px; font-size: 11px; font-weight: 700; min-width: 20px; text-align: center;">
+                            {{ unread_messages_count }}
+                        </span>
+                    {% endif %}
                 </a>
                 <a href="#" class="mobile-menu-item">
                     <i class="fas fa-heart"></i>

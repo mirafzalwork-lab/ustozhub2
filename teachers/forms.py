@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from .models import User, TeacherProfile, StudentProfile, Subject, City, Certificate, TeacherSubject
+from .models import User, TeacherProfile, StudentProfile, Subject, City, Certificate, TeacherSubject, Message, Conversation
 
 
 class TeacherRegistrationForm(UserCreationForm):
@@ -1029,3 +1029,40 @@ class UserProfileEditForm(forms.ModelForm):
             if existing.exists():
                 raise forms.ValidationError(_('Этот номер телефона уже используется'))
         return phone
+
+
+class MessageForm(forms.ModelForm):
+    """Форма для отправки сообщения"""
+    
+    class Meta:
+        model = Message
+        fields = ['content']
+        widgets = {
+            'content': forms.Textarea(attrs={
+                'class': 'form-textarea message-input',
+                'placeholder': _('Введите ваше сообщение...'),
+                'rows': 4,
+                'maxlength': 2000,
+                'required': True
+            })
+        }
+        labels = {
+            'content': _('Сообщение')
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['content'].required = True
+        self.fields['content'].widget.attrs.update({
+            'id': 'message-content'
+        })
+    
+    def clean_content(self):
+        content = self.cleaned_data.get('content', '').strip()
+        if not content:
+            raise forms.ValidationError(_('Сообщение не может быть пустым'))
+        if len(content) < 1:
+            raise forms.ValidationError(_('Сообщение слишком короткое'))
+        if len(content) > 2000:
+            raise forms.ValidationError(_('Сообщение слишком длинное (максимум 2000 символов)'))
+        return content

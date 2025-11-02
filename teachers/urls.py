@@ -6,7 +6,9 @@ from .views import (
     teacher_profile_edit, student_profile_edit, toggle_profile_status,
     toggle_favorite_teacher, toggle_favorite_student,
     my_favorite_teachers, my_favorite_students,
-    student_suggestions
+    student_suggestions,
+    conversations_list, conversation_detail, start_conversation,
+    send_message_ajax, mark_messages_read, delete_conversation
 )
 from .telegram_views import (
     telegram_auth, link_telegram_account, telegram_status, toggle_notifications
@@ -45,4 +47,12 @@ urlpatterns = [
     path('api/telegram/link/', link_telegram_account, name='link_telegram_account'),
     path('api/telegram/status/', telegram_status, name='telegram_status'),
     path('api/telegram/notifications/toggle/', toggle_notifications, name='toggle_telegram_notifications'),
+    
+    # Messages / Сообщения
+    path('messages/', conversations_list, name='conversations_list'),
+    path('messages/<uuid:conversation_id>/', conversation_detail, name='conversation_detail'),
+    path('messages/start/<int:user_id>/', start_conversation, name='start_conversation'),
+    path('api/messages/<uuid:conversation_id>/send/', send_message_ajax, name='send_message_ajax'),
+    path('api/messages/<uuid:conversation_id>/read/', mark_messages_read, name='mark_messages_read'),
+    path('messages/<uuid:conversation_id>/delete/', delete_conversation, name='delete_conversation'),
 ]

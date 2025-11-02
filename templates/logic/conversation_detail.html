@@ -1,0 +1,409 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Переписка" %} - UstozHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .conversation-detail-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 40px 16px;
+    }
+
+    .conversation-header {
+        background: white;
+        border-radius: 16px 16px 0 0;
+        padding: 20px;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .conversation-user-info {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .conversation-user-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0A2540, #1e4a72);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 18px;
+        font-weight: 600;
+        overflow: hidden;
+    }
+
+    .conversation-user-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .conversation-user-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1a1a1a;
+    }
+
+    .messages-wrapper {
+        background: white;
+        border-radius: 0 0 16px 16px;
+        min-height: 400px;
+        max-height: 600px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .messages-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .message-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        animation: fadeIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .message-item.own-message {
+        flex-direction: row-reverse;
+    }
+
+    .message-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0A2540, #1e4a72);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 14px;
+        font-weight: 600;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .message-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .message-content-wrapper {
+        max-width: 70%;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .message-item.own-message .message-content-wrapper {
+        align-items: flex-end;
+    }
+
+    .message-bubble {
+        background: #f0f4f8;
+        padding: 12px 16px;
+        border-radius: 18px;
+        font-size: 14px;
+        line-height: 1.5;
+        color: #1a1a1a;
+        word-wrap: break-word;
+    }
+
+    .message-item.own-message .message-bubble {
+        background: #0A2540;
+        color: white;
+    }
+
+    .message-time {
+        font-size: 11px;
+        color: #999;
+        padding: 0 8px;
+    }
+
+    .message-form-container {
+        padding: 20px;
+        border-top: 1px solid #f0f0f0;
+        background: white;
+    }
+
+    .message-form {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+    }
+
+    .message-input-wrapper {
+        flex: 1;
+    }
+
+    .message-input-wrapper textarea {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #e0e0e0;
+        border-radius: 24px;
+        font-size: 14px;
+        font-family: inherit;
+        resize: none;
+        min-height: 48px;
+        max-height: 120px;
+        transition: all 0.2s;
+    }
+
+    .message-input-wrapper textarea:focus {
+        outline: none;
+        border-color: #0A2540;
+        box-shadow: 0 0 0 3px rgba(10, 37, 64, 0.1);
+    }
+
+    .send-btn {
+        padding: 12px 24px;
+        background: #0A2540;
+        color: white;
+        border: none;
+        border-radius: 24px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+
+    .send-btn:hover:not(:disabled) {
+        background: #1e4a72;
+        transform: translateY(-1px);
+    }
+
+    .send-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #0A2540;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 16px;
+        transition: color 0.2s;
+    }
+
+    .back-link:hover {
+        color: #1e4a72;
+    }
+
+    .delete-conversation-btn {
+        padding: 8px 16px;
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .delete-conversation-btn:hover {
+        background: #c82333;
+    }
+
+    .empty-messages {
+        text-align: center;
+        padding: 60px 20px;
+        color: #999;
+    }
+
+    @media (max-width: 768px) {
+        .conversation-detail-container {
+            padding: 20px 12px;
+        }
+
+        .messages-wrapper {
+            max-height: 500px;
+        }
+
+        .message-content-wrapper {
+            max-width: 85%;
+        }
+
+        .conversation-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="conversation-detail-container">
+    <a href="{% url 'conversations_list' %}" class="back-link">
+        <i class="fas fa-arrow-left"></i>
+        {% trans "Назад к списку" %}
+    </a>
+
+    <div class="conversation-header">
+        <div class="conversation-user-info">
+            <div class="conversation-user-avatar">
+                {% if other_user.avatar %}
+                    <img src="{{ other_user.avatar.url }}" alt="{{ other_user.get_full_name }}">
+                {% else %}
+                    {{ other_user.first_name.0|default:"U" }}{{ other_user.last_name.0|default:"" }}
+                {% endif %}
+            </div>
+            <div>
+                <div class="conversation-user-name">
+                    {{ other_user.get_full_name|default:other_user.username }}
+                </div>
+                {% if user_type == 'student' %}
+                    <div style="font-size: 13px; color: #666;">
+                        {% if conversation.teacher.city %}
+                            {{ conversation.teacher.city.name }}
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <form method="post" action="{% url 'delete_conversation' conversation_id=conversation.id %}" onsubmit="return confirm('{% trans 'Вы уверены, что хотите удалить эту переписку?' %}');">
+            {% csrf_token %}
+            <button type="submit" class="delete-conversation-btn">
+                <i class="fas fa-trash"></i> {% trans "Удалить" %}
+            </button>
+        </form>
+    </div>
+
+    <div class="messages-wrapper">
+        <div class="messages-list" id="messagesList">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="message-item {% if message.sender == user %}own-message{% endif %}">
+                        <div class="message-avatar">
+                            {% if message.sender.avatar %}
+                                <img src="{{ message.sender.avatar.url }}" alt="{{ message.sender.get_full_name }}">
+                            {% else %}
+                                {{ message.sender.first_name.0|default:"U" }}{{ message.sender.last_name.0|default:"" }}
+                            {% endif %}
+                        </div>
+                        <div class="message-content-wrapper">
+                            <div class="message-bubble">
+                                {{ message.content|linebreaks }}
+                            </div>
+                            <div class="message-time">
+                                {{ message.created_at|date:"d.m.Y H:i" }}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-messages">
+                    <p>{% trans "Нет сообщений. Начните переписку!" %}</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="message-form-container">
+            <form method="post" class="message-form" id="messageForm">
+                {% csrf_token %}
+                <div class="message-input-wrapper">
+                    {{ form.content }}
+                </div>
+                <button type="submit" class="send-btn" id="sendBtn">
+                    <i class="fas fa-paper-plane"></i> {% trans "Отправить" %}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Автопрокрутка вниз при загрузке
+    const messagesList = document.getElementById('messagesList');
+    messagesList.scrollTop = messagesList.scrollHeight;
+
+    // Автоматическое увеличение высоты textarea
+    const textarea = document.querySelector('textarea[name="content"]');
+    if (textarea) {
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+    }
+
+    // Отправка формы и обновление списка сообщений
+    const messageForm = document.getElementById('messageForm');
+    if (messageForm) {
+        messageForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // ✅ ИСПРАВЛЕНИЕ: Предотвращаем двойную отправку формы
+            
+            const formData = new FormData(this);
+            const sendBtn = document.getElementById('sendBtn');
+            const originalText = sendBtn.innerHTML;
+            
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% trans "Отправка..." %}';
+            
+            fetch('{% url "send_message_ajax" conversation_id=conversation.id %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.reload();
+                } else {
+                    return response.json();
+                }
+            })
+            .then(data => {
+                if (data && data.success) {
+                    // Обновляем страницу для показа нового сообщения
+                    window.location.reload();
+                } else {
+                    alert('Ошибка при отправке сообщения');
+                    sendBtn.disabled = false;
+                    sendBtn.innerHTML = originalText;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // В случае ошибки просто перезагружаем страницу
+                window.location.reload();
+            });
+        });
+    }
+</script>
+{% endblock %}
+
