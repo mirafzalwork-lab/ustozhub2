@@ -6,6 +6,7 @@ Telegram бот для TeacherHub
 import os
 import sys
 import logging
+import asyncio
 from telegram import Update, WebAppInfo, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application, 
@@ -269,7 +270,36 @@ def main():
     
     # Запускаем бота
     logger.info("Бот запущен и готов к работе!")
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+    
+    # Исправление для Python 3.14: создаем event loop явно перед запуском
+    # В Python 3.14 asyncio.get_event_loop() больше не создает loop автоматически
+    try:
+        if sys.version_info >= (3, 14):
+            # Для Python 3.14+ создаем новый event loop и устанавливаем его как текущий
+            try:
+                # Пытаемся получить существующий loop
+                loop = asyncio.get_event_loop()
+                if loop.is_closed():
+                    # Если loop закрыт, создаем новый
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+            except RuntimeError:
+                # Если нет текущего loop, создаем новый
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+        else:
+            loop = None
+        
+        # Запускаем бота
+        application.run_polling(allowed_updates=Update.ALL_TYPES)
+        
+    except KeyboardInterrupt:
+        logger.info("Остановка бота...")
+    except Exception as e:
+        logger.error(f"Ошибка при запуске бота: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise
 
 
 if __name__ == '__main__':

@@ -118,3 +118,5 @@ pipenv run python manage.py telegram_users --action unlink --telegram-id 7979988
 
 **Система готова к использованию!** 🚀
 
+
+

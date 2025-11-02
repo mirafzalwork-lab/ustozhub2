@@ -3,10 +3,30 @@
 import os
 import sys
 
-
 def main():
     """Run administrative tasks."""
+    # Применяем патч ДО установки настроек Django
+    try:
+        from django_context_patch import apply_patch
+        # Патч пытается примениться сразу, но Django еще не импортирован
+        # Поэтому применяем его позже, но до импорта Django
+    except ImportError:
+        pass  # Патч не обязателен
+    
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
+    
+    # Импортируем Django
+    try:
+        import django
+        # Теперь применяем патч после импорта Django
+        try:
+            from django_context_patch import apply_patch
+            apply_patch()
+        except (ImportError, Exception):
+            pass
+    except ImportError:
+        pass
+    
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

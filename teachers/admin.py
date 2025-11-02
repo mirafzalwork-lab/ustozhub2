@@ -269,6 +269,18 @@ class TelegramUserAdmin(admin.ModelAdmin):
     
     def send_broadcast_message(self, request, queryset):
         """Отправить сообщение выбранным пользователям"""
+        # Преобразуем queryset в список сразу, чтобы избежать проблем с ленивой загрузкой
+        users_list = list(queryset) if queryset else []
+        
+        # Проверяем, что есть выбранные пользователи
+        if not users_list:
+            self.message_user(
+                request,
+                "❌ Не выбрано ни одного пользователя",
+                messages.ERROR
+            )
+            return redirect('admin:teachers_telegramuser_changelist')
+        
         if 'apply' in request.POST:
             message = request.POST.get('message')
             
@@ -278,16 +290,21 @@ class TelegramUserAdmin(admin.ModelAdmin):
                     "❌ Пожалуйста, введите текст сообщения",
                     messages.ERROR
                 )
-                return redirect(request.get_full_path())
+                # Показываем форму снова с теми же пользователями
+                return render(request, 'admin/send_broadcast.html', {
+                    'users': users_list,
+                    'title': 'Отправить сообщение пользователям',
+                    'stats': admin_telegram_service.get_user_status_info()
+                })
             
             # Используем новый сервис для отправки
-            stats = admin_telegram_service.send_to_selected_users(
-                telegram_users=list(queryset),
-                message=message
-            )
-            
-            # Формируем сообщение с детальной статистикой
             try:
+                stats = admin_telegram_service.send_to_selected_users(
+                    telegram_users=users_list,
+                    message=message
+                )
+                
+                # Формируем сообщение с детальной статистикой
                 if stats['failed'] > 0:
                     message_text = (
                         f"📊 **Результаты отправки:**\n"
@@ -313,14 +330,21 @@ class TelegramUserAdmin(admin.ModelAdmin):
                         messages.SUCCESS
                     )
             except Exception as e:
-                # Если не удается отправить сообщение через Django messages
-                print(f"DEBUG: Не удалось отправить сообщение через Django messages: {e}")
-                # Можно добавить альтернативный способ уведомления
+                # Логируем ошибку
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Ошибка отправки сообщений: {e}")
+                self.message_user(
+                    request,
+                    f"❌ Произошла ошибка при отправке сообщений: {str(e)}",
+                    messages.ERROR
+                )
             
-            return redirect(request.get_full_path())
+            return redirect('admin:teachers_telegramuser_changelist')
         
+        # Показываем форму выбора
         return render(request, 'admin/send_broadcast.html', {
-            'users': queryset,
+            'users': users_list,
             'title': 'Отправить сообщение пользователям',
             'stats': admin_telegram_service.get_user_status_info()
         })
@@ -329,6 +353,26 @@ class TelegramUserAdmin(admin.ModelAdmin):
     
     def send_to_django_users(self, request, queryset):
         """Отправить сообщение Django пользователям через Telegram"""
+        # Преобразуем queryset в список сразу
+        users_list = list(queryset) if queryset else []
+        
+        # Проверяем, что есть выбранные пользователи
+        if not users_list:
+            self.message_user(
+                request,
+                "❌ Не выбрано ни одного пользователя",
+                messages.ERROR
+            )
+            return redirect('admin:teachers_telegramuser_changelist')
+        
+        # Получаем Django пользователей из выбранных Telegram пользователей
+        django_users = []
+        telegram_users_with_django = []
+        for tg_user in users_list:
+            if tg_user.user:
+                django_users.append(tg_user.user)
+                telegram_users_with_django.append(tg_user)
+        
         if 'apply' in request.POST:
             message = request.POST.get('message')
             
@@ -338,13 +382,13 @@ class TelegramUserAdmin(admin.ModelAdmin):
                     "❌ Пожалуйста, введите текст сообщения",
                     messages.ERROR
                 )
-                return redirect(request.get_full_path())
-            
-            # Получаем Django пользователей из выбранных Telegram пользователей
-            django_users = []
-            for tg_user in queryset:
-                if tg_user.user:
-                    django_users.append(tg_user.user)
+                # Показываем форму снова
+                return render(request, 'admin/send_broadcast.html', {
+                    'users': telegram_users_with_django,
+                    'title': 'Отправить сообщение Django пользователям',
+                    'stats': admin_telegram_service.get_user_status_info(),
+                    'django_mode': True
+                })
             
             if not django_users:
                 self.message_user(
@@ -352,7 +396,7 @@ class TelegramUserAdmin(admin.ModelAdmin):
                     "❌ Среди выбранных пользователей нет привязанных к Django аккаунтам",
                     messages.ERROR
                 )
-                return redirect(request.get_full_path())
+                return redirect('admin:teachers_telegramuser_changelist')
             
             # Отправляем сообщения Django пользователям
             stats = {'success': 0, 'failed': 0, 'total': len(django_users), 'details': []}
@@ -403,10 +447,19 @@ class TelegramUserAdmin(admin.ModelAdmin):
                     messages.SUCCESS
                 )
             
-            return redirect(request.get_full_path())
+            return redirect('admin:teachers_telegramuser_changelist')
+        
+        # Показываем форму только если есть пользователи с Django аккаунтами
+        if not telegram_users_with_django:
+            self.message_user(
+                request,
+                "❌ Среди выбранных пользователей нет привязанных к Django аккаунтам",
+                messages.WARNING
+            )
+            return redirect('admin:teachers_telegramuser_changelist')
         
         return render(request, 'admin/send_broadcast.html', {
-            'users': queryset.filter(user__isnull=False),
+            'users': telegram_users_with_django,
             'title': 'Отправить сообщение Django пользователям',
             'stats': admin_telegram_service.get_user_status_info(),
             'django_mode': True
@@ -483,3 +536,11 @@ class TelegramUserAdmin(admin.ModelAdmin):
     
     # Используем кастомный шаблон для списка
     change_list_template = "admin/telegram_user_changelist.html"
+    
+    def changelist_view(self, request, extra_context=None):
+        """
+        Переопределяем для совместимости с Python 3.14
+        """
+        extra_context = extra_context or {}
+        extra_context['show_broadcast_button'] = True
+        return super().changelist_view(request, extra_context=extra_context)

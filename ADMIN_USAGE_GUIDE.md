@@ -85,3 +85,5 @@ pipenv run python manage.py telegram_users --action broadcast --message "Тес�
 
 **Все готово к использованию!** 🚀
 
+
+

@@ -362,6 +362,143 @@
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
     }
 
+    /* ✅ Улучшенный выбор предметов: chips + подсказки */
+    .chips-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .chip-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        color: #065f46;
+        padding: 6px 10px;
+        border-radius: 16px;
+        font-size: 13px;
+        font-weight: 600;
+        transition: background .2s ease;
+    }
+
+    .chip-item button {
+        border: none;
+        background: transparent;
+        color: #047857;
+        cursor: pointer;
+        padding: 0 2px;
+        font-size: 14px;
+        line-height: 1;
+    }
+
+    .chip-item button:hover {
+        color: #065f46;
+    }
+
+    .quick-picks {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .quick-pick-btn {
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        border-radius: 16px;
+        padding: 6px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        color: #374151;
+        transition: all .2s ease;
+    }
+
+    .quick-pick-btn:hover {
+        background: #f9fafb;
+        border-color: #10b981;
+        color: #047857;
+    }
+
+    /* Кнопка очистки выбора */
+    .clear-btn {
+        border: 1px solid #ef4444;
+        background: #fff5f5;
+        color: #b91c1c;
+        border-radius: 16px;
+        padding: 6px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all .2s ease;
+        display: none;
+    }
+
+    .clear-btn.show { display: inline-flex; align-items: center; gap: 6px; }
+    .clear-btn:hover { background: #fee2e2; }
+
+    .suggestions-panel {
+        position: absolute;
+        z-index: 100;
+        width: 100%;
+        background: #fff;
+        border: 2px solid #10b981;
+        border-radius: 12px;
+        margin-top: 8px;
+        box-shadow: 0 12px 32px rgba(16, 185, 129, 0.2);
+        max-height: 400px;
+        overflow-y: auto;
+        display: none;
+        animation: slideDownFade 0.2s ease;
+    }
+
+    @keyframes slideDownFade {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .suggestions-panel.show { display: block; }
+
+    .suggestion-item {
+        padding: 12px 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        transition: all 0.15s ease;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .suggestion-item:last-child {
+        border-bottom: none;
+    }
+
+    .suggestion-item i { color: #10b981; }
+
+    .suggestion-item:hover,
+    .suggestion-item.active {
+        background: linear-gradient(90deg, #f0fdf4 0%, #ecfdf5 100%);
+        transform: translateX(4px);
+        box-shadow: -2px 0 0 0 #10b981;
+    }
+
+    .suggestion-item:active {
+        transform: translateX(2px);
+    }
+
+    .highlight-mark { background: #fff7ed; border-bottom: 2px solid #fdba74; }
+
+    /* Скрывать оригинальные чекбоксы после инициализации улучшенного UI */
+    #subjectCheckboxes.enhanced { display: none; }
+
     /* Мобильная адаптация для предметов */
     @media (max-width: 640px) {
         .subject-checkbox {
@@ -669,7 +806,7 @@
                     </label>
                     
                     <!-- Поиск предметов -->
-                    <div class="subject-search-box">
+                    <div class="subject-search-box" style="position: relative;">
                         <i class="fas fa-search"></i>
                         <input 
                             type="text" 
@@ -677,14 +814,32 @@
                             class="subject-search" 
                             placeholder="{% trans 'Начните вводить название предмета...' %}"
                             autocomplete="off"
+                            aria-label="{% trans 'Поиск предметов' %}"
+                            aria-autocomplete="list"
+                            aria-controls="subjectSuggestions"
                         >
                         <span class="selected-badge" id="selectedBadge">0 {% trans 'выбрано' %}</span>
+                        <!-- Панель подсказок -->
+                        <div id="subjectSuggestions" class="suggestions-panel" role="listbox" aria-expanded="false"></div>
                     </div>
+
+                    <!-- Быстрый выбор и выбранные предметы -->
+                    <div id="subjectQuickPicks" class="quick-picks"></div>
+                    <div id="subjectSelectedChips" class="chips-container"></div>
+                    <button type="button" id="clearSelectedBtn" class="clear-btn">
+                        <i class="fas fa-trash"></i> {% trans "Очистить выбор" %}
+                    </button>
                     
                     <!-- Индикатор результатов поиска -->
                     <div class="search-results-hint" id="searchResultsHint">
                         <i class="fas fa-check-circle"></i>
                         <span id="searchResultsText"></span>
+                    </div>
+                    
+                    <!-- Подсказка для пользователя -->
+                    <div style="font-size: 12px; color: #666; margin-top: 8px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-lightbulb" style="color: #fbbf24;"></i>
+                        <span>{% trans "💡 Начните вводить название или используйте быстрые кнопки ниже" %}</span>
                     </div>
                     
                     <!-- Чекбоксы предметов -->
@@ -926,108 +1081,484 @@
     });
 
     // ========================================
-    // 🔥 УМНЫЙ ПОИСК ПРЕДМЕТОВ С ЖИВЫМИ ПОДСКАЗКАМИ
+    // 🔥 УМНЫЙ ВЫБОР ПРЕДМЕТОВ: поиск + подсказки + чипы
+    // Без изменения backend: работаем поверх существующих чекбоксов
     // ========================================
-    const searchInput = document.getElementById('subjectSearchInput');
-    const subjectsContainer = document.getElementById('subjectCheckboxes');
-    const selectedBadge = document.getElementById('selectedBadge');
-    const searchResultsHint = document.getElementById('searchResultsHint');
-    const searchResultsText = document.getElementById('searchResultsText');
-    const checkboxList = subjectsContainer.querySelector('ul');
+    let subjectSearchInitialized = false;
     
-    if (searchInput && checkboxList) {
-        const allItems = checkboxList.querySelectorAll('li');
-        const totalSubjects = allItems.length;
-        
-        // 🔍 Живой поиск с мгновенной фильтрацией
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase().trim();
-            let foundCount = 0;
-            let firstMatch = null;
-            
-            // Фильтруем и подсвечиваем совпадения
-            allItems.forEach((item, index) => {
-                const label = item.querySelector('label');
-                const text = label.textContent.toLowerCase();
-                
-                if (searchTerm === '' || text.includes(searchTerm)) {
-                    item.classList.remove('hidden');
-                    
-                    // Подсвечиваем только если есть поисковый запрос
-                    if (searchTerm !== '') {
-                        item.classList.add('highlight');
-                        foundCount++;
-                        
-                        // Запоминаем первое совпадение
-                        if (firstMatch === null) {
-                            firstMatch = item;
-                        }
-                    } else {
-                        item.classList.remove('highlight');
-                    }
-                } else {
-                    item.classList.add('hidden');
-                    item.classList.remove('highlight');
-                }
-            });
-            
-            // Показываем индикатор результатов
-            if (searchTerm !== '') {
-                if (foundCount > 0) {
-                    searchResultsHint.classList.add('show');
-                    searchResultsText.innerHTML = `{% trans "Найдено:" %} <strong>${foundCount}</strong> {% trans "из" %} ${totalSubjects} {% trans "предметов" %}`;
-                    
-                    // Прокручиваем к первому найденному
-                    if (firstMatch) {
-                        setTimeout(() => {
-                            firstMatch.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                        }, 100);
-                    }
-                } else {
-                    searchResultsHint.classList.add('show');
-                    searchResultsText.innerHTML = `<i class="fas fa-exclamation-circle"></i> {% trans "Ничего не найдено. Попробуйте другой запрос." %}`;
-                }
-            } else {
-                searchResultsHint.classList.remove('show');
-            }
-        });
-        
-        // Обновление счетчика выбранных
-        function updateSelectedCount() {
-            const checkboxes = checkboxList.querySelectorAll('input[type="checkbox"]');
-            const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
-            selectedBadge.textContent = checkedCount + ' {% trans "выбрано" %}';
-            
-            // Анимация при изменении
-            selectedBadge.style.transform = 'scale(1.2)';
-            setTimeout(() => {
-                selectedBadge.style.transform = 'scale(1)';
-            }, 200);
+    function initSubjectSearch() {
+        // Предотвращаем множественную инициализацию
+        if (subjectSearchInitialized) {
+            return;
         }
         
-        // Отслеживание изменений чекбоксов
-        checkboxList.addEventListener('change', function(e) {
-            if (e.target.type === 'checkbox') {
-                updateSelectedCount();
-                
-                // Звуковая обратная связь (визуальная)
-                const item = e.target.closest('li');
-                if (e.target.checked) {
-                    item.style.transform = 'scale(1.05)';
-                    setTimeout(() => {
-                        item.style.transform = 'scale(1)';
-                    }, 200);
-                }
+        const searchInput = document.getElementById('subjectSearchInput');
+        const subjectsContainer = document.getElementById('subjectCheckboxes');
+        const selectedBadge = document.getElementById('selectedBadge');
+        const searchResultsHint = document.getElementById('searchResultsHint');
+        const searchResultsText = document.getElementById('searchResultsText');
+        const suggestionsPanel = document.getElementById('subjectSuggestions');
+        const chipsContainer = document.getElementById('subjectSelectedChips');
+        const quickPicksContainer = document.getElementById('subjectQuickPicks');
+        const clearSelectedBtn = document.getElementById('clearSelectedBtn');
+        
+        if (!searchInput || !subjectsContainer || !selectedBadge) {
+            // Элементы не найдены, возможно страница еще загружается
+            // Пробуем еще раз через задержку (максимум 5 попыток)
+            if (!window.subjectSearchRetries) {
+                window.subjectSearchRetries = 0;
             }
+            if (window.subjectSearchRetries < 5) {
+                window.subjectSearchRetries++;
+                setTimeout(initSubjectSearch, 300);
+            } else {
+                console.warn('Subject search initialization failed after multiple attempts');
+            }
+            return;
+        }
+        
+        // Ищем все чекбоксы предметов (Django может создать ul или просто div с чекбоксами)
+        let allCheckboxes = subjectsContainer.querySelectorAll('input[type="checkbox"]');
+        
+        if (allCheckboxes.length === 0) {
+            // Альтернативный способ - ищем по name атрибуту
+            allCheckboxes = document.querySelectorAll('input[type="checkbox"][name*="interests"]');
+        }
+        
+        if (allCheckboxes.length === 0) {
+            // Чекбоксы еще не загружены, пробуем еще раз через небольшую задержку
+            if (!window.subjectSearchRetries) {
+                window.subjectSearchRetries = 0;
+            }
+            if (window.subjectSearchRetries < 5) {
+                window.subjectSearchRetries++;
+                setTimeout(initSubjectSearch, 200);
+            }
+            return;
+        }
+        
+        // Отмечаем что инициализация успешно завершена
+        subjectSearchInitialized = true;
+        
+        // Собираем все предметы из чекбоксов
+        const items = Array.from(allCheckboxes).map(input => {
+            const labelEl = input.closest('li') ? 
+                input.closest('li').querySelector('label') :
+                (input.nextElementSibling && input.nextElementSibling.tagName === 'LABEL' ? 
+                    input.nextElementSibling : 
+                    document.querySelector(`label[for="${input.id}"]`));
+            
+            return {
+                value: input.value,
+                label: labelEl ? labelEl.textContent.trim() : input.value,
+                input,
+                li: input.closest('li')
+            };
         });
         
-        // Инициализация счетчика
-        updateSelectedCount();
+        const totalSubjects = items.length;
+
+        // Переводы для JavaScript
+        const translations = {
+            selected: '{% trans "выбрано" %}',
+            found: '{% trans "Найдено:" %}',
+            subjects: '{% trans "предметов" %}',
+            notFound: '{% trans "Ничего не найдено. Попробуйте изменить запрос" %}',
+            remove: '{% trans "Удалить" %}'
+        };
+
+        // Скрываем оригинальные чекбоксы (оставляем как fallback без JS)
+        if (subjectsContainer) {
+            subjectsContainer.classList.add('enhanced');
+        }
+
+        // Модель выбранных значений
+        const selected = new Map();
+        items.forEach(it => { if (it.input.checked) selected.set(it.value, it); });
+
+        // Популярные предметы (определяем раньше для использования в функциях)
+        const popularSubjects = [
+            'Математика', 'Английский язык', 'Русский язык', 'Узбекский язык',
+            'Физика', 'Химия', 'Биология', 'Информатика', 'История', 'География'
+        ];
+
+        // Подсветка совпадений в тексте
+        function mark(text, term) {
+            if (!term) return text;
+            const idx = text.toLowerCase().indexOf(term.toLowerCase());
+            if (idx === -1) return text;
+            return text.substring(0, idx) + '<span class="highlight-mark">' + text.substring(idx, idx + term.length) + '</span>' + text.substring(idx + term.length);
+        }
+
+        function updateSelectedCount() {
+            const count = selected.size;
+            selectedBadge.textContent = count + ' ' + translations.selected;
+            selectedBadge.style.transform = 'scale(1.2)';
+            setTimeout(() => { selectedBadge.style.transform = 'scale(1)'; }, 200);
+            // показать/скрыть кнопку очистки
+            if (clearSelectedBtn) {
+                clearSelectedBtn.classList.toggle('show', count > 0);
+            }
+        }
+
+        function renderChips() {
+            if (!chipsContainer) return;
+            chipsContainer.innerHTML = '';
+            selected.forEach(({ value, label }) => {
+                const chip = document.createElement('span');
+                chip.className = 'chip-item';
+                chip.innerHTML = `<i class="fas fa-book"></i> ${label} <button type="button" aria-label="${translations.remove}"><i class="fas fa-times"></i></button>`;
+                chip.querySelector('button').addEventListener('click', () => {
+                    const it = selected.get(value);
+                    if (it) {
+                        it.input.checked = false;
+                        it.input.dispatchEvent(new Event('change', { bubbles: true }));
+                        selected.delete(value);
+                        renderChips();
+                        updateSelectedCount();
+                        renderQuickPicks();
+                    }
+                });
+                chipsContainer.appendChild(chip);
+            });
+        }
+
+        function scoreItem(label, term) {
+            const L = label.toLowerCase();
+            const T = term.toLowerCase();
+            if (!T) return 9999;
+            // Токенное и префиксное ранжирование
+            if (L.startsWith(T)) return 0;
+            const tokens = L.split(/\s+|[-_.,]/g);
+            for (let i = 0; i < tokens.length; i++) {
+                const tk = tokens[i];
+                if (tk.startsWith(T)) return 10 + i; // предпочтение префиксам токенов
+            }
+            const idx = L.indexOf(T);
+            return idx === -1 ? Infinity : 100 + idx;
+        }
+
+        function getSuggestions(term, limit = 15) {
+            if (!term || term.length === 0) {
+                // Без поиска показываем популярные невыбранные
+                const unselected = items.filter(it => !selected.has(it.value));
+                
+                // Сначала ищем популярные
+                const popular = unselected.filter(it => 
+                    popularSubjects.some(pop => it.label.toLowerCase() === pop.toLowerCase())
+                );
+                
+                // Если есть популярные - показываем их, иначе показываем первые по алфавиту
+                if (popular.length > 0) {
+                    return popular.slice(0, limit);
+                } else {
+                    return unselected
+                        .sort((a, b) => a.label.localeCompare(b.label))
+                        .slice(0, limit);
+                }
+            }
+            
+            const termLower = term.toLowerCase();
+            const filtered = items
+                .filter(it => !selected.has(it.value))
+                .map(it => {
+                    const labelLower = it.label.toLowerCase();
+                    // Проверяем совпадение
+                    if (labelLower.includes(termLower)) {
+                        return { it, s: scoreItem(it.label, term) };
+                    }
+                    return null;
+                })
+                .filter(x => x !== null && x.s !== Infinity)
+                .sort((a, b) => {
+                    // Сначала по релевантности, потом по алфавиту
+                    if (a.s !== b.s) return a.s - b.s;
+                    return a.it.label.localeCompare(b.it.label);
+                })
+                .slice(0, limit)
+                .map(x => x.it);
+            
+            return filtered;
+        }
+
+        function renderSuggestions(list, term) {
+            if (!suggestionsPanel) return;
+            suggestionsPanel.innerHTML = '';
+            if (!list.length) {
+                const empty = document.createElement('div');
+                empty.className = 'suggestion-item';
+                empty.style.padding = '16px';
+                empty.style.textAlign = 'center';
+                empty.style.color = '#999';
+                empty.innerHTML = `<i class="fas fa-search"></i> <span>${translations.notFound}</span>`;
+                suggestionsPanel.appendChild(empty);
+                return;
+            }
+            
+            list.forEach((it, idx) => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.setAttribute('role', 'option');
+                div.setAttribute('tabindex', '0');
+                div.dataset.value = it.value;
+                div.dataset.index = idx;
+                
+                // Выделяем совпадение
+                const highlightedLabel = term && term.length > 0 ? mark(it.label, term) : it.label;
+                
+                div.innerHTML = `
+                    <i class="fas fa-plus-circle" style="color: #10b981;"></i> 
+                    <span style="flex: 1;">${highlightedLabel}</span>
+                    <span style="font-size: 11px; color: #999; margin-left: 8px;">
+                        <i class="fas fa-mouse-pointer"></i>
+                    </span>
+                `;
+                
+                div.addEventListener('click', () => selectSubject(it));
+                div.addEventListener('mouseenter', function() {
+                    activeIndex = idx;
+                    Array.from(suggestionsPanel.querySelectorAll('.suggestion-item')).forEach((el, i) => {
+                        el.classList.toggle('active', i === idx);
+                    });
+                });
+                
+                suggestionsPanel.appendChild(div);
+            });
+        }
+
+        function openSuggestions() {
+            if (!suggestionsPanel) return;
+            suggestionsPanel.classList.add('show');
+            suggestionsPanel.setAttribute('aria-expanded', 'true');
+        }
+
+        function closeSuggestions() {
+            if (!suggestionsPanel) return;
+            suggestionsPanel.classList.remove('show');
+            suggestionsPanel.setAttribute('aria-expanded', 'false');
+            const activeItems = suggestionsPanel.querySelectorAll('.active');
+            Array.from(activeItems).forEach(el => el.classList.remove('active'));
+        }
+
+        function selectSubject(it) {
+            // отметить чекбокс
+            it.input.checked = true;
+            it.input.dispatchEvent(new Event('change', { bubbles: true }));
+            selected.set(it.value, it);
+            renderChips();
+            updateSelectedCount();
+            renderQuickPicks();
+            searchInput.value = '';
+            closeSuggestions();
+            searchResultsHint.classList.remove('show');
+        }
+
+        function renderQuickPicks() {
+            if (!quickPicksContainer) return;
+            quickPicksContainer.innerHTML = '';
+            // сначала популярные, присутствующие в списке и не выбранные
+            const popularPicks = [];
+            for (const name of popularSubjects) {
+                const it = items.find(x => !selected.has(x.value) && x.label.toLowerCase() === name.toLowerCase());
+                if (it) popularPicks.push(it);
+                if (popularPicks.length >= 8) break;
+            }
+            // при необходимости добираем алфавитными
+            const remaining = items
+                .filter(it => !selected.has(it.value) && !popularPicks.includes(it))
+                .sort((a, b) => a.label.localeCompare(b.label))
+                .slice(0, Math.max(0, 8 - popularPicks.length));
+            const picks = [...popularPicks, ...remaining];
+            picks.forEach(it => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'quick-pick-btn';
+                btn.innerHTML = `<i class="fas fa-bolt"></i> ${it.label}`;
+                btn.addEventListener('click', () => selectSubject(it));
+                quickPicksContainer.appendChild(btn);
+            });
+        }
+
+        // Обработчики поиска - МОМЕНТАЛЬНАЯ РЕАКЦИЯ
+        let activeIndex = -1;
+        let searchTimeout = null;
+
+        function performSearch() {
+            if (!searchInput || !suggestionsPanel) return;
+            
+            const term = searchInput.value.trim();
+            const sugg = getSuggestions(term, 15); // Увеличиваем до 15 результатов
+            
+            // Показываем подсказки сразу
+            renderSuggestions(sugg, term);
+            
+            if (term.length > 0) {
+                if (searchResultsHint && searchResultsText) {
+                    searchResultsHint.classList.add('show');
+                    searchResultsText.innerHTML = `${translations.found} <strong>${sugg.length}</strong> ${translations.subjects}`;
+                }
+                openSuggestions();
+            } else {
+                // При пустом поле тоже показываем подсказки (популярные)
+                if (sugg.length > 0) {
+                    openSuggestions();
+                } else {
+                    closeSuggestions();
+                }
+                if (searchResultsHint) {
+                    searchResultsHint.classList.remove('show');
+                }
+            }
+            activeIndex = -1;
+        }
+
+        // Обработка ввода с минимальной задержкой для производительности
+        searchInput.addEventListener('input', function() {
+            // Отменяем предыдущий поиск
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+            
+            // Для первых 3 символов - мгновенно, дальше - с минимальной задержкой
+            const term = this.value.trim();
+            if (term.length <= 3) {
+                performSearch();
+            } else {
+                searchTimeout = setTimeout(performSearch, 30); // Только 30ms задержка
+            }
+        });
+
+        // Показываем подсказки при фокусе
+        searchInput.addEventListener('focus', function() {
+            performSearch();
+        });
+
+        searchInput.addEventListener('keydown', function(e) {
+            const itemsEls = suggestionsPanel.querySelectorAll('.suggestion-item');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (!suggestionsPanel.classList.contains('show')) {
+                    performSearch();
+                    openSuggestions();
+                }
+                activeIndex = activeIndex < itemsEls.length - 1 ? activeIndex + 1 : 0;
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                activeIndex = activeIndex > 0 ? activeIndex - 1 : itemsEls.length - 1;
+            } else if (e.key === 'Enter') {
+                if (activeIndex >= 0 && itemsEls[activeIndex]) {
+                    e.preventDefault();
+                    const value = itemsEls[activeIndex].dataset.value;
+                    const it = items.find(x => x.value === value);
+                    if (it) selectSubject(it);
+                } else if (this.value.trim()) {
+                    // если есть точное совпадение — выбрать его
+                    const term = this.value.trim().toLowerCase();
+                    const exact = items.find(x => !selected.has(x.value) && x.label.toLowerCase() === term);
+                    if (exact) { 
+                        e.preventDefault(); 
+                        selectSubject(exact); 
+                    } else if (itemsEls.length > 0) {
+                        // Выбираем первый результат
+                        e.preventDefault();
+                        const firstValue = itemsEls[0].dataset.value;
+                        const firstIt = items.find(x => x.value === firstValue);
+                        if (firstIt) selectSubject(firstIt);
+                    }
+                }
+            } else if (e.key === 'Escape') {
+                closeSuggestions();
+                this.blur();
+            } else if (e.key === 'Tab') {
+                closeSuggestions();
+            }
+
+            // Обновить .active и прокрутить к активному элементу
+            Array.from(itemsEls).forEach((el, idx) => {
+                el.classList.toggle('active', idx === activeIndex);
+                if (idx === activeIndex) {
+                    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Клик вне — закрыть подсказки
+        document.addEventListener('click', (e) => {
+            if (!suggestionsPanel.contains(e.target) && e.target !== searchInput) {
+                closeSuggestions();
+            }
+        });
+
+        // Синхронизация при изменении чекбоксов (например, при серверной валидации)
+        // Слушаем события на контейнере и на каждом чекбоксе
+        if (subjectsContainer) {
+            subjectsContainer.addEventListener('change', function(e) {
+                if (e.target.type === 'checkbox') {
+                    const it = items.find(x => x.input === e.target);
+                    if (!it) return;
+                    if (e.target.checked) {
+                        selected.set(it.value, it);
+                    } else {
+                        selected.delete(it.value);
+                    }
+                    renderChips();
+                    updateSelectedCount();
+                    renderQuickPicks();
+                }
+            });
+        }
         
-        // Фокус на поле поиска при загрузке (для удобства)
-        setTimeout(() => {
-            searchInput.focus();
-        }, 500);
+        // Также слушаем на уровне документа для надежности
+        document.addEventListener('change', function(e) {
+            if (e.target.type === 'checkbox' && items.some(x => x.input === e.target)) {
+                const it = items.find(x => x.input === e.target);
+                if (!it) return;
+                if (e.target.checked) {
+                    selected.set(it.value, it);
+                } else {
+                    selected.delete(it.value);
+                }
+                renderChips();
+                updateSelectedCount();
+                renderQuickPicks();
+            }
+        });
+
+        // Очистка выбора
+        if (clearSelectedBtn) {
+            clearSelectedBtn.addEventListener('click', () => {
+                selected.forEach(it => {
+                    it.input.checked = false;
+                    it.input.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+                selected.clear();
+                renderChips();
+                updateSelectedCount();
+                renderQuickPicks();
+                searchInput.focus();
+            });
+        }
+
+        // Инициализация UI
+        renderChips();
+        updateSelectedCount();
+        renderQuickPicks();
+        
+        // Фокус на поле поиска после небольшой задержки
+        setTimeout(() => { 
+            if (searchInput) {
+                searchInput.focus(); 
+            }
+        }, 300);
+    }
+    
+    // Запускаем инициализацию после загрузки DOM
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSubjectSearch);
+    } else {
+        // DOM уже загружен, запускаем сразу
+        initSubjectSearch();
     }
 </script>
 {% endblock %}

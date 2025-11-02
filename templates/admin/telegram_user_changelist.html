@@ -2,7 +2,14 @@
 {% load i18n admin_urls static %}
 
 {% block object-tools-items %}
-    {{ block.super }}
+    {% url cl.opts|admin_urlname:'add' as add_url %}
+    {% if add_url and cl.has_add_permission %}
+        <li>
+            <a href="{{ add_url }}" class="addlink">
+                {% blocktrans with cl.opts.verbose_name as name %}Add {{ name }}{% endblocktrans %}
+            </a>
+        </li>
+    {% endif %}
     <li>
         <a href="{% url 'admin:send_broadcast_all' %}" class="addlink" style="background-color: #417690; color: white; padding: 10px 15px; border-radius: 4px; text-decoration: none;">
             📢 Массовая рассылка
