@@ -705,6 +705,18 @@ msgstr "so'm"
 msgid "Договорная"
 msgstr "Kelishiladi"
 
+#: teachers/models.py:443
+msgid "сум/час"
+msgstr "so'm/soat"
+
+#: teachers/models.py:445
+msgid "До"
+msgstr "Gacha"
+
+#: teachers/models.py:447
+msgid "От"
+msgstr "Dan"
+
 #: templates/logic/home.html:710 templates/logic/teacher_detail.html:1213
 #: templates/logic/teacher_detail.html:1361
 msgid "за час"

@@ -297,6 +297,9 @@
         line-height: 1.6;
         color: #333;
         font-size: 15px;
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
     }
 
     /* Стили для пустого состояния */
@@ -317,7 +320,40 @@
         margin-bottom: 16px;
     }
 
+    /* ============================================
+       📱 RESPONSIVE DESIGN - MOBILE OPTIMIZED
+       ============================================ */
+
+    /* Tablet (1024px and below) */
+    @media (max-width: 1024px) {
+        .profile-container {
+            padding: 24px 20px;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .views-stats-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .btn-primary, .btn-outline {
+            min-height: 48px;
+            padding: 14px 24px;
+        }
+    }
+
+    /* Mobile (768px and below) */
     @media (max-width: 768px) {
+        .profile-container {
+            padding: 20px 16px;
+        }
+
         .profile-header {
             flex-direction: column;
             text-align: center;
@@ -336,9 +372,104 @@
             grid-template-columns: 1fr;
         }
 
-        /* ✅ НОВОЕ: адаптивность виджета просмотров */
         .views-stats-grid {
             grid-template-columns: 1fr;
+        }
+
+        .btn-primary, .btn-outline {
+            min-height: 44px;
+            padding: 12px 20px;
+            font-size: 14px;
+        }
+
+        .profile-card {
+            padding: 20px;
+        }
+    }
+
+    /* Small Mobile (480px and below) */
+    @media (max-width: 480px) {
+        .profile-container {
+            padding: 16px 12px;
+        }
+
+        .profile-card {
+            padding: 16px;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            font-size: 32px;
+        }
+
+        .profile-name {
+            font-size: 20px;
+        }
+
+        .profile-title {
+            font-size: 13px;
+        }
+
+        .btn-primary, .btn-outline {
+            min-height: 44px;
+            padding: 10px 16px;
+            font-size: 13px;
+        }
+
+        .info-card h3,
+        .profile-section h2 {
+            font-size: 16px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+        }
+
+        .views-stat-value {
+            font-size: 28px;
+        }
+
+        .views-stat-label {
+            font-size: 12px;
+        }
+
+        .views-info-text {
+            font-size: 12px;
+        }
+
+        .empty-state-icon {
+            font-size: 56px;
+        }
+
+        .empty-state h3 {
+            font-size: 16px;
+        }
+
+        .empty-state p {
+            font-size: 13px;
+        }
+    }
+
+    /* Touch Optimizations */
+    @media (hover: none) and (pointer: coarse) {
+        .btn-primary:hover,
+        .btn-outline:hover {
+            transform: none;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.97);
+            background: #082039;
+        }
+
+        .btn-outline:active {
+            transform: scale(0.97);
+            background: #f9fafb;
         }
     }
 </style>

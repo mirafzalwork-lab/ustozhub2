@@ -8,7 +8,8 @@ from .views import (
     my_favorite_teachers, my_favorite_students,
     student_suggestions,
     conversations_list, conversation_detail, start_conversation,
-    send_message_ajax, mark_messages_read, delete_conversation
+    send_message_ajax, mark_messages_read, delete_conversation,
+    delete_teacher_subject
 )
 from .telegram_views import (
     telegram_auth, link_telegram_account, telegram_status, toggle_notifications
@@ -35,6 +36,7 @@ urlpatterns = [
     path('profile/edit/teacher/', teacher_profile_edit, name='teacher_profile_edit'),
     path('profile/edit/student/', student_profile_edit, name='student_profile_edit'),
     path('profile/toggle-status/', toggle_profile_status, name='toggle_profile_status'),
+    path('api/teacher/subject/<int:subject_id>/delete/', delete_teacher_subject, name='delete_teacher_subject'),
     
     # Favorites
     path('favorites/teachers/', my_favorite_teachers, name='my_favorite_teachers'),

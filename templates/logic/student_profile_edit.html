@@ -313,7 +313,36 @@
         margin-top: 4px;
     }
 
+    /* ============================================
+       📱 RESPONSIVE DESIGN - MOBILE OPTIMIZED
+       ============================================ */
+
+    /* Tablet (1024px and below) */
+    @media (max-width: 1024px) {
+        .edit-container {
+            padding: 24px 20px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .checkbox-grid, .weekday-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .btn {
+            min-height: 48px;
+            padding: 14px 24px;
+        }
+    }
+
+    /* Mobile (768px and below) */
     @media (max-width: 768px) {
+        .edit-container {
+            padding: 20px 16px;
+        }
+
         .edit-header {
             flex-direction: column;
             gap: 16px;
@@ -330,6 +359,97 @@
         .btn {
             width: 100%;
             justify-content: center;
+            min-height: 44px;
+            padding: 12px 20px;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            min-height: 44px;
+            font-size: 16px !important; /* iOS zoom prevention */
+        }
+
+        .form-card {
+            padding: 20px;
+        }
+    }
+
+    /* Small Mobile (480px and below) */
+    @media (max-width: 480px) {
+        .edit-container {
+            padding: 16px 12px;
+        }
+
+        .form-card {
+            padding: 16px;
+        }
+
+        .edit-title {
+            font-size: 20px;
+        }
+
+        .form-card h2 {
+            font-size: 16px;
+        }
+
+        .btn {
+            min-height: 44px;
+            padding: 10px 16px;
+            font-size: 13px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            min-height: 44px;
+            font-size: 16px !important;
+            padding: 10px 12px;
+        }
+
+        .checkbox-item label,
+        .weekday-item label {
+            font-size: 13px;
+        }
+
+        .status-text {
+            font-size: 13px;
+        }
+
+        .toggle-switch {
+            width: 48px;
+            height: 26px;
+        }
+
+        .toggle-slider:before {
+            width: 20px;
+            height: 20px;
+        }
+
+        .char-counter {
+            font-size: 11px;
+        }
+    }
+
+    /* Touch Optimizations */
+    @media (hover: none) and (pointer: coarse) {
+        .btn:hover {
+            transform: none;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .checkbox-item:hover,
+        .weekday-item:hover {
+            background: white;
+        }
+
+        .checkbox-item:active,
+        .weekday-item:active {
+            background: #f9fafb;
         }
     }
 </style>

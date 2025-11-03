@@ -440,13 +440,14 @@ class StudentProfile(models.Model):
     
     def get_budget_display(self):
         """Возвращает строку с бюджетом"""
+        from django.utils.translation import gettext as _
         if self.budget_min and self.budget_max:
-            return f"{self.budget_min:,.0f} - {self.budget_max:,.0f} сум/час"
+            return f"{self.budget_min:,.0f} - {self.budget_max:,.0f} {_('сум/час')}"
         elif self.budget_max:
-            return f"До {self.budget_max:,.0f} сум/час"
+            return f"{_('До')} {self.budget_max:,.0f} {_('сум/час')}"
         elif self.budget_min:
-            return f"От {self.budget_min:,.0f} сум/час"
-        return "Договорная"
+            return f"{_('От')} {self.budget_min:,.0f} {_('сум/час')}"
+        return _("Договорная")
     
     def get_available_weekdays_display(self):
         """Возвращает строку с днями недели"""
@@ -743,3 +744,210 @@ class ProfileView(models.Model):
         elif self.student_profile:
             self.profile_type = 'student'
         super().save(*args, **kwargs)
+
+
+class NotificationQueue(models.Model):
+    """
+    Очередь уведомлений для Telegram
+    Обеспечивает надёжную доставку с повторными попытками
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Ожидает отправки'),
+        ('processing', 'В обработке'),
+        ('sent', 'Отправлено'),
+        ('failed', 'Ошибка'),
+        ('cancelled', 'Отменено'),
+    ]
+    
+    NOTIFICATION_TYPES = [
+        ('new_message', 'Новое сообщение'),
+        ('new_review', 'Новый отзыв'),
+        ('profile_view', 'Просмотр профиля'),
+        ('system', 'Системное уведомление'),
+        ('broadcast', 'Массовая рассылка'),
+    ]
+    
+    # Основные поля
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    recipient = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='telegram_notifications',
+        verbose_name='Получатель'
+    )
+    notification_type = models.CharField(
+        max_length=20,
+        choices=NOTIFICATION_TYPES,
+        default='new_message',
+        verbose_name='Тип уведомления'
+    )
+    
+    # Содержимое
+    title = models.CharField(max_length=200, verbose_name='Заголовок')
+    message = models.TextField(verbose_name='Текст сообщения')
+    data = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name='Дополнительные данные',
+        help_text='JSON с доп. информацией (sender_id, conversation_id, url и т.д.)'
+    )
+    
+    # Статус обработки
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        db_index=True,
+        verbose_name='Статус'
+    )
+    retry_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Количество попыток'
+    )
+    max_retries = models.PositiveIntegerField(
+        default=5,
+        verbose_name='Максимум попыток'
+    )
+    last_error = models.TextField(
+        blank=True,
+        verbose_name='Последняя ошибка'
+    )
+    
+    # Временные метки
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True,
+        verbose_name='Создано'
+    )
+    scheduled_at = models.DateTimeField(
+        default=timezone.now,
+        db_index=True,
+        verbose_name='Запланировано на',
+        help_text='Время когда уведомление должно быть отправлено'
+    )
+    processing_started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Начало обработки'
+    )
+    sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Отправлено'
+    )
+    
+    # Идемпотентность
+    idempotency_key = models.CharField(
+        max_length=255,
+        unique=True,
+        db_index=True,
+        verbose_name='Ключ идемпотентности',
+        help_text='Уникальный ключ для предотвращения дублирования'
+    )
+    
+    class Meta:
+        verbose_name = 'Уведомление в очереди'
+        verbose_name_plural = 'Очередь уведомлений'
+        ordering = ['scheduled_at', 'created_at']
+        indexes = [
+            models.Index(fields=['status', 'scheduled_at']),
+            models.Index(fields=['recipient', 'status']),
+            models.Index(fields=['notification_type', 'status']),
+            models.Index(fields=['idempotency_key']),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_notification_type_display()} для {self.recipient.get_full_name()} ({self.get_status_display()})"
+    
+    def can_retry(self):
+        """Проверить можно ли повторить попытку отправки"""
+        return self.retry_count < self.max_retries and self.status in ['pending', 'failed']
+    
+    def mark_as_processing(self):
+        """Отметить как обрабатываемое"""
+        self.status = 'processing'
+        self.processing_started_at = timezone.now()
+        self.save(update_fields=['status', 'processing_started_at'])
+    
+    def mark_as_sent(self):
+        """Отметить как успешно отправленное"""
+        self.status = 'sent'
+        self.sent_at = timezone.now()
+        self.save(update_fields=['status', 'sent_at'])
+    
+    def mark_as_failed(self, error_message: str):
+        """Отметить как неуспешное"""
+        self.status = 'failed'
+        self.last_error = error_message
+        self.retry_count += 1
+        self.save(update_fields=['status', 'last_error', 'retry_count'])
+    
+    def calculate_next_retry_delay(self):
+        """
+        Рассчитать задержку до следующей попытки (экспоненциальная задержка)
+        Returns: timedelta
+        """
+        # Экспоненциальная задержка: 2^retry_count минут
+        delay_minutes = 2 ** self.retry_count
+        return datetime.timedelta(minutes=min(delay_minutes, 60))  # Макс 1 час
+
+
+class NotificationLog(models.Model):
+    """
+    Лог попыток отправки уведомлений
+    Для аудита и отладки
+    """
+    STATUS_CHOICES = [
+        ('success', 'Успешно'),
+        ('error', 'Ошибка'),
+        ('skipped', 'Пропущено'),
+    ]
+    
+    notification = models.ForeignKey(
+        NotificationQueue,
+        on_delete=models.CASCADE,
+        related_name='logs',
+        verbose_name='Уведомление'
+    )
+    attempt_number = models.PositiveIntegerField(verbose_name='Номер попытки')
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        verbose_name='Статус'
+    )
+    error_message = models.TextField(
+        blank=True,
+        verbose_name='Сообщение об ошибке'
+    )
+    telegram_message_id = models.BigIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='ID сообщения в Telegram'
+    )
+    response_data = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name='Данные ответа'
+    )
+    processing_time_ms = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Время обработки (мс)'
+    )
+    timestamp = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True,
+        verbose_name='Время попытки'
+    )
+    
+    class Meta:
+        verbose_name = 'Лог уведомления'
+        verbose_name_plural = 'Логи уведомлений'
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['notification', '-timestamp']),
+            models.Index(fields=['status', '-timestamp']),
+        ]
+    
+    def __str__(self):
+        return f"Попытка #{self.attempt_number} для {self.notification.id} - {self.get_status_display()}"

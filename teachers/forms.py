@@ -701,6 +701,61 @@ class StudentRegistrationForm(UserCreationForm):
         return user
 
 
+class TeacherSubjectEditForm(forms.ModelForm):
+    """Форма для редактирования одного предмета учителя"""
+    
+    class Meta:
+        model = TeacherSubject
+        fields = ['subject', 'hourly_rate', 'is_free_trial', 'description']
+        widgets = {
+            'subject': forms.Select(attrs={
+                'class': 'form-select',
+            }),
+            'hourly_rate': forms.NumberInput(attrs={
+                'class': 'form-input',
+                'placeholder': '50000',
+                'min': '0',
+                'step': '1000'
+            }),
+            'is_free_trial': forms.CheckboxInput(attrs={
+                'class': 'form-checkbox'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-textarea',
+                'rows': 2,
+                'placeholder': _('Дополнительная информация о преподавании этого предмета')
+            })
+        }
+        labels = {
+            'subject': _('Предмет'),
+            'hourly_rate': _('Цена за час (сум)'),
+            'is_free_trial': _('Бесплатное пробное занятие'),
+            'description': _('Описание')
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Для новой формы делаем поля необязательными
+        if not self.instance.pk:
+            self.fields['subject'].required = False
+            self.fields['hourly_rate'].required = False
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        subject = cleaned_data.get('subject')
+        hourly_rate = cleaned_data.get('hourly_rate')
+        
+        # Если выбран предмет, цена обязательна
+        if subject and not hourly_rate:
+            raise forms.ValidationError(_('Укажите цену за час для выбранного предмета'))
+        
+        # Если указана цена, предмет обязателен
+        if hourly_rate and not subject:
+            raise forms.ValidationError(_('Выберите предмет'))
+        
+        return cleaned_data
+
+
 class TeacherProfileEditForm(forms.ModelForm):
     """Форма редактирования профиля учителя"""
     

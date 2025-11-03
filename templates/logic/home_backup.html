@@ -5,23 +5,7 @@
 
 {% block content %}
 <style>
-    /* ============================================
-       🎨 КРИТИЧЕСКИЕ CSS ПЕРЕМЕННЫЕ
-       ============================================ */
-    :root {
-        --navbar-height-desktop: 70px;
-        --navbar-height-tablet: 56px;
-        --navbar-height-mobile: 52px;
-        --filter-sidebar-width: 280px;
-        --card-min-width: 320px;
-        --transition-speed: 0.3s;
-        --primary-color: #0A2540;
-        --success-color: #10B981;
-    }
-
-    /* ============================================
-       📱 ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК - ОПТИМИЗИРОВАННЫЙ
-       ============================================ */
+    /* НОВОЕ: Стили для переключателя вкладок */
     .tabs-container {
         max-width: 1400px;
         margin: 0 auto;
@@ -37,14 +21,6 @@
         padding: 12px;
         border-radius: 12px;
         box-shadow: 0 2px 8px rgba(10, 37, 64, 0.06);
-        /* Плавная прокрутка на мобильных */
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-    }
-
-    .tabs-wrapper::-webkit-scrollbar {
-        display: none;
     }
 
     .tab-button {
@@ -58,23 +34,22 @@
         font-weight: 600;
         color: #666;
         cursor: pointer;
-        transition: all var(--transition-speed);
+        transition: all 0.3s;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
-        white-space: nowrap;
     }
 
     .tab-button:hover {
-        border-color: var(--primary-color);
-        color: var(--primary-color);
+        border-color: #0A2540;
+        color: #0A2540;
         transform: translateY(-2px);
     }
 
     .tab-button.active {
-        background: var(--primary-color);
-        border-color: var(--primary-color);
+        background: #0A2540;
+        border-color: #0A2540;
         color: white;
         box-shadow: 0 4px 12px rgba(10, 37, 64, 0.2);
     }
@@ -83,9 +58,7 @@
         font-size: 18px;
     }
 
-    /* ============================================
-       📄 ОСНОВНОЙ КОНТЕЙНЕР СТРАНИЦЫ
-       ============================================ */
+    /* Остальные стили БЕЗ ИЗМЕНЕНИЙ */
     .page-container {
         max-width: 1400px;
         margin: 0 auto;
@@ -102,7 +75,7 @@
     .page-title {
         font-size: 20px;
         font-weight: 600;
-        color: var(--primary-color);
+        color: #0A2540;
         margin-bottom: 6px;
         line-height: 1.3;
     }
@@ -123,48 +96,22 @@
         opacity: 0.9;
     }
 
-    /* ============================================
-       🎯 LAYOUT - DESKTOP FIRST
-       ============================================ */
     .content-layout {
         display: grid;
-        grid-template-columns: var(--filter-sidebar-width) 1fr;
+        grid-template-columns: 280px 1fr;
         gap: 30px;
         align-items: start;
     }
 
-    /* ============================================
-       🔍 ФИЛЬТРЫ - SIDEBAR
-       ============================================ */
     .filters-sidebar {
         background: white;
         border-radius: 12px;
         padding: 20px;
         box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
         position: sticky;
-        top: calc(var(--navbar-height-desktop) + 20px);
-        max-height: calc(100vh - var(--navbar-height-desktop) - 40px);
+        top: 90px;
+        max-height: calc(100vh - 110px);
         overflow-y: auto;
-        transition: all var(--transition-speed);
-    }
-
-    /* Кастомный скроллбар для фильтров */
-    .filters-sidebar::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .filters-sidebar::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 10px;
-    }
-
-    .filters-sidebar::-webkit-scrollbar-thumb {
-        background: #888;
-        border-radius: 10px;
-    }
-
-    .filters-sidebar::-webkit-scrollbar-thumb:hover {
-        background: #555;
     }
 
     .filters-header {
@@ -172,14 +119,12 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 20px;
-        padding-bottom: 15px;
-        border-bottom: 2px solid #f0f0f0;
     }
 
     .filters-title {
         font-size: 18px;
         font-weight: 600;
-        color: var(--primary-color);
+        color: #0A2540;
     }
 
     .reset-filters {
@@ -189,16 +134,10 @@
         font-size: 13px;
         cursor: pointer;
         text-decoration: underline;
-        padding: 4px 8px;
-        transition: color var(--transition-speed);
-    }
-
-    .reset-filters:hover {
-        color: #2563EB;
     }
 
     .filter-group {
-        margin-bottom: 20px;
+        margin-bottom: 25px;
         padding-bottom: 20px;
         border-bottom: 1px solid #eee;
     }
@@ -211,16 +150,24 @@
         display: block;
         font-size: 14px;
         font-weight: 600;
-        color: var(--primary-color);
+        color: #0A2540;
         margin-bottom: 10px;
     }
 
-    .filter-label i {
-        margin-right: 6px;
-        color: #3B82F6;
+    .search-input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border 0.3s;
     }
 
-    .search-input,
+    .search-input:focus {
+        outline: none;
+        border-color: #3B82F6;
+    }
+
     .filter-select {
         width: 100%;
         padding: 10px 12px;
@@ -228,14 +175,13 @@
         border-radius: 8px;
         font-size: 14px;
         background: white;
-        transition: all var(--transition-speed);
+        cursor: pointer;
+        transition: border 0.3s;
     }
 
-    .search-input:focus,
     .filter-select:focus {
         outline: none;
         border-color: #3B82F6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
 
     .price-inputs {
@@ -249,12 +195,6 @@
         border: 1px solid #ddd;
         border-radius: 6px;
         font-size: 13px;
-        width: 100%;
-    }
-
-    .price-input:focus {
-        outline: none;
-        border-color: #3B82F6;
     }
 
     .rating-options {
@@ -269,7 +209,7 @@
         padding: 8px;
         border-radius: 6px;
         cursor: pointer;
-        transition: background var(--transition-speed);
+        transition: background 0.2s;
     }
 
     .rating-option:hover {
@@ -278,7 +218,6 @@
 
     .rating-option input[type="radio"] {
         margin-right: 8px;
-        cursor: pointer;
     }
 
     .rating-stars {
@@ -290,26 +229,21 @@
     .apply-filters-btn {
         width: 100%;
         padding: 12px;
-        background: var(--primary-color);
+        background: #0A2540;
         color: white;
         border: none;
         border-radius: 8px;
         font-size: 14px;
         font-weight: 600;
         cursor: pointer;
-        transition: all var(--transition-speed);
+        transition: all 0.3s;
         margin-top: 15px;
     }
 
     .apply-filters-btn:hover {
         background: #1e4a72;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(10, 37, 64, 0.2);
     }
 
-    /* ============================================
-       📋 СПИСОК УЧИТЕЛЕЙ
-       ============================================ */
     .teachers-section {
         min-height: 500px;
     }
@@ -319,7 +253,6 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 20px;
-        padding: 12px 0;
     }
 
     .results-count {
@@ -327,29 +260,19 @@
         color: #666;
     }
 
-    .results-count strong {
-        color: var(--primary-color);
-        font-weight: 700;
-    }
-
     .teachers-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(var(--card-min-width), 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
         gap: 20px;
     }
 
-    /* ============================================
-       🎴 КАРТОЧКА УЧИТЕЛЯ
-       ============================================ */
     .teacher-card {
         background: white;
         border-radius: 12px;
         padding: 20px;
         box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
-        transition: all var(--transition-speed);
+        transition: all 0.3s ease;
         cursor: pointer;
-        display: flex;
-        flex-direction: column;
     }
 
     .teacher-card:hover {
@@ -386,17 +309,13 @@
 
     .teacher-info {
         flex: 1;
-        min-width: 0;
     }
 
     .teacher-name {
         font-size: 18px;
         font-weight: 600;
-        color: var(--primary-color);
+        color: #0A2540;
         margin-bottom: 5px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
     }
 
     .teacher-rating {
@@ -412,7 +331,7 @@
 
     .rating-value {
         font-weight: 600;
-        color: var(--primary-color);
+        color: #0A2540;
     }
 
     .rating-count {
@@ -452,7 +371,6 @@
         margin-bottom: 12px;
         font-size: 13px;
         color: #666;
-        flex-wrap: wrap;
     }
 
     .meta-item {
@@ -462,7 +380,7 @@
     }
 
     .meta-item i {
-        color: var(--primary-color);
+        color: #0A2540;
     }
 
     .teacher-footer {
@@ -471,13 +389,12 @@
         align-items: center;
         padding-top: 12px;
         border-top: 1px solid #eee;
-        margin-top: auto;
     }
 
     .teacher-price {
         font-size: 18px;
         font-weight: 700;
-        color: var(--primary-color);
+        color: #0A2540;
     }
 
     .price-period {
@@ -487,28 +404,47 @@
 
     .contact-btn {
         padding: 8px 16px;
-        background: var(--primary-color);
+        background: #0A2540;
         color: white;
         border: none;
         border-radius: 6px;
         font-size: 13px;
         font-weight: 500;
         cursor: pointer;
-        transition: all var(--transition-speed);
-        display: flex;
-        align-items: center;
-        gap: 6px;
+        transition: all 0.3s;
     }
 
     .contact-btn:hover {
         background: #1e4a72;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(10, 37, 64, 0.2);
     }
 
-    /* ============================================
-       📄 ПАГИНАЦИЯ
-       ============================================ */
+    .no-results {
+        text-align: center;
+        padding: 80px 20px;
+        color: #666;
+    }
+
+    .no-results i {
+        font-size: 48px;
+        color: #ddd;
+        margin-bottom: 15px;
+    }
+
+    .mobile-filters-toggle {
+        display: none;
+        width: 100%;
+        padding: 12px;
+        background: #0A2540;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-bottom: 20px;
+    }
+
+    /* ========== СТИЛИ ПАГИНАЦИИ ========== */
     .pagination-wrapper {
         margin-top: 40px;
         display: flex;
@@ -535,26 +471,26 @@
         background: white;
         border: 2px solid #e0e0e0;
         border-radius: 8px;
-        color: var(--primary-color);
+        color: #0A2540;
         font-weight: 600;
         font-size: 14px;
         text-decoration: none;
-        transition: all var(--transition-speed);
+        transition: all 0.3s ease;
         cursor: pointer;
     }
 
     .page-link:hover {
-        background: var(--primary-color);
+        background: #0A2540;
         color: white;
-        border-color: var(--primary-color);
+        border-color: #0A2540;
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(10, 37, 64, 0.15);
     }
 
     .page-link.current {
-        background: var(--primary-color);
+        background: #0A2540;
         color: white;
-        border-color: var(--primary-color);
+        border-color: #0A2540;
         cursor: default;
         box-shadow: 0 4px 12px rgba(10, 37, 64, 0.2);
     }
@@ -573,522 +509,61 @@
         text-align: center;
     }
 
-    /* ============================================
-       ❌ NO RESULTS
-       ============================================ */
-    .no-results {
-        text-align: center;
-        padding: 80px 20px;
-        color: #666;
-    }
-
-    .no-results i {
-        font-size: 48px;
-        color: #ddd;
-        margin-bottom: 15px;
-    }
-
-    .no-results h3 {
-        font-size: 20px;
-        color: var(--primary-color);
-        margin-bottom: 8px;
-    }
-
-    .no-results p {
-        font-size: 14px;
-        color: #999;
-    }
-
-    /* ============================================
-       📱 MOBILE FILTERS TOGGLE
-       ============================================ */
-    .mobile-filters-toggle {
-        display: none;
-        width: 100%;
-        padding: 12px;
-        background: var(--primary-color);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        margin-bottom: 20px;
-        transition: all var(--transition-speed);
-        position: sticky;
-        z-index: 10;
-    }
-
-    .mobile-filters-toggle:active {
-        transform: scale(0.98);
-    }
-
-    /* Backdrop для мобильных фильтров */
-    .filters-backdrop {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 999;
-        transition: opacity var(--transition-speed);
-    }
-
-    .filters-backdrop.active {
-        display: block;
-    }
-
-    /* ============================================
-       📱 АДАПТИВНЫЙ ДИЗАЙН - ПРАВИЛЬНАЯ СТРУКТУРА
-       ============================================ */
-
-    /* === TABLET (1024px и меньше) === */
     @media (max-width: 1024px) {
-        :root {
-            --navbar-height-desktop: var(--navbar-height-tablet);
-        }
-
-        .tabs-container {
-            padding: 16px 12px 0;
-        }
-
-        .page-container {
-            padding: 24px 16px;
-        }
-
         .content-layout {
             grid-template-columns: 1fr;
-            gap: 20px;
         }
 
-        /* Фильтры становятся drawer */
         .filters-sidebar {
+            display: none;
             position: fixed;
-            top: 0;
-            left: -100%;
-            width: 85%;
-            max-width: 360px;
-            height: 100vh;
-            max-height: 100vh;
-            z-index: 1000;
+            top: 70px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 999;
+            max-height: none;
             border-radius: 0;
             padding: 20px;
             overflow-y: auto;
-            box-shadow: 2px 0 20px rgba(0, 0, 0, 0.2);
-            transition: left var(--transition-speed) ease-in-out;
         }
 
         .filters-sidebar.active {
-            left: 0;
+            display: block;
         }
 
         .mobile-filters-toggle {
             display: block;
-            top: calc(var(--navbar-height-tablet) + 10px);
         }
 
         .teachers-grid {
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 16px;
+        }
+
+        /* НОВОЕ: Адаптация вкладок для мобильных */
+        .tabs-wrapper {
+            flex-direction: row;
+            overflow-x: auto;
         }
 
         .tab-button {
-            min-width: 140px;
-            padding: 10px 20px;
+            min-width: 150px;
             font-size: 14px;
         }
     }
 
-    /* === MOBILE (768px и меньше) === */
-    @media (max-width: 768px) {
-        :root {
-            --navbar-height-desktop: var(--navbar-height-mobile);
-        }
-
-        .tabs-container {
-            padding: 12px 8px 0;
-        }
-
-        .tabs-wrapper {
-            padding: 8px;
-            gap: 8px;
-        }
-
-        .tab-button {
-            min-width: 130px;
-            padding: 9px 16px;
-            font-size: 13px;
-        }
-
-        .tab-button i {
-            font-size: 16px;
-        }
-
-        .page-container {
-            padding: 20px 12px;
-        }
-
-        .page-header {
-            margin-bottom: 16px;
-            padding: 12px 0;
-        }
-
-        .page-title {
-            font-size: 18px;
-            margin-bottom: 6px;
-        }
-
-        .page-description {
-            font-size: 11px;
-        }
-
-        .mobile-filters-toggle {
-            padding: 10px;
-            font-size: 13px;
-            margin-bottom: 16px;
-            top: calc(var(--navbar-height-mobile) + 10px);
-        }
-
-        .filters-sidebar {
-            width: 90%;
-            max-width: 320px;
-            padding: 16px;
-        }
-
-        .filters-title {
-            font-size: 16px;
-        }
-
-        .filter-label {
-            font-size: 13px;
-            margin-bottom: 8px;
-        }
-
-        .search-input,
-        .filter-select {
-            padding: 9px 10px;
-            font-size: 13px;
-        }
-
+    @media (max-width: 640px) {
         .teachers-grid {
             grid-template-columns: 1fr;
-            gap: 14px;
-        }
-
-        .teacher-card {
-            padding: 16px;
-        }
-
-        .teacher-avatar {
-            width: 54px;
-            height: 54px;
-            font-size: 18px;
-        }
-
-        .teacher-name {
-            font-size: 16px;
-        }
-
-        .teacher-rating {
-            font-size: 13px;
-        }
-
-        .teacher-subjects {
-            gap: 5px;
-        }
-
-        .subject-tag {
-            font-size: 11px;
-            padding: 3px 8px;
-        }
-
-        .teacher-description {
-            font-size: 12px;
-        }
-
-        .teacher-meta {
-            font-size: 12px;
-            gap: 12px;
-        }
-
-        .teacher-price {
-            font-size: 16px;
-        }
-
-        .price-period {
-            font-size: 11px;
-        }
-
-        .contact-btn {
-            padding: 7px 14px;
-            font-size: 12px;
-        }
-
-        /* Пагинация */
-        .pagination {
-            gap: 6px;
-        }
-
-        .page-link {
-            min-width: 36px;
-            height: 36px;
-            padding: 0 10px;
-            font-size: 13px;
-        }
-
-        .page-info {
-            font-size: 13px;
-        }
-    }
-
-    /* === SMALL MOBILE (480px и меньше) === */
-    @media (max-width: 480px) {
-        .tabs-container {
-            padding: 10px 6px 0;
-        }
-
-        .tabs-wrapper {
-            padding: 6px;
-            gap: 6px;
-        }
-
-        .tab-button {
-            min-width: auto;
-            padding: 8px 12px;
-            font-size: 12px;
-            flex: 1;
-        }
-
-        .tab-button span {
-            display: none;
-        }
-
-        .tab-button i {
-            font-size: 18px;
-            margin: 0;
-        }
-
-        .page-container {
-            padding: 16px 8px;
         }
 
         .page-title {
-            font-size: 16px;
+            font-size: 24px;
         }
-
-        .page-description {
-            font-size: 10px;
-        }
-
-        .mobile-filters-toggle {
-            padding: 9px;
-            font-size: 12px;
-        }
-
-        .filters-sidebar {
-            width: 95%;
-            padding: 14px;
-        }
-
-        .teacher-card {
-            padding: 14px;
-        }
-
-        .teacher-header {
-            gap: 12px;
-        }
-
-        .teacher-avatar {
-            width: 50px;
-            height: 50px;
-            font-size: 16px;
-        }
-
-        .teacher-name {
-            font-size: 15px;
-        }
-
-        .teacher-subjects {
-            gap: 4px;
-        }
-
-        .subject-tag {
-            font-size: 10px;
-            padding: 2px 7px;
-        }
-
-        .teacher-meta {
-            gap: 10px;
-            font-size: 11px;
-        }
-
-        .teacher-price {
-            font-size: 15px;
-        }
-
-        .contact-btn {
-            padding: 6px 12px;
-            font-size: 11px;
-        }
-
-        /* Компактная пагинация */
-        .pagination {
-            gap: 4px;
-        }
-
-        .page-link {
-            min-width: 32px;
-            height: 32px;
-            padding: 0 8px;
-            font-size: 12px;
-        }
-
-        /* Скрываем некоторые номера страниц на маленьких экранах */
-        .pagination .page-link:not(.current):not(.first):not(.last):not(.prev):not(.next) {
-            display: none;
-        }
-
-        .page-link.first,
-        .page-link.last,
-        .page-link.prev,
-        .page-link.next,
-        .page-link.current {
-            display: flex !important;
-        }
-
-        .page-info {
-            font-size: 12px;
-        }
-    }
-
-    /* === EXTRA SMALL (360px и меньше) === */
-    @media (max-width: 360px) {
-        .page-container {
-            padding: 12px 6px;
-        }
-
-        .teacher-card {
-            padding: 12px;
-        }
-
-        .teacher-avatar {
-            width: 46px;
-            height: 46px;
-            font-size: 15px;
-        }
-
-        .teacher-name {
-            font-size: 14px;
-        }
-
-        .tab-button {
-            padding: 7px 10px;
-        }
-
-        .tab-button i {
-            font-size: 16px;
-        }
-    }
-
-    /* ============================================
-       🎯 TOUCH OPTIMIZATIONS
-       ============================================ */
-    @media (hover: none) and (pointer: coarse) {
-        /* Убираем hover эффекты на touch устройствах */
-        .teacher-card:hover,
-        .contact-btn:hover,
-        .tab-button:hover,
-        .page-link:hover,
-        .apply-filters-btn:hover {
-            transform: none;
-            box-shadow: inherit;
-        }
-
-        /* Active состояния для touch */
-        .teacher-card:active {
-            transform: scale(0.98);
-        }
-
-        .contact-btn:active,
-        .apply-filters-btn:active {
-            transform: scale(0.95);
-        }
-
-        .tab-button:active:not(.active) {
-            transform: scale(0.97);
-        }
-
-        .page-link:active:not(.current) {
-            transform: scale(0.95);
-        }
-    }
-
-    /* ============================================
-       📱 LANDSCAPE MODE
-       ============================================ */
-    @media (max-width: 900px) and (orientation: landscape) {
-        .teachers-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-
-        .filters-sidebar {
-            width: 60%;
-            max-width: 400px;
-        }
-    }
-
-    /* ============================================
-       🖨️ PRINT STYLES
-       ============================================ */
-    @media print {
-        .tabs-container,
-        .mobile-filters-toggle,
-        .filters-sidebar,
-        .filters-backdrop,
-        .pagination-wrapper,
-        .contact-btn {
-            display: none !important;
-        }
-
-        .teachers-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-
-        .teacher-card {
-            page-break-inside: avoid;
-            box-shadow: none !important;
-            border: 1px solid #ddd;
-        }
-    }
-
-    /* ============================================
-       ♿ ACCESSIBILITY
-       ============================================ */
-    @media (prefers-reduced-motion: reduce) {
-        *,
-        *::before,
-        *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
-        }
-    }
-
-    /* Focus visible для клавиатурной навигации */
-    .tab-button:focus-visible,
-    .contact-btn:focus-visible,
-    .page-link:focus-visible,
-    .search-input:focus-visible,
-    .filter-select:focus-visible {
-        outline: 3px solid #3B82F6;
-        outline-offset: 2px;
     }
 </style>
 
-<!-- ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК -->
+<!-- НОВОЕ: Переключатель вкладок -->
 <div class="tabs-container">
     <div class="tabs-wrapper">
         <button class="tab-button active" onclick="window.location.href='{% url 'home' %}'">
@@ -1103,22 +578,17 @@
 </div>
 
 <div class="page-container">
-    <!-- ЗАГОЛОВОК СТРАНИЦЫ -->
     <div class="page-header">
         <h1 class="page-title">{% trans 'Найдите квалифицированного учителя онлайн' %}</h1>
         <p class="page-description">{% trans 'Используйте фильтры поиска, чтобы найти учителей в соответствии с вашим бюджетом и потребностями. Развивайтесь быстрее с индивидуальным подходом!' %}</p>
     </div>
 
-    <!-- КНОПКА ФИЛЬТРОВ ДЛЯ МОБИЛЬНЫХ -->
     <button class="mobile-filters-toggle" onclick="toggleFilters()">
         <i class="fas fa-filter"></i> {% trans 'Фильтры' %}
     </button>
 
-    <!-- BACKDROP ДЛЯ ФИЛЬТРОВ -->
-    <div class="filters-backdrop" id="filtersBackdrop" onclick="closeFilters()"></div>
-
     <div class="content-layout">
-        <!-- БОКОВАЯ ПАНЕЛЬ ФИЛЬТРОВ -->
+        <!-- Filters Sidebar - БЕЗ ИЗМЕНЕНИЙ -->
         <aside class="filters-sidebar" id="filtersSidebar">
             <div class="filters-header">
                 <h3 class="filters-title">{% trans 'Фильтры' %}</h3>
@@ -1126,7 +596,6 @@
             </div>
 
             <form method="GET" action="" id="filtersForm">
-                <!-- ПОИСК -->
                 <div class="filter-group">
                     <label class="filter-label">
                         <i class="fas fa-search"></i> {% trans 'Поиск' %}
@@ -1138,7 +607,6 @@
                            value="{{ search_query|default:'' }}">
                 </div>
 
-                <!-- ПРЕДМЕТ -->
                 <div class="filter-group">
                     <label class="filter-label">
                         <i class="fas fa-book"></i> {% trans 'Предмет' %}
@@ -1153,7 +621,6 @@
                     </select>
                 </div>
 
-                <!-- ГОРОД -->
                 <div class="filter-group">
                     <label class="filter-label">
                         <i class="fas fa-map-marker-alt"></i> {% trans 'Город' %}
@@ -1168,7 +635,6 @@
                     </select>
                 </div>
 
-                <!-- ФОРМАТ ОБУЧЕНИЯ -->
                 <div class="filter-group">
                     <label class="filter-label">
                         <i class="fas fa-desktop"></i> {% trans 'Формат обучения' %}
@@ -1183,7 +649,6 @@
                     </select>
                 </div>
 
-                <!-- ЦЕНА -->
                 <div class="filter-group">
                     <label class="filter-label">
                         <i class="fas fa-dollar-sign"></i> {% trans 'Цена за час (сум)' %}
@@ -1193,18 +658,15 @@
                                name="min_price" 
                                class="price-input" 
                                placeholder="{% trans 'От' %}"
-                               value="{{ selected_min_price|default:'' }}"
-                               min="0">
+                               value="{{ selected_min_price|default:'' }}">
                         <input type="number" 
                                name="max_price" 
                                class="price-input" 
                                placeholder="{% trans 'До' %}"
-                               value="{{ selected_max_price|default:'' }}"
-                               min="0">
+                               value="{{ selected_max_price|default:'' }}">
                     </div>
                 </div>
 
-                <!-- РЕЙТИНГ -->
                 <div class="filter-group">
                     <label class="filter-label">
                         <i class="fas fa-star"></i> {% trans 'Рейтинг' %}
@@ -1227,7 +689,6 @@
                     </div>
                 </div>
 
-                <!-- ОПЫТ -->
                 <div class="filter-group">
                     <label class="filter-label">
                         <i class="fas fa-clock"></i> {% trans 'Опыт (лет)' %}
@@ -1247,7 +708,7 @@
             </form>
         </aside>
 
-        <!-- СПИСОК УЧИТЕЛЕЙ -->
+        <!-- Teachers List -->
         <section class="teachers-section">
             <div class="results-header">
                 <span class="results-count">
@@ -1259,7 +720,7 @@
             {% if teachers %}
                 <div class="teachers-grid">
                     {% for teacher in teachers %}
-                        <div class="teacher-card" onclick="window.location.href='{% url 'teacher_detail' teacher.id %}'">
+                        <div class="teacher-card" onclick="window.location.href='{% url 'teacher_detail' teacher.id %}'" style="cursor: pointer;">
                             <div class="teacher-header">
                                 <div class="teacher-avatar">
                                     {% if teacher.user.avatar %}
@@ -1322,15 +783,15 @@
                     {% endfor %}
                 </div>
                 
-                <!-- ПАГИНАЦИЯ -->
+                <!-- ========== ПАГИНАЦИЯ ========== -->
                 {% if teachers.has_other_pages %}
                 <div class="pagination-wrapper">
                     <div class="pagination">
                         {% if teachers.has_previous %}
-                            <a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link first">
+                            <a href="?page=1{% if request.GET.subject %}&subject={{ request.GET.subject }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.format %}&format={{ request.GET.format }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% if request.GET.min_rating %}&min_rating={{ request.GET.min_rating }}{% endif %}{% if request.GET.min_experience %}&min_experience={{ request.GET.min_experience }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="page-link first">
                                 <i class="fas fa-angle-double-left"></i>
                             </a>
-                            <a href="?page={{ teachers.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link prev">
+                            <a href="?page={{ teachers.previous_page_number }}{% if request.GET.subject %}&subject={{ request.GET.subject }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.format %}&format={{ request.GET.format }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% if request.GET.min_rating %}&min_rating={{ request.GET.min_rating }}{% endif %}{% if request.GET.min_experience %}&min_experience={{ request.GET.min_experience }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="page-link prev">
                                 <i class="fas fa-angle-left"></i>
                             </a>
                         {% endif %}
@@ -1339,15 +800,15 @@
                             {% if teachers.number == num %}
                                 <span class="page-link current">{{ num }}</span>
                             {% elif num > teachers.number|add:'-3' and num < teachers.number|add:'3' %}
-                                <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">{{ num }}</a>
+                                <a href="?page={{ num }}{% if request.GET.subject %}&subject={{ request.GET.subject }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.format %}&format={{ request.GET.format }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% if request.GET.min_rating %}&min_rating={{ request.GET.min_rating }}{% endif %}{% if request.GET.min_experience %}&min_experience={{ request.GET.min_experience }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="page-link">{{ num }}</a>
                             {% endif %}
                         {% endfor %}
 
                         {% if teachers.has_next %}
-                            <a href="?page={{ teachers.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link next">
+                            <a href="?page={{ teachers.next_page_number }}{% if request.GET.subject %}&subject={{ request.GET.subject }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.format %}&format={{ request.GET.format }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% if request.GET.min_rating %}&min_rating={{ request.GET.min_rating }}{% endif %}{% if request.GET.min_experience %}&min_experience={{ request.GET.min_experience }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="page-link next">
                                 <i class="fas fa-angle-right"></i>
                             </a>
-                            <a href="?page={{ teachers.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link last">
+                            <a href="?page={{ teachers.paginator.num_pages }}{% if request.GET.subject %}&subject={{ request.GET.subject }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.format %}&format={{ request.GET.format }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% if request.GET.min_rating %}&min_rating={{ request.GET.min_rating }}{% endif %}{% if request.GET.min_experience %}&min_experience={{ request.GET.min_experience }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="page-link last">
                                 <i class="fas fa-angle-double-right"></i>
                             </a>
                         {% endif %}
@@ -1357,6 +818,7 @@
                     </div>
                 </div>
                 {% endif %}
+                <!-- ========== КОНЕЦ ПАГИНАЦИИ ========== -->
             {% else %}
                 <div class="no-results">
                     <i class="fas fa-search"></i>
@@ -1369,45 +831,30 @@
 </div>
 
 <script>
-    // ========== УПРАВЛЕНИЕ ФИЛЬТРАМИ ==========
     function toggleFilters() {
         const sidebar = document.getElementById('filtersSidebar');
         const backdrop = document.getElementById('filtersBackdrop');
         
-        if (sidebar && backdrop) {
-            const isActive = sidebar.classList.contains('active');
-            
-            if (isActive) {
-                closeFilters();
-            } else {
-                sidebar.classList.add('active');
-                backdrop.classList.add('active');
-                document.body.style.overflow = 'hidden';
-            }
+        if (sidebar) {
+            sidebar.classList.toggle('active');
         }
-    }
-
-    function closeFilters() {
-        const sidebar = document.getElementById('filtersSidebar');
-        const backdrop = document.getElementById('filtersBackdrop');
-        
-        if (sidebar) sidebar.classList.remove('active');
-        if (backdrop) backdrop.classList.remove('active');
-        document.body.style.overflow = '';
+        if (backdrop) {
+            backdrop.classList.toggle('active');
+        }
     }
 
     function resetFilters() {
         window.location.href = window.location.pathname;
     }
 
-    // Auto-submit при изменении select
+    // Auto-submit on select change
     document.querySelectorAll('.filter-select').forEach(select => {
         select.addEventListener('change', function() {
             document.getElementById('filtersForm').submit();
         });
     });
 
-    // Закрытие фильтров при клике вне области
+    // Close filters when clicking outside (updated)
     document.addEventListener('click', function(event) {
         const sidebar = document.getElementById('filtersSidebar');
         const toggle = document.querySelector('.mobile-filters-toggle');
@@ -1419,40 +866,6 @@
             closeFilters();
         }
     });
-
-    // Закрытие по ESC
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            closeFilters();
-        }
     });
-
-    // Закрытие при изменении размера окна
-    window.addEventListener('resize', function() {
-        if (window.innerWidth > 1024) {
-            closeFilters();
-        }
-    });
-
-    // Предотвращение прокрутки фона на iOS
-    const filtersSidebar = document.getElementById('filtersSidebar');
-    if (filtersSidebar) {
-        let touchStartY = 0;
-        
-        filtersSidebar.addEventListener('touchstart', function(e) {
-            touchStartY = e.touches[0].clientY;
-        }, { passive: true });
-        
-        filtersSidebar.addEventListener('touchmove', function(e) {
-            const touchY = e.touches[0].clientY;
-            const touchDelta = touchY - touchStartY;
-            const isAtTop = filtersSidebar.scrollTop === 0;
-            const isAtBottom = filtersSidebar.scrollHeight - filtersSidebar.scrollTop === filtersSidebar.clientHeight;
-            
-            if ((isAtTop && touchDelta > 0) || (isAtBottom && touchDelta < 0)) {
-                e.preventDefault();
-            }
-        }, { passive: false });
-    }
 </script>
 {% endblock %}

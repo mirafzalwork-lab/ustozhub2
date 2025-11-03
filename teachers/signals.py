@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 @receiver(post_save, sender=Message)
 def send_message_notification(sender, instance, created, **kwargs):
     """
-    Signal: Отправляет уведомление в Telegram когда создается новое сообщение
+    Signal: Добавляет уведомление в очередь когда создается новое сообщение
+    Использует новую систему с retry и rate limiting
     
     Args:
         sender: Класс модели (Message)
@@ -25,38 +26,54 @@ def send_message_notification(sender, instance, created, **kwargs):
         return
     
     try:
-        from telegram_bot.notifications import send_telegram_notification
+        from telegram_bot.notification_service import queue_new_message_notification
         
         # Получаем данные
-        conversation = instance.conversation
-        sender_user = instance.sender
+        message = instance
+        conversation = message.conversation
+        sender_user = message.sender
         
         # Определяем получателя (тот, кто НЕ отправитель)
-        if conversation.teacher.user == sender_user:
-            # Отправитель - учитель, получатель - ученик
-            recipient = conversation.student
-        else:
-            # Отправитель - ученик, получатель - учитель
-            recipient = conversation.teacher.user
+        participants = conversation.participants.all()
         
-        # Отправляем уведомление
+        if len(participants) != 2:
+            logger.warning(f"Диалог {conversation.id} имеет {len(participants)} участников (ожидалось 2)")
+            return
+        
+        # Получатель - это не отправитель
+        recipient = None
+        for participant in participants:
+            if participant != sender_user:
+                recipient = participant
+                break
+        
+        if not recipient:
+            logger.error(f"Не удалось определить получателя для сообщения {message.id}")
+            return
+        
+        # Не отправляем уведомление самому себе
+        if recipient == sender_user:
+            return
+        
+        # Добавляем уведомление в очередь
         sender_name = sender_user.get_full_name() or sender_user.username
-        message_preview = instance.content[:100]  # Первые 100 символов
+        message_preview = message.text if message.text else "[файл]"
         
-        success = send_telegram_notification(
-            user=recipient,
+        notification = queue_new_message_notification(
+            recipient=recipient,
             sender_name=sender_name,
-            message_preview=message_preview
+            message_preview=message_preview,
+            conversation_id=conversation.id
         )
         
-        if success:
-            logger.info(f"✅ Уведомление отправлено пользователю {recipient.username} ({recipient.get_full_name()})")
+        if notification:
+            logger.info(f"✅ Уведомление о сообщении {message.id} добавлено в очередь для {recipient.username}")
         else:
-            logger.warning(f"❌ Не удалось отправить уведомление пользователю {recipient.username} ({recipient.get_full_name()}) - возможно, не запустил бота или отключил уведомления")
+            logger.warning(f"❌ Уведомление не добавлено - пользователь {recipient.username} не подключил Telegram или отключил уведомления")
             
     except Exception as e:
-        # Не прерываем создание сообщения даже если уведомление не отправлено
-        logger.error(f"Ошибка отправки уведомления о сообщении: {e}")
+        # Не прерываем создание сообщения даже если уведомление не добавлено
+        logger.error(f"Ошибка добавления уведомления о сообщении: {e}", exc_info=True)
 
 
 # =============================================================================

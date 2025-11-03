@@ -9,39 +9,41 @@
     .detail-container {
         max-width: 1400px;
         margin: 0 auto;
-        padding: 30px 20px;
-        overflow-x: hidden; /* Предотвращаем горизонтальный скролл */
+        padding: var(--spacing-xl) var(--spacing-lg);
+        overflow-x: hidden;
     }
 
     /* Breadcrumbs */
     .breadcrumbs {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: var(--spacing-xs);
         font-size: 13px;
-        color: #666;
-        margin-bottom: 24px;
-        flex-wrap: wrap; /* Перенос на мобильных */
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-lg);
+        flex-wrap: wrap;
     }
 
     .breadcrumbs a {
-        color: #3B82F6;
+        color: var(--accent-color);
         text-decoration: none;
+        transition: color var(--transition-base);
     }
 
     .breadcrumbs a:hover {
+        color: var(--accent-hover);
         text-decoration: underline;
     }
 
     .breadcrumb-separator {
-        color: #ccc;
+        color: var(--border-color);
     }
 
     /* Layout */
     .detail-layout {
         display: grid;
         grid-template-columns: 1fr 380px;
-        gap: 30px;
+        gap: var(--spacing-xl);
         align-items: start;
     }
 
@@ -49,29 +51,34 @@
     .detail-main {
         display: flex;
         flex-direction: column;
-        gap: 24px;
-        min-width: 0; /* Важно для предотвращения overflow */
+        gap: var(--spacing-lg);
+        min-width: 0;
     }
 
     /* Teacher Header Card */
     .teacher-header-card {
-        background: white;
-        border-radius: 16px;
-        padding: 32px;
-        box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-xl);
+        box-shadow: var(--shadow-md);
+        transition: box-shadow var(--transition-slow);
+    }
+
+    .teacher-header-card:hover {
+        box-shadow: var(--shadow-lg);
     }
 
     .teacher-header-content {
         display: flex;
-        gap: 24px;
-        margin-bottom: 24px;
+        gap: var(--spacing-lg);
+        margin-bottom: var(--spacing-lg);
     }
 
     .teacher-avatar-large {
         width: 120px;
         height: 120px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #3B82F6, #1E40AF);
+        border-radius: var(--radius-full);
+        background: linear-gradient(135deg, var(--accent-color), #1E40AF);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -80,8 +87,13 @@
         font-weight: 700;
         flex-shrink: 0;
         overflow: hidden;
-        border: 4px solid #f8f9fa;
+        border: 4px solid var(--bg-secondary);
         box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        transition: transform var(--transition-base);
+    }
+
+    .teacher-avatar-large:hover {
+        transform: scale(1.05);
     }
 
     .teacher-avatar-large img {
@@ -92,13 +104,13 @@
 
     .teacher-header-info {
         flex: 1;
-        min-width: 0; /* Важно для текста */
+        min-width: 0;
     }
 
     .teacher-name-large {
         font-size: 28px;
         font-weight: 700;
-        color: #0A2540;
+        color: var(--primary-color);
         margin-bottom: 8px;
         line-height: 1.2;
         word-wrap: break-word; /* Перенос длинных имен */
@@ -597,12 +609,14 @@
         align-items: center;
         justify-content: center;
         gap: 8px;
+        text-decoration: none;
     }
 
     .btn-primary:hover {
         background: #1e4a72;
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(10, 37, 64, 0.2);
+        text-decoration: none;
     }
 
     .btn-secondary {
@@ -889,21 +903,61 @@
             position: static;
         }
 
+        /* Контактная информация и доступность показываем на планшетах */
+        .contact-card,
+        .availability-card {
+            display: block;
+        }
+
         /* Фиксированная панель бронирования внизу */
         .booking-card {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            border-radius: 16px 16px 0 0;
+            border-radius: 20px 20px 0 0;
             z-index: 999;
-            box-shadow: 0 -4px 20px rgba(10, 37, 64, 0.15);
+            box-shadow: 0 -6px 30px rgba(10, 37, 64, 0.2);
             max-width: 100%;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.98);
+        }
+
+        /* Компактный заголовок */
+        .booking-header {
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+        }
+
+        .booking-price {
+            font-size: 12px;
+        }
+
+        .booking-amount {
+            font-size: 28px;
+        }
+
+        /* Кнопки в ряд на планшетах */
+        .booking-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .booking-actions .btn-primary {
+            grid-column: 1 / -1;
+        }
+
+        .booking-note {
+            font-size: 11px;
+            margin-top: 12px;
+            padding-top: 12px;
         }
 
         /* Добавляем отступ снизу для основного контента */
         .detail-main {
-            margin-bottom: 200px;
+            margin-bottom: 180px;
         }
 
         .teacher-name-large {
@@ -914,20 +968,26 @@
             width: 120px;
             font-size: 13px;
         }
+
+        /* Похожие учителя скрываем на планшетах */
+        .similar-teachers-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
     }
 
     /* Mobile (768px и меньше) */
     @media (max-width: 768px) {
         .detail-container {
-            padding: 20px 12px;
+            padding: 16px 12px 12px;
         }
 
         .breadcrumbs {
-            font-size: 12px;
+            font-size: 11px;
+            gap: 6px;
         }
 
         .teacher-header-card {
-            padding: 20px;
+            padding: 20px 16px;
         }
 
         .teacher-header-content {
@@ -969,7 +1029,7 @@
         }
 
         .content-card {
-            padding: 20px;
+            padding: 18px 14px;
         }
 
         .card-title {
@@ -983,6 +1043,7 @@
         .subject-item {
             flex-direction: column;
             align-items: flex-start;
+            padding: 14px;
         }
 
         .subject-price {
@@ -1004,53 +1065,121 @@
             align-items: flex-start;
         }
 
+        /* MOBILE: Оптимизированная booking card */
         .booking-card {
-            padding: 20px;
+            padding: 16px;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .booking-header {
+            padding-bottom: 10px;
+            margin-bottom: 10px;
         }
 
         .booking-amount {
-            font-size: 28px;
+            font-size: 24px;
+        }
+
+        .booking-period {
+            font-size: 12px;
+        }
+
+        /* Все кнопки в столбец на мобильных */
+        .booking-actions {
+            grid-template-columns: 1fr;
+            gap: 8px;
         }
 
         .btn-primary,
         .btn-secondary,
         .btn-favorite {
             font-size: 14px;
-            padding: 12px;
+            padding: 14px;
+            min-height: 48px; /* Удобная область для нажатия пальцем */
         }
 
+        /* MOBILE: Показываем контакты и доступность, но делаем их частью потока */
         .contact-card,
         .availability-card {
-            padding: 20px;
+            display: block;
+            position: static;
+            margin-bottom: 16px;
+            padding: 16px;
+            font-size: 14px;
+        }
+
+        .contact-title {
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+
+        .contact-item {
+            font-size: 14px;
+            padding: 10px;
+        }
+
+        .availability-item {
+            font-size: 13px;
+            padding: 8px 0;
+        }
+
+        /* Увеличиваем отступ снизу для размещения всех карточек + booking card */
+        .detail-main {
+            margin-bottom: 160px;
+        }
+
+        .booking-note {
+            font-size: 10px;
+            margin-top: 10px;
+            padding-top: 10px;
+        }
+
+        /* Иконки в кнопках более заметные */
+        .btn-primary i,
+        .btn-secondary i,
+        .btn-favorite i {
+            font-size: 16px;
         }
     }
 
     /* Small Mobile (480px и меньше) */
     @media (max-width: 480px) {
         .detail-container {
-            padding: 16px 8px;
+            padding: 12px 8px 8px;
+        }
+
+        .breadcrumbs {
+            font-size: 10px;
         }
 
         .teacher-header-card {
-            padding: 16px;
+            padding: 16px 12px;
         }
 
         .content-card {
-            padding: 16px;
+            padding: 16px 12px;
         }
 
         .teacher-name-large {
             font-size: 20px;
         }
 
+        .teacher-avatar-large {
+            width: 80px;
+            height: 80px;
+            font-size: 28px;
+        }
+
         .card-title {
             font-size: 16px;
             flex-direction: column;
             align-items: flex-start;
+            gap: 6px;
         }
 
         .bio-text {
             font-size: 13px;
+            line-height: 1.6;
         }
 
         .subject-name {
@@ -1064,19 +1193,177 @@
         .teacher-stats {
             flex-direction: column;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
+        .stat-item {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* ОЧЕНЬ КОМПАКТНАЯ booking card для маленьких экранов */
         .booking-card {
-            padding: 16px;
+            padding: 12px;
+        }
+
+        .booking-header {
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+        }
+
+        .booking-price {
+            font-size: 11px;
         }
 
         .booking-amount {
-            font-size: 24px;
+            font-size: 22px;
+        }
+
+        .booking-period {
+            font-size: 11px;
         }
 
         .booking-actions {
-            gap: 10px;
+            gap: 6px;
+        }
+
+        .btn-primary,
+        .btn-secondary,
+        .btn-favorite {
+            font-size: 13px;
+            padding: 12px;
+            min-height: 44px;
+        }
+
+        /* Компактные иконки */
+        .btn-primary i,
+        .btn-secondary i,
+        .btn-favorite i {
+            font-size: 14px;
+        }
+
+        .booking-note {
+            font-size: 9px;
+        }
+
+        /* Компактные контакты и доступность для маленьких экранов */
+        .contact-card,
+        .availability-card {
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .contact-title {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .contact-item {
+            font-size: 12px;
+            padding: 8px;
+        }
+
+        .contact-icon {
+            width: 28px;
+            height: 28px;
+            font-size: 12px;
+        }
+
+        .availability-item {
+            font-size: 12px;
+            padding: 6px 0;
+        }
+
+        .availability-item i {
+            font-size: 12px;
+        }
+
+        /* Уменьшаем отступ снизу еще больше */
+        .detail-main {
+            margin-bottom: 140px;
+        }
+
+        /* Компактные отзывы */
+        .reviewer-avatar {
+            width: 36px;
+            height: 36px;
+            font-size: 12px;
+        }
+
+        .reviewer-name {
+            font-size: 14px;
+        }
+
+        .review-meta {
+            font-size: 11px;
+        }
+
+        .review-text {
+            font-size: 13px;
+        }
+
+        /* Компактные предметы */
+        .subject-item {
+            padding: 12px;
+        }
+
+        .subject-icon {
+            width: 36px;
+            height: 36px;
+            font-size: 16px;
+        }
+
+        /* Badges меньше */
+        .badge {
+            padding: 4px 10px;
+            font-size: 11px;
+        }
+    }
+
+    /* Touch-friendly стили для всех мобильных */
+    @media (max-width: 1024px) {
+        /* Увеличиваем область нажатия для всех кликабельных элементов */
+        .btn-primary,
+        .btn-secondary,
+        .btn-favorite,
+        button,
+        a.btn {
+            -webkit-tap-highlight-color: rgba(10, 37, 64, 0.1);
+            touch-action: manipulation;
+        }
+
+        /* Плавная прокрутка */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Убираем hover эффекты на touch устройствах */
+        @media (hover: none) {
+            .btn-primary:hover,
+            .btn-secondary:hover,
+            .btn-favorite:hover {
+                transform: none;
+            }
+
+            .subject-item:hover,
+            .certificate-item:hover,
+            .similar-teacher-card:hover {
+                border-color: transparent;
+                box-shadow: none;
+                transform: none;
+            }
+        }
+
+        /* Улучшенная читаемость текста */
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Оптимизация скролла на iOS */
+        .detail-main,
+        .content-card {
+            -webkit-overflow-scrolling: touch;
         }
     }
 </style>
@@ -1363,13 +1650,8 @@
                     </div>
 
                     <div class="booking-actions">
-                        <button class="btn-primary" onclick="contactTeacher()">
-                            <i class="fas fa-comment-dots"></i>
-                            {% trans 'Написать сообщение' %}
-                        </button>
-                        
                         {% if user.is_authenticated and user != teacher.user %}
-                        <a href="{% url 'start_conversation' user_id=teacher.user.id %}" class="btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+                        <a href="{% url 'start_conversation' user_id=teacher.user.id %}" class="btn-primary">
                             <i class="fas fa-comment-dots"></i>
                             {% trans 'Написать сообщение' %}
                         </a>
@@ -1380,7 +1662,7 @@
                             {% trans 'Записаться на урок' %}
                         </button>
 
-                        {% if user.is_authenticated %}
+                        {% if user.is_authenticated and user.user_type == 'student' %}
                         <button class="btn-favorite {% if is_favorite %}active{% endif %}" onclick="toggleFavorite({{ teacher.id }})">
                             <i class="{% if is_favorite %}fas{% else %}far{% endif %} fa-heart"></i>
                             {% if is_favorite %}{% trans 'В избранном' %}{% else %}{% trans 'В избранное' %}{% endif %}

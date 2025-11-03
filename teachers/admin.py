@@ -251,11 +251,12 @@ class FavoriteAdmin(admin.ModelAdmin):
 
 
 # --- TelegramUser (Telegram integration) ---
-from .models import TelegramUser
+from .models import TelegramUser, NotificationQueue, NotificationLog
 from django.shortcuts import render, redirect
 from django.urls import path
 from django.contrib import messages
 from .admin_telegram_service import admin_telegram_service
+from django.utils import timezone
 
 @admin.register(TelegramUser)
 class TelegramUserAdmin(admin.ModelAdmin):
@@ -544,3 +545,120 @@ class TelegramUserAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         extra_context['show_broadcast_button'] = True
         return super().changelist_view(request, extra_context=extra_context)
+
+
+# --- NotificationQueue (Очередь уведомлений) ---
+class NotificationLogInline(admin.TabularInline):
+    model = NotificationLog
+    extra = 0
+    readonly_fields = ('attempt_number', 'status', 'error_message', 'telegram_message_id', 'processing_time_ms', 'timestamp')
+    can_delete = False
+    
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(NotificationQueue)
+class NotificationQueueAdmin(admin.ModelAdmin):
+    list_display = ('short_id', 'recipient', 'notification_type', 'status', 'retry_count', 'scheduled_at', 'created_at')
+    list_filter = ('status', 'notification_type', 'created_at')
+    search_fields = ('recipient__username', 'recipient__email', 'title', 'message')
+    readonly_fields = ('id', 'idempotency_key', 'created_at', 'sent_at', 'processing_started_at')
+    inlines = [NotificationLogInline]
+    list_per_page = 50
+    
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('id', 'recipient', 'notification_type', 'status', 'idempotency_key')
+        }),
+        ('Содержимое', {
+            'fields': ('title', 'message', 'data')
+        }),
+        ('Настройки retry', {
+            'fields': ('retry_count', 'max_retries', 'last_error')
+        }),
+        ('Временные метки', {
+            'fields': ('scheduled_at', 'created_at', 'processing_started_at', 'sent_at')
+        }),
+    )
+    
+    actions = ['resend_failed', 'cancel_pending', 'force_process']
+    
+    def short_id(self, obj):
+        """Показать короткую версию UUID"""
+        return str(obj.id)[:8]
+    short_id.short_description = 'ID'
+    
+    def resend_failed(self, request, queryset):
+        """Повторить отправку failed уведомлений"""
+        count = 0
+        for notification in queryset.filter(status='failed'):
+            if notification.can_retry():
+                notification.status = 'pending'
+                notification.scheduled_at = timezone.now()
+                notification.save()
+                count += 1
+        self.message_user(request, f'✅ Запланировано повторно: {count} уведомлений', messages.SUCCESS)
+    resend_failed.short_description = '🔄 Повторить отправку failed уведомлений'
+    
+    def cancel_pending(self, request, queryset):
+        """Отменить pending уведомления"""
+        count = queryset.filter(status='pending').update(
+            status='cancelled',
+            last_error='Отменено администратором'
+        )
+        self.message_user(request, f'❌ Отменено: {count} уведомлений', messages.WARNING)
+    cancel_pending.short_description = '❌ Отменить pending уведомления'
+    
+    def force_process(self, request, queryset):
+        """Принудительно обработать уведомления"""
+        from telegram_bot.notification_service import notification_service
+        import asyncio
+        
+        notifications = queryset.filter(status='pending')
+        count = 0
+        
+        for notification in notifications:
+            notification.status = 'pending'
+            notification.scheduled_at = timezone.now()
+            notification.save()
+            count += 1
+        
+        # Обработать немедленно
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        sent = loop.run_until_complete(
+            notification_service.process_queue_batch(batch_size=count)
+        )
+        
+        self.message_user(
+            request,
+            f'🚀 Обработано: {sent}/{count} уведомлений',
+            messages.SUCCESS if sent == count else messages.WARNING
+        )
+    force_process.short_description = '🚀 Обработать немедленно'
+
+
+@admin.register(NotificationLog)
+class NotificationLogAdmin(admin.ModelAdmin):
+    list_display = ('short_notification_id', 'attempt_number', 'status', 'processing_time_ms', 'timestamp')
+    list_filter = ('status', 'timestamp')
+    search_fields = ('notification__id', 'error_message')
+    readonly_fields = ('notification', 'attempt_number', 'status', 'error_message', 'telegram_message_id', 'response_data', 'processing_time_ms', 'timestamp')
+    list_per_page = 100
+    
+    def short_notification_id(self, obj):
+        """Показать короткую версию UUID"""
+        return str(obj.notification.id)[:8]
+    short_notification_id.short_description = 'Notification ID'
+    
+    def has_add_permission(self, request):
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        # Разрешаем массовое удаление старых логов
+        return True

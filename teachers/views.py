@@ -132,13 +132,21 @@ def home(request):
     if max_price:
         teachers = teachers.filter(teachersubject__hourly_rate__lte=float(max_price))
     
-    # Поиск по имени или биографии
+    # Поиск по имени, городу, биографии, предметам и описаниям предметов
     if search_query:
-        teachers = teachers.filter(
-            Q(user__first_name__icontains=search_query) |
-            Q(user__last_name__icontains=search_query) |
-            Q(bio__icontains=search_query)
-        )
+        q = search_query.strip()
+        if q:
+            teachers = teachers.filter(
+                Q(user__first_name__icontains=q) |
+                Q(user__last_name__icontains=q) |
+                Q(user__username__icontains=q) |
+                Q(bio__icontains=q) |
+                Q(city__name__icontains=q) |
+                Q(teachersubject__subject__name__icontains=q) |
+                Q(teachersubject__description__icontains=q) |
+                Q(subjects__name__icontains=q) |
+                Q(subjects__description__icontains=q)
+            )
     
     # Убираем дубликаты и сортируем
     teachers = teachers.distinct().order_by('-rating', '-created_at')
@@ -767,7 +775,8 @@ from .forms import (
     StudentRegistrationForm,
     TeacherProfileEditForm,
     StudentProfileEditForm,
-    UserProfileEditForm
+    UserProfileEditForm,
+    TeacherSubjectEditForm
 )
 
 @login_required
@@ -779,28 +788,103 @@ def teacher_profile_edit(request):
         messages.error(request, 'Профиль учителя не найден')
         return redirect('home')
     
+    # Получаем существующие предметы учителя
+    teacher_subjects = TeacherSubject.objects.filter(teacher=teacher_profile)
+    
     if request.method == 'POST':
         user_form = UserProfileEditForm(request.POST, request.FILES, instance=request.user)
         profile_form = TeacherProfileEditForm(request.POST, instance=teacher_profile)
         
-        if user_form.is_valid() and profile_form.is_valid():
+        # Обработка предметов
+        subject_forms_valid = True
+        subject_forms = []
+        
+        # Обработка существующих предметов
+        for ts in teacher_subjects:
+            form = TeacherSubjectEditForm(
+                request.POST, 
+                instance=ts, 
+                prefix=f'subject_{ts.id}'
+            )
+            subject_forms.append(form)
+            if not form.is_valid():
+                subject_forms_valid = False
+        
+        # Обработка нового предмета (если добавляется)
+        new_subject_form = TeacherSubjectEditForm(request.POST, prefix='new_subject')
+        
+        # Проверяем, заполнен ли хотя бы один обязательный параметр нового предмета
+        subject_filled = new_subject_form.data.get('new_subject-subject')
+        
+        if subject_filled:
+            # Пользователь пытается добавить новый предмет
+            if new_subject_form.is_valid():
+                subject_forms.append(new_subject_form)
+            else:
+                subject_forms_valid = False
+                subject_forms.append(new_subject_form)
+        
+        if user_form.is_valid() and profile_form.is_valid() and subject_forms_valid:
             user_form.save()
             profile_form.save()
+            
+            # Сохраняем предметы
+            for form in subject_forms:
+                if form.instance.pk:  # Существующий предмет
+                    form.save()
+                else:  # Новый предмет
+                    teacher_subject = form.save(commit=False)
+                    teacher_subject.teacher = teacher_profile
+                    teacher_subject.save()
             
             messages.success(request, 'Профиль успешно обновлен!')
             return redirect('profile')
         else:
-            messages.error(request, 'Пожалуйста, исправьте ошибки в форме')
+            # Выводим конкретные ошибки для отладки
+            if not user_form.is_valid():
+                for field, errors in user_form.errors.items():
+                    messages.error(request, f'Ошибка в поле {field}: {", ".join(errors)}')
+            if not profile_form.is_valid():
+                for field, errors in profile_form.errors.items():
+                    messages.error(request, f'Ошибка в поле {field}: {", ".join(errors)}')
+            if not subject_forms_valid:
+                messages.error(request, 'Проверьте правильность заполнения предметов')
     else:
         user_form = UserProfileEditForm(instance=request.user)
         profile_form = TeacherProfileEditForm(instance=teacher_profile)
+        
+        # Формы для существующих предметов
+        subject_forms = [
+            TeacherSubjectEditForm(instance=ts, prefix=f'subject_{ts.id}')
+            for ts in teacher_subjects
+        ]
+        
+        # Форма для нового предмета
+        new_subject_form = TeacherSubjectEditForm(prefix='new_subject')
+        subject_forms.append(new_subject_form)
     
     context = {
         'user_form': user_form,
         'profile_form': profile_form,
-        'teacher': teacher_profile
+        'teacher': teacher_profile,
+        'subject_forms': subject_forms,
+        'teacher_subjects': teacher_subjects
     }
     return render(request, 'logic/teacher_profile_edit.html', context)
+
+
+@login_required
+def delete_teacher_subject(request, subject_id):
+    """Удаление предмета учителя"""
+    try:
+        teacher_profile = request.user.teacher_profile
+        teacher_subject = TeacherSubject.objects.get(id=subject_id, teacher=teacher_profile)
+        teacher_subject.delete()
+        messages.success(request, 'Предмет успешно удален')
+    except (TeacherProfile.DoesNotExist, TeacherSubject.DoesNotExist):
+        messages.error(request, 'Предмет не найден')
+    
+    return redirect('teacher_profile_edit')
 
 
 @login_required
@@ -990,16 +1074,17 @@ def conversations_list(request):
     if user.user_type == 'teacher':
         try:
             teacher_profile = user.teacher_profile
-            # Получаем все переписки учителя с учениками
+            # Получаем все переписки учителя с учениками, где есть хотя бы одно сообщение
             conversations = Conversation.objects.filter(
                 teacher=teacher_profile,
-                is_active=True
+                is_active=True,
+                messages__isnull=False  # Только переписки с сообщениями
             ).select_related(
                 'student',
                 'subject'
             ).prefetch_related(
                 'messages__sender'
-            ).order_by('-updated_at')
+            ).distinct().order_by('-updated_at')
         except TeacherProfile.DoesNotExist:
             messages.warning(request, 'Завершите регистрацию учителя')
             return redirect('teacher_register_step1')
@@ -1011,17 +1096,18 @@ def conversations_list(request):
             messages.warning(request, 'Заполните профиль ученика')
             return redirect('student_profile_edit')
         
-        # Получаем все переписки ученика с учителями
+        # Получаем все переписки ученика с учителями, где есть хотя бы одно сообщение
         conversations = Conversation.objects.filter(
             student=user,
-            is_active=True
+            is_active=True,
+            messages__isnull=False  # Только переписки с сообщениями
         ).select_related(
             'teacher__user',
             'teacher__city',
             'subject'
         ).prefetch_related(
             'messages__sender'
-        ).order_by('-updated_at')
+        ).distinct().order_by('-updated_at')
     
     # Получаем последнее сообщение и количество непрочитанных для каждой переписки
     conversations_with_info = []

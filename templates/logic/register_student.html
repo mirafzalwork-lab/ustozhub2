@@ -652,13 +652,170 @@
         font-size: 16px;
     }
 
-    @media (max-width: 768px) {
+    /* ============================================
+       📱 RESPONSIVE DESIGN - MOBILE OPTIMIZED
+       ============================================ */
+
+    /* Tablet (1024px and below) */
+    @media (max-width: 1024px) {
         .auth-card {
-            padding: 32px 24px;
+            padding: 36px 28px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .weekdays-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .subject-checkbox {
+            grid-template-columns: 1fr;
+        }
+
+        .btn-primary {
+            min-height: 48px;
+            padding: 14px;
+        }
+    }
+
+    /* Mobile (768px and below) */
+    @media (max-width: 768px) {
+        .auth-container {
+            padding: 32px 20px;
+        }
+
+        .auth-card {
+            padding: 28px 20px;
+        }
+
+        .auth-header h1 {
+            font-size: 24px;
         }
 
         .form-row, .weekdays-grid {
             grid-template-columns: 1fr;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            min-height: 44px;
+            font-size: 16px !important; /* iOS zoom prevention */
+        }
+
+        .btn-primary {
+            min-height: 44px;
+            padding: 12px;
+            font-size: 15px;
+        }
+
+        .subject-search-box {
+            flex-wrap: wrap;
+        }
+
+        .selected-badge {
+            width: 100%;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        #subjectCheckboxes {
+            max-height: 300px;
+        }
+    }
+
+    /* Small Mobile (480px and below) */
+    @media (max-width: 480px) {
+        .auth-container {
+            padding: 20px 12px;
+        }
+
+        .auth-card {
+            padding: 24px 16px;
+        }
+
+        .auth-header h1 {
+            font-size: 20px;
+        }
+
+        .auth-header p {
+            font-size: 13px;
+        }
+
+        .icon {
+            width: 56px;
+            height: 56px;
+            font-size: 24px;
+        }
+
+        .section-title {
+            font-size: 16px;
+        }
+
+        .form-label {
+            font-size: 13px;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            min-height: 44px;
+            font-size: 16px !important;
+            padding: 10px 12px;
+        }
+
+        .btn-primary {
+            min-height: 44px;
+            padding: 11px;
+            font-size: 14px;
+        }
+
+        .weekday-item label {
+            font-size: 12px;
+            padding: 8px;
+        }
+
+        .subject-tag {
+            font-size: 12px;
+            padding: 6px 10px;
+        }
+
+        .budget-note {
+            font-size: 12px;
+        }
+
+        .checkbox-label {
+            font-size: 13px;
+        }
+    }
+
+    /* Touch Optimizations */
+    @media (hover: none) and (pointer: coarse) {
+        .btn-primary:hover {
+            transform: none;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.97);
+            background: #082039;
+        }
+
+        .weekday-item:hover {
+            background: white;
+        }
+
+        .weekday-item:active {
+            background: #f0fdf4;
+        }
+
+        .subject-tag:hover {
+            transform: none;
+        }
+
+        .subject-tag:active {
+            transform: scale(0.95);
         }
     }
 </style>

@@ -217,6 +217,130 @@
         margin-top: 6px;
     }
 
+    /* Стили для предметов */
+    .section-header-with-button {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        gap: 16px;
+    }
+
+    .btn-add-subject {
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+
+    .btn-add-subject:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-add-subject i {
+        font-size: 14px;
+    }
+
+    .subject-item {
+        padding: 20px;
+        background: #f9fafb;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        border: 2px solid #e5e7eb;
+    }
+
+    .new-subject-item {
+        background: #f0fdf4;
+        border: 2px solid #10b981;
+        animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .subject-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .subject-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0A2540;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+    }
+
+    .subject-title i {
+        color: #3B82F6;
+    }
+
+    .new-subject-item .subject-title i {
+        color: #10b981;
+    }
+
+    .btn-delete {
+        padding: 8px 16px;
+        background: #fee;
+        color: #dc2626;
+        border: 1px solid #fca5a5;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-delete:hover {
+        background: #fecaca;
+        transform: translateY(-1px);
+    }
+
+    .btn-cancel {
+        padding: 8px 16px;
+        background: #f3f4f6;
+        color: #6b7280;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-cancel:hover {
+        background: #e5e7eb;
+        transform: translateY(-1px);
+    }
+
     .action-buttons {
         display: flex;
         gap: 12px;
@@ -304,7 +428,36 @@
         border: 1px solid #fecaca;
     }
 
+    /* ============================================
+       📱 RESPONSIVE DESIGN - MOBILE OPTIMIZED
+       ============================================ */
+
+    /* Tablet (1024px and below) */
+    @media (max-width: 1024px) {
+        .edit-container {
+            padding: 24px 20px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .checkbox-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .btn {
+            min-height: 48px;
+            padding: 14px 24px;
+        }
+    }
+
+    /* Mobile (768px and below) */
     @media (max-width: 768px) {
+        .edit-container {
+            padding: 20px 16px;
+        }
+
         .edit-header {
             flex-direction: column;
             gap: 16px;
@@ -321,6 +474,133 @@
         .btn {
             width: 100%;
             justify-content: center;
+            min-height: 44px;
+            padding: 12px 20px;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            min-height: 44px;
+            font-size: 16px !important; /* iOS zoom prevention */
+        }
+
+        .form-card {
+            padding: 20px;
+        }
+
+        /* Mobile styles for subjects */
+        .section-header-with-button {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .btn-add-subject {
+            width: 100%;
+            justify-content: center;
+            min-height: 44px;
+        }
+
+        .subject-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .btn-delete,
+        .btn-cancel {
+            width: 100%;
+            justify-content: center;
+            min-height: 44px;
+        }
+    }
+
+    /* Small Mobile (480px and below) */
+    @media (max-width: 480px) {
+        .edit-container {
+            padding: 16px 12px;
+        }
+
+        .form-card {
+            padding: 16px;
+        }
+
+        .edit-title {
+            font-size: 20px;
+        }
+
+        .form-card h2,
+        .section-title {
+            font-size: 16px;
+        }
+
+        .btn {
+            min-height: 44px;
+            padding: 10px 16px;
+            font-size: 13px;
+        }
+
+        .btn-add-subject {
+            font-size: 13px;
+            padding: 10px 16px;
+        }
+
+        .btn-add-subject .btn-text {
+            font-size: 13px;
+        }
+
+        .subject-item {
+            padding: 16px;
+        }
+
+        .subject-title {
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            min-height: 44px;
+            font-size: 16px !important;
+            padding: 10px 12px;
+        }
+
+        .checkbox-item label {
+            font-size: 13px;
+        }
+
+        .status-text {
+            font-size: 13px;
+        }
+
+        .toggle-switch {
+            width: 48px;
+            height: 26px;
+        }
+
+        .toggle-slider:before {
+            width: 20px;
+            height: 20px;
+        }
+    }
+
+    /* Touch Optimizations */
+    @media (hover: none) and (pointer: coarse) {
+        .btn:hover {
+            transform: none;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .checkbox-item:hover {
+            background: white;
+        }
+
+        .checkbox-item:active {
+            background: #f9fafb;
         }
     }
 </style>
@@ -578,6 +858,128 @@
             </div>
         </div>
 
+        <!-- Предметы и цены -->
+        <div class="form-card">
+            <div class="section-header-with-button">
+                <h2 class="section-title">
+                    <i class="fas fa-book"></i>
+                    Преподаваемые предметы и цены
+                </h2>
+                <button type="button" class="btn-add-subject" onclick="toggleNewSubjectForm()">
+                    <i class="fas fa-plus"></i>
+                    <span class="btn-text">Добавить предмет</span>
+                </button>
+            </div>
+
+            <!-- Существующие предметы -->
+            <div id="existing-subjects">
+                {% for form in subject_forms %}
+                    {% if form.instance.pk %}
+                        <div class="subject-item">
+                            <div class="subject-header">
+                                <h3 class="subject-title">
+                                    <i class="fas fa-graduation-cap"></i>
+                                    {{ form.instance.subject.name }}
+                                </h3>
+                                <button type="button" class="btn-delete" onclick="deleteSubject({{ form.instance.id }})">
+                                    <i class="fas fa-trash"></i> Удалить
+                                </button>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label" for="id_subject_{{ form.instance.id }}-subject">{{ form.subject.label }}</label>
+                                    {{ form.subject }}
+                                    {% if form.subject.errors %}
+                                        <div class="error-message">{{ form.subject.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="id_subject_{{ form.instance.id }}-hourly_rate">{{ form.hourly_rate.label }}</label>
+                                    {{ form.hourly_rate }}
+                                    {% if form.hourly_rate.errors %}
+                                        <div class="error-message">{{ form.hourly_rate.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="form-group full-width">
+                                <div class="checkbox-wrapper">
+                                    {{ form.is_free_trial }}
+                                    <label for="id_subject_{{ form.instance.id }}-is_free_trial">
+                                        {{ form.is_free_trial.label }}
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group full-width">
+                                <label class="form-label" for="id_subject_{{ form.instance.id }}-description">{{ form.description.label }}</label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                    <div class="error-message">{{ form.description.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- Форма для нового предмета (скрыта по умолчанию) -->
+            <div id="new-subject-form" style="display: none;">
+                {% for form in subject_forms %}
+                    {% if not form.instance.pk %}
+                        <div class="subject-item new-subject-item">
+                            <div class="subject-header">
+                                <h3 class="subject-title">
+                                    <i class="fas fa-plus-circle"></i>
+                                    Новый предмет
+                                </h3>
+                                <button type="button" class="btn-cancel" onclick="toggleNewSubjectForm()">
+                                    <i class="fas fa-times"></i> Отмена
+                                </button>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label" for="id_new_subject-subject">{{ form.subject.label }}</label>
+                                    {{ form.subject }}
+                                    {% if form.subject.errors %}
+                                        <div class="error-message">{{ form.subject.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="id_new_subject-hourly_rate">{{ form.hourly_rate.label }}</label>
+                                    {{ form.hourly_rate }}
+                                    {% if form.hourly_rate.errors %}
+                                        <div class="error-message">{{ form.hourly_rate.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="form-group full-width">
+                                <div class="checkbox-wrapper">
+                                    {{ form.is_free_trial }}
+                                    <label for="id_new_subject-is_free_trial">
+                                        {{ form.is_free_trial.label }}
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group full-width">
+                                <label class="form-label" for="id_new_subject-description">{{ form.description.label }}</label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                    <div class="error-message">{{ form.description.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
         <div class="action-buttons">
             <a href="{% url 'profile' %}" class="btn btn-secondary">
                 <i class="fas fa-times"></i> Отмена
@@ -615,5 +1017,55 @@
             checkbox.checked = !isActive; // Возврат к предыдущему состоянию при ошибке
         });
     }
+
+    function deleteSubject(subjectId) {
+        if (!confirm('Вы уверены, что хотите удалить этот предмет?')) {
+            return;
+        }
+
+        window.location.href = "{% url 'delete_teacher_subject' 0 %}".replace('0', subjectId);
+    }
+
+    function toggleNewSubjectForm() {
+        const newSubjectForm = document.getElementById('new-subject-form');
+        const addButton = document.querySelector('.btn-add-subject');
+        
+        if (newSubjectForm.style.display === 'none' || newSubjectForm.style.display === '') {
+            // Показываем форму
+            newSubjectForm.style.display = 'block';
+            addButton.style.display = 'none';
+            
+            // Прокручиваем к форме
+            setTimeout(() => {
+                newSubjectForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        } else {
+            // Скрываем форму
+            newSubjectForm.style.display = 'none';
+            addButton.style.display = 'inline-flex';
+            
+            // Очищаем поля формы
+            const form = newSubjectForm.querySelector('.subject-item');
+            const selects = form.querySelectorAll('select');
+            const inputs = form.querySelectorAll('input[type="number"], input[type="text"]');
+            const textareas = form.querySelectorAll('textarea');
+            const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+            
+            selects.forEach(select => select.selectedIndex = 0);
+            inputs.forEach(input => input.value = '');
+            textareas.forEach(textarea => textarea.value = '');
+            checkboxes.forEach(checkbox => checkbox.checked = false);
+        }
+    }
+
+    // Если есть ошибки в форме нового предмета, показываем её
+    document.addEventListener('DOMContentLoaded', function() {
+        const newSubjectForm = document.getElementById('new-subject-form');
+        const hasErrors = newSubjectForm.querySelector('.error-message');
+        
+        if (hasErrors) {
+            toggleNewSubjectForm();
+        }
+    });
 </script>
 {% endblock %}

@@ -393,7 +393,35 @@
         box-shadow: 0 4px 12px rgba(10, 37, 64, 0.2);
     }
 
-    /* Responsive */
+    /* ============================================
+       📱 RESPONSIVE DESIGN - MOBILE OPTIMIZED
+       ============================================ */
+
+    /* Tablet (1024px and below) */
+    @media (max-width: 1024px) {
+        .register-container {
+            padding: 32px 24px;
+        }
+
+        .form-card {
+            padding: 32px 24px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .weekdays-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .btn {
+            min-height: 48px;
+            padding: 14px 24px;
+        }
+    }
+
+    /* Mobile (768px and below) */
     @media (max-width: 768px) {
         .register-container {
             padding: 20px 16px;
@@ -408,7 +436,7 @@
         }
 
         .register-title {
-            font-size: 24px;
+            font-size: 22px;
         }
 
         .steps-container {
@@ -420,10 +448,94 @@
         }
 
         .weekdays-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            min-height: 44px;
+            font-size: 16px !important; /* iOS zoom prevention */
+        }
+
+        .btn {
+            min-height: 44px;
+            padding: 12px 20px;
+            font-size: 14px;
+        }
+    }
+
+    /* Small Mobile (480px and below) */
+    @media (max-width: 480px) {
+        .register-container {
+            padding: 16px 12px;
+        }
+
+        .form-card {
+            padding: 20px 16px;
+        }
+
+        .register-title {
+            font-size: 20px;
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
+        }
+
+        .step-label {
+            font-size: 10px;
+        }
+
+        .form-label {
+            font-size: 13px;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            min-height: 44px;
+            font-size: 16px !important;
+            padding: 10px 12px;
+        }
+
+        .btn {
+            min-height: 44px;
+            padding: 11px 18px;
+            font-size: 13px;
+        }
+
+        .weekdays-grid {
             grid-template-columns: 1fr;
+        }
+
+        .weekday-item label {
+            font-size: 13px;
+        }
+    }
+
+    /* Touch Optimizations */
+    @media (hover: none) and (pointer: coarse) {
+        .btn:hover {
+            transform: none;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .weekday-item:hover {
+            background: white;
+        }
+
+        .weekday-item:active {
+            background: #f0fdf4;
         }
     }
 </style>
+
 
 <div class="register-container">
     <div class="register-header">

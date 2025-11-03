@@ -10,11 +10,115 @@
     <title>{% block title %}UstozHub{% endblock %}</title>
     <link rel="icon" type="image/png" href="{% static 'logo/logo.png' %}">
 
+    <!-- Preconnect для ускорения загрузки внешних ресурсов -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     
+    <!-- Оптимизированная загрузка шрифтов с font-display: swap -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome с defer для неблокирующей загрузки -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"></noscript>
     
     <style>
+        /* ========== КРИТИЧЕСКИЕ ОПТИМИЗАЦИИ ПРОИЗВОДИТЕЛЬНОСТИ ========== */
+        
+        /* GPU-ускорение для анимаций */
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* Оптимизация рендеринга */
+        img, picture, video {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        /* Предотвращение layout shift */
+        img:not([src]) {
+            visibility: hidden;
+        }
+        
+        /* Плавная прокрутка с производительностью */
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 70px;
+        }
+        
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+        
+        /* ========== ГЛОБАЛЬНЫЕ CSS ПЕРЕМЕННЫЕ ========== */
+        :root {
+            /* Основные цвета */
+            --primary-color: #0A2540;
+            --primary-hover: #1e4a72;
+            --accent-color: #3B82F6;
+            --accent-hover: #2563EB;
+            --success-color: #10B981;
+            --success-hover: #059669;
+            --warning-color: #F59E0B;
+            --danger-color: #EF4444;
+            
+            /* Текстовые цвета */
+            --text-primary: #1F2937;
+            --text-secondary: #6B7280;
+            --text-tertiary: #9CA3AF;
+            --text-light: #D1D5DB;
+            
+            /* Фоны */
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F9FAFB;
+            --bg-tertiary: #F3F4F6;
+            --bg-hover: #F3F4F6;
+            --bg-page: #f5f5f7;
+            
+            /* Границы */
+            --border-color: #E5E7EB;
+            --border-light: #F3F4F6;
+            
+            /* Тени */
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 2px 8px rgba(10, 37, 64, 0.06);
+            --shadow-lg: 0 6px 20px rgba(10, 37, 64, 0.12);
+            --shadow-xl: 0 10px 40px rgba(10, 37, 64, 0.15);
+            
+            /* Отступы */
+            --spacing-xs: 8px;
+            --spacing-sm: 12px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+            --spacing-2xl: 48px;
+            
+            /* Радиусы */
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --radius-bubble: 18px;
+            --radius-full: 9999px;
+            
+            /* Переходы */
+            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* Типографика */
+            --font-base: 'Inter', sans-serif;
+            --font-heading: 'Inter', sans-serif;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -22,38 +126,44 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             line-height: 1.6;
-            color: #333;
-            background: #f5f5f7;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+            overflow-x: hidden;
+            /* Оптимизация производительности */
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        /* Navbar */
+        /* Navbar - критические оптимизации */
         .navbar {
-            background: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            background: var(--bg-primary);
+            box-shadow: var(--shadow-md);
             position: fixed;
             top: 0;
-            width: 100%;
+            left: 0;
+            right: 0;
             z-index: 1000;
-            transition: transform 0.3s, box-shadow 0.3s;
+            /* GPU-ускорение */
+            will-change: transform;
+            transform: translateZ(0);
+            backface-visibility: hidden;
         }
 
         .navbar.scrolled {
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-lg);
         }
 
         .nav-container {
-            max-width: 1440px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 0 16px;
+            padding: 0 var(--spacing-lg);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            height: 64px;
+            height: 70px;
         }
 
         .logo {
@@ -71,37 +181,37 @@
         .nav-search {
             flex: 1;
             max-width: 500px;
-            margin: 0 24px;
+            margin: 0 var(--spacing-lg);
             position: relative;
         }
 
         .search-input {
             width: 100%;
-            padding: 10px 45px 10px 16px;
-            border: 1px solid #e0e0e0;
-            border-radius: 24px;
+            padding: 10px 45px 10px var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-full);
             font-size: 14px;
-            background: #f8f8f8;
-            transition: all 0.3s;
+            background: var(--bg-secondary);
+            transition: all var(--transition-slow);
         }
 
         .search-input:focus {
             outline: none;
-            border-color: #7000ff;
-            background: white;
+            border-color: var(--primary-color);
+            background: var(--bg-primary);
             box-shadow: 0 0 0 3px rgba(10, 37, 64, 0.1);
         }
 
         .search-icon {
             position: absolute;
-            right: 16px;
+            right: var(--spacing-md);
             top: 50%;
             transform: translateY(-50%);
-            color: #999;
+            color: var(--text-tertiary);
             pointer-events: none;
             z-index: 1;
             font-size: 14px;
-            transition: opacity 0.2s;
+            transition: opacity var(--transition-base);
         }
 
         /* Скрываем иконку поиска когда есть текст */
@@ -116,7 +226,7 @@
             transform: translateY(-50%);
             background: none;
             border: none;
-            color: #999;
+            color: var(--text-tertiary);
             cursor: pointer;
             display: none;
             padding: 4px;
@@ -131,27 +241,27 @@
         .nav-actions {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: var(--spacing-sm);
         }
 
         .nav-btn {
-            padding: 8px 16px;
+            padding: var(--spacing-xs) var(--spacing-md);
             background: none;
             border: none;
-            border-radius: 8px;
+            border-radius: var(--radius-sm);
             font-size: 14px;
             font-weight: 500;
-            color: #1a1a1a;
+            color: var(--text-primary);
             cursor: pointer;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            transition: all 0.2s;
+            transition: all var(--transition-base);
         }
 
         .nav-btn:hover {
-            background: #f5f5f5;
+            background: var(--bg-hover);
         }
 
         .nav-btn i {
@@ -159,21 +269,21 @@
         }
 
         .nav-btn-primary {
-            background: #0A2540;
+            background: var(--primary-color);
             color: white;
         }
 
         .nav-btn-primary:hover {
-            background: #1e4a72;
+            background: var(--primary-hover);
         }
 
         .nav-btn-outline {
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--border-color);
         }
 
         .nav-btn-outline:hover {
-            border-color: #0A2540;
-            color: #0A2540;
+            border-color: var(--primary-color);
+            color: var(--primary-color);
         }
 
         /* Messages Icon Button - Always Visible */
@@ -182,25 +292,27 @@
             padding: 10px;
             background: none;
             border: none;
-            border-radius: 50%;
+            border-radius: var(--radius-full);
             font-size: 20px;
-            color: #1a1a1a;
+            color: var(--primary-color);
             cursor: pointer;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
+            transition: all var(--transition-base);
             width: 44px;
             height: 44px;
         }
 
         .messages-icon-btn:hover {
-            background: #f5f5f5;
+            background: var(--bg-hover);
+            color: var(--primary-color);
         }
 
         .messages-icon-btn i {
             font-size: 20px;
+            color: var(--primary-color);
         }
 
         /* Messages Unread Badge */
@@ -208,7 +320,7 @@
             position: absolute;
             top: 6px;
             right: 6px;
-            background: #dc3545;
+            background: var(--danger-color);
             color: white;
             border-radius: 10px;
             padding: 2px 6px;
@@ -217,7 +329,7 @@
             min-width: 18px;
             text-align: center;
             line-height: 1.2;
-            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
             animation: pulse 2s infinite;
         }
 
@@ -636,7 +748,244 @@
             display: inline;
         }
 
-        /* Responsive Design */
+        /* =============== GLOBAL MOBILE STYLES FOR ALL PAGES =============== */
+        
+        /* Cards and Lists - Universal Mobile Optimization */
+        @media (max-width: 1024px) {
+            /* Page containers */
+            .page-container,
+            .detail-container,
+            .profile-container {
+                padding: 20px 16px !important;
+            }
+
+            /* Content cards */
+            .content-card,
+            .teacher-card,
+            .student-card,
+            .booking-card,
+            .contact-card {
+                box-shadow: var(--shadow-md);
+                transition: transform var(--transition-base), box-shadow var(--transition-base);
+            }
+
+            /* Touch-friendly buttons */
+            button,
+            .btn,
+            .btn-primary,
+            .btn-secondary,
+            a.btn {
+                min-height: 44px;
+                padding: 12px 16px;
+                font-size: 14px;
+            }
+
+            /* Form inputs */
+            input,
+            select,
+            textarea {
+                min-height: 44px;
+                font-size: 16px; /* Prevents iOS zoom */
+                padding: 12px;
+            }
+
+            /* Filters sidebar становится drawer */
+            .filters-sidebar {
+                position: fixed !important;
+                top: 56px;
+                left: -100%;
+                width: 85%;
+                max-width: 320px;
+                height: calc(100vh - 56px);
+                background: white;
+                z-index: 998;
+                transition: left 0.3s ease;
+                overflow-y: auto;
+                box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            }
+
+            .filters-sidebar.active {
+                left: 0;
+            }
+
+            /* Backdrop для filters */
+            .filters-backdrop {
+                display: none;
+                position: fixed;
+                top: 56px;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 997;
+            }
+
+            .filters-backdrop.active {
+                display: block;
+            }
+        }
+
+        @media (max-width: 768px) {
+            /* Page containers еще компактнее */
+            .page-container,
+            .detail-container,
+            .profile-container {
+                padding: 16px 12px !important;
+            }
+
+            /* Titles */
+            h1 {
+                font-size: 24px !important;
+            }
+
+            h2 {
+                font-size: 20px !important;
+            }
+
+            h3 {
+                font-size: 18px !important;
+            }
+
+            /* Page headers */
+            .page-header {
+                padding: 12px 0 !important;
+                margin-bottom: 16px !important;
+            }
+
+            .page-title {
+                font-size: 20px !important;
+                margin-bottom: 8px !important;
+            }
+
+            .page-description {
+                font-size: 13px !important;
+            }
+
+            /* Grids адаптивные */
+            .teachers-grid,
+            .students-grid,
+            .content-layout {
+                grid-template-columns: 1fr !important;
+                gap: 16px !important;
+            }
+
+            /* Cards компактнее */
+            .teacher-card,
+            .student-card,
+            .content-card {
+                padding: 16px !important;
+            }
+
+            /* Tabs wrapper */
+            .tabs-wrapper {
+                padding: 8px !important;
+                gap: 8px !important;
+            }
+
+            .tab-button {
+                padding: 10px 16px !important;
+                font-size: 14px !important;
+                min-width: auto !important;
+            }
+
+            /* Filters toggle всегда виден */
+            .mobile-filters-toggle {
+                display: block !important;
+                position: sticky;
+                top: 56px;
+                z-index: 100;
+                margin-bottom: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            /* Супер-компактный режим */
+            .page-container,
+            .detail-container,
+            .profile-container {
+                padding: 12px 8px !important;
+            }
+
+            h1 {
+                font-size: 20px !important;
+            }
+
+            h2 {
+                font-size: 18px !important;
+            }
+
+            h3 {
+                font-size: 16px !important;
+            }
+
+            .page-title {
+                font-size: 18px !important;
+            }
+
+            .page-description {
+                font-size: 12px !important;
+            }
+
+            /* Cards еще компактнее */
+            .teacher-card,
+            .student-card,
+            .content-card {
+                padding: 12px !important;
+            }
+
+            /* Buttons меньше */
+            button,
+            .btn,
+            .btn-primary,
+            .btn-secondary {
+                min-height: 40px;
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+
+            /* Tabs более компактные */
+            .tab-button {
+                padding: 8px 12px !important;
+                font-size: 13px !important;
+            }
+
+            .tab-button span {
+                display: none !important;
+            }
+
+            .tab-button i {
+                font-size: 18px !important;
+            }
+        }
+
+        /* =============== RESPONSIVE DESIGN =============== */
+        
+        /* Global Mobile Optimizations */
+        @media (max-width: 1024px) {
+            /* Touch-friendly всё */
+            * {
+                -webkit-tap-highlight-color: rgba(10, 37, 64, 0.1);
+            }
+
+            button, a, input, select, textarea {
+                touch-action: manipulation;
+            }
+
+            /* Плавная прокрутка */
+            html {
+                scroll-behavior: smooth;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* Оптимизация шрифтов */
+            body {
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeLegibility;
+            }
+        }
+
+        /* Tablet (1024px и меньше) */
         @media (max-width: 1024px) {
             .nav-search {
                 max-width: 300px;
@@ -655,11 +1004,18 @@
             .messages-icon-btn {
                 display: inline-flex;
             }
+
+            /* Компактный navbar */
+            .nav-container {
+                padding: 0 12px;
+            }
         }
 
+        /* Mobile (768px и меньше) */
         @media (max-width: 768px) {
             .nav-container {
                 height: 56px;
+                padding: 0 12px;
             }
 
             .logo img {
@@ -680,15 +1036,31 @@
                 display: none;
             }
 
+            .nav-actions {
+                gap: 8px;
+            }
+
+            /* Регистрация кнопка компактнее */
+            .nav-btn-primary {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+
+            .nav-btn-primary span {
+                display: inline; /* Оставляем текст на мобильных */
+            }
+
             /* Иконка сообщений остаётся видимой на мобильных */
             .messages-icon-btn {
                 width: 40px;
                 height: 40px;
                 font-size: 18px;
+                color: var(--primary-color);
             }
 
             .messages-icon-btn i {
                 font-size: 18px;
+                color: var(--primary-color);
             }
 
             .messages-badge {
@@ -699,13 +1071,22 @@
                 min-width: 16px;
             }
 
+            /* Profile avatar меньше */
+            .profile-avatar {
+                width: 36px !important;
+                height: 36px !important;
+                font-size: 14px;
+            }
+
             main {
                 margin-top: 56px;
+                padding: 0;
             }
 
             .footer-container {
                 grid-template-columns: 1fr;
                 gap: 24px;
+                padding: 32px 16px;
             }
 
             .footer-bottom {
@@ -717,6 +1098,67 @@
             .footer-links-inline {
                 flex-direction: column;
                 gap: 8px;
+            }
+        }
+
+        /* Small Mobile (480px и меньше) */
+        @media (max-width: 480px) {
+            .nav-container {
+                height: 52px;
+                padding: 0 8px;
+            }
+
+            .logo img {
+                width: 50px;
+                height: 50px;
+            }
+
+            .nav-btn-primary {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+
+            .messages-icon-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+                color: var(--primary-color);
+            }
+
+            .messages-icon-btn i {
+                font-size: 16px;
+                color: var(--primary-color);
+            }
+
+            .mobile-toggle {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+            }
+
+            main {
+                margin-top: 52px;
+            }
+
+            .profile-avatar {
+                width: 32px !important;
+                height: 32px !important;
+                font-size: 12px;
+            }
+        }
+
+        /* Убираем hover эффекты на touch устройствах */
+        @media (hover: none) {
+            .nav-btn:hover,
+            .messages-icon-btn:hover,
+            .profile-btn:hover,
+            .mobile-menu-item:hover {
+                background: transparent;
+                transform: none;
+            }
+
+            .nav-btn-primary:hover {
+                background: var(--primary-color);
             }
         }
 
@@ -831,7 +1273,7 @@
                 {% if user.is_authenticated %}
                     <!-- Messages Icon Button - Always Visible -->
                     <a href="{% url 'conversations_list' %}" class="messages-icon-btn" title="{% trans 'Сообщения' %}">
-                        <i class="fas fa-envelope"></i>
+                        <i class="fas fa-comments"></i>
                         {% if unread_messages_count > 0 %}
                             <span class="messages-badge">{{ unread_messages_count }}</span>
                         {% endif %}
@@ -870,8 +1312,8 @@
                                     <i class="fas fa-chalkboard"></i>
                                     <span>{% trans 'Мои занятия' %}</span>
                                 </a>
-                            {% else %}
-                                <a href="#" class="dropdown-item">
+                            {% elif user.user_type == 'student' %}
+                                <a href="{% url 'my_favorite_teachers' %}" class="dropdown-item">
                                     <i class="fas fa-heart"></i>
                                     <span>{% trans 'Избранное' %}</span>
                                 </a>
@@ -974,7 +1416,7 @@
                     <span>{% trans 'Мой профиль' %}</span>
                 </a>
                 <a href="{% url 'conversations_list' %}" class="mobile-menu-item" style="position: relative;">
-                    <i class="fas fa-envelope"></i>
+                    <i class="fas fa-comments"></i>
                     <span>{% trans 'Сообщения' %}</span>
                     {% if unread_messages_count > 0 %}
                         <span style="position: absolute; right: 16px; background: #dc3545; color: white; border-radius: 12px; padding: 2px 8px; font-size: 11px; font-weight: 700; min-width: 20px; text-align: center;">
@@ -982,10 +1424,12 @@
                         </span>
                     {% endif %}
                 </a>
-                <a href="#" class="mobile-menu-item">
+                {% if user.user_type == 'student' %}
+                <a href="{% url 'my_favorite_teachers' %}" class="mobile-menu-item">
                     <i class="fas fa-heart"></i>
                     <span>{% trans 'Избранное' %}</span>
                 </a>
+                {% endif %}
                 <a href="{% url 'teacher_register_step1' %}" class="mobile-menu-item">
                     <i class="fas fa-chalkboard-teacher"></i>
                     <span>{% trans 'Стать учителем' %}</span>
@@ -1014,6 +1458,9 @@
             {% endif %}
         </div>
     </div>
+
+    <!-- Filters Backdrop for Mobile -->
+    <div class="filters-backdrop" id="filtersBackdrop" onclick="closeFilters()"></div>
 
     <!-- Main Content -->
     <main>
@@ -1097,6 +1544,19 @@
             document.getElementById('navSearchInput').value = '';
             document.getElementById('navSearchInput').focus();
         }
+
+        // Prefill search inputs from query param
+        (function() {
+            const currentQuery = "{{ request.GET.search|default:''|escapejs }}";
+            const navInput = document.getElementById('navSearchInput');
+            if (navInput && currentQuery) {
+                navInput.value = currentQuery;
+            }
+            const mobileInput = document.getElementById('mobileSearchInput');
+            if (mobileInput && currentQuery) {
+                mobileInput.value = currentQuery;
+            }
+        })();
 
         document.getElementById('navSearchInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && this.value.trim()) {
@@ -1188,6 +1648,25 @@
             // Закрываем profile dropdown, если клик вне него
             if (profileDropdown && profileContainer && !profileContainer.contains(event.target)) {
                 profileDropdown.classList.remove('show');
+            }
+        });
+
+        // Global Filters Toggle (for mobile)
+        function closeFilters() {
+            const sidebar = document.getElementById('filtersSidebar');
+            const backdrop = document.getElementById('filtersBackdrop');
+            if (sidebar) {
+                sidebar.classList.remove('active');
+            }
+            if (backdrop) {
+                backdrop.classList.remove('active');
+            }
+        }
+
+        // Auto-close filters when window resized
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 1024) {
+                closeFilters();
             }
         });
 
