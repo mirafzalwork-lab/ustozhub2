@@ -142,7 +142,7 @@ default_app_config = 'teachers.apps.TeachersConfig'
 # =============================================================================
 
 # Токен вашего Telegram бота (получите от @BotFather)
-TELEGRAM_BOT_TOKEN = '6599919259:AAGqnQXsjUaXoaSjFqisVy-QmRaDdlgVxdI'  # ЗАМЕНИТЕ НА ВАШ ТОКЕН!
+TELEGRAM_BOT_TOKEN = '8321896487:AAGg0KJHw4p3k07_e9gI5eXRgr46OPs3sFM'  # ЗАМЕНИТЕ НА ВАШ ТОКЕН!
 
 # URL вашего сайта (для кнопок и WebApp)
 SITE_URL = 'https://ustozhubedu.uz'
