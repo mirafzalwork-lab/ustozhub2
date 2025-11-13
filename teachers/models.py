@@ -953,7 +953,7 @@ class NotificationLog(models.Model):
         return f"Попытка #{self.attempt_number} для {self.notification.id} - {self.get_status_display()}"
 
 class ViewCounter(models.Model):
-    ip_address = models.GenericIPAddressField()
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField()
     page = models.CharField(max_length=100)
     viewed_at = models.DateTimeField(auto_now_add=True)
