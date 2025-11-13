@@ -1,28 +1,30 @@
-from django.shortcuts import render
-from django.db.models import Q, Min, Max
-from .models import TeacherProfile, Subject, City, StudentProfile, ProfileView
-from django.shortcuts import get_object_or_404
-from django.db.models import Q, Min, Max, Avg
 from django.shortcuts import render, redirect, get_object_or_404
+from django.db.models import Q, Min, Max, Avg, Count
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Max, Count
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.cache import cache  # ⚡ ОПТИМИЗАЦИЯ: Кэширование
 from django.conf import settings  # ⚡ ОПТИМИЗАЦИЯ: Для CACHE_TTL
+from django.contrib.auth import login, logout, authenticate
+from django.utils import timezone
+from .models import (
+    TeacherProfile, StudentProfile, Subject, City, ProfileView,
+    TeacherSubject, Certificate, User, Favorite, FavoriteStudent,
+    Conversation, Message, Review, ViewCounter, TelegramUser
+)
 from .forms import (
     TeacherRegistrationForm, 
     TeacherSubjectsForm, 
     CertificateUploadForm,
-    MessageForm
+    MessageForm,
+    LoginForm,
+    StudentRegistrationForm,
+    TeacherProfileEditForm,
+    StudentProfileEditForm,
+    UserProfileEditForm,
+    TeacherSubjectEditForm
 )
-from django.contrib.auth import login, logout, authenticate
-from django.contrib.auth.decorators import login_required
-from .forms import LoginForm, StudentRegistrationForm
-from .models import TeacherProfile, TeacherSubject, Certificate, User
-from .models import Favorite, FavoriteStudent, Conversation, Message
-from .models import ViewCounter
 
 def track_view(request, page_name):
     ViewCounter.add_view(request, page_name)
@@ -214,23 +216,142 @@ def home(request):
 
 @login_required(login_url='login')
 def admin_dashboard(request):
-    monthly_views = ViewCounter.get_monthly_stats()
+    """Dashboard для администратора с полной статистикой платформы"""
+    from datetime import timedelta
     
-    current_month = timezone.now().date().replace(day=1)
+    # Проверка прав доступа
+    if not request.user.is_staff:
+        messages.error(request, 'У вас нет доступа к админ панели')
+        return redirect('home')
+    
+    now = timezone.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_ago = now - timedelta(days=7)
+    month_ago = now - timedelta(days=30)
+    
+    # ========== МЕТРИКИ ПОЛЬЗОВАТЕЛЕЙ ==========
+    total_teachers = TeacherProfile.objects.count()
+    active_teachers = TeacherProfile.objects.filter(is_active=True).count()
+    pending_teachers = TeacherProfile.objects.filter(moderation_status='pending').count()
+    approved_teachers = TeacherProfile.objects.filter(moderation_status='approved').count()
+    
+    total_students = StudentProfile.objects.count()
+    active_students = StudentProfile.objects.filter(is_active=True).count()
+    
+    # Новые регистрации за неделю
+    new_teachers_week = TeacherProfile.objects.filter(created_at__gte=week_ago).count()
+    new_students_week = StudentProfile.objects.filter(created_at__gte=week_ago).count()
+    
+    # ========== МЕТРИКИ СООБЩЕНИЙ ==========
+    total_messages = Message.objects.count()
+    messages_today = Message.objects.filter(created_at__gte=today_start).count()
+    messages_week = Message.objects.filter(created_at__gte=week_ago).count()
+    unread_messages = Message.objects.filter(is_read=False).count()
+    
+    # Активные переписки (с сообщениями за последнюю неделю)
+    active_conversations = Conversation.objects.filter(
+        messages__created_at__gte=week_ago,
+        is_active=True
+    ).distinct().count()
+    
+    # ========== МЕТРИКИ ПРОСМОТРОВ ==========
+    current_month = now.date().replace(day=1)
+    monthly_views = ViewCounter.objects.filter(month=current_month).count()
+    
+    # Просмотры профилей
+    total_profile_views = ProfileView.objects.count()
+    profile_views_today = ProfileView.objects.filter(viewed_at__gte=today_start).count()
+    profile_views_week = ProfileView.objects.filter(viewed_at__gte=week_ago).count()
+    profile_views_month = ProfileView.objects.filter(viewed_at__gte=month_ago).count()
+    
+    # ========== МЕТРИКИ ОТЗЫВОВ ==========
+    total_reviews = Review.objects.count()
+    reviews_week = Review.objects.filter(created_at__gte=week_ago).count()
+    
+    # ========== МЕТРИКИ ИЗБРАННОГО ==========
+    total_favorites = Favorite.objects.count() + FavoriteStudent.objects.count()
+    
+    # ========== TELEGRAM СТАТИСТИКА ==========
+    telegram_users = TelegramUser.objects.count()
+    telegram_active = TelegramUser.objects.filter(
+        notifications_enabled=True,
+        started_bot=True
+    ).count()
+    
+    # ========== ПОСЛЕДНИЕ УЧИТЕЛЯ НА МОДЕРАЦИИ ==========
+    pending_teachers_list = TeacherProfile.objects.filter(
+        moderation_status='pending'
+    ).select_related('user').order_by('-created_at')[:10]
+    
+    # ========== ПОСЛЕДНИЕ СООБЩЕНИЯ ==========
+    recent_messages = Message.objects.select_related(
+        'sender',
+        'conversation__teacher__user',
+        'conversation__student'
+    ).order_by('-created_at')[:15]
+    
+    # ========== ПОСЛЕДНИЕ РЕГИСТРАЦИИ ==========
+    recent_teachers = TeacherProfile.objects.select_related('user', 'city').order_by('-created_at')[:8]
+    recent_students = StudentProfile.objects.select_related('user', 'city').order_by('-created_at')[:8]
+    
+    # ========== СТАТИСТИКА ПО СТРАНИЦАМ ==========
     page_stats = ViewCounter.objects.filter(month=current_month).values('page').annotate(
         view_count=Count('id')
-    ).order_by('-view_count')
-  
- 
-   
+    ).order_by('-view_count')[:10]
+    
+    # ========== ТОП ПРЕДМЕТОВ ==========
+    top_subjects = Subject.objects.annotate(
+        teacher_count=Count('teacherprofile'),
+        student_interest_count=Count('interested_students')
+    ).order_by('-teacher_count')[:10]
     
     context = {
+        # Метрики пользователей
+        'total_teachers': total_teachers,
+        'active_teachers': active_teachers,
+        'pending_teachers': pending_teachers,
+        'approved_teachers': approved_teachers,
+        'total_students': total_students,
+        'active_students': active_students,
+        'new_teachers_week': new_teachers_week,
+        'new_students_week': new_students_week,
+        
+        # Метрики сообщений
+        'total_messages': total_messages,
+        'messages_today': messages_today,
+        'messages_week': messages_week,
+        'unread_messages': unread_messages,
+        'active_conversations': active_conversations,
+        
+        # Метрики просмотров
         'monthly_views': monthly_views,
+        'total_profile_views': total_profile_views,
+        'profile_views_today': profile_views_today,
+        'profile_views_week': profile_views_week,
+        'profile_views_month': profile_views_month,
+        
+        # Метрики отзывов и избранного
+        'total_reviews': total_reviews,
+        'reviews_week': reviews_week,
+        'total_favorites': total_favorites,
+        
+        # Telegram
+        'telegram_users': telegram_users,
+        'telegram_active': telegram_active,
+        
+        # Списки
+        'pending_teachers_list': pending_teachers_list,
+        'recent_messages': recent_messages,
+        'recent_teachers': recent_teachers,
+        'recent_students': recent_students,
         'page_stats': page_stats,
-    
+        'top_subjects': top_subjects,
+        
+        # Вспомогательные данные
         'current_month': current_month.strftime('%B %Y'),
-   
+        'now': now,
     }
+    
     return render(request, 'admin/admin_dashboard.html', context)
 
 def students_list(request):
@@ -794,18 +915,6 @@ def profile_edit(request):
         return redirect('student_profile_edit')
 
 
-from .forms import (
-    TeacherRegistrationForm, 
-    TeacherSubjectsForm, 
-    CertificateUploadForm,
-    LoginForm, 
-    StudentRegistrationForm,
-    TeacherProfileEditForm,
-    StudentProfileEditForm,
-    UserProfileEditForm,
-    TeacherSubjectEditForm
-)
-
 @login_required
 def teacher_profile_edit(request):
     """Редактирование профиля учителя"""
@@ -1236,7 +1345,7 @@ def conversation_detail(request, conversation_id):
         return redirect('conversations_list')
 
 
-@login_required
+@login_required(login_url='login')
 def start_conversation(request, user_id):
     """
     Начать новую переписку с пользователем

@@ -1251,7 +1251,7 @@
                                         <div class="budget-period">{% trans 'готов платить' %}</div>
                                     {% endif %}
                                 </div>
-                                <button class="contact-btn" onclick="event.stopPropagation()">
+                                <button class="contact-btn" onclick="event.stopPropagation(); handleMessageClick({{ student.user.id }})">
                                     <i class="fas fa-paper-plane"></i> {% trans 'Связаться' %}
                                 </button>
                             </div>
@@ -1390,6 +1390,18 @@
                 e.preventDefault();
             }
         }, { passive: false });
+    }
+
+    // ========== ОБРАБОТКА КНОПКИ "СВЯЗАТЬСЯ" ==========
+    function handleMessageClick(studentUserId) {
+        {% if user.is_authenticated %}
+            // Пользователь авторизован - открываем переписку
+            window.location.href = `/messages/start/${studentUserId}/`;
+        {% else %}
+            // Пользователь не авторизован - перенаправляем на страницу входа
+            const currentUrl = encodeURIComponent(window.location.pathname + window.location.search);
+            window.location.href = `/login/?next=${currentUrl}`;
+        {% endif %}
     }
 </script>
 {% endblock %}
