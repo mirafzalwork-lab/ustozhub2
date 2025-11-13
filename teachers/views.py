@@ -6,6 +6,7 @@ from django.db.models import Q, Min, Max, Avg
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db.models import Max, Count
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.cache import cache  # ⚡ ОПТИМИЗАЦИЯ: Кэширование
@@ -21,6 +22,10 @@ from django.contrib.auth.decorators import login_required
 from .forms import LoginForm, StudentRegistrationForm
 from .models import TeacherProfile, TeacherSubject, Certificate, User
 from .models import Favorite, FavoriteStudent, Conversation, Message
+from .models import ViewCounter
+
+def track_view(request, page_name):
+    ViewCounter.add_view(request, page_name)
 
 
 def get_client_ip(request):
@@ -83,6 +88,8 @@ def home(request):
     Главная страница с учителями
     БЕЗ ИЗМЕНЕНИЙ - оставлена оригинальная логика
     """
+
+    track_view(request, 'home')
     # Базовый queryset
     teachers = TeacherProfile.objects.filter(is_active=True).select_related(
         'user', 'city'
@@ -205,6 +212,26 @@ def home(request):
     
     return render(request, 'logic/home.html', context)
 
+@login_required(login_url='login')
+def admin_dashboard(request):
+    monthly_views = ViewCounter.get_monthly_stats()
+    
+    current_month = timezone.now().date().replace(day=1)
+    page_stats = ViewCounter.objects.filter(month=current_month).values('page').annotate(
+        view_count=Count('id')
+    ).order_by('-view_count')
+  
+ 
+   
+    
+    context = {
+        'monthly_views': monthly_views,
+        'page_stats': page_stats,
+    
+        'current_month': current_month.strftime('%B %Y'),
+   
+    }
+    return render(request, 'admin/admin_dashboard.html', context)
 
 def students_list(request):
     """

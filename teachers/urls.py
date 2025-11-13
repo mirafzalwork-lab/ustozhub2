@@ -9,7 +9,7 @@ from .views import (
     student_suggestions,
     conversations_list, conversation_detail, start_conversation,
     send_message_ajax, mark_messages_read, delete_conversation,
-    delete_teacher_subject
+    delete_teacher_subject, admin_dashboard
 )
 from .telegram_views import (
     telegram_auth, link_telegram_account, telegram_status, toggle_notifications
@@ -24,6 +24,7 @@ urlpatterns = [
     path('register/student/', register_student, name='register_student'),
     path('students/', students_list, name='students_list'),
     path('student/<int:id>/', student_detail, name='student_detail'),
+    path('admin-dashboard/', admin_dashboard, name='admin_dashboard'),
 
     path('register/', teacher_register_step1, name='teacher_register_step1'),
     path('register/step2/', teacher_register_step2, name='teacher_register_step2'),
