@@ -1,0 +1,235 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{% static 'logo/logo.png' %}" type="image/x-icon">
+    <link rel="stylesheet" href="{% static 'teachers/admin.css' %}">
+    <title>Admin Dashboard</title>
+</head>
+<body>
+    {% csrf_token %}
+    <div class="container">
+        <h1>Админ Страница</h1>
+        <p><a href="/" style="color:#2196f3; text-decoration:underline; font-size:1.1em;">На главную страницу сайта</a></p>
+
+        <!-- View Statistics Section -->
+        <div class="stats-container">
+            <div class="stats-header">
+                <div class="stats-title">Кол-во просмотров</div>
+                <div class="stats-month">{{ current_month }}</div>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">{{ monthly_views }}</div>
+                    <div class="stat-label">Общее кол-во просмотров</div>
+                </div>
+            </div>
+
+            <div class="page-stats">
+                <h3 style="margin: 20px 0 10px; font-size: 16px; color: #666;">Просмотров по страницам</h3>
+                {% for stat in page_stats %}
+                <div class="page-stat-item">
+                    <span class="page-name">{{ stat.page|title }}</span>
+                    <span class="page-views">{{ stat.view_count }} просмотров</span>
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+       
+    </div>
+
+    <script>
+        // Функции для управления заявками
+function refreshOrders() {
+    location.reload();
+}
+
+function viewOrderDetails(orderId) {
+    fetch(`/get-order-details/${orderId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const modal = document.getElementById('orderDetailsModal');
+                const body = document.getElementById('orderDetailsBody');
+                
+                body.innerHTML = `
+                    <div class="order-detail">
+                        <h4>Заявка #${data.order.id}</h4>
+                        <div class="detail-grid">
+                            <div class="detail-row">
+                                <span class="label">Клиент:</span>
+                                <span class="value">${data.order.name}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Телефон:</span>
+                                <span class="value"><a href="tel:${data.order.phone}">${data.order.phone}</a></span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Техника:</span>
+                                <span class="value">${data.order.equipment_type}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Проблема:</span>
+                                <span class="value">${data.order.problem_description || 'Не указана'}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Адрес:</span>
+                                <span class="value">${data.order.address || 'Не указан'}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Срочность:</span>
+                                <span class="value">${data.order.is_urgent ? 'Срочно (+80.000 UZS)' : 'Обычно'}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Статус:</span>
+                                <span class="value">${data.order.status}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Дата создания:</span>
+                                <span class="value">${data.order.created_at}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">IP адрес:</span>
+                                <span class="value">${data.order.ip_address || 'Не определен'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                modal.classList.add('show');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Ошибка при загрузке деталей заявки');
+        });
+}
+
+function closeOrderModal() {
+    document.getElementById('orderDetailsModal').classList.remove('show');
+}
+
+function callClient(phone) {
+    window.location.href = `tel:${phone}`;
+}
+
+function deleteOrder(orderId) {
+    if (confirm('Вы уверены, что хотите удалить эту заявку?')) {
+        fetch(`/delete-order/${orderId}/`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.querySelector(`[data-order-id="${orderId}"]`).remove();
+                showNotification('Заявка удалена', 'success');
+            } else {
+                showNotification('Ошибка при удалении заявки', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Ошибка при удалении заявки', 'error');
+        });
+    }
+}
+
+// Фильтрация в реальном времени
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchOrders');
+    const statusFilter = document.getElementById('statusFilter');
+    const equipmentFilter = document.getElementById('equipmentFilter');
+    
+    function filterOrders() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const statusValue = statusFilter.value;
+        const equipmentValue = equipmentFilter.value;
+        
+        const cards = document.querySelectorAll('.order-card');
+        
+        cards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            const matchesSearch = text.includes(searchTerm);
+            const matchesStatus = !statusValue || card.querySelector('.status-select').value === statusValue;
+            const matchesEquipment = !equipmentValue || text.includes(equipmentValue);
+            
+            if (matchesSearch && matchesStatus && matchesEquipment) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+    
+    searchInput.addEventListener('input', filterOrders);
+    statusFilter.addEventListener('change', filterOrders);
+    equipmentFilter.addEventListener('change', filterOrders);
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.status-select').forEach(function(select) {
+        select.addEventListener('change', function() {
+            const orderId = this.getAttribute('data-order-id');
+            const newStatus = this.value;
+
+            fetch(`/update-order-status/${orderId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({status: newStatus})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Можно показать уведомление
+                    // showNotification('Статус обновлен', 'success');
+                } else {
+                    alert('Ошибка при обновлении статуса');
+                }
+            });
+        });
+    });
+});
+
+// Функция для получения CSRF-токена из cookie
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function deleteCallMasterRequest(requestId) {
+    if (confirm('Удалить заявку?')) {
+        fetch(`/delete-callmaster-request/${requestId}/`, {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': getCookie('csrftoken') }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.querySelector(`[data-request-id="${requestId}"]`).remove();
+            } else {
+                alert('Ошибка при удалении');
+            }
+        });
+    }
+}
+</script>
+</body>
+</html>
