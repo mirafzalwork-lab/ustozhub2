@@ -1,0 +1,138 @@
+    /* === SIDEBAR STICKY === */
+    .student-detail-page .sidebar-sticky {
+        position: sticky;
+        top: 90px;
+    }
+
+    /* === BOOKING CARD === */
+    .student-detail-page .booking-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 20px rgba(10, 37, 64, 0.12);
+        border: 2px solid #e9ecef;
+    }
+
+    .student-detail-page .booking-header {
+        text-align: center;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #f0f0f0;
+        margin-bottom: 20px;
+    }
+
+    .student-detail-page .booking-label {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 8px;
+    }
+
+    .student-detail-page .booking-amount {
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--student-primary);
+        margin-bottom: 4px;
+        word-wrap: break-word;
+    }
+
+    .student-detail-page .booking-period {
+        font-size: 14px;
+        color: #999;
+    }
+
+    .student-detail-page .booking-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .student-detail-page .btn-primary {
+        width: 100%;
+        padding: 14px;
+        background: var(--student-primary);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .student-detail-page .btn-primary:hover {
+        background: var(--student-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        text-decoration: none;
+    }
+
+    .student-detail-page .btn-telegram {
+        width: 100%;
+        padding: 14px;
+        background: #0088cc;
+        color: white;
+        border: 2px solid #0088cc;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .student-detail-page .btn-telegram:hover {
+        background: #006699;
+        border-color: #006699;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 136, 204, 0.3);
+    }
+
+    .student-detail-page .btn-favorite {
+        width: 100%;
+        padding: 14px;
+        background: white;
+        color: #EF4444;
+        border: 2px solid #EF4444;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .student-detail-page .btn-favorite:hover {
+        background: #fef2f2;
+    }
+
+    .student-detail-page .btn-favorite.active {
+        background: #EF4444;
+        color: white;
+    }
+
+    .student-detail-page .booking-note {
+        text-align: center;
+        font-size: 12px;
+        color: #666;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+
+

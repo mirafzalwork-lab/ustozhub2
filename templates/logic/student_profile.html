@@ -94,6 +94,42 @@
         display: flex;
         align-items: center;
         gap: 24px;
+        position: relative; /* allow absolute badge placement like teacher profile */
+    }
+
+    /* Status badge (copied from teacher styles for consistent placement) */
+    .status-badge {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 600;
+        background: #f0fdf4;
+        color: #065f46;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .status-badge:hover {
+        transform: scale(1.03);
+    }
+
+    .status-pending { ba    ckground: #fef3c7; color: #92400e; }
+    .status-approved { background: #d1fae5; color: #065f46; }
+    .status-rejected { background: #fee2e2; color: #991b1b; }
+
+    /* Success button style also copied so preview button matches teacher page */
+    .btn-success {
+        background: #10b981;
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #059669;
     }
 
     .profile-avatar {
@@ -507,6 +543,9 @@
 
     <!-- Шапка профиля -->
     <div class="profile-header">
+        <span class="status-badge status-approved">
+            <i class="fas fa-user-graduate"></i> {% trans 'Ученик' %}
+        </span>
         <div class="profile-avatar">
             {% if user.avatar %}
                 <img src="{{ user.avatar.url }}" alt="{{ user.get_full_name }}">
@@ -529,6 +568,10 @@
             <div class="profile-actions">
                 <a href="{% url 'student_profile_edit' %}" class="btn btn-primary">
                     <i class="fas fa-edit"></i> {% trans 'Редактировать профиль' %}
+                </a>
+                <!-- Preview button added to match teacher profile actions -->
+                <a href="{% url 'home' %}" class="btn btn-success">
+                    <i class="fas fa-eye"></i> {% trans 'Посмотреть как видят ученики' %}
                 </a>
                 <a href="{% url 'my_favorite_teachers' %}" class="btn btn-secondary">
                     <i class="fas fa-heart"></i> {% trans 'Избранные учителя' %}

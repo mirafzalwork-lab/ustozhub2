@@ -346,7 +346,7 @@ def admin_dashboard(request):
         'recent_students': recent_students,
         'page_stats': page_stats,
         'top_subjects': top_subjects,
-        
+    
         # Вспомогательные данные
         'current_month': current_month.strftime('%B %Y'),
         'now': now,
