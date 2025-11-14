@@ -1314,7 +1314,7 @@
                                         <div class="price-period">{% trans 'за час' %}</div>
                                     {% endwith %}
                                 </div>
-                                <button class="contact-btn" onclick="event.stopPropagation()">
+                                <button class="contact-btn" onclick="event.stopPropagation(); handleMessageClick({{ teacher.user.id }})">
                                     <i class="fas fa-comment"></i> {% trans 'Написать' %}
                                 </button>
                             </div>
@@ -1453,6 +1453,18 @@
                 e.preventDefault();
             }
         }, { passive: false });
+    }
+
+    // ========== ОБРАБОТКА КНОПКИ "НАПИСАТЬ" ==========
+    function handleMessageClick(teacherUserId) {
+        {% if user.is_authenticated %}
+            // Пользователь авторизован - открываем переписку
+            window.location.href = `/messages/start/${teacherUserId}/`;
+        {% else %}
+            // Пользователь не авторизован - перенаправляем на страницу входа
+            const currentUrl = encodeURIComponent(window.location.pathname + window.location.search);
+            window.location.href = `/login/?next=${currentUrl}`;
+        {% endif %}
     }
 </script>
 {% endblock %}

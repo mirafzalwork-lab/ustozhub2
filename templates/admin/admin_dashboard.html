@@ -1,235 +1,417 @@
 {% load static %}
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="{% static 'logo/logo.png' %}" type="image/x-icon">
+    <title>Admin Dashboard - UstozHub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'teachers/admin.css' %}">
-    <title>Admin Dashboard</title>
 </head>
 <body>
-    {% csrf_token %}
-    <div class="container">
-        <h1>Админ Страница</h1>
-        <p><a href="/" style="color:#2196f3; text-decoration:underline; font-size:1.1em;">На главную страницу сайта</a></p>
-
-        <!-- View Statistics Section -->
-        <div class="stats-container">
-            <div class="stats-header">
-                <div class="stats-title">Кол-во просмотров</div>
-                <div class="stats-month">{{ current_month }}</div>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'logo/logo.png' %}" alt="UstozHub">
+            <div class="sidebar-logo-text">
+                <h2>UstozHub</h2>
+            </div>
             </div>
             
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value">{{ monthly_views }}</div>
-                    <div class="stat-label">Общее кол-во просмотров</div>
+        <ul class="sidebar-menu">
+            <li><a href="{% url 'admin_dashboard' %}" class="active"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+            <li><a href="#teachers"><i class="fas fa-chalkboard-teacher"></i> <span>Учителя</span></a></li>
+            <li><a href="#students"><i class="fas fa-user-graduate"></i> <span>Ученики</span></a></li>
+            <li><a href="#messages"><i class="fas fa-comments"></i> <span>Сообщения</span></a></li>
+            <li><a href="#moderation"><i class="fas fa-check-circle"></i> <span>Модерация</span></a></li>
+            <li><a href="#stats"><i class="fas fa-chart-line"></i> <span>Статистика</span></a></li>
+            <li><a href="{% url 'home' %}"><i class="fas fa-globe"></i> <span>На сайт</span></a></li>
+            <li><a href="/admin/"><i class="fas fa-cog"></i> <span>Django Admin</span></a></li>
+            <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> <span>Выход</span></a></li>
+        </ul>
+    </aside>
+    
+    <!-- TOP NAVBAR -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <h1>📊 Admin Dashboard</h1>
+                </div>
+        <div class="topbar-right">
+            <div class="notification-icon">
+                <i class="fas fa-bell"></i>
+                <span class="notification-badge">{{ pending_teachers }}</span>
+            </div>
+            <div class="user-profile">
+                <div class="user-avatar">{{ request.user.first_name.0|upper }}</div>
+                <div class="user-info">
+                    <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                    <div class="user-role">Администратор</div>
                 </div>
             </div>
-
-            <div class="page-stats">
-                <h3 style="margin: 20px 0 10px; font-size: 16px; color: #666;">Просмотров по страницам</h3>
-                {% for stat in page_stats %}
-                <div class="page-stat-item">
-                    <span class="page-name">{{ stat.page|title }}</span>
-                    <span class="page-views">{{ stat.view_count }} просмотров</span>
-                </div>
-                {% endfor %}
-            </div>
-
         </div>
-       
-    </div>
+    </header>
+    
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <!-- OVERVIEW METRICS -->
+        <div class="metrics-grid">
+            <!-- Учителя -->
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-title">Учителя</div>
+                    <div class="metric-icon primary">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                </div>
+                <div class="metric-value">{{ total_teachers }}</div>
+                <div class="metric-label">всего • {{ active_teachers }} активных</div>
+                <div class="metric-trend">
+                    <i class="fas fa-arrow-up"></i> +{{ new_teachers_week }} за неделю
+                </div>
+            </div>
+            
+            <!-- Ученики -->
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-title">Ученики</div>
+                    <div class="metric-icon accent">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                </div>
+                <div class="metric-value">{{ total_students }}</div>
+                <div class="metric-label">всего • {{ active_students }} активных</div>
+                <div class="metric-trend">
+                    <i class="fas fa-arrow-up"></i> +{{ new_students_week }} за неделю
+                </div>
+            </div>
+            
+            <!-- Сообщения -->
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-title">Сообщения</div>
+                    <div class="metric-icon primary">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                </div>
+                <div class="metric-value">{{ total_messages }}</div>
+                <div class="metric-label">всего сообщений</div>
+                <div class="metric-trend">
+                    <i class="fas fa-clock"></i> {{ messages_today }} сегодня
+                </div>
+            </div>
+            
+            <!-- Активные переписки -->
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-title">Переписки</div>
+                    <div class="metric-icon accent">
+                        <i class="fas fa-comment-dots"></i>
+                    </div>
+                </div>
+                <div class="metric-value">{{ active_conversations }}</div>
+                <div class="metric-label">активных за неделю</div>
+                <div class="metric-trend">
+                    <i class="fas fa-envelope"></i> {{ unread_messages }} непрочитанных
+                </div>
+            </div>
+            
+            <!-- Просмотры профилей -->
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-title">Просмотры</div>
+                    <div class="metric-icon primary">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                </div>
+                <div class="metric-value" id="viewsCount">{{ profile_views_month }}</div>
+                <div class="metric-label" id="viewsLabel">за месяц</div>
+                <div style="display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap;">
+                    <button class="filter-btn active" style="padding: 4px 10px; font-size: 11px;" onclick="updateViews({{ profile_views_month }}, 'за месяц', this)">Месяц</button>
+                    <button class="filter-btn" style="padding: 4px 10px; font-size: 11px;" onclick="updateViews({{ profile_views_week }}, 'за неделю', this)">Неделя</button>
+                    <button class="filter-btn" style="padding: 4px 10px; font-size: 11px;" onclick="updateViews({{ profile_views_today }}, 'сегодня', this)">Сегодня</button>
+                </div>
+            </div>
+            
+            <!-- Модерация -->
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-title">Модерация</div>
+                    <div class="metric-icon accent">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+                <div class="metric-value">{{ pending_teachers }}</div>
+                <div class="metric-label">на модерации</div>
+                <div class="metric-trend">
+                    <i class="fas fa-check"></i> {{ approved_teachers }} одобрено
+                </div>
+            </div>
+            
+            <!-- Отзывы -->
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-title">Отзывы</div>
+                    <div class="metric-icon primary">
+                        <i class="fas fa-star"></i>
+                    </div>
+                </div>
+                <div class="metric-value">{{ total_reviews }}</div>
+                <div class="metric-label">всего отзывов</div>
+                <div class="metric-trend">
+                    <i class="fas fa-plus"></i> {{ reviews_week }} за неделю
+                </div>
+            </div>
+            
+            <!-- Telegram -->
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-title">Telegram бот</div>
+                    <div class="metric-icon accent">
+                        <i class="fab fa-telegram"></i>
+                    </div>
+                </div>
+                <div class="metric-value">{{ telegram_users }}</div>
+                <div class="metric-label">пользователей бота</div>
+                <div class="metric-trend">
+                    <i class="fas fa-bell"></i> {{ telegram_active }} с уведомлениями
+                </div>
+            </div>
+        </div>
 
-    <script>
-        // Функции для управления заявками
-function refreshOrders() {
-    location.reload();
-}
-
-function viewOrderDetails(orderId) {
-    fetch(`/get-order-details/${orderId}/`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const modal = document.getElementById('orderDetailsModal');
-                const body = document.getElementById('orderDetailsBody');
-                
-                body.innerHTML = `
-                    <div class="order-detail">
-                        <h4>Заявка #${data.order.id}</h4>
-                        <div class="detail-grid">
-                            <div class="detail-row">
-                                <span class="label">Клиент:</span>
-                                <span class="value">${data.order.name}</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="label">Телефон:</span>
-                                <span class="value"><a href="tel:${data.order.phone}">${data.order.phone}</a></span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="label">Техника:</span>
-                                <span class="value">${data.order.equipment_type}</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="label">Проблема:</span>
-                                <span class="value">${data.order.problem_description || 'Не указана'}</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="label">Адрес:</span>
-                                <span class="value">${data.order.address || 'Не указан'}</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="label">Срочность:</span>
-                                <span class="value">${data.order.is_urgent ? 'Срочно (+80.000 UZS)' : 'Обычно'}</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="label">Статус:</span>
-                                <span class="value">${data.order.status}</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="label">Дата создания:</span>
-                                <span class="value">${data.order.created_at}</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="label">IP адрес:</span>
-                                <span class="value">${data.order.ip_address || 'Не определен'}</span>
+        <!-- МОДЕРАЦИЯ УЧИТЕЛЕЙ -->
+        {% if pending_teachers_list %}
+        <div class="section-card" id="moderation">
+            <div class="section-header">
+                <h3>⏳ Учителя на модерации</h3>
+                <span class="section-badge">{{ pending_teachers }}</span>
+            </div>
+            <div class="items-list">
+                {% for teacher in pending_teachers_list %}
+                <div class="item-row">
+                    <div class="item-left">
+                        <div class="item-icon">
+                            {% if teacher.user.avatar %}
+                                <img src="{{ teacher.user.avatar.url }}" alt="{{ teacher.user.get_full_name }}" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover;">
+                            {% else %}
+                                <i class="fas fa-user-circle"></i>
+                            {% endif %}
+                        </div>
+                        <div class="item-info">
+                            <div class="item-name">{{ teacher.user.get_full_name|default:teacher.user.username }}</div>
+                            <div class="item-date">
+                                {{ teacher.get_subjects_display|default:"Без предметов" }} • 
+                                {{ teacher.experience_years }} лет опыта • 
+                                {{ teacher.created_at|date:"d.m.Y H:i" }}
                             </div>
                         </div>
                     </div>
-                `;
-                
-                modal.classList.add('show');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Ошибка при загрузке деталей заявки');
-        });
-}
+                    <div class="item-actions">
+                        <a href="/admin/teachers/teacherprofile/{{ teacher.id }}/change/" class="action-btn primary" target="_blank">
+                            <i class="fas fa-eye"></i> Просмотр
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
 
-function closeOrderModal() {
-    document.getElementById('orderDetailsModal').classList.remove('show');
-}
+        <!-- ПОСЛЕДНИЕ СООБЩЕНИЯ -->
+        <div class="section-card" id="messages">
+            <div class="section-header">
+                <h3>💬 Последние сообщения</h3>
+                <span class="section-badge">{{ messages_week }} за неделю</span>
+            </div>
+            <div class="items-list">
+                {% for message in recent_messages %}
+                <div class="item-row">
+                    <div class="item-left">
+                        <div class="item-icon">
+                            <i class="fas fa-comment"></i>
+                        </div>
+                        <div class="item-info">
+                            <div class="item-name">
+                                <strong>{{ message.sender.get_full_name|default:message.sender.username }}</strong>
+                                {% if message.sender.user_type == 'teacher' %}
+                                    <span style="color: #FC7702; font-size: 12px;">→</span>
+                                    {{ message.conversation.student.get_full_name }}
+                                {% else %}
+                                    <span style="color: #FC7702; font-size: 12px;">→</span>
+                                    {{ message.conversation.teacher.user.get_full_name }}
+                                {% endif %}
+                            </div>
+                            <div class="item-date">
+                                {{ message.content|truncatewords:15 }} • {{ message.created_at|date:"d.m.Y H:i" }}
+                                {% if not message.is_read %}<span style="color: #FC7702; font-weight: 600;">• NEW</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="no-items">Нет сообщений</div>
+                {% endfor %}
+            </div>
+        </div>
 
-function callClient(phone) {
-    window.location.href = `tel:${phone}`;
-}
-
-function deleteOrder(orderId) {
-    if (confirm('Вы уверены, что хотите удалить эту заявку?')) {
-        fetch(`/delete-order/${orderId}/`, {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.querySelector(`[data-order-id="${orderId}"]`).remove();
-                showNotification('Заявка удалена', 'success');
-            } else {
-                showNotification('Ошибка при удалении заявки', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showNotification('Ошибка при удалении заявки', 'error');
-        });
-    }
-}
-
-// Фильтрация в реальном времени
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('searchOrders');
-    const statusFilter = document.getElementById('statusFilter');
-    const equipmentFilter = document.getElementById('equipmentFilter');
-    
-    function filterOrders() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const statusValue = statusFilter.value;
-        const equipmentValue = equipmentFilter.value;
-        
-        const cards = document.querySelectorAll('.order-card');
-        
-        cards.forEach(card => {
-            const text = card.textContent.toLowerCase();
-            const matchesSearch = text.includes(searchTerm);
-            const matchesStatus = !statusValue || card.querySelector('.status-select').value === statusValue;
-            const matchesEquipment = !equipmentValue || text.includes(equipmentValue);
+        <!-- ПОСЛЕДНИЕ РЕГИСТРАЦИИ -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
+            <!-- Учителя -->
+            <div class="section-card" id="teachers">
+                <div class="section-header">
+                    <h3>👨‍🏫 Новые учителя</h3>
+                    <span class="section-badge">{{ new_teachers_week }} за неделю</span>
+                </div>
+                <div class="items-list" style="max-height: 400px;">
+                    {% for teacher in recent_teachers %}
+                    <div class="item-row">
+                        <div class="item-left">
+                            <div class="item-icon">
+                                {% if teacher.user.avatar %}
+                                    <img src="{{ teacher.user.avatar.url }}" alt="{{ teacher.user.get_full_name }}" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover;">
+                                {% else %}
+                                    <i class="fas fa-user-tie"></i>
+                                {% endif %}
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">{{ teacher.user.get_full_name|default:teacher.user.username }}</div>
+                                <div class="item-date">
+                                    {{ teacher.get_subjects_display|truncatewords:3 }} • 
+                                    {% if teacher.city %}{{ teacher.city.name }}{% endif %} • 
+                                    {{ teacher.created_at|date:"d.m.Y" }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="item-actions">
+                            <a href="{% url 'teacher_detail' teacher.id %}" class="action-btn" target="_blank">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="no-items">Нет учителей</div>
+                    {% endfor %}
+                </div>
+            </div>
             
-            if (matchesSearch && matchesStatus && matchesEquipment) {
-                card.style.display = 'block';
-            } else {
-                card.style.display = 'none';
-            }
-        });
-    }
-    
-    searchInput.addEventListener('input', filterOrders);
-    statusFilter.addEventListener('change', filterOrders);
-    equipmentFilter.addEventListener('change', filterOrders);
-});
+            <!-- Ученики -->
+            <div class="section-card" id="students">
+                <div class="section-header">
+                    <h3>👨‍🎓 Новые ученики</h3>
+                    <span class="section-badge">{{ new_students_week }} за неделю</span>
+                </div>
+                <div class="items-list" style="max-height: 400px;">
+                    {% for student in recent_students %}
+                    <div class="item-row">
+                        <div class="item-left">
+                            <div class="item-icon">
+                                {% if student.user.avatar %}
+                                    <img src="{{ student.user.avatar.url }}" alt="{{ student.user.get_full_name }}" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover;">
+                                {% else %}
+                                    <i class="fas fa-user"></i>
+                                {% endif %}
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">{{ student.user.get_full_name|default:student.user.username }}</div>
+                                <div class="item-date">
+                                    {{ student.get_desired_subjects_display|truncatewords:3 }} • 
+                                    {% if student.city %}{{ student.city.name }}{% endif %} • 
+                                    {{ student.created_at|date:"d.m.Y" }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="item-actions">
+                            <a href="{% url 'student_detail' student.id %}" class="action-btn" target="_blank">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="no-items">Нет учеников</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
 
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.status-select').forEach(function(select) {
-        select.addEventListener('change', function() {
-            const orderId = this.getAttribute('data-order-id');
-            const newStatus = this.value;
+        <!-- СТАТИСТИКА -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;" id="stats">
+            <!-- Популярные страницы -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h3>📄 Популярные страницы</h3>
+                    <span class="section-badge">{{ current_month }}</span>
+                </div>
+                <div class="items-list" style="max-height: 400px;">
+                    {% for stat in page_stats %}
+                    <div class="item-row">
+                        <div class="item-left">
+                            <div class="item-icon">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">{{ stat.page }}</div>
+                                <div class="item-date">{{ stat.view_count }} просмотров</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="no-items">Нет данных</div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Топ предметов -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h3>📚 Топ предметов</h3>
+                    <span class="section-badge">{{ top_subjects|length }}</span>
+                </div>
+                <div class="items-list" style="max-height: 400px;">
+                    {% for subject in top_subjects %}
+                    <div class="item-row">
+                        <div class="item-left">
+                            <div class="item-icon">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">{{ subject.name }}</div>
+                                <div class="item-date">
+                                    {{ subject.teacher_count }} учителей • 
+                                    {{ subject.student_interest_count }} заинтересованных учеников
+                                </div>
+                            </div>
+                </div>
+            </div>
+            {% empty %}
+                    <div class="no-items">Нет данных</div>
+            {% endfor %}
+                </div>
+        </div>
+        </div>
+    </main>
 
-            fetch(`/update-order-status/${orderId}/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({status: newStatus})
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Можно показать уведомление
-                    // showNotification('Статус обновлен', 'success');
-                } else {
-                    alert('Ошибка при обновлении статуса');
-                }
-            });
-        });
-    });
-});
-
-// Функция для получения CSRF-токена из cookie
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
+    <script>
+        // Update views stats
+        function updateViews(count, label, btn) {
+            document.getElementById('viewsCount').textContent = count;
+            document.getElementById('viewsLabel').textContent = label;
+        
+            // Update active button
+            const buttons = btn.parentElement.querySelectorAll('.filter-btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
         }
-    }
-    return cookieValue;
-}
-
-function deleteCallMasterRequest(requestId) {
-    if (confirm('Удалить заявку?')) {
-        fetch(`/delete-callmaster-request/${requestId}/`, {
-            method: 'DELETE',
-            headers: { 'X-CSRFToken': getCookie('csrftoken') }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.querySelector(`[data-request-id="${requestId}"]`).remove();
-            } else {
-                alert('Ошибка при удалении');
-            }
+        
+        // Smooth scroll to sections
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
         });
-    }
-}
 </script>
 </body>
 </html>

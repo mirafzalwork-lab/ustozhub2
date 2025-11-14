@@ -365,9 +365,6 @@
         display: flex;
         flex-direction: column;
         gap: 20px;
-        position: sticky;
-        top: calc(var(--navbar-height-desktop) + 20px);
-        will-change: transform;
     }
 
     .student-detail-page .budget-card {
@@ -722,6 +719,57 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 16px;
+        }
+
+        .student-detail-page .sidebar-sticky {
+            position: static;
+        }
+
+        /* Фиксированная панель внизу ТОЛЬКО на мобильных */
+        .student-detail-page .booking-card {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            border-radius: 20px 20px 0 0;
+            z-index: 999;
+            box-shadow: 0 -6px 30px rgba(10, 37, 64, 0.2);
+            max-width: 100%;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.98);
+        }
+
+        .student-detail-page .booking-header {
+            display: none;
+        }
+
+        .student-detail-page .booking-actions {
+            gap: 10px;
+        }
+
+        .student-detail-page .btn-primary,
+        .student-detail-page .btn-telegram,
+        .student-detail-page .btn-favorite {
+            padding: 14px;
+            font-size: 14px;
+            min-height: 48px;
+        }
+
+        .student-detail-page .booking-note {
+            font-size: 11px;
+            margin-top: 12px;
+            padding-top: 12px;
+        }
+
+        /* Скрыть budget card на мобильных */
+        .student-detail-page .budget-card {
+            display: none;
+        }
+
+        /* Добавить padding внизу для контента */
+        .student-detail-page .main-column {
+            padding-bottom: 220px;
         }
 
         .student-detail-page .teachers-grid {
@@ -1550,6 +1598,7 @@
 
         <!-- Sidebar Column -->
         <aside class="sidebar-column">
+            <div class="sidebar-sticky">
             <!-- Budget Card -->
             <div class="budget-card">
                 <div class="budget-label">{% trans "Бюджет ученика" %}</div>
@@ -1559,36 +1608,51 @@
                 {% endif %}
             </div>
 
-            <!-- Contact Card -->
-            <div class="contact-card">
-                <h3 class="contact-title">{% trans "Связаться с учеником" %}</h3>
-                
-                {% if user.is_authenticated and user.user_type == 'teacher' %}
-                    <a href="{% url 'start_conversation' user_id=student.user.id %}" class="contact-btn-primary">
-                        <i class="fas fa-paper-plane"></i>
-                        {% trans "Отправить сообщение" %}
-                    </a>
-                {% elif user.is_authenticated %}
-                    <button class="contact-btn-primary" disabled aria-disabled="true">
-                        <i class="fas fa-paper-plane"></i>
-                        {% trans "Отправить сообщение" %}
-                    </button>
-                    <p class="contact-note">
-                        {% trans "Только учителя могут писать ученикам" %}
-                    </p>
-                {% else %}
-                    <a href="{% url 'login' %}?next={{ request.path }}" class="contact-btn-primary">
-                        <i class="fas fa-sign-in-alt"></i>
-                        {% trans "Войти для связи" %}
+                <!-- Contact Card (Booking Card) -->
+                <div class="contact-card booking-card">
+                    <div class="booking-header">
+                        <div class="booking-label">{% trans "Бюджет ученика" %}</div>
+                        <div class="booking-amount">{{ student.get_budget_display }}</div>
+                        {% if student.budget_min or student.budget_max %}
+                            <div class="booking-period">{% trans "за час" %}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="booking-actions">
+                        {% if user.is_authenticated and user.user_type == 'teacher' and user != student.user %}
+                            <a href="{% url 'start_conversation' user_id=student.user.id %}" class="btn-primary">
+                                <i class="fas fa-comment-dots"></i>
+                                {% trans "Написать сообщение" %}
                     </a>
                 {% endif %}
 
-                {% if student.user.phone %}
-                    <a href="tel:{{ student.user.phone }}" class="contact-btn-secondary">
-                        <i class="fas fa-phone"></i>
-                        {% trans "Позвонить" %}
-                    </a>
+                        {% if student.telegram and student.telegram|length > 0 %}
+                            {% if user.is_authenticated %}
+                                <a href="https://t.me/{{ student.telegram|cut:'@'|cut:' ' }}" target="_blank" class="btn-telegram" rel="noopener noreferrer">
+                                    <i class="fab fa-telegram"></i>
+                                    {% trans "Написать в Telegram" %}
+                                </a>
+                            {% else %}
+                                <button class="btn-telegram" onclick="window.location.href='/login/?next={{ request.path }}'">
+                                    <i class="fab fa-telegram"></i>
+                                    {% trans "Написать в Telegram" %}
+                                </button>
+                            {% endif %}
+                        {% endif %}
+
+                        {% if user.is_authenticated and user.user_type == 'teacher' %}
+                            <button class="btn-favorite {% if is_favorited %}active{% endif %}" onclick="toggleFavorite({{ student.id }})">
+                                <i class="{% if is_favorited %}fas{% else %}far{% endif %} fa-heart"></i>
+                                {% if is_favorited %}{% trans "В избранном" %}{% else %}{% trans "В избранное" %}{% endif %}
+                            </button>
                 {% endif %}
+                    </div>
+
+                    <div class="booking-note">
+                        <i class="fas fa-shield-alt"></i>
+                        {% trans "Безопасная сделка через платформу" %}
+                    </div>
+                </div>
             </div>
 
             <!-- Similar Students -->

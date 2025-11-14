@@ -1,0 +1,53 @@
+
+        .student-detail-page .sidebar-sticky {
+            position: static;
+        }
+
+        /* Фиксированная панель внизу для мобильных */
+        .student-detail-page .booking-card {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            border-radius: 20px 20px 0 0;
+            z-index: 999;
+            box-shadow: 0 -6px 30px rgba(10, 37, 64, 0.2);
+            max-width: 100%;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.98);
+        }
+
+        .student-detail-page .booking-header {
+            display: none;
+        }
+
+        .student-detail-page .booking-actions {
+            gap: 10px;
+        }
+
+        .student-detail-page .btn-primary,
+        .student-detail-page .btn-telegram,
+        .student-detail-page .btn-favorite {
+            padding: 14px;
+            font-size: 14px;
+            min-height: 48px;
+        }
+
+        .student-detail-page .booking-note {
+            font-size: 11px;
+            margin-top: 12px;
+            padding-top: 12px;
+        }
+
+        /* Скрыть budget card на мобильных */
+        .student-detail-page .budget-card {
+            display: none;
+        }
+
+        /* Добавить padding внизу для контента */
+        .student-detail-page .main-column {
+            padding-bottom: 220px;
+        }
+
+

@@ -640,6 +640,31 @@
         background: #f8f9fa;
     }
 
+    .btn-telegram {
+        width: 100%;
+        padding: 14px;
+        background: #0088cc;
+        color: white;
+        border: 2px solid #0088cc;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .btn-telegram:hover {
+        background: #006699;
+        border-color: #006699;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 136, 204, 0.3);
+    }
+
     .btn-favorite {
         width: 100%;
         padding: 14px;
@@ -1092,6 +1117,7 @@
 
         .btn-primary,
         .btn-secondary,
+        .btn-telegram,
         .btn-favorite {
             font-size: 14px;
             padding: 14px;
@@ -1229,6 +1255,7 @@
 
         .btn-primary,
         .btn-secondary,
+        .btn-telegram,
         .btn-favorite {
             font-size: 13px;
             padding: 12px;
@@ -1238,6 +1265,7 @@
         /* Компактные иконки */
         .btn-primary i,
         .btn-secondary i,
+        .btn-telegram i,
         .btn-favorite i {
             font-size: 14px;
         }
@@ -1325,6 +1353,7 @@
         /* Увеличиваем область нажатия для всех кликабельных элементов */
         .btn-primary,
         .btn-secondary,
+        .btn-telegram,
         .btn-favorite,
         button,
         a.btn {
@@ -1657,10 +1686,19 @@
                         </a>
                         {% endif %}
 
-                        <button class="btn-secondary" onclick="bookLesson()">
-                            <i class="fas fa-calendar-check"></i>
-                            {% trans 'Записаться на урок' %}
+                        {% if teacher.telegram and teacher.telegram|length > 0 %}
+                            {% if user.is_authenticated %}
+                                <a href="https://t.me/{{ teacher.telegram|cut:'@'|cut:' ' }}" target="_blank" class="btn-telegram" rel="noopener noreferrer">
+                                    <i class="fab fa-telegram"></i>
+                                    {% trans 'Написать в Telegram' %}
+                                </a>
+                            {% else %}
+                                <button class="btn-telegram" onclick="window.location.href='/login/?next={{ request.path }}'">
+                                    <i class="fab fa-telegram"></i>
+                                    {% trans 'Написать в Telegram' %}
                         </button>
+                            {% endif %}
+                        {% endif %}
 
                         {% if user.is_authenticated and user.user_type == 'student' %}
                         <button class="btn-favorite {% if is_favorite %}active{% endif %}" onclick="toggleFavorite({{ teacher.id }})">
@@ -1810,16 +1848,6 @@
             {% endif %}
         {% else %}
             if (confirm('{% trans "Войдите в систему, чтобы связаться с учителем" %}')) {
-                window.location.href = '{% url "login" %}?next={{ request.path }}';
-            }
-        {% endif %}
-    }
-
-    function bookLesson() {
-        {% if user.is_authenticated %}
-            alert('{% trans "Функция бронирования будет доступна в следующей версии" %}');
-        {% else %}
-            if (confirm('{% trans "Войдите в систему, чтобы записаться на урок" %}')) {
                 window.location.href = '{% url "login" %}?next={{ request.path }}';
             }
         {% endif %}
