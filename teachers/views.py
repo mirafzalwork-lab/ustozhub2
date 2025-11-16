@@ -1549,3 +1549,151 @@ def delete_conversation(request, conversation_id):
         logger.error(f"Ошибка в delete_conversation: {e}")
         messages.error(request, 'Ошибка при удалении переписки')
         return redirect('conversations_list')
+
+
+# =============================================================================
+# API ДЛЯ ПОИСКА И ВЫБОРА ПРЕДМЕТОВ
+# =============================================================================
+
+from .models import SubjectCategory, SubjectSearchLog
+from django.db.models import Case, When, Value, IntegerField
+
+def subjects_autocomplete(request):
+    """
+    API для автокомплита предметов с умным поиском
+    Возвращает JSON с предметами, отсортированными по релевантности
+    """
+    query = request.GET.get('q', '').strip()
+    
+    if not query or len(query) < 2:
+        return JsonResponse({'results': []})
+    
+    # Умный поиск с приоритетом:
+    # 1. Точное совпадение
+    # 2. Начинается с запроса
+    # 3. Содержит запрос
+    # 4. Совпадение в описании
+    subjects = Subject.objects.filter(is_active=True).filter(
+        Q(name__icontains=query) | Q(description__icontains=query)
+    ).select_related('category').annotate(
+        relevance=Case(
+            When(name__iexact=query, then=Value(4)),
+            When(name__istartswith=query, then=Value(3)),
+            When(name__icontains=query, then=Value(2)),
+            When(description__icontains=query, then=Value(1)),
+            default=Value(0),
+            output_field=IntegerField()
+        )
+    ).order_by('-relevance', '-is_popular', 'name')[:30]
+    
+    results = []
+    for subject in subjects:
+        teachers_count = subject.get_teachers_count()
+        results.append({
+            'id': subject.id,
+            'name': subject.name,
+            'description': subject.description[:100] if subject.description else '',
+            'category': subject.category.name if subject.category else 'Без категории',
+            'category_color': subject.category.color if subject.category else '#999999',
+            'icon': subject.icon or 'fas fa-book',
+            'is_popular': subject.is_popular,
+            'teachers_count': teachers_count
+        })
+    
+    # Логируем поиск для аналитики
+    try:
+        SubjectSearchLog.objects.create(
+            query=query,
+            user=request.user if request.user.is_authenticated else None,
+            ip_address=get_client_ip(request),
+            found_results_count=len(results)
+        )
+    except:
+        pass  # Не прерываем работу если логирование не удалось
+    
+    return JsonResponse({'results': results})
+
+
+def subjects_popular(request):
+    """
+    API для получения популярных предметов
+    """
+    popular_subjects = Subject.objects.filter(
+        is_active=True,
+        is_popular=True
+    ).select_related('category').order_by('name')[:20]
+    
+    results = []
+    for subject in popular_subjects:
+        teachers_count = subject.get_teachers_count()
+        results.append({
+            'id': subject.id,
+            'name': subject.name,
+            'category': subject.category.name if subject.category else 'Без категории',
+            'category_color': subject.category.color if subject.category else '#999999',
+            'icon': subject.icon or 'fas fa-book',
+            'teachers_count': teachers_count
+        })
+    
+    return JsonResponse({'results': results})
+
+
+def subjects_categories(request):
+    """
+    API для получения всех категорий с количеством предметов
+    """
+    from django.db.models import Count
+    
+    categories = SubjectCategory.objects.filter(
+        is_active=True
+    ).annotate(
+        subjects_count=Count('subjects', filter=Q(subjects__is_active=True))
+    ).filter(subjects_count__gt=0).order_by('order', 'name')
+    
+    results = []
+    for category in categories:
+        results.append({
+            'id': category.id,
+            'name': category.name,
+            'icon': category.icon or 'fas fa-folder',
+            'color': category.color,
+            'subjects_count': category.subjects_count
+        })
+    
+    return JsonResponse({'results': results})
+
+
+def subjects_by_category(request, category_id):
+    """
+    API для получения предметов определенной категории
+    """
+    try:
+        category = SubjectCategory.objects.get(id=category_id, is_active=True)
+    except SubjectCategory.DoesNotExist:
+        return JsonResponse({'error': 'Категория не найдена'}, status=404)
+    
+    subjects = Subject.objects.filter(
+        category=category,
+        is_active=True
+    ).order_by('-is_popular', 'name')
+    
+    results = []
+    for subject in subjects:
+        teachers_count = subject.get_teachers_count()
+        results.append({
+            'id': subject.id,
+            'name': subject.name,
+            'description': subject.description[:100] if subject.description else '',
+            'icon': subject.icon or 'fas fa-book',
+            'is_popular': subject.is_popular,
+            'teachers_count': teachers_count
+        })
+    
+    return JsonResponse({
+        'category': {
+            'id': category.id,
+            'name': category.name,
+            'color': category.color
+        },
+        'results': results
+    })

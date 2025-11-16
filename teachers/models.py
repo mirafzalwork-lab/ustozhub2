@@ -32,21 +32,61 @@ class User(AbstractUser):
                 img.thumbnail(output_size)
                 img.save(self.avatar.path)
 
+class SubjectCategory(models.Model):
+    """Категории предметов для удобной группировки"""
+    name = models.CharField(max_length=100, unique=True, verbose_name='Название категории')
+    description = models.TextField(blank=True, verbose_name='Описание')
+    icon = models.CharField(max_length=50, blank=True, help_text="CSS класс иконки (например, fas fa-calculator)")
+    color = models.CharField(max_length=7, default='#3B82F6', help_text="Цвет в формате HEX (#3B82F6)")
+    order = models.PositiveIntegerField(default=0, help_text="Порядок сортировки")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order', 'name']
+        verbose_name = 'Категория предметов'
+        verbose_name_plural = 'Категории предметов'
+
+    def __str__(self):
+        return self.name
+    
+    def get_subjects_count(self):
+        """Количество активных предметов в категории"""
+        return self.subjects.filter(is_active=True).count()
+
+
 class Subject(models.Model):
     """Модель предметов"""
+    category = models.ForeignKey(
+        SubjectCategory, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='subjects',
+        verbose_name='Категория'
+    )
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
     icon = models.CharField(max_length=50, blank=True, help_text="CSS класс иконки")
     is_active = models.BooleanField(default=True)
+    is_popular = models.BooleanField(default=False, help_text="Популярный предмет (показывать в топе)")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['name']
         verbose_name = 'Предмет'
         verbose_name_plural = 'Предметы'
+        indexes = [
+            models.Index(fields=['category', 'is_active']),
+            models.Index(fields=['is_popular', 'is_active']),
+        ]
 
     def __str__(self):
         return self.name
+    
+    def get_teachers_count(self):
+        """Количество учителей, преподающих этот предмет"""
+        return self.teachersubject_set.filter(teacher__is_active=True).count()
 
 class City(models.Model):
     """Модель городов"""
@@ -951,6 +991,47 @@ class NotificationLog(models.Model):
     
     def __str__(self):
         return f"Попытка #{self.attempt_number} для {self.notification.id} - {self.get_status_display()}"
+
+class SubjectSearchLog(models.Model):
+    """Логирование поисков предметов для аналитики"""
+    query = models.CharField(
+        max_length=200,
+        verbose_name='Поисковый запрос',
+        db_index=True,
+        blank=True,
+        null=True
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='subject_searches',
+        verbose_name='Пользователь'
+    )
+    ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name='IP адрес')
+    found_results_count = models.PositiveIntegerField(default=0, verbose_name='Найдено результатов')
+    selected_subject = models.ForeignKey(
+        Subject,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Выбранный предмет'
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name='Дата поиска')
+    
+    class Meta:
+        verbose_name = 'Лог поиска предметов'
+        verbose_name_plural = 'Логи поиска предметов'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['query', '-created_at']),
+            models.Index(fields=['-created_at']),
+        ]
+    
+    def __str__(self):
+        return f'"{self.query}" - {self.created_at.strftime("%d.%m.%Y %H:%M")}'
+
 
 class ViewCounter(models.Model):
     ip_address = models.GenericIPAddressField(null=True, blank=True)
