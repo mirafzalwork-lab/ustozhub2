@@ -27,6 +27,12 @@ urlpatterns = [
     path('students/', students_list, name='students_list'),
     path('student/<int:id>/', student_detail, name='student_detail'),
     path('admin-dashboard/', admin_dashboard, name='admin_dashboard'),
+    
+    # Telegram Management
+    path('admin-dashboard/telegram/', telegram_management, name='telegram_management'),
+    path('admin-dashboard/telegram/broadcast/', send_broadcast_message, name='send_broadcast_message'),
+    path('admin-dashboard/telegram/individual/', send_individual_message, name='send_individual_message'),
+    path('admin-dashboard/telegram/export/', export_telegram_users, name='export_telegram_users'),
 
     path('register/', teacher_register_step1, name='teacher_register_step1'),
     path('register/step2/', teacher_register_step2, name='teacher_register_step2'),
