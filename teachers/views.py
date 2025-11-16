@@ -1560,7 +1560,41 @@ def delete_conversation(request, conversation_id):
 from .models import SubjectCategory, SubjectSearchLog
 from django.db.models import Case, When, Value, IntegerField
 
+<<<<<<< HEAD
 def subjects_autocomplete(request):
+=======
+
+@staff_member_required
+def messages_management(request):
+    """
+    Админская страница управления сообщениями платформы и быстрый доступ к рассылкам Telegram
+    """
+    # Статистика внутренних сообщений
+    total_messages = Message.objects.count()
+    unread_messages = Message.objects.filter(is_read=False).count()
+    conversations_count = Conversation.objects.filter(is_active=True).count()
+
+    # Недавние внутр. сообщения (последние 50)
+    recent_messages = Message.objects.select_related('sender', 'conversation').order_by('-created_at')[:50]
+
+    # Список Telegram пользователей для персональных отправок (первые 50)
+    telegram_users = TelegramUser.objects.select_related('user').order_by('-created_at')[:50]
+
+    context = {
+        'total_messages': total_messages,
+        'unread_messages': unread_messages,
+        'conversations_count': conversations_count,
+        'recent_messages': recent_messages,
+        'telegram_users': telegram_users,
+    }
+
+    return render(request, 'admin/messages_management.html', context)
+
+
+@staff_member_required
+@require_POST
+def send_broadcast_message(request):
+>>>>>>> 32c605a (add)
     """
     API для автокомплита предметов с умным поиском
     Возвращает JSON с предметами, отсортированными по релевантности

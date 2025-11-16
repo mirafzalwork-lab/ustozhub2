@@ -1,0 +1,158 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'teachers/admin.css' %}">
+    <title>Admin Messages - UstozHub</title>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'logo/logo.png' %}" alt="UstozHub">
+            <div class="sidebar-logo-text"><h2>UstozHub</h2></div>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="{% url 'admin_dashboard' %}"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+            <li><a href="#teachers"><i class="fas fa-chalkboard-teacher"></i> <span>Учителя</span></a></li>
+            <li><a href="#students"><i class="fas fa-user-graduate"></i> <span>Ученики</span></a></li>
+            <li><a href="{% url 'admin_messages' %}" class="active"><i class="fas fa-comments"></i> <span>Сообщения</span></a></li>
+            <li><a href="{% url 'telegram_management' %}"><i class="fab fa-telegram"></i> <span>Telegram пользователи</span></a></li>
+            <li><a href="#moderation"><i class="fas fa-check-circle"></i> <span>Модерация</span></a></li>
+            <li><a href="#stats"><i class="fas fa-chart-line"></i> <span>Статистика</span></a></li>
+            <li><a href="{% url 'home' %}"><i class="fas fa-globe"></i> <span>На сайт</span></a></li>
+            <li><a href="/admin/"><i class="fas fa-cog"></i> <span>Django Admin</span></a></li>
+            <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> <span>Выход</span></a></li>
+        </ul>
+    </aside>
+
+    <header class="topbar">
+        <div class="topbar-left"><h1>💬 Управление сообщениями</h1></div>
+        <div class="topbar-right">
+            <div class="user-profile">
+                <div class="user-avatar">{{ request.user.first_name.0|upper }}</div>
+                <div class="user-info">
+                    <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                    <div class="user-role">Администратор</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="management-header">
+            <div class="management-title"><i class="fas fa-comments"></i> Сообщения</div>
+            <div class="management-subtitle">Просмотр внутренних сообщений и быстрый доступ к Telegram-рассылкам</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ total_messages }}</div>
+                <div class="stat-label">Всего сообщений</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ unread_messages }}</div>
+                <div class="stat-label">Непрочитанных</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ conversations_count }}</div>
+                <div class="stat-label">Активных переписок</div>
+            </div>
+        </div>
+
+        <div class="controls-section">
+            <div class="section-title"><i class="fas fa-paper-plane"></i> Отправка сообщений (Telegram)</div>
+            <div class="controls-grid">
+                <div class="control-card">
+                    <div class="control-title">Массовая рассылка Telegram</div>
+                    <form method="POST" action="{% url 'send_broadcast_message' %}" class="message-form">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label class="form-label">Сообщение</label>
+                            <textarea name="message" class="form-textarea" placeholder="Текст для Telegram..." required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Получатели</label>
+                            <select name="recipients" class="form-select">
+                                <option value="all">Все с уведомлениями</option>
+                                <option value="linked">Только привязанные</option>
+                                <option value="teachers">Только учителя</option>
+                                <option value="students">Только ученики</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Отправить</button>
+                    </form>
+                </div>
+
+                <div class="control-card">
+                    <div class="control-title">Персональное сообщение Telegram</div>
+                    <form method="POST" action="{% url 'send_individual_message' %}" class="message-form">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label class="form-label">Пользователь (Telegram)</label>
+                            <select name="user_id" class="form-select" required>
+                                <option value="">Выберите...</option>
+                                {% for user in telegram_users %}
+                                    <option value="{{ user.id }}">{{ user.first_name }} {{ user.last_name }} {% if user.telegram_username %}(@{{ user.telegram_username }}){% endif %}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Сообщение</label>
+                            <textarea name="message" class="form-textarea" placeholder="Текст персонального сообщения..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success">Отправить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="users-table-section">
+            <div class="section-title"><i class="fas fa-list"></i> Последние внутренние сообщения</div>
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Отправитель</th>
+                        <th>Фрагмент</th>
+                        <th>Переписка</th>
+                        <th>Дата</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for msg in recent_messages %}
+                    <tr>
+                        <td>{{ msg.sender.get_full_name|default:msg.sender.username }}</td>
+                        <td style="max-width: 420px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ msg.content }}</td>
+                        <td>
+                            {% if msg.conversation %}
+                                <a href="{% url 'conversation_detail' msg.conversation.id %}" target="_blank">Открыть</a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ msg.created_at|date:"d.m.Y H:i" }}</td>
+                        <td>
+                            <a class="btn btn-secondary btn-small" href="{% url 'conversation_detail' msg.conversation.id %}"><i class="fas fa-external-link-alt"></i></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align:center; color:#999; padding: 24px;">Нет сообщений</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+    </main>
+</body>
+</html>
