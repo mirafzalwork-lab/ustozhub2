@@ -367,134 +367,255 @@
         gap: 20px;
     }
 
-    .student-detail-page .budget-card {
-        background: linear-gradient(135deg, var(--student-primary), var(--student-hover));
+    .student-detail-page .sidebar-sticky {
+        position: sticky;
+        top: 90px;
+    }
+
+    /* Booking Card */
+    .student-detail-page .booking-card {
+        background: white;
         border-radius: 16px;
-        padding: 28px;
-        color: white;
-        box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+        padding: 24px;
+        box-shadow: 0 4px 20px rgba(10, 37, 64, 0.12);
+        border: 2px solid #e9ecef;
+    }
+
+    .student-detail-page .booking-header {
         text-align: center;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #f0f0f0;
+        margin-bottom: 20px;
     }
 
-    .student-detail-page .budget-label {
+    .student-detail-page .budget-label,
+    .student-detail-page .booking-price {
         font-size: 14px;
-        opacity: 0.9;
+        color: #666;
         margin-bottom: 8px;
-        font-weight: 500;
     }
 
-    .student-detail-page .budget-amount {
+    .student-detail-page .budget-amount,
+    .student-detail-page .booking-amount {
         font-size: 36px;
         font-weight: 700;
+        color: #0A2540;
         margin-bottom: 4px;
         line-height: 1.2;
         word-wrap: break-word;
     }
 
-    .student-detail-page .budget-period {
-        font-size: 13px;
-        opacity: 0.8;
+    .student-detail-page .budget-period,
+    .student-detail-page .booking-period {
+        font-size: 14px;
+        color: #999;
+    }
+
+    .student-detail-page .booking-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .student-detail-page .booking-note {
+        font-size: 12px;
+        color: #999;
+        text-align: center;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #f0f0f0;
     }
 
     /* === CONTACT CARD === */
     .student-detail-page .contact-card {
-        background: var(--bg-primary);
-        border-radius: 12px;
+        background: white;
+        border-radius: 16px;
         padding: 24px;
-        box-shadow: var(--shadow-md);
+        box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
     }
 
     .student-detail-page .contact-title {
-        font-size: 17px;
-        font-weight: 700;
-        color: var(--primary-color);
+        font-size: 16px;
+        font-weight: 600;
+        color: #0A2540;
         margin-bottom: 16px;
-        text-align: center;
     }
 
-    .student-detail-page .contact-btn-primary {
+    .student-detail-page .btn-primary {
         width: 100%;
-        padding: 14px 20px;
-        background: var(--student-primary);
+        padding: 14px;
+        background: #1e293b;
         color: white;
         border: none;
         border-radius: 10px;
         font-size: 15px;
         font-weight: 600;
         cursor: pointer;
-        transition: all var(--transition-base);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        margin-bottom: 10px;
-        text-decoration: none;
-        min-height: 52px;
-        will-change: transform, box-shadow;
-    }
-
-    .student-detail-page .contact-btn-primary:hover {
-        background: var(--student-hover);
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
-    }
-
-    .student-detail-page .contact-btn-primary:active {
-        transform: translateY(0);
-    }
-
-    .student-detail-page .contact-btn-primary:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-
-    .student-detail-page .contact-btn-secondary {
-        width: 100%;
-        padding: 12px 20px;
-        background: white;
-        color: var(--text-primary);
-        border: 2px solid var(--border-color);
-        border-radius: 10px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all var(--transition-base);
+        transition: all 0.3s;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
         text-decoration: none;
-        min-height: 48px;
-        margin-bottom: 8px;
+    }
+
+    .student-detail-page .btn-primary:hover {
+        background: #0f172a;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(30, 41, 59, 0.3);
+        text-decoration: none;
+    }
+
+    .student-detail-page .btn-secondary {
+        width: 100%;
+        padding: 14px;
+        background: white;
+        color: #0A2540;
+        border: 2px solid #0A2540;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .student-detail-page .btn-secondary:hover {
+        background: #f8f9fa;
+    }
+
+    .student-detail-page .btn-telegram {
+        width: 100%;
+        padding: 14px;
+        background: #0ea5e9;
+        color: white;
+        border: 2px solid #0ea5e9;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .student-detail-page .btn-telegram:hover {
+        background: #0284c7;
+        border-color: #0284c7;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+    }
+
+    .student-detail-page .btn-favorite {
+        width: 100%;
+        padding: 14px;
+        background: #ef4444;
+        color: white;
+        border: 2px solid #ef4444;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .student-detail-page .btn-favorite:hover {
+        background: #dc2626;
+        border-color: #dc2626;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+
+    .student-detail-page .btn-favorite.active {
+        background: #b91c1c;
+        border-color: #b91c1c;
+        color: white;
+    }
+
+    /* Legacy button compatibility */
+    .student-detail-page .contact-btn-primary {
+        width: 100%;
+        padding: 14px;
+        background: #1e293b;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .student-detail-page .contact-btn-primary:hover {
+        background: #0f172a;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(30, 41, 59, 0.3);
+        text-decoration: none;
+    }
+
+    .student-detail-page .contact-btn-secondary {
+        width: 100%;
+        padding: 14px;
+        background: white;
+        color: #1e293b;
+        border: 2px solid #1e293b;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        text-decoration: none;
     }
 
     .student-detail-page .contact-btn-secondary:hover {
-        border-color: var(--student-primary);
-        color: var(--student-primary);
-        background: var(--student-light);
+        background: #f8f9fa;
     }
 
-    /* Специальные кнопки */
     .student-detail-page .telegram-btn {
-        background: #0088cc;
-        border-color: #0088cc;
+        background: #0ea5e9 !important;
+        border-color: #0ea5e9 !important;
+        color: white !important;
     }
 
     .student-detail-page .telegram-btn:hover {
-        background: #006699;
-        border-color: #006699;
-        color: white;
+        background: #0284c7 !important;
+        border-color: #0284c7 !important;
+        color: white !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3) !important;
     }
 
     .student-detail-page .whatsapp-btn {
-        background: white;
-        border-color: #25D366;
-        color: #25D366;
+        background: white !important;
+        border-color: #25D366 !important;
+        color: #25D366 !important;
     }
 
     .student-detail-page .whatsapp-btn:hover {
-        background: #25D366;
-        color: white;
+        background: #25D366 !important;
+        color: white !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3) !important;
     }
 
     .student-detail-page .contact-note {
@@ -503,6 +624,68 @@
         text-align: center;
         margin-top: 8px;
         line-height: 1.5;
+    }
+
+    /* Contact List */
+    .student-detail-page .contact-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .student-detail-page .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        font-size: 14px;
+        color: #333;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .student-detail-page .contact-icon {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, #3B82F6, #1E40AF);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+
+    /* Availability Card */
+    .student-detail-page .availability-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
+    }
+
+    .student-detail-page .availability-info {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .student-detail-page .availability-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        color: #666;
+        word-wrap: break-word;
+    }
+
+    .student-detail-page .availability-item i {
+        color: #3B82F6;
+        width: 20px;
+        flex-shrink: 0;
     }
 
     /* === SIMILAR STUDENTS === */
@@ -1500,42 +1683,9 @@
                     {% endif %}
                 </div>
 
-                <!-- Contact Buttons (Embedded in info section) -->
-                <h3 class="contact-title" style="margin-top: 28px;">{% trans "Связаться с учеником" %}</h3>
+
                 
-                {% if student.telegram or student.whatsapp or student.user.phone %}
-                    {% if student.telegram %}
-                        <a href="https://t.me/{{ student.telegram|cut:'@' }}" 
-                           target="_blank" 
-                           rel="noopener noreferrer" 
-                           class="contact-btn-primary telegram-btn">
-                            <i class="fab fa-telegram"></i>
-                            {% trans "Написать в Telegram" %}
-                        </a>
-                    {% endif %}
-
-                    {% if student.whatsapp %}
-                        <a href="https://wa.me/{{ student.whatsapp|cut:' '|cut:'+'|cut:'-' }}" 
-                           target="_blank" 
-                           rel="noopener noreferrer" 
-                           class="contact-btn-secondary whatsapp-btn">
-                            <i class="fab fa-whatsapp"></i>
-                            {% trans "Написать в WhatsApp" %}
-                        </a>
-                    {% endif %}
-
-                    {% if student.user.phone %}
-                        <a href="tel:{{ student.user.phone }}" class="contact-btn-secondary">
-                            <i class="fas fa-phone"></i>
-                            {% trans "Позвонить" %}
-                        </a>
-                    {% endif %}
-                {% else %}
-                    <div class="empty-state" style="padding: 30px 20px;">
-                        <i class="fas fa-info-circle"></i>
-                        <p>{% trans "Ученик не указал контактные данные" %}</p>
-                    </div>
-                {% endif %}
+                
             </section>
 
             <!-- Other Interests -->
@@ -1599,19 +1749,10 @@
         <!-- Sidebar Column -->
         <aside class="sidebar-column">
             <div class="sidebar-sticky">
-            <!-- Budget Card -->
-            <div class="budget-card">
-                <div class="budget-label">{% trans "Бюджет ученика" %}</div>
-                <div class="budget-amount">{{ student.get_budget_display }}</div>
-                {% if student.budget_min or student.budget_max %}
-                    <div class="budget-period">{% trans "готов платить за час" %}</div>
-                {% endif %}
-            </div>
-
-                <!-- Contact Card (Booking Card) -->
-                <div class="contact-card booking-card">
+                <!-- Booking Card -->
+                <div class="booking-card">
                     <div class="booking-header">
-                        <div class="booking-label">{% trans "Бюджет ученика" %}</div>
+                        <div class="booking-price">{% trans "Бюджет ученика" %}</div>
                         <div class="booking-amount">{{ student.get_budget_display }}</div>
                         {% if student.budget_min or student.budget_max %}
                             <div class="booking-period">{% trans "за час" %}</div>
@@ -1623,8 +1764,8 @@
                             <a href="{% url 'start_conversation' user_id=student.user.id %}" class="btn-primary">
                                 <i class="fas fa-comment-dots"></i>
                                 {% trans "Написать сообщение" %}
-                    </a>
-                {% endif %}
+                            </a>
+                        {% endif %}
 
                         {% if student.telegram and student.telegram|length > 0 %}
                             {% if user.is_authenticated %}
@@ -1645,12 +1786,76 @@
                                 <i class="{% if is_favorited %}fas{% else %}far{% endif %} fa-heart"></i>
                                 {% if is_favorited %}{% trans "В избранном" %}{% else %}{% trans "В избранное" %}{% endif %}
                             </button>
-                {% endif %}
+                        {% endif %}
                     </div>
 
                     <div class="booking-note">
                         <i class="fas fa-shield-alt"></i>
                         {% trans "Безопасная сделка через платформу" %}
+                    </div>
+                </div>
+
+                <!-- Contact Info -->
+                <div class="contact-card">
+                    <h3 class="contact-title">{% trans "Контактная информация" %}</h3>
+                    <div class="contact-list">
+                        {% if student.user.phone %}
+                            <div class="contact-item">
+                                <div class="contact-icon">
+                                    <i class="fas fa-phone"></i>
+                                </div>
+                                <span>{{ student.user.phone }}</span>
+                            </div>
+                        {% endif %}
+                        {% if student.telegram %}
+                            <div class="contact-item">
+                                <div class="contact-icon">
+                                    <i class="fab fa-telegram"></i>
+                                </div>
+                                <span>{{ student.telegram }}</span>
+                            </div>
+                        {% endif %}
+                        {% if student.whatsapp %}
+                            <div class="contact-item">
+                                <div class="contact-icon">
+                                    <i class="fab fa-whatsapp"></i>
+                                </div>
+                                <span>{{ student.whatsapp }}</span>
+                            </div>
+                        {% endif %}
+                        {% if student.user.email %}
+                            <div class="contact-item">
+                                <div class="contact-icon">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                                <span>{{ student.user.email }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Availability -->
+                <div class="availability-card">
+                    <h3 class="contact-title">{% trans "Доступность" %}</h3>
+                    <div class="availability-info">
+                        {% if student.available_weekdays %}
+                            <div class="availability-item">
+                                <i class="fas fa-calendar"></i>
+                                <span>{{ student.get_available_weekdays_display }}</span>
+                            </div>
+                        {% endif %}
+                        {% if student.learning_format %}
+                            <div class="availability-item">
+                                <i class="fas fa-desktop"></i>
+                                <span>{{ student.get_learning_format_display }}</span>
+                            </div>
+                        {% endif %}
+                        {% if student.city %}
+                            <div class="availability-item">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>{{ student.city.name }}</span>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

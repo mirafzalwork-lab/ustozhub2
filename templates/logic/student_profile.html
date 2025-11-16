@@ -12,14 +12,220 @@
         padding: 40px 16px;
     }
 
+    /* Two-column layout */
+    .profile-layout {
+        display: grid;
+        grid-template-columns: 1fr 320px;
+        gap: 24px;
+        align-items: start;
+    }
+
+    .main-content {
+        min-width: 0; /* prevent overflow */
+    }
+
+    .sidebar {
+        position: sticky;
+        top: 24px;
+    }
+
+    /* Right sidebar cards */
+    .sidebar-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+    }
+
+    .sidebar-card:hover {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+        transform: translateY(-2px);
+    }
+
+    /* Lesson cost card */
+    .lesson-cost-header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .lesson-cost-title {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 8px;
+    }
+
+    .lesson-cost-price {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1a365d;
+        margin-bottom: 4px;
+    }
+
+    .lesson-cost-period {
+        font-size: 14px;
+        color: #666;
+    }
+
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .action-btn {
+        padding: 12px 16px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 600;
+        text-align: center;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .action-btn-dark {
+        background: #1a365d;
+        color: white;
+    }
+
+    .action-btn-dark:hover {
+        background: #2c5282;
+    }
+
+    .action-btn-blue {
+        background: #3182ce;
+        color: white;
+    }
+
+    .action-btn-blue:hover {
+        background: #2c5282;
+    }
+
+    .action-btn-red {
+        background: #e53e3e;
+        color: white;
+    }
+
+    .action-btn-red:hover {
+        background: #c53030;
+    }
+
+    .secure-text {
+        text-align: center;
+        font-size: 12px;
+        color: #666;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    /* Student budget card */
+    .budget-header {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        padding: 16px;
+        border-radius: 12px;
+        text-align: center;
+        margin-bottom: 16px;
+    }
+
+    .budget-title {
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+    .budget-amount {
+        font-size: 24px;
+        font-weight: 700;
+    }
+
+    .budget-info {
+        margin-bottom: 16px;
+    }
+
+    .budget-label {
+        font-size: 14px;
+        color: #333;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .budget-secure {
+        font-size: 12px;
+        color: #666;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* Similar students */
+    .similar-students-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 16px;
+    }
+
+    .student-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .student-item:last-child {
+        border-bottom: none;
+    }
+
+    .student-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    .student-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .student-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 2px;
+    }
+
+    .student-subjects {
+        font-size: 12px;
+        color: #666;
+    }
+
     /* ✅ НОВОЕ: Стили для виджета просмотров */
     .views-widget {
-        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        /* make widget match teacher profile (green) */
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         border-radius: 16px;
         padding: 24px;
         margin-bottom: 24px;
         color: white;
-        box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
+        box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
 
     .views-widget-header {
@@ -87,7 +293,8 @@
     }
 
     .profile-header {
-        background: white;
+        /* use teacher-like header background and shadow for visual parity */
+        background: var(--bg-primary);
         border-radius: 16px;
         padding: 32px;
         margin-bottom: 24px;
@@ -95,6 +302,12 @@
         align-items: center;
         gap: 24px;
         position: relative; /* allow absolute badge placement like teacher profile */
+        box-shadow: var(--shadow-md);
+        transition: box-shadow 0.15s ease;
+    }
+
+    .profile-header:hover {
+        box-shadow: var(--shadow-lg);
     }
 
     /* Status badge (copied from teacher styles for consistent placement) */
@@ -366,6 +579,15 @@
             padding: 24px 20px;
         }
 
+        .profile-layout {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .sidebar {
+            order: -1; /* Move sidebar above main content on mobile */
+        }
+
         .info-grid {
             grid-template-columns: 1fr;
         }
@@ -540,6 +762,11 @@
             {% blocktrans with week=views_stats.week unique=views_stats.unique_week %}Ваш профиль просмотрели <strong>{{ week }}</strong> раз за последнюю неделю. Уникальных посетителей: <strong>{{ unique }}</strong>. Это означает, что учителя интересуются вашим профилем!{% endblocktrans %}
         </div>
     </div>
+
+    <!-- Two-column layout -->
+    <div class="profile-layout">
+        <!-- Main content -->
+        <div class="main-content">
 
     <!-- Шапка профиля -->
     <div class="profile-header">
