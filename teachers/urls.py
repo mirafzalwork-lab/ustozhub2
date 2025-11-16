@@ -10,7 +10,8 @@ from .views import (
     conversations_list, conversation_detail, start_conversation,
     send_message_ajax, mark_messages_read, delete_conversation,
     delete_teacher_subject, admin_dashboard,
-    telegram_management, send_broadcast_message, send_individual_message, export_telegram_users
+    # API для поиска предметов
+    subjects_autocomplete, subjects_popular, subjects_categories, subjects_by_category
 )
 from .telegram_views import (
     telegram_auth, link_telegram_account, telegram_status, toggle_notifications
@@ -65,4 +66,10 @@ urlpatterns = [
     path('api/messages/<uuid:conversation_id>/send/', send_message_ajax, name='send_message_ajax'),
     path('api/messages/<uuid:conversation_id>/read/', mark_messages_read, name='mark_messages_read'),
     path('messages/<uuid:conversation_id>/delete/', delete_conversation, name='delete_conversation'),
+    
+    # Subjects API / API для поиска предметов
+    path('api/subjects/autocomplete/', subjects_autocomplete, name='subjects_autocomplete'),
+    path('api/subjects/popular/', subjects_popular, name='subjects_popular'),
+    path('api/subjects/categories/', subjects_categories, name='subjects_categories'),
+    path('api/subjects/category/<int:category_id>/', subjects_by_category, name='subjects_by_category'),
 ]

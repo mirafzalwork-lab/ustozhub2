@@ -588,9 +588,256 @@
             transform: none;
         }
     }
-</style>
-            padding: 20px;
+
+    /* =============================================================================
+       НОВЫЙ ИНТЕРФЕЙС ПОИСКА ПРЕДМЕТОВ
+       ============================================================================= */
+    
+    /* Поисковое поле с автокомплитом */
+    .subject-search-wrapper {
+        position: relative;
+        margin-bottom: 16px;
+    }
+    
+    .subject-search-input {
+        width: 100%;
+        padding: 12px 48px 12px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 15px;
+        transition: all 0.3s;
+    }
+    
+    .subject-search-input:focus {
+        outline: none;
+        border-color: #3B82F6;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+    
+    .search-icon {
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #999;
+        pointer-events: none;
+    }
+    
+    /* Автокомплит результаты */
+    .autocomplete-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        margin-top: 4px;
+        max-height: 400px;
+        overflow-y: auto;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        z-index: 1000;
+        display: none;
+    }
+    
+    .autocomplete-results.show {
+        display: block;
+    }
+    
+    .autocomplete-item {
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .autocomplete-item:last-child {
+        border-bottom: none;
+    }
+    
+    .autocomplete-item:hover {
+        background: #f8f9fa;
+    }
+    
+    .autocomplete-item.selected {
+        background: #E0F2FE;
+    }
+    
+    .autocomplete-item-icon {
+        width: 32px;
+        height: 32px;
+        background: #f0f0f0;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+            justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+    
+    .autocomplete-item-content {
+        flex: 1;
+    }
+    
+    .autocomplete-item-name {
+        font-weight: 600;
+        color: #0A2540;
+            font-size: 14px;
+        margin-bottom: 2px;
+    }
+    
+    .autocomplete-item-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: #666;
+    }
+    
+    .autocomplete-item-category {
+        padding: 2px 8px;
+        border-radius: 12px;
+            font-size: 11px;
+        color: white;
+        font-weight: 500;
+    }
+    
+    .autocomplete-item-teachers {
+        color: #3B82F6;
+    }
+    
+    .autocomplete-no-results {
+        padding: 24px;
+        text-align: center;
+        color: #999;
+    }
+    
+    /* Популярные предметы */
+    .popular-subjects {
+        margin-bottom: 24px;
+    }
+    
+    .popular-subjects-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    
+    .popular-subjects-header h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0A2540;
+        margin: 0;
+    }
+    
+    .popular-subjects-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .popular-subject-chip {
+        padding: 8px 16px;
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 20px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .popular-subject-chip:hover {
+        border-color: #3B82F6;
+        background: #f0f7ff;
+        transform: translateY(-2px);
+    }
+    
+    .popular-subject-chip i {
+            font-size: 12px;
         }
+
+    /* Категории */
+    .categories-section {
+        margin-bottom: 24px;
+    }
+    
+    .categories-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    
+    .categories-header h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0A2540;
+        margin: 0;
+    }
+    
+    .categories-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 12px;
+    }
+    
+    .category-card {
+        padding: 16px;
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+    }
+    
+    .category-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .category-icon {
+        font-size: 32px;
+        margin-bottom: 8px;
+    }
+    
+    .category-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0A2540;
+        margin-bottom: 4px;
+    }
+    
+    .category-count {
+        font-size: 12px;
+        color: #666;
+    }
+    
+    /* Loading состояния */
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3B82F6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .hidden {
+        display: none !important;
     }
 </style>
 
@@ -651,6 +898,45 @@
         <form method="POST" id="subjectsForm">
             {% csrf_token %}
 
+            <!-- ==================== НОВЫЙ ИНТЕРФЕЙС ПОИСКА ==================== -->
+            
+            <!-- Поиск с автокомплитом -->
+            <div class="subject-search-wrapper">
+                <input 
+                    type="text" 
+                    class="subject-search-input" 
+                    id="subjectSearch"
+                    placeholder="{% trans 'Начните вводить название предмета...' %}"
+                    autocomplete="off"
+                >
+                <i class="fas fa-search search-icon"></i>
+                <div class="autocomplete-results" id="autocompleteResults"></div>
+            </div>
+
+            <!-- Популярные предметы -->
+            <div class="popular-subjects" id="popularSubjects">
+                <div class="popular-subjects-header">
+                    <i class="fas fa-star" style="color: #F59E0B;"></i>
+                    <h3>{% trans 'Популярные предметы' %}</h3>
+                </div>
+                <div class="popular-subjects-list" id="popularSubjectsList">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+
+            <!-- Категории -->
+            <div class="categories-section" id="categoriesSection">
+                <div class="categories-header">
+                    <i class="fas fa-th-large" style="color: #3B82F6;"></i>
+                    <h3>{% trans 'Выберите категорию' %}</h3>
+                </div>
+                <div class="categories-grid" id="categoriesGrid">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+
+            <!-- ==================== КАРТОЧКИ ПРЕДМЕТОВ ==================== -->
+
             <div class="subjects-container" id="subjectsContainer">
                 <!-- Subject 1 - ВСЕГДА ВИДИМА -->
                 <div class="subject-card active" data-subject-num="1">
@@ -668,7 +954,7 @@
                         <label class="form-label">
                             {% trans 'Предмет' %} <span class="required">*</span>
                         </label>
-                        {{ form.subject_1 }}
+                            {{ form.subject_1 }}
                         {% if form.subject_1.errors %}
                             <div class="field-error">{{ form.subject_1.errors.0 }}</div>
                         {% endif %}
@@ -735,7 +1021,7 @@
                         <label class="form-label">
                             {% trans 'Предмет' %}
                         </label>
-                        {% get_form_field form "subject_" i %}
+                            {% get_form_field form "subject_" i %}
                     </div>
 
                     <div class="form-row">
@@ -792,6 +1078,267 @@
     // Глобальные переменные
     const maxSubjects = 5;
     let activeSubjects = 1;
+
+    // =============================================================================
+    // НОВЫЙ ФУНКЦИОНАЛ ПОИСКА ПРЕДМЕТОВ
+    // =============================================================================
+
+    let searchTimeout = null;
+    let selectedIndex = -1;
+    let autocompleteResults = [];
+
+    // Загрузка популярных предметов при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        loadPopularSubjects();
+        loadCategories();
+        initSubjectSearch();
+    });
+
+    // Инициализация поиска предметов
+    function initSubjectSearch() {
+        const searchInput = document.getElementById('subjectSearch');
+        const autocompleteDiv = document.getElementById('autocompleteResults');
+
+        searchInput.addEventListener('input', function(e) {
+            const query = e.target.value.trim();
+            
+            if (query.length < 2) {
+                hideAutocomplete();
+                return;
+            }
+
+            // Debounce для поиска
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                searchSubjects(query);
+            }, 300);
+        });
+
+        // Закрытие автокомплита при клике вне его
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !autocompleteDiv.contains(e.target)) {
+                hideAutocomplete();
+            }
+        });
+
+        // Навигация клавиатурой
+        searchInput.addEventListener('keydown', function(e) {
+            const items = autocompleteDiv.querySelectorAll('.autocomplete-item');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                updateSelection(items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedIndex = Math.max(selectedIndex - 1, -1);
+                updateSelection(items);
+            } else if (e.key === 'Enter' && selectedIndex >= 0) {
+                e.preventDefault();
+                const selectedItem = items[selectedIndex];
+                if (selectedItem) {
+                    const subjectId = selectedItem.dataset.id;
+                    const subjectName = selectedItem.dataset.name;
+                    selectSubject(subjectId, subjectName);
+                }
+            } else if (e.key === 'Escape') {
+                hideAutocomplete();
+            }
+        });
+    }
+
+    // Поиск предметов через API
+    async function searchSubjects(query) {
+        try {
+            const response = await fetch(`/api/subjects/autocomplete/?q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+            
+            autocompleteResults = data.results || [];
+            showAutocomplete(autocompleteResults);
+        } catch (error) {
+            console.error('Ошибка поиска предметов:', error);
+        }
+    }
+
+    // Отображение результатов автокомплита
+    function showAutocomplete(results) {
+        const autocompleteDiv = document.getElementById('autocompleteResults');
+        selectedIndex = -1;
+
+        if (results.length === 0) {
+            autocompleteDiv.innerHTML = '<div class="autocomplete-no-results">{% trans "Предметы не найдены" %} 😕</div>';
+            autocompleteDiv.classList.add('show');
+            return;
+        }
+        
+        let html = '';
+        results.forEach((subject, index) => {
+            const popularBadge = subject.is_popular ? '<i class="fas fa-star" style="color: #F59E0B; font-size: 10px;"></i>' : '';
+            html += `
+                <div class="autocomplete-item" 
+                     data-id="${subject.id}" 
+                     data-name="${subject.name}"
+                     onclick="selectSubject(${subject.id}, '${subject.name}')">
+                    <div class="autocomplete-item-icon">
+                        <i class="${subject.icon}"></i>
+            </div>
+                    <div class="autocomplete-item-content">
+                        <div class="autocomplete-item-name">
+                            ${subject.name} ${popularBadge}
+                        </div>
+                        <div class="autocomplete-item-meta">
+                            <span class="autocomplete-item-category" style="background: ${subject.category_color}">
+                                ${subject.category}
+                            </span>
+                            ${subject.teachers_count > 0 ? `<span class="autocomplete-item-teachers">👨‍🏫 ${subject.teachers_count}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        autocompleteDiv.innerHTML = html;
+        autocompleteDiv.classList.add('show');
+    }
+
+    // Скрытие автокомплита
+    function hideAutocomplete() {
+        const autocompleteDiv = document.getElementById('autocompleteResults');
+        autocompleteDiv.classList.remove('show');
+        selectedIndex = -1;
+    }
+
+    // Обновление выбранного элемента в автокомплите
+    function updateSelection(items) {
+        items.forEach((item, index) => {
+            if (index === selectedIndex) {
+                item.classList.add('selected');
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    }
+
+    // Выбор предмета из поиска
+    function selectSubject(subjectId, subjectName) {
+        // Находим первую свободную карточку или текущую активную
+        let targetCard = null;
+        
+        for (let i = 1; i <= maxSubjects; i++) {
+            const card = document.querySelector(`[data-subject-num="${i}"]`);
+            const select = document.getElementById(`id_subject_${i}`);
+            
+            if (isCardVisible(card) && (!select.value || select.value === '')) {
+                targetCard = i;
+                break;
+            }
+        }
+
+        // Если нет свободных, добавляем новую карточку
+        if (!targetCard && activeSubjects < maxSubjects) {
+            addSubject();
+            targetCard = activeSubjects;
+        }
+
+        if (targetCard) {
+            const select = document.getElementById(`id_subject_${targetCard}`);
+            if (select) {
+                select.value = subjectId;
+                
+                // Фокусируемся на поле цены
+                setTimeout(() => {
+                    const priceInput = document.getElementById(`id_hourly_rate_${targetCard}`);
+                    if (priceInput) {
+                        priceInput.focus();
+                    }
+                }, 100);
+            }
+        }
+
+        // Очищаем поиск и скрываем автокомплит
+        document.getElementById('subjectSearch').value = '';
+        hideAutocomplete();
+    }
+
+    // Загрузка популярных предметов
+    async function loadPopularSubjects() {
+        try {
+            const response = await fetch('/api/subjects/popular/');
+            const data = await response.json();
+            
+            const container = document.getElementById('popularSubjectsList');
+            
+            if (data.results && data.results.length > 0) {
+                let html = '';
+                data.results.forEach(subject => {
+                    html += `
+                        <div class="popular-subject-chip" onclick="selectSubject(${subject.id}, '${subject.name}')">
+                            <i class="${subject.icon}" style="color: ${subject.category_color}"></i>
+                            ${subject.name}
+                </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<p style="color: #999;">{% trans "Популярные предметы загружаются..." %}</p>';
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки популярных предметов:', error);
+        }
+    }
+
+    // Загрузка категорий
+    async function loadCategories() {
+        try {
+            const response = await fetch('/api/subjects/categories/');
+            const data = await response.json();
+            
+            const container = document.getElementById('categoriesGrid');
+            
+            if (data.results && data.results.length > 0) {
+                let html = '';
+                data.results.forEach(category => {
+                    html += `
+                        <div class="category-card" onclick="filterByCategory(${category.id}, '${category.name}')">
+                            <div class="category-icon" style="color: ${category.color}">
+                                <i class="${category.icon}"></i>
+                    </div>
+                            <div class="category-name">${category.name}</div>
+                            <div class="category-count">${category.subjects_count} {% trans "предметов" %}</div>
+                </div>
+            `;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<p style="color: #999;">{% trans "Категории загружаются..." %}</p>';
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки категорий:', error);
+        }
+    }
+
+    // Фильтрация по категории
+    async function filterByCategory(categoryId, categoryName) {
+        try {
+            const response = await fetch(`/api/subjects/category/${categoryId}/`);
+            const data = await response.json();
+            
+            showAutocomplete(data.results || []);
+            
+            // Устанавливаем фокус на поиск
+            const searchInput = document.getElementById('subjectSearch');
+            searchInput.value = '';
+            searchInput.placeholder = `{% trans "Поиск в категории" %}: ${categoryName}`;
+            searchInput.focus();
+        } catch (error) {
+            console.error('Ошибка фильтрации по категории:', error);
+        }
+    }
+
+    // =============================================================================
+    // КОНЕЦ НОВОГО ФУНКЦИОНАЛА
+    // =============================================================================
 
     // Проверка видимости карточки
     function isCardVisible(card) {
@@ -911,16 +1458,16 @@
         form.addEventListener('submit', function(e) {
     console.log('Результат:', { hasValidSubject, errors });
 
-    if (!hasValidSubject) {
-        e.preventDefault();
-        const message = errors.length > 0
-            ? '{% trans "Ошибки" %}:\n' + errors.join('\n')
-            : '{% trans "Добавьте хотя бы один предмет с ценой" %}';
-        alert(message);
-        return false;
-    }
+        if (!hasValidSubject) {
+            e.preventDefault();
+            const message = errors.length > 0
+                ? '{% trans "Ошибки" %}:\n' + errors.join('\n')
+                : '{% trans "Добавьте хотя бы один предмет с ценой" %}';
+            alert(message);
+            return false;
+        }
 });
-
+        
     });
 
 </script>
