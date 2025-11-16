@@ -1,0 +1,404 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{% static 'logo/logo.png' %}" type="image/x-icon">
+    <title>Admin Messages - UstozHub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'teachers/admin.css' %}">
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'logo/logo.png' %}" alt="UstozHub">
+            <div class="sidebar-logo-text">
+                <h2>UstozHub</h2>
+            </div>
+        </div>
+        
+        <ul class="sidebar-menu">
+            <li><a href="{% url 'admin_dashboard' %}"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+            <li><a href="#teachers"><i class="fas fa-chalkboard-teacher"></i> <span>Учителя</span></a></li>
+            <li><a href="#students"><i class="fas fa-user-graduate"></i> <span>Ученики</span></a></li>
+            <li><a href="{% url 'admin_messages' %}" class="active"><i class="fas fa-comments"></i> <span>Сообщения</span></a></li>
+            <li><a href="{% url 'telegram_management' %}"><i class="fab fa-telegram"></i> <span>Telegram пользователи</span></a></li>
+            <li><a href="#moderation"><i class="fas fa-check-circle"></i> <span>Модерация</span></a></li>
+            <li><a href="#stats"><i class="fas fa-chart-line"></i> <span>Статистика</span></a></li>
+            <li><a href="{% url 'home' %}"><i class="fas fa-globe"></i> <span>На сайт</span></a></li>
+            <li><a href="/admin/"><i class="fas fa-cog"></i> <span>Django Admin</span></a></li>
+            <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> <span>Выход</span></a></li>
+        </ul>
+    </aside>
+
+    <!-- TOP NAVBAR -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <h1><i class="fas fa-comments"></i> Управление сообщениями</h1>
+        </div>
+        <div class="topbar-right">
+            <div class="user-profile">
+                <div class="user-avatar">{{ request.user.first_name.0|upper }}</div>
+                <div class="user-info">
+                    <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                    <div class="user-role">Администратор</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content telegram-management-page">
+        <div class="management-header">
+            <div class="management-title">
+                <i class="fas fa-comments"></i>
+                Управление сообщениями платформы
+            </div>
+            <div class="management-subtitle">
+                Просмотр внутренних сообщений и отправка Telegram-уведомлений
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ total_conversations }}</div>
+                <div class="stat-label">Всего переписок</div>
+                <div class="stat-change">
+                    <i class="fas fa-comments"></i>
+                    Учитель ↔ Ученик
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-value">{{ active_conversations }}</div>
+                <div class="stat-label">Активных переписок</div>
+                <div class="stat-change">
+                    <i class="fas fa-comment-dots"></i>
+                    В работе
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-value">{{ conversations_with_messages }}</div>
+                <div class="stat-label">С сообщениями</div>
+                <div class="stat-change">
+                    <i class="fas fa-envelope"></i>
+                    Есть общение
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Controls -->
+        <div class="controls-section">
+            <div class="section-title">
+                <i class="fab fa-telegram"></i>
+                Отправка Telegram сообщений
+            </div>
+            
+            <div class="controls-grid">
+                <!-- Broadcast Message -->
+                <div class="control-card">
+                    <div class="control-title">Массовая рассылка</div>
+                    <div class="control-description">
+                        Отправить сообщение всем пользователям с включенными уведомлениями
+                    </div>
+                    
+                    <form method="POST" action="{% url 'send_broadcast_message' %}" class="message-form">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label class="form-label">Сообщение</label>
+                            <textarea 
+                                name="message" 
+                                class="form-textarea" 
+                                placeholder="Введите текст сообщения для Telegram..."
+                                required
+                                id="broadcastMessage"
+                                oninput="updatePreview(this.value, 'broadcastPreview')"
+                            ></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Получатели</label>
+                            <select name="recipients" class="form-select">
+                                <option value="all">Все с уведомлениями</option>
+                                <option value="linked">Только привязанные аккаунты</option>
+                                <option value="teachers">Только учителя</option>
+                                <option value="students">Только ученики</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fab fa-telegram"></i>
+                            Отправить всем
+                        </button>
+                        
+                        <div class="message-preview">
+                            <div class="preview-title">Предварительный просмотр:</div>
+                            <div class="message-bubble" id="broadcastPreview">
+                                Введите сообщение для предварительного просмотра...
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Individual Message -->
+                <div class="control-card">
+                    <div class="control-title">Персональное сообщение</div>
+                    <div class="control-description">
+                        Отправить сообщение конкретному пользователю через Telegram
+                    </div>
+                    
+                    <form method="POST" action="{% url 'send_individual_message' %}" class="message-form">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label class="form-label">Пользователь</label>
+                            <select name="user_id" class="form-select" required>
+                                <option value="">Выберите пользователя...</option>
+                                {% for user in telegram_users %}
+                                    <option value="{{ user.id }}">
+                                        {{ user.first_name }} {{ user.last_name }}
+                                        {% if user.telegram_username %}(@{{ user.telegram_username }}){% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Сообщение</label>
+                            <textarea 
+                                name="message" 
+                                class="form-textarea" 
+                                placeholder="Введите персональное сообщение..."
+                                required
+                                id="individualMessage"
+                                oninput="updatePreview(this.value, 'individualPreview')"
+                            ></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-user"></i>
+                            Отправить пользователю
+                        </button>
+                        
+                        <div class="message-preview">
+                            <div class="preview-title">Предварительный просмотр:</div>
+                            <div class="message-bubble" id="individualPreview">
+                                Введите сообщение для предварительного просмотра...
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversations Table -->
+        <div class="users-table-section">
+            <div class="section-title">
+                <i class="fas fa-comment-dots"></i>
+                Активные переписки пользователей
+                <span style="font-size: 14px; font-weight: 400; color: #666; margin-left: auto;">
+                    Всего: {{ conversations_info|length }}
+                </span>
+            </div>
+            
+            <!-- Table Controls -->
+            <div class="table-controls">
+                <div class="search-box">
+                    <input 
+                        type="text" 
+                        class="search-input" 
+                        placeholder="Поиск по участникам переписки..." 
+                        id="conversationSearch"
+                        oninput="filterConversations()"
+                    >
+                    <button class="btn btn-secondary btn-small">
+                        <i class="fas fa-search"></i>
+                        Найти
+                    </button>
+                </div>
+                
+                <div class="filter-controls">
+                    <select class="filter-select" id="unreadFilter" onchange="filterConversations()">
+                        <option value="">Все переписки</option>
+                        <option value="unread">С непрочитанными</option>
+                        <option value="active">Недавно активные</option>
+                    </select>
+                    
+                    <button class="btn btn-secondary btn-small" onclick="window.location='{% url 'conversations_list' %}'">
+                        <i class="fas fa-external-link-alt"></i>
+                        Открыть полный список
+                    </button>
+                </div>
+            </div>
+
+            <!-- Conversations Table -->
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Учитель</th>
+                        <th>Ученик</th>
+                        <th>Предмет</th>
+                        <th>Последнее сообщение</th>
+                        <th>Сообщений</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="conversationsTableBody">
+                    {% for conv_info in conversations_info %}
+                    {% with conv=conv_info.conversation %}
+                    <tr class="conversation-row" 
+                        data-teacher="{{ conv.teacher.user.get_full_name }}"
+                        data-student="{{ conv.student.get_full_name }}"
+                        data-unread="{% if conv_info.unread_count > 0 %}unread{% else %}read{% endif %}">
+                        <td>
+                            <div class="user-info">
+                                <div class="user-avatar">
+                                    {{ conv.teacher.user.first_name.0|upper }}
+                                </div>
+                                <div class="user-details">
+                                    <div class="user-name">{{ conv.teacher.user.get_full_name }}</div>
+                                    <div class="user-meta">Учитель</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="user-info">
+                                <div class="user-avatar">
+                                    {{ conv.student.first_name.0|upper }}
+                                </div>
+                                <div class="user-details">
+                                    <div class="user-name">{{ conv.student.get_full_name }}</div>
+                                    <div class="user-meta">Ученик</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if conv.subject %}
+                                <span class="subject-tag">{{ conv.subject.name }}</span>
+                            {% else %}
+                                <span class="text-muted">Общий чат</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if conv_info.last_message %}
+                                <div class="message-preview">
+                                    <div class="message-text" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        {{ conv_info.last_message.content }}
+                                    </div>
+                                    <div class="message-meta">
+                                        {{ conv_info.last_message.sender.get_full_name }} • {{ conv_info.last_message.created_at|date:"d.m H:i" }}
+                                    </div>
+                                </div>
+                            {% else %}
+                                <span class="text-muted">Нет сообщений</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="messages-count">
+                                <span class="count-total">{{ conv_info.messages_count }}</span>
+                                {% if conv_info.unread_count > 0 %}
+                                    <span class="count-unread">{{ conv_info.unread_count }} новых</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if conv_info.unread_count > 0 %}
+                                <span class="status-badge status-warning">
+                                    <i class="fas fa-envelope"></i> {{ conv_info.unread_count }} новых
+                                </span>
+                            {% else %}
+                                <span class="status-badge status-success">
+                                    <i class="fas fa-check-double"></i> Прочитано
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a class="btn btn-secondary btn-small" href="{% url 'conversation_detail' conv.id %}" target="_blank" title="Открыть переписку">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endwith %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-comment-dots"></i>
+                            </div>
+                            <div class="empty-text">Нет активных переписок</div>
+                            <div class="empty-subtext">Когда пользователи начнут общаться, их переписки появятся здесь</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Messages Display -->
+        {% if messages %}
+            <div class="messages-container">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+    </main>
+
+    <!-- JavaScript -->
+    <script>
+        <script>
+        function updatePreview(text, previewId) {
+            const preview = document.getElementById(previewId);
+            if (text.trim()) {
+                preview.textContent = text;
+                preview.style.fontStyle = 'normal';
+            } else {
+                preview.textContent = 'Введите сообщение для предварительного просмотра...';
+                preview.style.fontStyle = 'italic';
+            }
+        }
+
+        function filterConversations() {
+            const searchInput = document.getElementById('conversationSearch');
+            const unreadFilter = document.getElementById('unreadFilter');
+            const tableBody = document.getElementById('conversationsTableBody');
+            
+            if (!searchInput || !unreadFilter || !tableBody) return;
+            
+            const searchTerm = searchInput.value.toLowerCase();
+            const filterStatus = unreadFilter.value;
+            const rows = tableBody.getElementsByClassName('conversation-row');
+            
+            Array.from(rows).forEach(row => {
+                const teacher = row.dataset.teacher.toLowerCase();
+                const student = row.dataset.student.toLowerCase();
+                const unreadStatus = row.dataset.unread;
+                
+                const matchesSearch = teacher.includes(searchTerm) || student.includes(searchTerm);
+                let matchesFilter = true;
+                
+                if (filterStatus === 'unread') {
+                    matchesFilter = unreadStatus === 'unread';
+                } else if (filterStatus === 'active') {
+                    // Показывать переписки с активностью за последние 7 дней
+                    matchesFilter = true; // Можно добавить логику по дате
+                }
+                
+                if (matchesSearch && matchesFilter) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+    </script>
+    </script>
+</body>
+</html>

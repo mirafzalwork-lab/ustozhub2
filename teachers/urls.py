@@ -11,7 +11,9 @@ from .views import (
     send_message_ajax, mark_messages_read, delete_conversation,
     delete_teacher_subject, admin_dashboard,
     # API для поиска предметов
-    subjects_autocomplete, subjects_popular, subjects_categories, subjects_by_category
+    subjects_autocomplete, subjects_popular, subjects_categories, subjects_by_category,
+    # Telegram & admin messages
+    telegram_management, send_broadcast_message, send_individual_message, export_telegram_users, messages_management
 )
 from .telegram_views import (
     telegram_auth, link_telegram_account, telegram_status, toggle_notifications
@@ -33,6 +35,9 @@ urlpatterns = [
     path('admin-dashboard/telegram/broadcast/', send_broadcast_message, name='send_broadcast_message'),
     path('admin-dashboard/telegram/individual/', send_individual_message, name='send_individual_message'),
     path('admin-dashboard/telegram/export/', export_telegram_users, name='export_telegram_users'),
+
+    # Admin Messages management
+    path('admin-dashboard/messages/', messages_management, name='admin_messages'),
 
     path('register/', teacher_register_step1, name='teacher_register_step1'),
     path('register/step2/', teacher_register_step2, name='teacher_register_step2'),
