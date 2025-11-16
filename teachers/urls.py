@@ -10,12 +10,10 @@ from .views import (
     conversations_list, conversation_detail, start_conversation,
     send_message_ajax, mark_messages_read, delete_conversation,
     delete_teacher_subject, admin_dashboard,
-<<<<<<< HEAD
     # API для поиска предметов
-    subjects_autocomplete, subjects_popular, subjects_categories, subjects_by_category
-=======
+    subjects_autocomplete, subjects_popular, subjects_categories, subjects_by_category,
+    # Telegram & admin messages
     telegram_management, send_broadcast_message, send_individual_message, export_telegram_users, messages_management
->>>>>>> 32c605a (add)
 )
 from .telegram_views import (
     telegram_auth, link_telegram_account, telegram_status, toggle_notifications

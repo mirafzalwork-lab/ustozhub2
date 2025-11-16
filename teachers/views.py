@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Q, Min, Max, Avg, Count
+from django.db.models import Q, Min, Max, Avg, Count, Case, When, Value, IntegerField
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.views.decorators.http import require_POST
@@ -10,6 +10,11 @@ from django.core.cache import cache  # ⚡ ОПТИМИЗАЦИЯ: Кэширо�
 from django.conf import settings  # ⚡ ОПТИМИЗАЦИЯ: Для CACHE_TTL
 from django.contrib.auth import login, logout, authenticate
 from django.utils import timezone
+from django.http import JsonResponse, HttpResponse
+from django.urls import reverse
+import csv
+import logging
+from datetime import datetime, timedelta
 from .models import (
     TeacherProfile, StudentProfile, Subject, City, ProfileView,
     TeacherSubject, Certificate, User, Favorite, FavoriteStudent,
@@ -355,6 +360,29 @@ def admin_dashboard(request):
     }
     
     return render(request, 'admin/admin_dashboard.html', context)
+
+
+@staff_member_required
+def messages_management(request):
+    """
+    Админская страница управления сообщениями платформы и быстрый доступ к рассылкам Telegram
+    """
+    total_messages = Message.objects.count()
+    unread_messages = Message.objects.filter(is_read=False).count()
+    conversations_count = Conversation.objects.filter(is_active=True).count()
+
+    recent_messages = Message.objects.select_related('sender', 'conversation').order_by('-created_at')[:50]
+    telegram_users = TelegramUser.objects.select_related('user').order_by('-created_at')[:50]
+
+    context = {
+        'total_messages': total_messages,
+        'unread_messages': unread_messages,
+        'conversations_count': conversations_count,
+        'recent_messages': recent_messages,
+        'telegram_users': telegram_users,
+    }
+
+    return render(request, 'admin/messages_management.html', context)
 
 def students_list(request):
     """
@@ -842,7 +870,7 @@ def register_student(request):
                 request,
                 'Регистрация прошла успешно! Добро пожаловать в UstozHub!'
             )
-            return redirect(f"{reverse('home')}?suggest=1")
+            return redirect('home')
     else:
         form = StudentRegistrationForm()
     
@@ -1057,9 +1085,7 @@ def student_profile_edit(request):
     return render(request, 'logic/student_profile_edit.html', context)
 
 
-from django.http import JsonResponse
-from django.urls import reverse
-from django.utils import timezone
+
 
 @login_required
 def toggle_profile_status(request):
@@ -1558,57 +1584,18 @@ def delete_conversation(request, conversation_id):
 # =============================================================================
 
 from .models import SubjectCategory, SubjectSearchLog
-from django.db.models import Case, When, Value, IntegerField
 
-<<<<<<< HEAD
+
 def subjects_autocomplete(request):
-=======
-
-@staff_member_required
-def messages_management(request):
-    """
-    Админская страница управления сообщениями платформы и быстрый доступ к рассылкам Telegram
-    """
-    # Статистика внутренних сообщений
-    total_messages = Message.objects.count()
-    unread_messages = Message.objects.filter(is_read=False).count()
-    conversations_count = Conversation.objects.filter(is_active=True).count()
-
-    # Недавние внутр. сообщения (последние 50)
-    recent_messages = Message.objects.select_related('sender', 'conversation').order_by('-created_at')[:50]
-
-    # Список Telegram пользователей для персональных отправок (первые 50)
-    telegram_users = TelegramUser.objects.select_related('user').order_by('-created_at')[:50]
-
-    context = {
-        'total_messages': total_messages,
-        'unread_messages': unread_messages,
-        'conversations_count': conversations_count,
-        'recent_messages': recent_messages,
-        'telegram_users': telegram_users,
-    }
-
-    return render(request, 'admin/messages_management.html', context)
-
-
-@staff_member_required
-@require_POST
-def send_broadcast_message(request):
->>>>>>> 32c605a (add)
     """
     API для автокомплита предметов с умным поиском
     Возвращает JSON с предметами, отсортированными по релевантности
     """
     query = request.GET.get('q', '').strip()
-    
+
     if not query or len(query) < 2:
         return JsonResponse({'results': []})
-    
-    # Умный поиск с приоритетом:
-    # 1. Точное совпадение
-    # 2. Начинается с запроса
-    # 3. Содержит запрос
-    # 4. Совпадение в описании
+
     subjects = Subject.objects.filter(is_active=True).filter(
         Q(name__icontains=query) | Q(description__icontains=query)
     ).select_related('category').annotate(
@@ -1621,7 +1608,7 @@ def send_broadcast_message(request):
             output_field=IntegerField()
         )
     ).order_by('-relevance', '-is_popular', 'name')[:30]
-    
+
     results = []
     for subject in subjects:
         teachers_count = subject.get_teachers_count()
@@ -1635,7 +1622,7 @@ def send_broadcast_message(request):
             'is_popular': subject.is_popular,
             'teachers_count': teachers_count
         })
-    
+
     # Логируем поиск для аналитики
     try:
         SubjectSearchLog.objects.create(
@@ -1645,8 +1632,8 @@ def send_broadcast_message(request):
             found_results_count=len(results)
         )
     except:
-        pass  # Не прерываем работу если логирование не удалось
-    
+        pass
+
     return JsonResponse({'results': results})
 
 
@@ -1658,7 +1645,7 @@ def subjects_popular(request):
         is_active=True,
         is_popular=True
     ).select_related('category').order_by('name')[:20]
-    
+
     results = []
     for subject in popular_subjects:
         teachers_count = subject.get_teachers_count()
@@ -1670,7 +1657,7 @@ def subjects_popular(request):
             'icon': subject.icon or 'fas fa-book',
             'teachers_count': teachers_count
         })
-    
+
     return JsonResponse({'results': results})
 
 
@@ -1678,14 +1665,12 @@ def subjects_categories(request):
     """
     API для получения всех категорий с количеством предметов
     """
-    from django.db.models import Count
-    
     categories = SubjectCategory.objects.filter(
         is_active=True
     ).annotate(
         subjects_count=Count('subjects', filter=Q(subjects__is_active=True))
     ).filter(subjects_count__gt=0).order_by('order', 'name')
-    
+
     results = []
     for category in categories:
         results.append({
@@ -1695,7 +1680,7 @@ def subjects_categories(request):
             'color': category.color,
             'subjects_count': category.subjects_count
         })
-    
+
     return JsonResponse({'results': results})
 
 
@@ -1707,12 +1692,12 @@ def subjects_by_category(request, category_id):
         category = SubjectCategory.objects.get(id=category_id, is_active=True)
     except SubjectCategory.DoesNotExist:
         return JsonResponse({'error': 'Категория не найдена'}, status=404)
-    
+
     subjects = Subject.objects.filter(
         category=category,
         is_active=True
     ).order_by('-is_popular', 'name')
-    
+
     results = []
     for subject in subjects:
         teachers_count = subject.get_teachers_count()
@@ -1724,7 +1709,7 @@ def subjects_by_category(request, category_id):
             'is_popular': subject.is_popular,
             'teachers_count': teachers_count
         })
-    
+
     return JsonResponse({
         'category': {
             'id': category.id,
@@ -1733,3 +1718,209 @@ def subjects_by_category(request, category_id):
         },
         'results': results
     })
+
+
+# ============================================
+# TELEGRAM MANAGEMENT VIEWS
+# ============================================
+
+@staff_member_required
+def telegram_management(request):
+    """
+    Страница управления Telegram пользователями для админа
+    """
+
+    
+    # Получаем всех Telegram пользователей с профилями
+    telegram_users = TelegramUser.objects.select_related(
+        'user', 
+        'user__teacher_profile', 
+        'user__student_profile'
+    ).order_by('-created_at')
+    
+    # Статистика
+    total_users = telegram_users.count()
+    active_users = telegram_users.filter(started_bot=True).count()
+    notifications_enabled = telegram_users.filter(notifications_enabled=True, started_bot=True).count()
+    linked_users = telegram_users.filter(user__isnull=False).count()
+    
+    # Новые пользователи за неделю
+    week_ago = datetime.now() - timedelta(days=7)
+    new_users_week = telegram_users.filter(created_at__gte=week_ago).count()
+    
+    # Связанные учителя и ученики
+    linked_teachers = telegram_users.filter(user__user_type='teacher').count()
+    linked_students = telegram_users.filter(user__user_type='student').count()
+    
+    # Расчет процентов
+    activation_rate = round((active_users / total_users * 100) if total_users > 0 else 0, 1)
+    notification_rate = round((notifications_enabled / active_users * 100) if active_users > 0 else 0, 1)
+    link_rate = round((linked_users / active_users * 100) if active_users > 0 else 0, 1)
+    
+    stats = {
+        'total_users': total_users,
+        'active_users': active_users,
+        'notifications_enabled': notifications_enabled,
+        'linked_users': linked_users,
+        'new_users_week': new_users_week,
+        'linked_teachers': linked_teachers,
+        'linked_students': linked_students,
+        'activation_rate': activation_rate,
+        'notification_rate': notification_rate,
+        'link_rate': link_rate,
+    }
+    
+    context = {
+        'stats': stats,
+        'telegram_users': telegram_users[:50],  # Первые 50 для отображения
+    }
+    
+    return render(request, 'admin/telegram_management.html', context)
+
+
+@staff_member_required
+@require_POST
+def send_broadcast_message(request):
+    """
+    Отправка массового сообщения через Telegram бота
+    """
+    try:
+        message_text = request.POST.get('message', '').strip()
+        recipients = request.POST.get('recipients', 'all')
+        
+        if not message_text:
+            messages.error(request, 'Сообщение не может быть пустым')
+            return redirect('telegram_management')
+        
+        # Определяем получателей
+        if recipients == 'all':
+            users = TelegramUser.objects.filter(notifications_enabled=True, started_bot=True)
+        elif recipients == 'linked':
+            users = TelegramUser.objects.filter(user__isnull=False, notifications_enabled=True, started_bot=True)
+        elif recipients == 'teachers':
+            users = TelegramUser.objects.filter(user__user_type='teacher', notifications_enabled=True, started_bot=True)
+        elif recipients == 'students':
+            users = TelegramUser.objects.filter(user__user_type='student', notifications_enabled=True, started_bot=True)
+        else:
+            users = TelegramUser.objects.filter(notifications_enabled=True, started_bot=True)
+        
+        users_count = users.count()
+        
+        if users_count == 0:
+            messages.warning(request, 'Нет пользователей для отправки сообщения')
+            return redirect('telegram_management')
+        
+        # Отправляем сообщения (используем AdminTelegramService)
+        try:
+            from .admin_telegram_service import admin_telegram_service
+            
+            formatted_message = f"📢 *Сообщение от администрации UstozHub*\n\n{message_text}"
+            
+            # Отправляем через admin сервис
+            success_count, error_count = admin_telegram_service.send_to_selected_users(
+                users=users,
+                text=formatted_message,
+                parse_mode='Markdown'
+            )
+        except Exception as e:
+            success_count, error_count = 0, users_count
+            messages.error(request, f'Ошибка сервиса отправки: {str(e)}')
+        
+        if success_count > 0:
+            messages.success(request, f'Сообщение успешно отправлено {success_count} пользователям')
+        
+        if error_count > 0:
+            messages.warning(request, f'Не удалось отправить {error_count} пользователям (возможно, заблокировали бота или удалили чат)')
+            
+    except Exception as e:
+        messages.error(request, f'Ошибка при отправке сообщений: {str(e)}')
+    
+    return redirect('telegram_management')
+
+
+@staff_member_required  
+@require_POST
+def send_individual_message(request):
+    """
+    Отправка персонального сообщения пользователю
+    """
+    try:
+        user_id = request.POST.get('user_id')
+        message_text = request.POST.get('message', '').strip()
+        
+        if not user_id or not message_text:
+            messages.error(request, 'Необходимо выбрать пользователя и ввести сообщение')
+            return redirect('telegram_management')
+        
+        telegram_user = get_object_or_404(TelegramUser, id=user_id)
+        
+        if not telegram_user.started_bot:
+            messages.error(request, 'Пользователь не активировал бота')
+            return redirect('telegram_management')
+        
+        # Отправляем сообщение
+        from .admin_telegram_service import admin_telegram_service
+        
+        formatted_message = f"💬 *Персональное сообщение от администрации*\n\n{message_text}"
+        
+        success = admin_telegram_service.send_message_sync(
+            telegram_id=telegram_user.telegram_id,
+            text=formatted_message,
+            parse_mode='Markdown'
+        )
+        
+        if success:
+            messages.success(request, f'Сообщение отправлено пользователю {telegram_user.first_name}')
+        else:
+            messages.error(request, f'Не удалось отправить сообщение пользователю {telegram_user.first_name} (возможно, заблокировал бота или удалил чат)')
+            
+    except Exception as e:
+        messages.error(request, f'Ошибка: {str(e)}')
+    
+    return redirect('telegram_management')
+
+
+@staff_member_required
+def export_telegram_users(request):
+    """
+    Экспорт списка Telegram пользователей в CSV
+    """
+
+    
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="telegram_users_{datetime.now().strftime("%Y%m%d_%H%M")}.csv"'
+    
+    # Добавляем BOM для корректного отображения в Excel
+    response.write('\ufeff')
+    
+    writer = csv.writer(response)
+    writer.writerow([
+        'ID',
+        'Telegram ID', 
+        'Имя',
+        'Фамилия',
+        'Username',
+        'Привязанный аккаунт',
+        'Тип пользователя',
+        'Активен',
+        'Уведомления',
+        'Дата регистрации',
+        'Последняя активность'
+    ])
+    
+    for user in TelegramUser.objects.select_related('user').all():
+        writer.writerow([
+            user.id,
+            user.telegram_id,
+            user.first_name or '',
+            user.last_name or '',
+            user.telegram_username or '',
+            user.user.username if user.user else 'Не привязан',
+            user.user.user_type if user.user else '',
+            'Да' if user.started_bot else 'Нет',
+            'Да' if user.notifications_enabled else 'Нет',
+            user.created_at.strftime('%d.%m.%Y %H:%M'),
+            user.updated_at.strftime('%d.%m.%Y %H:%M')
+        ])
+    
+    return response
