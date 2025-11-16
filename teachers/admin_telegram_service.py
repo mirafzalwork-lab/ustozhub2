@@ -8,6 +8,7 @@ import asyncio
 from typing import List, Dict, Optional
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import TelegramError
 from django.conf import settings
@@ -29,7 +30,7 @@ class AdminTelegramService:
         else:
             logger.error("TELEGRAM_BOT_TOKEN не установлен!")
     
-    def send_message_sync(self, telegram_id: int, text: str, reply_markup=None, parse_mode='Markdown') -> bool:
+    def send_message_sync(self, telegram_id: int, text: str, reply_markup=None, parse_mode=None) -> bool:
         """Синхронная отправка сообщения"""
         if not self.bot:
             logger.error("Telegram bot не инициализирован")
@@ -51,7 +52,7 @@ class AdminTelegramService:
             logger.error(f"Ошибка в send_message_sync: {e}")
             return False
     
-    async def _send_message_async(self, telegram_id: int, text: str, reply_markup=None, parse_mode='Markdown') -> bool:
+    async def _send_message_async(self, telegram_id: int, text: str, reply_markup=None, parse_mode=None) -> bool:
         """Асинхронная отправка сообщения"""
         try:
             await self.bot.send_message(
@@ -64,10 +65,24 @@ class AdminTelegramService:
             return True
             
         except TelegramError as e:
-            logger.error(f"❌ Ошибка отправки сообщения пользователю {telegram_id}: {e}")
+            # Специальная обработка для заблокированных пользователей
+            if 'chat not found' in str(e).lower() or 'bot was blocked' in str(e).lower():
+                logger.warning(f"🚫 Пользователь {telegram_id} заблокировал бота или удалил чат")
+                # Отмечаем пользователя как неактивного
+                try:
+                    from .models import TelegramUser
+                    TelegramUser.objects.filter(telegram_id=telegram_id).update(
+                        started_bot=False, 
+                        notifications_enabled=False,
+                        last_interaction=timezone.now()
+                    )
+                except Exception:
+                    pass
+            else:
+                logger.error(f"❌ Ошибка отправки сообщения пользователю {telegram_id}: {e}")
             return False
     
-    def send_to_selected_users(self, telegram_users: List[TelegramUser], message: str) -> Dict[str, int]:
+    def send_to_selected_users(self, telegram_users: List[TelegramUser], message: str, parse_mode='Markdown') -> Dict[str, int]:
         """
         Отправить сообщение выбранным пользователям
         
@@ -93,7 +108,7 @@ class AdminTelegramService:
                 stats['failed'] += 1
                 stats['details'].append({
                     'user': f"{tg_user.first_name} (@{tg_user.telegram_username or 'нет'})",
-                    'status': 'failed',
+                    'status': 'skipped',
                     'reason': 'Не запустил бота (/start)'
                 })
                 continue
@@ -102,7 +117,7 @@ class AdminTelegramService:
                 stats['failed'] += 1
                 stats['details'].append({
                     'user': f"{tg_user.first_name} (@{tg_user.telegram_username or 'нет'})",
-                    'status': 'failed',
+                    'status': 'skipped',
                     'reason': 'Уведомления отключены'
                 })
                 continue
@@ -110,7 +125,8 @@ class AdminTelegramService:
             # Отправляем сообщение
             success = self.send_message_sync(
                 telegram_id=tg_user.telegram_id,
-                text=message
+                text=message,
+                parse_mode=parse_mode
             )
             
             if success:

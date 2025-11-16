@@ -1,0 +1,922 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{% static 'logo/logo.png' %}" type="image/x-icon">
+    <title>Управление Telegram - UstozHub Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'teachers/admin.css' %}">
+    <style>
+        .telegram-management-page {
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+        
+        .management-header {
+            background: linear-gradient(135deg, #0088cc, #0099dd);
+            color: white;
+            padding: 32px 24px;
+            margin-bottom: 32px;
+        }
+        
+        .management-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .management-subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            border-left: 4px solid #0088cc;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #0A2540;
+            margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+        
+        .stat-change {
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .stat-change.positive {
+            color: #10B981;
+        }
+        
+        .stat-change.negative {
+            color: #EF4444;
+        }
+        
+        .controls-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0A2540;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .control-card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .control-card:hover {
+            border-color: #0088cc;
+            background: rgba(0, 136, 204, 0.05);
+        }
+        
+        .control-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0A2540;
+            margin-bottom: 8px;
+        }
+        
+        .control-description {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #0A2540;
+            margin-bottom: 8px;
+        }
+        
+        .form-input,
+        .form-textarea,
+        .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-input:focus,
+        .form-textarea:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: #0088cc;
+            box-shadow: 0 0 0 4px rgba(0, 136, 204, 0.1);
+        }
+        
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background: #0088cc;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0077b3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 136, 204, 0.3);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #0088cc;
+            border: 2px solid #0088cc;
+        }
+        
+        .btn-secondary:hover {
+            background: #0088cc;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #EF4444;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #DC2626;
+        }
+        
+        .btn-success {
+            background: #10B981;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #059669;
+        }
+        
+        .users-table-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .table-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 10px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .filter-controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-select {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+        
+        .users-table th,
+        .users-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .users-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #0A2540;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .users-table td {
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .users-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0088cc, #0099dd);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .user-details {
+            flex: 1;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            color: #0A2540;
+            margin-bottom: 2px;
+        }
+        
+        .user-username {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+        
+        .status-inactive {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+        
+        .status-notifications {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 24px;
+        }
+        
+        .pagination-btn {
+            padding: 8px 12px;
+            border: 1px solid #e0e0e0;
+            background: white;
+            color: #666;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .pagination-btn:hover {
+            border-color: #0088cc;
+            color: #0088cc;
+        }
+        
+        .pagination-btn.active {
+            background: #0088cc;
+            color: white;
+            border-color: #0088cc;
+        }
+        
+        .message-form {
+            display: grid;
+            gap: 16px;
+        }
+        
+        .message-preview {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        
+        .preview-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0A2540;
+            margin-bottom: 12px;
+        }
+        
+        .message-bubble {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 16px;
+            max-width: 400px;
+            position: relative;
+        }
+        
+        .message-bubble::before {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 20px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid white;
+        }
+        
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .alert-success {
+            background: #D1FAE5;
+            border: 1px solid #6EE7B7;
+            color: #065F46;
+        }
+        
+        .alert-error {
+            background: #FEE2E2;
+            border: 1px solid #FCA5A5;
+            color: #991B1B;
+        }
+        
+        .alert-info {
+            background: #DBEAFE;
+            border: 1px solid #93C5FD;
+            color: #1E40AF;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .management-header {
+                padding: 24px 16px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .table-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-box {
+                min-width: auto;
+            }
+            
+            .users-table {
+                font-size: 13px;
+            }
+            
+            .users-table th,
+            .users-table td {
+                padding: 8px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'logo/logo.png' %}" alt="UstozHub">
+            <div class="sidebar-logo-text">
+                <h2>UstozHub</h2>
+            </div>
+        </div>
+        
+        <ul class="sidebar-menu">
+            <li><a href="{% url 'admin_dashboard' %}"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+            <li><a href="#teachers"><i class="fas fa-chalkboard-teacher"></i> <span>Учителя</span></a></li>
+            <li><a href="#students"><i class="fas fa-user-graduate"></i> <span>Ученики</span></a></li>
+            <li><a href="#messages"><i class="fas fa-comments"></i> <span>Сообщения</span></a></li>
+            <li><a href="{% url 'telegram_management' %}" class="active"><i class="fab fa-telegram"></i> <span>Telegram пользователи</span></a></li>
+            <li><a href="#moderation"><i class="fas fa-check-circle"></i> <span>Модерация</span></a></li>
+            <li><a href="#stats"><i class="fas fa-chart-line"></i> <span>Статистика</span></a></li>
+            <li><a href="{% url 'home' %}"><i class="fas fa-globe"></i> <span>На сайт</span></a></li>
+            <li><a href="/admin/"><i class="fas fa-cog"></i> <span>Django Admin</span></a></li>
+            <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> <span>Выход</span></a></li>
+        </ul>
+    </aside>
+
+    <!-- TOP NAVBAR -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <h1><i class="fab fa-telegram"></i> Управление Telegram</h1>
+        </div>
+        <div class="topbar-right">
+            <div class="user-profile">
+                <div class="user-avatar">{{ request.user.first_name.0|upper }}</div>
+                <div class="user-info">
+                    <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                    <div class="user-role">Администратор</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content telegram-management-page">
+        <div class="management-header">
+            <div class="management-title">
+                <i class="fab fa-telegram"></i>
+                Управление Telegram пользователями
+            </div>
+            <div class="management-subtitle">
+                Отправка сообщений, управление уведомлениями и анализ активности
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.total_users }}</div>
+                <div class="stat-label">Всего пользователей</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +{{ stats.new_users_week }} за неделю
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.active_users }}</div>
+                <div class="stat-label">Активировали бота</div>
+                <div class="stat-change">
+                    <i class="fas fa-percentage"></i>
+                    {{ stats.activation_rate }}% от общего числа
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.notifications_enabled }}</div>
+                <div class="stat-label">Включены уведомления</div>
+                <div class="stat-change">
+                    <i class="fas fa-bell"></i>
+                    {{ stats.notification_rate }}% активных
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.linked_users }}</div>
+                <div class="stat-label">Привязано к аккаунтам</div>
+                <div class="stat-change">
+                    <i class="fas fa-link"></i>
+                    {{ stats.link_rate }}% от активных
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Controls -->
+        <div class="controls-section">
+            <div class="section-title">
+                <i class="fas fa-paper-plane"></i>
+                Отправка сообщений
+            </div>
+            
+            <div class="controls-grid">
+                <!-- Broadcast Message -->
+                <div class="control-card">
+                    <div class="control-title">Массовая рассылка</div>
+                    <div class="control-description">
+                        Отправить сообщение всем пользователям с включенными уведомлениями
+                    </div>
+                    
+                    <form method="POST" action="{% url 'send_broadcast_message' %}" class="message-form">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label class="form-label">Сообщение</label>
+                            <textarea 
+                                name="message" 
+                                class="form-textarea" 
+                                placeholder="Введите текст сообщения..."
+                                required
+                                id="broadcastMessage"
+                                oninput="updatePreview(this.value, 'broadcastPreview')"
+                            ></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Получатели</label>
+                            <select name="recipients" class="form-select">
+                                <option value="all">Все с уведомлениями ({{ stats.notifications_enabled }})</option>
+                                <option value="linked">Только привязанные аккаунты ({{ stats.linked_users }})</option>
+                                <option value="teachers">Только учителя ({{ stats.linked_teachers }})</option>
+                                <option value="students">Только ученики ({{ stats.linked_students }})</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i>
+                            Отправить всем
+                        </button>
+                        
+                        <div class="message-preview">
+                            <div class="preview-title">Предварительный просмотр:</div>
+                            <div class="message-bubble" id="broadcastPreview">
+                                Введите сообщение для предварительного просмотра...
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Individual Message -->
+                <div class="control-card">
+                    <div class="control-title">Персональное сообщение</div>
+                    <div class="control-description">
+                        Отправить сообщение конкретному пользователю
+                    </div>
+                    
+                    <form method="POST" action="{% url 'send_individual_message' %}" class="message-form">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label class="form-label">Пользователь</label>
+                            <select name="user_id" class="form-select" required>
+                                <option value="">Выберите пользователя...</option>
+                                {% for user in telegram_users %}
+                                    <option value="{{ user.id }}">
+                                        {{ user.first_name }} {{ user.last_name }}
+                                        {% if user.telegram_username %}(@{{ user.telegram_username }}){% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Сообщение</label>
+                            <textarea 
+                                name="message" 
+                                class="form-textarea" 
+                                placeholder="Введите персональное сообщение..."
+                                required
+                                id="individualMessage"
+                                oninput="updatePreview(this.value, 'individualPreview')"
+                            ></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-user"></i>
+                            Отправить пользователю
+                        </button>
+                        
+                        <div class="message-preview">
+                            <div class="preview-title">Предварительный просмотр:</div>
+                            <div class="message-bubble" id="individualPreview">
+                                Введите сообщение для предварительного просмотра...
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="users-table-section">
+            <div class="section-title">
+                <i class="fas fa-users"></i>
+                Пользователи Telegram
+                <span style="font-size: 14px; font-weight: 400; color: #666; margin-left: auto;">
+                    Всего: {{ telegram_users|length }}
+                </span>
+            </div>
+            
+            <!-- Table Controls -->
+            <div class="table-controls">
+                <div class="search-box">
+                    <input 
+                        type="text" 
+                        class="search-input" 
+                        placeholder="Поиск по имени или username..." 
+                        id="userSearch"
+                        oninput="filterUsers()"
+                    >
+                    <button class="btn btn-secondary btn-small">
+                        <i class="fas fa-search"></i>
+                        Найти
+                    </button>
+                </div>
+                
+                <div class="filter-controls">
+                    <select class="filter-select" id="statusFilter" onchange="filterUsers()">
+                        <option value="">Все статусы</option>
+                        <option value="active">Активные</option>
+                        <option value="notifications">С уведомлениями</option>
+                        <option value="linked">Привязанные</option>
+                    </select>
+                    
+                    <button class="btn btn-secondary btn-small" onclick="exportUsers()">
+                        <i class="fas fa-download"></i>
+                        Экспорт
+                    </button>
+                </div>
+            </div>
+
+            <!-- Users Table -->
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Пользователь</th>
+                        <th>Telegram ID</th>
+                        <th>Привязан к</th>
+                        <th>Статус</th>
+                        <th>Последняя активность</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    {% for user in telegram_users %}
+                    <tr class="user-row" 
+                        data-name="{{ user.first_name }} {{ user.last_name }}"
+                        data-username="{{ user.telegram_username|default:'' }}"
+                        data-status="{% if user.started_bot %}active{% endif %} {% if user.notifications_enabled %}notifications{% endif %} {% if user.user %}linked{% endif %}">
+                        <td>
+                            <div class="user-info">
+                                <div class="user-avatar">
+                                    {{ user.first_name.0|upper }}{{ user.last_name.0|upper|default:'' }}
+                                </div>
+                                <div class="user-details">
+                                    <div class="user-name">{{ user.first_name }} {{ user.last_name }}</div>
+                                    {% if user.telegram_username %}
+                                        <div class="user-username">@{{ user.telegram_username }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ user.telegram_id }}</td>
+                        <td>
+                            {% if user.user %}
+                                <strong>{{ user.user.get_full_name|default:user.user.username }}</strong><br>
+                                <small>
+                                    {{ user.user.get_user_type_display|default:'Пользователь' }}
+                                    {% if user.user.user_type == 'teacher' and not user.user.teacher_profile %}
+                                        <span style="color: #f59e0b;">(Профиль не завершен)</span>
+                                    {% elif user.user.user_type == 'student' and not user.user.student_profile %}
+                                        <span style="color: #f59e0b;">(Профиль не завершен)</span>
+                                    {% endif %}
+                                </small>
+                            {% else %}
+                                <span style="color: #999;">Не привязан</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                {% if user.started_bot %}
+                                    <span class="status-badge status-active">Активен</span>
+                                {% else %}
+                                    <span class="status-badge status-inactive">Неактивен</span>
+                                {% endif %}
+                                
+                                {% if user.notifications_enabled %}
+                                    <span class="status-badge status-notifications">Уведомления</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if user.last_interaction %}
+                                {{ user.last_interaction|date:"d.m.Y H:i" }}
+                            {% else %}
+                                <span style="color: #999;">Нет данных</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-primary btn-small" onclick="sendPersonalMessage({{ user.id }})">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                                
+                                {% if user.user %}
+                                    {% if user.user.user_type == 'teacher' %}
+                                        {% if user.user.teacher_profile %}
+                                            <a href="{% url 'teacher_detail' user.user.teacher_profile.id %}" 
+                                               class="btn btn-secondary btn-small" 
+                                               target="_blank">
+                                                <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                        {% endif %}
+                                    {% elif user.user.user_type == 'student' %}
+                                        {% if user.user.student_profile %}
+                                            <a href="{% url 'student_detail' user.user.student_profile.id %}" 
+                                               class="btn btn-secondary btn-small" 
+                                               target="_blank">
+                                                <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endif %}
+                                
+                                <button class="btn btn-danger btn-small" onclick="toggleNotifications({{ user.id }})">
+                                    <i class="fas fa-bell{% if not user.notifications_enabled %}-slash{% endif %}"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
+                            Нет Telegram пользователей
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- Pagination -->
+            <div class="pagination">
+                <button class="pagination-btn">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="pagination-btn active">1</button>
+                <button class="pagination-btn">2</button>
+                <button class="pagination-btn">3</button>
+                <button class="pagination-btn">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    </main>
+
+    <script>
+        // Message preview update
+        function updatePreview(message, previewId) {
+            const preview = document.getElementById(previewId);
+            if (message.trim()) {
+                preview.textContent = message;
+            } else {
+                preview.textContent = 'Введите сообщение для предварительного просмотра...';
+            }
+        }
+
+        // Filter users
+        function filterUsers() {
+            const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const rows = document.querySelectorAll('.user-row');
+
+            rows.forEach(row => {
+                const name = row.dataset.name.toLowerCase();
+                const username = row.dataset.username.toLowerCase();
+                const status = row.dataset.status;
+
+                const matchesSearch = name.includes(searchTerm) || username.includes(searchTerm);
+                const matchesStatus = !statusFilter || status.includes(statusFilter);
+
+                row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+            });
+        }
+
+        // Send personal message
+        function sendPersonalMessage(userId) {
+            // TODO: Implement modal for quick message sending
+            console.log('Send message to user:', userId);
+        }
+
+        // Toggle notifications
+        function toggleNotifications(userId) {
+            if (confirm('Изменить настройки уведомлений для этого пользователя?')) {
+                // TODO: Implement AJAX call to toggle notifications
+                console.log('Toggle notifications for user:', userId);
+            }
+        }
+
+        // Export users
+        function exportUsers() {
+            window.location.href = '{% url "export_telegram_users" %}';
+        }
+
+        // Form submission with confirmation
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                if (this.action.includes('broadcast')) {
+                    if (!confirm('Отправить сообщение всем выбранным пользователям?')) {
+                        e.preventDefault();
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

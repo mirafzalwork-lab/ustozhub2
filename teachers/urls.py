@@ -9,7 +9,8 @@ from .views import (
     student_suggestions,
     conversations_list, conversation_detail, start_conversation,
     send_message_ajax, mark_messages_read, delete_conversation,
-    delete_teacher_subject, admin_dashboard
+    delete_teacher_subject, admin_dashboard,
+    telegram_management, send_broadcast_message, send_individual_message, export_telegram_users
 )
 from .telegram_views import (
     telegram_auth, link_telegram_account, telegram_status, toggle_notifications
@@ -25,6 +26,12 @@ urlpatterns = [
     path('students/', students_list, name='students_list'),
     path('student/<int:id>/', student_detail, name='student_detail'),
     path('admin-dashboard/', admin_dashboard, name='admin_dashboard'),
+    
+    # Telegram Management
+    path('admin-dashboard/telegram/', telegram_management, name='telegram_management'),
+    path('admin-dashboard/telegram/broadcast/', send_broadcast_message, name='send_broadcast_message'),
+    path('admin-dashboard/telegram/individual/', send_individual_message, name='send_individual_message'),
+    path('admin-dashboard/telegram/export/', export_telegram_users, name='export_telegram_users'),
 
     path('register/', teacher_register_step1, name='teacher_register_step1'),
     path('register/step2/', teacher_register_step2, name='teacher_register_step2'),
