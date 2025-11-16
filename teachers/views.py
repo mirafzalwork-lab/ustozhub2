@@ -365,20 +365,47 @@ def admin_dashboard(request):
 @staff_member_required
 def messages_management(request):
     """
-    Админская страница управления сообщениями платформы и быстрый доступ к рассылкам Telegram
+    Админская страница управления переписками между пользователями и быстрый доступ к рассылкам Telegram
     """
-    total_messages = Message.objects.count()
-    unread_messages = Message.objects.filter(is_read=False).count()
-    conversations_count = Conversation.objects.filter(is_active=True).count()
+    # Статистика переписок
+    total_conversations = Conversation.objects.count()
+    active_conversations = Conversation.objects.filter(is_active=True).count()
+    conversations_with_messages = Conversation.objects.filter(messages__isnull=False).distinct().count()
+    
+    # Получаем активные переписки с информацией об участниках
+    recent_conversations = Conversation.objects.filter(
+        is_active=True,
+        messages__isnull=False  # Только переписки с сообщениями
+    ).select_related(
+        'teacher__user',
+        'student',
+        'subject'
+    ).prefetch_related(
+        'messages'
+    ).distinct().order_by('-updated_at')[:50]
+    
+    # Добавляем информацию о последнем сообщении и количестве сообщений для каждой переписки
+    conversations_info = []
+    for conv in recent_conversations:
+        last_message = conv.messages.order_by('-created_at').first()
+        messages_count = conv.messages.count()
+        unread_count = conv.messages.filter(is_read=False).count()
+        
+        conversations_info.append({
+            'conversation': conv,
+            'last_message': last_message,
+            'messages_count': messages_count,
+            'unread_count': unread_count,
+        })
 
-    recent_messages = Message.objects.select_related('sender', 'conversation').order_by('-created_at')[:50]
+    # Список Telegram пользователей для персональных отправок
     telegram_users = TelegramUser.objects.select_related('user').order_by('-created_at')[:50]
 
     context = {
-        'total_messages': total_messages,
-        'unread_messages': unread_messages,
-        'conversations_count': conversations_count,
-        'recent_messages': recent_messages,
+        'total_conversations': total_conversations,
+        'active_conversations': active_conversations,
+        'conversations_with_messages': conversations_with_messages,
+        'conversations_info': conversations_info,
         'telegram_users': telegram_users,
     }
 
