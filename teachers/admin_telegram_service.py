@@ -32,39 +32,58 @@ class AdminTelegramService:
     
     def send_message_sync(self, telegram_id: int, text: str, reply_markup=None, parse_mode=None) -> bool:
         """Синхронная отправка сообщения"""
+        logger.info(f"🔧 send_message_sync вызван для telegram_id={telegram_id}")
+        
         if not self.bot:
-            logger.error("Telegram bot не инициализирован")
+            logger.error("❌ Telegram bot не инициализирован")
             return False
+        
+        if not self.bot_token:
+            logger.error("❌ TELEGRAM_BOT_TOKEN пустой")
+            return False
+            
+        logger.info(f"🤖 Bot инициализирован, токен присутствует (длина: {len(self.bot_token)})")
         
         try:
             # Создаем новый event loop если его нет
             try:
                 loop = asyncio.get_event_loop()
+                logger.info("🔄 Используем существующий event loop")
             except RuntimeError:
+                logger.info("🔄 Создаем новый event loop")
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
             
             # Выполняем асинхронную функцию
-            return loop.run_until_complete(
+            logger.info(f"⏳ Начинаем асинхронную отправку сообщения пользователю {telegram_id}")
+            result = loop.run_until_complete(
                 self._send_message_async(telegram_id, text, reply_markup, parse_mode)
             )
+            logger.info(f"✅ Асинхронная отправка завершена с результатом: {result}")
+            return result
         except Exception as e:
-            logger.error(f"Ошибка в send_message_sync: {e}")
+            logger.error(f"💥 Критическая ошибка в send_message_sync: {e}", exc_info=True)
             return False
     
     async def _send_message_async(self, telegram_id: int, text: str, reply_markup=None, parse_mode=None) -> bool:
         """Асинхронная отправка сообщения"""
+        logger.info(f"🚀 _send_message_async начата для telegram_id={telegram_id}")
+        logger.info(f"📝 Текст сообщения: {text[:100]}...")
+        logger.info(f"🎛️ parse_mode: {parse_mode}")
+        
         try:
-            await self.bot.send_message(
+            logger.info(f"📤 Вызываем bot.send_message...")
+            message = await self.bot.send_message(
                 chat_id=telegram_id,
                 text=text,
                 reply_markup=reply_markup,
                 parse_mode=parse_mode
             )
-            logger.info(f"✅ Сообщение отправлено пользователю {telegram_id}")
+            logger.info(f"✅ Сообщение успешно отправлено пользователю {telegram_id}, message_id: {message.message_id}")
             return True
             
         except TelegramError as e:
+            logger.error(f"🔥 TelegramError: {type(e).__name__}: {str(e)}")
             # Специальная обработка для заблокированных пользователей
             if 'chat not found' in str(e).lower() or 'bot was blocked' in str(e).lower():
                 logger.warning(f"🚫 Пользователь {telegram_id} заблокировал бота или удалил чат")
@@ -76,10 +95,14 @@ class AdminTelegramService:
                         notifications_enabled=False,
                         last_interaction=timezone.now()
                     )
-                except Exception:
-                    pass
+                    logger.info(f"🔄 Пользователь {telegram_id} помечен как неактивный")
+                except Exception as db_e:
+                    logger.error(f"❌ Ошибка обновления статуса пользователя: {db_e}")
             else:
-                logger.error(f"❌ Ошибка отправки сообщения пользователю {telegram_id}: {e}")
+                logger.error(f"❌ Неожиданная ошибка отправки сообщения пользователю {telegram_id}: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"💥 Неожиданная ошибка в _send_message_async: {type(e).__name__}: {str(e)}", exc_info=True)
             return False
     
     def send_to_selected_users(self, telegram_users: List[TelegramUser], message: str, parse_mode='Markdown') -> Dict[str, int]:
