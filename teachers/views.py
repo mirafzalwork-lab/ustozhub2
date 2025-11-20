@@ -1871,17 +1871,25 @@ def send_individual_message(request):
     """
     Отправка персонального сообщения пользователю
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
         user_id = request.POST.get('user_id')
         message_text = request.POST.get('message', '').strip()
         
+        logger.info(f"📤 Попытка отправки сообщения: user_id={user_id}, message_length={len(message_text) if message_text else 0}")
+        
         if not user_id or not message_text:
+            logger.warning("❌ Отсутствуют обязательные данные")
             messages.error(request, 'Необходимо выбрать пользователя и ввести сообщение')
             return redirect('telegram_management')
         
         telegram_user = get_object_or_404(TelegramUser, id=user_id)
+        logger.info(f"👤 Найден пользователь: {telegram_user.first_name} (ID: {telegram_user.telegram_id})")
         
         if not telegram_user.started_bot:
+            logger.warning(f"🚫 Пользователь {telegram_user.first_name} не активировал бота")
             messages.error(request, 'Пользователь не активировал бота')
             return redirect('telegram_management')
         
@@ -1889,6 +1897,7 @@ def send_individual_message(request):
         from .admin_telegram_service import admin_telegram_service
         
         formatted_message = f"💬 *Персональное сообщение от администрации*\n\n{message_text}"
+        logger.info(f"📝 Форматированное сообщение: {formatted_message[:100]}...")
         
         success = admin_telegram_service.send_message_sync(
             telegram_id=telegram_user.telegram_id,
@@ -1896,12 +1905,15 @@ def send_individual_message(request):
             parse_mode='Markdown'
         )
         
+        logger.info(f"📊 Результат отправки: {'✅ Успешно' if success else '❌ Ошибка'}")
+        
         if success:
             messages.success(request, f'Сообщение отправлено пользователю {telegram_user.first_name}')
         else:
             messages.error(request, f'Не удалось отправить сообщение пользователю {telegram_user.first_name} (возможно, заблокировал бота или удалил чат)')
             
     except Exception as e:
+        logger.error(f"💥 Критическая ошибка в send_individual_message: {str(e)}", exc_info=True)
         messages.error(request, f'Ошибка: {str(e)}')
     
     return redirect('telegram_management')
@@ -1951,3 +1963,191 @@ def export_telegram_users(request):
         ])
     
     return response
+
+
+@staff_member_required
+def platform_messages_management(request):
+    """
+    Управление сообщениями платформы
+    """
+    from .models import PlatformMessage, UserMessageRead
+    
+    messages = PlatformMessage.objects.select_related('created_by').order_by('-priority', '-created_at')
+    
+    # Статистика для каждого сообщения
+    for message in messages:
+        message.total_users = User.objects.filter(is_active=True).count()
+        message.read_count = UserMessageRead.objects.filter(message=message).count()
+        message.unread_count = message.total_users - message.read_count
+    
+    context = {
+        'messages': messages,
+        'title': 'Управление сообщениями платформы'
+    }
+    
+    return render(request, 'admin/platform_messages_management.html', context)
+
+
+@staff_member_required
+@require_POST
+def create_platform_message(request):
+    """
+    Создание нового сообщения платформы
+    """
+    from .models import PlatformMessage
+    
+    try:
+        title = request.POST.get('title', '').strip()
+        content = request.POST.get('content', '').strip()
+        message_type = request.POST.get('message_type', 'info')
+        show_to_teachers = request.POST.get('show_to_teachers') == 'on'
+        show_to_students = request.POST.get('show_to_students') == 'on'
+        expires_at = request.POST.get('expires_at')
+        priority = int(request.POST.get('priority', 0))
+        
+        if not title or not content:
+            messages.error(request, 'Заголовок и содержание обязательны для заполнения')
+            return redirect('platform_messages_management')
+        
+        # Обработка даты истечения
+        expires_datetime = None
+        if expires_at:
+            try:
+                from datetime import datetime
+                expires_datetime = datetime.strptime(expires_at, '%Y-%m-%dT%H:%M')
+                expires_datetime = timezone.make_aware(expires_datetime)
+            except ValueError:
+                messages.error(request, 'Неверный формат даты истечения')
+                return redirect('platform_messages_management')
+        
+        platform_message = PlatformMessage.objects.create(
+            title=title,
+            content=content,
+            message_type=message_type,
+            show_to_teachers=show_to_teachers,
+            show_to_students=show_to_students,
+            expires_at=expires_datetime,
+            priority=priority,
+            created_by=request.user
+        )
+        
+        messages.success(request, f'Сообщение "{title}" успешно создано')
+        
+    except Exception as e:
+        messages.error(request, f'Ошибка при создании сообщения: {str(e)}')
+    
+    return redirect('platform_messages_management')
+
+
+@staff_member_required
+@require_POST
+def toggle_platform_message(request, message_id):
+    """
+    Переключение активности сообщения платформы
+    """
+    from .models import PlatformMessage
+    
+    try:
+        message = get_object_or_404(PlatformMessage, id=message_id)
+        message.is_active = not message.is_active
+        message.save()
+        
+        status = 'активировано' if message.is_active else 'деактивировано'
+        messages.success(request, f'Сообщение "{message.title}" {status}')
+        
+    except Exception as e:
+        messages.error(request, f'Ошибка: {str(e)}')
+    
+    return redirect('platform_messages_management')
+
+
+@login_required
+@require_POST
+def mark_platform_message_read(request):
+    """
+    API для отметки сообщения платформы как прочитанного
+    """
+    from .models import PlatformMessage, UserMessageRead
+    from django.http import JsonResponse
+    
+    try:
+        message_id = request.POST.get('message_id')
+        if not message_id:
+            return JsonResponse({'success': False, 'error': 'message_id обязателен'})
+        
+        try:
+            message = PlatformMessage.objects.get(id=message_id, is_active=True)
+        except PlatformMessage.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Сообщение не найдено'})
+        
+        # Проверяем, должно ли сообщение показываться этому пользователю
+        if not message.should_show_to_user(request.user):
+            return JsonResponse({'success': False, 'error': 'Нет доступа к этому сообщению'})
+        
+        # Создаем запись о прочтении (get_or_create предотвращает дубли)
+        read_record, created = UserMessageRead.objects.get_or_create(
+            user=request.user,
+            message=message
+        )
+        
+        return JsonResponse({
+            'success': True, 
+            'was_new': created,
+            'message': 'Сообщение отмечено как прочитанное'
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+def get_platform_messages_api(request):
+    """
+    API для получения сообщений платформы для текущего пользователя
+    """
+    from .models import PlatformMessage, UserMessageRead
+    from django.http import JsonResponse
+    from django.utils import timezone
+    from django.db import models
+    
+    try:
+        # Получаем активные сообщения
+        active_messages = PlatformMessage.objects.filter(
+            is_active=True
+        ).filter(
+            models.Q(expires_at__isnull=True) | models.Q(expires_at__gt=timezone.now())
+        ).order_by('-priority', '-created_at')
+        
+        # Фильтруем по типу пользователя
+        user_messages = [msg for msg in active_messages if msg.should_show_to_user(request.user)]
+        
+        # Получаем прочитанные сообщения
+        read_message_ids = set(UserMessageRead.objects.filter(
+            user=request.user,
+            message__in=user_messages
+        ).values_list('message_id', flat=True))
+        
+        # Формируем ответ
+        messages_data = []
+        for message in user_messages:
+            messages_data.append({
+                'id': message.id,
+                'title': message.title,
+                'content': message.content,
+                'message_type': message.message_type,
+                'created_at': message.created_at.isoformat(),
+                'is_read': message.id in read_message_ids,
+                'priority': message.priority,
+            })
+        
+        unread_count = len([msg for msg in messages_data if not msg['is_read']])
+        
+        return JsonResponse({
+            'success': True,
+            'messages': messages_data,
+            'total_count': len(messages_data),
+            'unread_count': unread_count
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})

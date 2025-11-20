@@ -342,6 +342,213 @@
             }
         }
 
+        /* Platform Messages Styles */
+        .platform-notifications {
+            position: relative;
+        }
+
+        .platform-messages-btn {
+            position: relative;
+            padding: 10px;
+            background: none;
+            border: none;
+            border-radius: var(--radius-full);
+            font-size: 20px;
+            color: #FF6B35;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-base);
+            width: 44px;
+            height: 44px;
+        }
+
+        .platform-messages-btn:hover {
+            background: rgba(255, 107, 53, 0.1);
+            color: #FF6B35;
+        }
+
+        .platform-messages-btn i {
+            font-size: 20px;
+        }
+
+        .platform-badge {
+            background: #FF6B35 !important;
+            box-shadow: 0 2px 4px rgba(255, 107, 53, 0.3) !important;
+        }
+
+        .platform-messages-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            width: 350px;
+            max-height: 400px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .platform-messages-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .platform-messages-dropdown .dropdown-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .platform-messages-dropdown .dropdown-header h4 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #FF6B35;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .platform-messages-dropdown .unread-count {
+            background: #FF6B35;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .platform-messages-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .platform-message-item {
+            display: flex;
+            padding: 15px 20px;
+            border-bottom: 1px solid #f8f9fa;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .platform-message-item:hover {
+            background: #f8f9fa;
+        }
+
+        .platform-message-item.unread {
+            background: rgba(255, 107, 53, 0.05);
+            border-left: 3px solid #FF6B35;
+        }
+
+        .message-type-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .message-type-icon.type-info {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+        }
+
+        .message-type-icon.type-warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        .message-type-icon.type-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+        }
+
+        .message-type-icon.type-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .message-type-icon.type-announcement {
+            background: rgba(255, 107, 53, 0.1);
+            color: #FF6B35;
+        }
+
+        .message-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .message-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+            font-size: 14px;
+            line-height: 1.3;
+        }
+
+        .message-preview {
+            color: #666;
+            font-size: 13px;
+            line-height: 1.4;
+            margin-bottom: 4px;
+        }
+
+        .message-time {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .no-messages {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .no-messages i {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #ddd;
+        }
+
+        .no-messages p {
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .dropdown-footer {
+            padding: 12px 20px;
+            border-top: 1px solid #f0f0f0;
+            background: #f8f9fa;
+            border-radius: 0 0 12px 12px;
+        }
+
+        .view-all-link {
+            color: #FF6B35;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            display: block;
+            text-align: center;
+        }
+
+        .view-all-link:hover {
+            color: #e55a2b;
+        }
+
         /* Profile Button & Dropdown */
         .profile-container {
             position: relative;
@@ -1271,6 +1478,56 @@
                 </a>
 
                 {% if user.is_authenticated %}
+                    <!-- Platform Messages Notification -->
+                    <div class="platform-notifications" id="platformNotifications">
+                        <button class="platform-messages-btn" onclick="togglePlatformMessages(event)" title="{% trans 'Уведомления платформы' %}">
+                            <i class="fas fa-bullhorn"></i>
+                            {% if unread_platform_messages_count > 0 %}
+                                <span class="messages-badge platform-badge">{{ unread_platform_messages_count }}</span>
+                            {% endif %}
+                        </button>
+                        
+                        <!-- Platform Messages Dropdown -->
+                        <div class="platform-messages-dropdown" id="platformMessagesDropdown">
+                            <div class="dropdown-header">
+                                <h4><i class="fas fa-bullhorn"></i> UstozHub</h4>
+                                {% if unread_platform_messages_count > 0 %}
+                                <span class="unread-count">{{ unread_platform_messages_count }} новых</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="platform-messages-list">
+                                {% for message in platform_messages|slice:":5" %}
+                                <div class="platform-message-item {% if message.id not in read_platform_message_ids %}unread{% endif %}" data-message-id="{{ message.id }}">
+                                    <div class="message-type-icon type-{{ message.message_type }}">
+                                        {% if message.message_type == 'info' %}<i class="fas fa-info-circle"></i>
+                                        {% elif message.message_type == 'warning' %}<i class="fas fa-exclamation-triangle"></i>
+                                        {% elif message.message_type == 'success' %}<i class="fas fa-check-circle"></i>
+                                        {% elif message.message_type == 'danger' %}<i class="fas fa-exclamation-circle"></i>
+                                        {% else %}<i class="fas fa-bullhorn"></i>{% endif %}
+                                    </div>
+                                    <div class="message-content">
+                                        <div class="message-title">{{ message.title }}</div>
+                                        <div class="message-preview">{{ message.content|truncatechars:80 }}</div>
+                                        <div class="message-time">{{ message.created_at|timesince }} назад</div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="no-messages">
+                                    <i class="fas fa-inbox"></i>
+                                    <p>Нет уведомлений</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            {% if platform_messages.count > 5 %}
+                            <div class="dropdown-footer">
+                                <a href="#" class="view-all-link">Показать все ({{ platform_messages.count }})</a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
                     <!-- Messages Icon Button - Always Visible -->
                     <a href="{% url 'conversations_list' %}" class="messages-icon-btn" title="{% trans 'Сообщения' %}">
                         <i class="fas fa-comments"></i>
@@ -1574,15 +1831,37 @@
             });
         }
 
+        // Platform messages dropdown toggle
+        function togglePlatformMessages(event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('platformMessagesDropdown');
+            const profileDropdown = document.getElementById('profileDropdown');
+            const languageDropdown = document.getElementById('languageDropdown');
+            
+            // Закрываем другие dropdown'ы если открыты
+            if (profileDropdown) {
+                profileDropdown.classList.remove('show');
+            }
+            if (languageDropdown) {
+                languageDropdown.classList.remove('show');
+            }
+            
+            dropdown.classList.toggle('show');
+        }
+
         // Profile dropdown toggle
         function toggleProfileDropdown(event) {
             event.stopPropagation();
             const dropdown = document.getElementById('profileDropdown');
             const languageDropdown = document.getElementById('languageDropdown');
+            const platformDropdown = document.getElementById('platformMessagesDropdown');
             
-            // Закрываем language dropdown если открыт
+            // Закрываем другие dropdown'ы если открыты
             if (languageDropdown) {
                 languageDropdown.classList.remove('show');
+            }
+            if (platformDropdown) {
+                platformDropdown.classList.remove('show');
             }
             
             dropdown.classList.toggle('show');
@@ -1638,6 +1917,8 @@
             const languageDropdown = document.getElementById('languageDropdown');
             const profileContainer = document.querySelector('.profile-container');
             const profileDropdown = document.getElementById('profileDropdown');
+            const platformContainer = document.querySelector('.platform-notifications');
+            const platformDropdown = document.getElementById('platformMessagesDropdown');
 
             // Закрываем language dropdown, если клик вне его
             if (languageDropdown && languageSwitcher && !languageSwitcher.contains(event.target)) {
@@ -1648,6 +1929,11 @@
             // Закрываем profile dropdown, если клик вне него
             if (profileDropdown && profileContainer && !profileContainer.contains(event.target)) {
                 profileDropdown.classList.remove('show');
+            }
+
+            // Закрываем platform messages dropdown, если клик вне него
+            if (platformDropdown && platformContainer && !platformContainer.contains(event.target)) {
+                platformDropdown.classList.remove('show');
             }
         });
 
@@ -1667,6 +1953,71 @@
         window.addEventListener('resize', function() {
             if (window.innerWidth > 1024) {
                 closeFilters();
+            }
+        });
+
+        // Platform Messages Functions
+        function markPlatformMessageAsRead(messageId) {
+            fetch('{% url "mark_platform_message_read" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: 'message_id=' + messageId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.was_new) {
+                    // Обновляем UI - убираем класс unread
+                    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+                    if (messageElement) {
+                        messageElement.classList.remove('unread');
+                    }
+                    
+                    // Обновляем счетчик непрочитанных сообщений
+                    updateUnreadPlatformMessagesCount();
+                }
+            })
+            .catch(error => {
+                console.error('Error marking message as read:', error);
+            });
+        }
+
+        function updateUnreadPlatformMessagesCount() {
+            const unreadMessages = document.querySelectorAll('.platform-message-item.unread');
+            const badge = document.querySelector('.platform-badge');
+            const unreadCountSpan = document.querySelector('.platform-messages-dropdown .unread-count');
+            
+            const count = unreadMessages.length;
+            
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+            
+            if (unreadCountSpan) {
+                if (count > 0) {
+                    unreadCountSpan.textContent = count + ' новых';
+                    unreadCountSpan.style.display = 'inline';
+                } else {
+                    unreadCountSpan.style.display = 'none';
+                }
+            }
+        }
+
+        // Обработчик клика по сообщению платформы
+        document.addEventListener('click', function(event) {
+            const messageItem = event.target.closest('.platform-message-item');
+            if (messageItem && messageItem.classList.contains('unread')) {
+                const messageId = messageItem.dataset.messageId;
+                if (messageId) {
+                    markPlatformMessageAsRead(messageId);
+                }
             }
         });
 
