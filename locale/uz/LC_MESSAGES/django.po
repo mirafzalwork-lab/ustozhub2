@@ -596,7 +596,7 @@ msgstr ""
 
 #: templates/base.html:1750 templates/logic/teacher_register_step2.html:920
 msgid "Популярные предметы"
-msgstr ""
+msgstr "Mashhur fanlar"
 
 #: templates/base.html:1751
 msgid "Как это работает"
@@ -1066,7 +1066,7 @@ msgstr ""
 #: templates/logic/register_student.html:972
 #: templates/logic/teacher_register_step2.html:909
 msgid "Начните вводить название предмета..."
-msgstr ""
+msgstr "Fan nomini kiritishni boshlang..."
 
 #: templates/logic/register_student.html:974
 msgid "Поиск предметов"
@@ -1978,7 +1978,7 @@ msgstr ""
 
 #: templates/logic/teacher_register_step2.html:931
 msgid "Выберите категорию"
-msgstr ""
+msgstr "Kategoriya tanlang"
 
 #: templates/logic/teacher_register_step2.html:966
 #: templates/logic/teacher_register_step2.html:1030
@@ -2008,7 +2008,7 @@ msgstr ""
 
 #: templates/logic/teacher_register_step2.html:1284
 msgid "Популярные предметы загружаются..."
-msgstr ""
+msgstr "Mashhur fanlar yuklanmoqda..."
 
 #: templates/logic/teacher_register_step2.html:1314
 msgid "Категории загружаются..."

@@ -1623,6 +1623,56 @@ def subjects_autocomplete(request):
     if not query or len(query) < 2:
         return JsonResponse({'results': []})
 
+    # Словарь переводов категорий
+    CATEGORY_TRANSLATIONS = {
+        'ru': {
+            'Точные науки': 'Точные науки',
+            'Языки': 'Языки', 
+            'IT и Программирование': 'IT и Программирование',
+            'Бизнес и Экономика': 'Бизнес и Экономика',
+            'Творчество и Искусство': 'Творчество и Искусство',
+            'Спорт и Здоровье': 'Спорт и Здоровье',
+            'Естественные науки': 'Естественные науки',
+            'Гуманитарные науки': 'Гуманитарные науки',
+            'Другое': 'Другое',
+            'Без категории': 'Без категории'
+        },
+        'uz': {
+            'Точные науки': 'Aniq fanlar',
+            'Языки': 'Tillar',
+            'IT и Программирование': 'IT va Dasturlash',
+            'Бизнес и Экономика': 'Biznes va Iqtisodiyot',
+            'Творчество и Искусство': 'Ijodkorlik va San\'at',
+            'Спорт и Здоровье': 'Sport va Salomatlik',
+            'Естественные науки': 'Tabiiy fanlar',
+            'Гуманитарные науки': 'Gumanitar fanlar',
+            'Другое': 'Boshqa',
+            'Без категории': 'Kategoriyasiz'
+        },
+        'en': {
+            'Точные науки': 'Exact Sciences',
+            'Языки': 'Languages',
+            'IT и Программирование': 'IT & Programming',
+            'Бизнес и Экономика': 'Business & Economics',
+            'Творчество и Искусство': 'Creativity & Arts',
+            'Спорт и Здоровье': 'Sports & Health',
+            'Естественные науки': 'Natural Sciences',
+            'Гуманитарные науки': 'Humanities',
+            'Другое': 'Other',
+            'Без категории': 'No Category'
+        }
+    }
+
+    def get_translated_category(category_name, language_code):
+        """Получить переведенное название категории"""
+        if not category_name:
+            return CATEGORY_TRANSLATIONS.get(language_code, {}).get('Без категории', 'No Category')
+        return CATEGORY_TRANSLATIONS.get(language_code, {}).get(category_name, category_name)
+
+    # Получаем текущий язык из запроса
+    from django.utils import translation
+    current_language = translation.get_language() or 'ru'
+
     # Простая транслитерация между кириллицей и латиницей
     # чтобы поиск работал при вводе на узбекском (латиница) и на кириллице (ru)
     def cyrillic_to_latin(s: str) -> str:
@@ -1698,11 +1748,14 @@ def subjects_autocomplete(request):
     results = []
     for subject in subjects:
         teachers_count = subject.get_teachers_count()
+        category_name = subject.category.name if subject.category else 'Без категории'
+        translated_category = get_translated_category(category_name, current_language)
+        
         results.append({
             'id': subject.id,
             'name': subject.name,
             'description': subject.description[:100] if subject.description else '',
-            'category': subject.category.name if subject.category else 'Без категории',
+            'category': translated_category,
             'category_color': subject.category.color if subject.category else '#999999',
             'icon': subject.icon or 'fas fa-book',
             'is_popular': subject.is_popular,
@@ -1727,6 +1780,36 @@ def subjects_popular(request):
     """
     API для получения популярных предметов
     """
+    # Словарь переводов категорий (повторяем для консистентности)
+    CATEGORY_TRANSLATIONS = {
+        'ru': {
+            'Точные науки': 'Точные науки', 'Языки': 'Языки', 'IT и Программирование': 'IT и Программирование',
+            'Бизнес и Экономика': 'Бизнес и Экономика', 'Творчество и Искусство': 'Творчество и Искусство',
+            'Спорт и Здоровье': 'Спорт и Здоровье', 'Естественные науки': 'Естественные науки',
+            'Гуманитарные науки': 'Гуманитарные науки', 'Другое': 'Другое', 'Без категории': 'Без категории'
+        },
+        'uz': {
+            'Точные науки': 'Aniq fanlar', 'Языки': 'Tillar', 'IT и Программирование': 'IT va Dasturlash',
+            'Бизнес и Экономика': 'Biznes va Iqtisodiyot', 'Творчество и Искусство': 'Ijodkorlik va San\'at',
+            'Спорт и Здоровье': 'Sport va Salomatlik', 'Естественные науки': 'Tabiiy fanlar',
+            'Гуманитарные науки': 'Gumanitar fanlar', 'Другое': 'Boshqa', 'Без категории': 'Kategoriyasiz'
+        },
+        'en': {
+            'Точные науки': 'Exact Sciences', 'Языки': 'Languages', 'IT и Программирование': 'IT & Programming',
+            'Бизнес и Экономика': 'Business & Economics', 'Творчество и Искусство': 'Creativity & Arts',
+            'Спорт и Здоровье': 'Sports & Health', 'Естественные науки': 'Natural Sciences',
+            'Гуманитарные науки': 'Humanities', 'Другое': 'Other', 'Без категории': 'No Category'
+        }
+    }
+    
+    def get_translated_category(category_name, language_code):
+        if not category_name:
+            return CATEGORY_TRANSLATIONS.get(language_code, {}).get('Без категории', 'No Category')
+        return CATEGORY_TRANSLATIONS.get(language_code, {}).get(category_name, category_name)
+    
+    from django.utils import translation
+    current_language = translation.get_language() or 'ru'
+    
     popular_subjects = Subject.objects.filter(
         is_active=True,
         is_popular=True
@@ -1735,10 +1818,13 @@ def subjects_popular(request):
     results = []
     for subject in popular_subjects:
         teachers_count = subject.get_teachers_count()
+        category_name = subject.category.name if subject.category else 'Без категории'
+        translated_category = get_translated_category(category_name, current_language)
+        
         results.append({
             'id': subject.id,
             'name': subject.name,
-            'category': subject.category.name if subject.category else 'Без категории',
+            'category': translated_category,
             'category_color': subject.category.color if subject.category else '#999999',
             'icon': subject.icon or 'fas fa-book',
             'teachers_count': teachers_count
@@ -1751,6 +1837,34 @@ def subjects_categories(request):
     """
     API для получения всех категорий с количеством предметов
     """
+    # Словарь переводов категорий
+    CATEGORY_TRANSLATIONS = {
+        'ru': {
+            'Точные науки': 'Точные науки', 'Языки': 'Языки', 'IT и Программирование': 'IT и Программирование',
+            'Бизнес и Экономика': 'Бизнес и Экономика', 'Творчество и Искусство': 'Творчество и Искусство',
+            'Спорт и Здоровье': 'Спорт и Здоровье', 'Естественные науки': 'Естественные науки',
+            'Гуманитарные науки': 'Гуманитарные науки', 'Другое': 'Другое'
+        },
+        'uz': {
+            'Точные науки': 'Aniq fanlar', 'Языки': 'Tillar', 'IT и Программирование': 'IT va Dasturlash',
+            'Бизнес и Экономика': 'Biznes va Iqtisodiyot', 'Творчество и Искусство': 'Ijodkorlik va San\'at',
+            'Спорт и Здоровье': 'Sport va Salomatlik', 'Естественные науки': 'Tabiiy fanlar',
+            'Гуманитарные науки': 'Gumanitar fanlar', 'Другое': 'Boshqa'
+        },
+        'en': {
+            'Точные науки': 'Exact Sciences', 'Языки': 'Languages', 'IT и Программирование': 'IT & Programming',
+            'Бизнес и Экономика': 'Business & Economics', 'Творчество и Искусство': 'Creativity & Arts',
+            'Спорт и Здоровье': 'Sports & Health', 'Естественные науки': 'Natural Sciences',
+            'Гуманитарные науки': 'Humanities', 'Другое': 'Other'
+        }
+    }
+    
+    def get_translated_category(category_name, language_code):
+        return CATEGORY_TRANSLATIONS.get(language_code, {}).get(category_name, category_name)
+    
+    from django.utils import translation
+    current_language = translation.get_language() or 'ru'
+    
     categories = SubjectCategory.objects.filter(
         is_active=True
     ).annotate(
@@ -1759,9 +1873,10 @@ def subjects_categories(request):
 
     results = []
     for category in categories:
+        translated_name = get_translated_category(category.name, current_language)
         results.append({
             'id': category.id,
-            'name': category.name,
+            'name': translated_name,
             'icon': category.icon or 'fas fa-folder',
             'color': category.color,
             'subjects_count': category.subjects_count
