@@ -1623,8 +1623,67 @@ def subjects_autocomplete(request):
     if not query or len(query) < 2:
         return JsonResponse({'results': []})
 
+    # Простая транслитерация между кириллицей и латиницей
+    # чтобы поиск работал при вводе на узбекском (латиница) и на кириллице (ru)
+    def cyrillic_to_latin(s: str) -> str:
+        table = {
+            'а': 'a','б': 'b','в': 'v','г': 'g','д': 'd','е': 'e','ё': 'yo','ж': 'j','з': 'z','и': 'i',
+            'й': 'y','к': 'k','л': 'l','м': 'm','н': 'n','о': 'o','п': 'p','р': 'r','с': 's','т': 't',
+            'у': 'u','ф': 'f','х': 'x','ц': 'ts','ч': 'ch','ш': 'sh','щ': 'shch','ъ': '', 'ы': 'y','ь': '',
+            'э': 'e','ю': 'yu','я': 'ya',
+            'А': 'A','Б': 'B','В': 'V','Г': 'G','Д': 'D','Е': 'E','Ё': 'Yo','Ж': 'J','З': 'Z','И': 'I',
+            'Й': 'Y','К': 'K','Л': 'L','М': 'M','Н': 'N','О': 'O','П': 'P','Р': 'R','С': 'S','Т': 'T',
+            'У': 'U','Ф': 'F','Х': 'X','Ц': 'Ts','Ч': 'Ch','Ш': 'Sh','Щ': 'Shch','Ъ': '', 'Ы': 'Y','Ь': '',
+            'Э': 'E','Ю': 'Yu','Я': 'Ya'
+        }
+        return ''.join(table.get(ch, ch) for ch in s)
+
+    def latin_to_cyrillic(s: str) -> str:
+        # Очень простой обратный маппинг — для наиболее частых сочетаний
+        rev = {
+            'yo': 'ё','yu': 'ю','ya': 'я','ch': 'ч','shch': 'щ','sh': 'ш','ts': 'ц','zh': 'ж',
+            'a':'а','b':'б','v':'в','g':'г','d':'д','e':'е','z':'з','i':'и','y':'й','k':'к',
+            'l':'л','m':'м','n':'н','o':'о','p':'п','r':'р','s':'с','t':'т','u':'у','f':'ф','x':'х'
+        }
+        s_low = s.lower()
+        i = 0
+        out = ''
+        while i < len(s_low):
+            # проверяем длинные совпадения сначала
+            if s_low.startswith('shch', i):
+                out += 'щ'; i += 4; continue
+            if s_low.startswith('sh', i):
+                out += 'ш'; i += 2; continue
+            if s_low.startswith('ch', i):
+                out += 'ч'; i += 2; continue
+            if s_low.startswith('ts', i):
+                out += 'ц'; i += 2; continue
+            if s_low.startswith('yo', i):
+                out += 'ё'; i += 2; continue
+            if s_low.startswith('yu', i):
+                out += 'ю'; i += 2; continue
+            if s_low.startswith('ya', i):
+                out += 'я'; i += 2; continue
+            ch = s_low[i]
+            out += rev.get(ch, ch)
+            i += 1
+        return out
+
+    variants = {query}
+    try:
+        variants.add(cyrillic_to_latin(query))
+        variants.add(latin_to_cyrillic(query))
+    except Exception:
+        pass
+
+    # Собираем Q-условия для всех вариантов
+    q_filter = Q()
+    for v in variants:
+        if v:
+            q_filter |= Q(name__icontains=v) | Q(description__icontains=v)
+
     subjects = Subject.objects.filter(is_active=True).filter(
-        Q(name__icontains=query) | Q(description__icontains=query)
+        q_filter
     ).select_related('category').annotate(
         relevance=Case(
             When(name__iexact=query, then=Value(4)),
