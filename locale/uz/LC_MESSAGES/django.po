@@ -1,1907 +1,2126 @@
-# Uzbek translations for UstozHub
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: UstozHub 1.0\n"
+"Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-22 16:52+0500\n"
-"Language-Team: Uzbek\n"
-"Language: uz\n"
+"POT-Creation-Date: 2025-11-24 19:18+0500\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: teachers/forms.py:15 teachers/forms.py:436 teachers/forms.py:1006
+#: teachers/forms.py:15 teachers/forms.py:436 teachers/forms.py:1061
 msgid "Имя"
-msgstr "Ism"
+msgstr ""
 
 #: teachers/forms.py:18 teachers/forms.py:439
 msgid "Введите ваше имя"
-msgstr "Ismingizni kiriting"
+msgstr ""
 
-#: teachers/forms.py:25 teachers/forms.py:446 teachers/forms.py:1007
+#: teachers/forms.py:25 teachers/forms.py:446 teachers/forms.py:1062
 msgid "Фамилия"
-msgstr "Familiya"
+msgstr ""
 
 #: teachers/forms.py:28 teachers/forms.py:449
 msgid "Введите вашу фамилию"
-msgstr "Familiyangizni kiriting"
+msgstr ""
 
-#: teachers/forms.py:34 teachers/forms.py:455 teachers/forms.py:1008
-#: templates/logic/student_detail.html:706
-#: templates/logic/teacher_profile.html:826
+#: teachers/forms.py:34 teachers/forms.py:455 teachers/forms.py:1063
+#: templates/logic/student_detail.html:1643
+#: templates/logic/student_detail_backup.html:1194
+#: templates/logic/teacher_profile.html:998
 msgid "Email"
-msgstr "Email"
+msgstr ""
 
-#: teachers/forms.py:44 teachers/forms.py:465 teachers/forms.py:1009
-#: templates/logic/student_detail.html:696
-#: templates/logic/student_profile.html:474
-#: templates/logic/teacher_profile.html:832
+#: teachers/forms.py:44 teachers/forms.py:465 teachers/forms.py:1064
+#: templates/logic/student_detail.html:1631
+#: templates/logic/student_detail_backup.html:1184
+#: templates/logic/student_profile.html:878
+#: templates/logic/teacher_profile.html:1004
 msgid "Телефон"
-msgstr "Telefon"
+msgstr ""
 
-#: teachers/forms.py:55 teachers/forms.py:476 teachers/forms.py:1010
-#: templates/logic/student_profile.html:480
+#: teachers/forms.py:55 teachers/forms.py:476 teachers/forms.py:1065
+#: templates/logic/student_profile.html:884
 msgid "Возраст"
-msgstr "Yosh"
+msgstr ""
 
-#: teachers/forms.py:64 teachers/forms.py:1011
+#: teachers/forms.py:64 teachers/forms.py:1066
 msgid "Фото профиля"
-msgstr "Profil rasmi"
+msgstr ""
 
-#: teachers/forms.py:69 teachers/forms.py:1014
+#: teachers/forms.py:69 teachers/forms.py:1069
 msgid "Рекомендуемый размер: 300x300px"
-msgstr "Tavsiya etilgan o'lcham: 300x300px"
+msgstr ""
 
-#: teachers/forms.py:75 teachers/forms.py:783
-#: templates/logic/teacher_profile.html:699
+#: teachers/forms.py:75 teachers/forms.py:838
+#: templates/logic/teacher_profile.html:871
 msgid "О себе"
-msgstr "O'zim haqimda"
+msgstr ""
 
 #: teachers/forms.py:78
 msgid "Расскажите о своем опыте, методике преподавания, достижениях..."
-msgstr "O'qitish tajribangiz, metodikangiz, yutuqlaringiz haqida gapiring..."
+msgstr ""
 
 #: teachers/forms.py:81
 msgid "Минимум 50 символов"
-msgstr "Kamida 50 ta belgi"
+msgstr ""
 
-#: teachers/forms.py:89 teachers/forms.py:519 teachers/forms.py:784
-#: teachers/forms.py:912 templates/logic/student_profile.html:500
-#: templates/logic/students_list.html:545
-#: templates/logic/teacher_profile.html:745
+#: teachers/forms.py:89 teachers/forms.py:519 teachers/forms.py:839
+#: teachers/forms.py:967 templates/logic/student_profile.html:904
+#: templates/logic/students_list.html:1137
+#: templates/logic/teacher_profile.html:917
 msgid "Уровень образования"
-msgstr "Ta'lim darajasi"
+msgstr ""
 
-#: teachers/forms.py:98 teachers/forms.py:785
-#: templates/logic/student_detail.html:668
-#: templates/logic/teacher_profile.html:750
+#: teachers/forms.py:98 teachers/forms.py:840
+#: templates/logic/student_detail.html:1603
+#: templates/logic/student_detail_backup.html:1156
+#: templates/logic/teacher_profile.html:922
 msgid "Учебное заведение"
-msgstr "Ta'lim muassasasi"
+msgstr ""
 
 #: teachers/forms.py:101
 msgid "Название университета/института"
-msgstr "Universitet/institut nomi"
+msgstr ""
 
-#: teachers/forms.py:108 teachers/forms.py:786
-#: templates/logic/teacher_profile.html:756
+#: teachers/forms.py:108 teachers/forms.py:841
+#: templates/logic/teacher_profile.html:928
 msgid "Специализация"
-msgstr "Mutaxassislik:"
+msgstr ""
 
-#: teachers/forms.py:111 teachers/forms.py:753
+#: teachers/forms.py:111 teachers/forms.py:808
 msgid "Ваша специальность"
-msgstr "Sizning mutaxassisligingiz"
+msgstr ""
 
-#: teachers/forms.py:119 teachers/forms.py:787
+#: teachers/forms.py:119 teachers/forms.py:842
 msgid "Опыт преподавания (лет)"
-msgstr "O'qitish tajribasi (yil)"
+msgstr ""
 
-#: teachers/forms.py:132 teachers/forms.py:713
-#: templates/logic/teacher_profile.html:772
+#: teachers/forms.py:132 teachers/forms.py:768
+#: templates/logic/teacher_profile.html:944
 msgid "Языки преподавания"
-msgstr "Dars beriladigan tillar"
+msgstr ""
 
 #: teachers/forms.py:133
 msgid "Выберите один или несколько языков"
-msgstr "Bir yoki bir nechta tilni tanlang"
+msgstr ""
 
-#: teachers/forms.py:140 teachers/forms.py:486 teachers/forms.py:788
-#: teachers/forms.py:914 templates/logic/home.html:561
-#: templates/logic/student_profile.html:516
-#: templates/logic/students_list.html:515
-#: templates/logic/teacher_profile.html:797
+#: teachers/forms.py:140 teachers/forms.py:486 teachers/forms.py:843
+#: teachers/forms.py:969 templates/logic/home.html:1159
+#: templates/logic/home_backup.html:626
+#: templates/logic/student_profile.html:920
+#: templates/logic/students_list.html:1107
+#: templates/logic/teacher_profile.html:969
 msgid "Город"
-msgstr "Shahar"
+msgstr ""
 
 #: teachers/forms.py:144 teachers/forms.py:490
 msgid "Выберите город"
-msgstr "Shaharni tanlang"
+msgstr ""
 
-#: teachers/forms.py:150 teachers/forms.py:789 templates/logic/home.html:575
-#: templates/logic/students_list.html:530
-#: templates/logic/teacher_profile.html:793
+#: teachers/forms.py:150 teachers/forms.py:844 templates/logic/home.html:1174
+#: templates/logic/home_backup.html:640 templates/logic/students_list.html:1122
+#: templates/logic/teacher_profile.html:965
 msgid "Формат обучения"
-msgstr "Ta'lim formati"
+msgstr ""
 
-#: teachers/forms.py:160 teachers/forms.py:576 teachers/forms.py:790
-#: teachers/forms.py:918 templates/logic/student_detail.html:716
-#: templates/logic/teacher_profile.html:838
+#: teachers/forms.py:160 teachers/forms.py:576 teachers/forms.py:845
+#: teachers/forms.py:973 templates/logic/student_detail.html:1655
+#: templates/logic/student_detail_backup.html:1204
+#: templates/logic/teacher_profile.html:1010
 msgid "Telegram"
-msgstr "Telegram"
+msgstr ""
 
 #: teachers/forms.py:163
 msgid "@username или номер телефона"
-msgstr "@username yoki telefon raqami"
+msgstr ""
 
-#: teachers/forms.py:170 teachers/forms.py:587 teachers/forms.py:791
-#: teachers/forms.py:919 templates/logic/student_detail.html:728
-#: templates/logic/teacher_profile.html:844
+#: teachers/forms.py:170 teachers/forms.py:587 teachers/forms.py:846
+#: teachers/forms.py:974 templates/logic/student_detail.html:1672
+#: templates/logic/student_detail_backup.html:1216
+#: templates/logic/teacher_profile.html:1016
 msgid "WhatsApp"
-msgstr "WhatsApp"
+msgstr ""
 
-#: teachers/forms.py:180 teachers/forms.py:792
+#: teachers/forms.py:180 teachers/forms.py:847
 msgid "Доступен с"
-msgstr "Mavjudlik boshlanishi"
+msgstr ""
 
-#: teachers/forms.py:190 teachers/forms.py:793
+#: teachers/forms.py:190 teachers/forms.py:848
 msgid "Доступен до"
-msgstr "Mavjudlik tugashi"
+msgstr ""
 
-#: teachers/forms.py:200 teachers/forms.py:597 teachers/forms.py:718
-#: teachers/forms.py:846
+#: teachers/forms.py:200 teachers/forms.py:597 teachers/forms.py:773
+#: teachers/forms.py:901
 msgid "Понедельник"
-msgstr "Dushanba"
+msgstr ""
 
-#: teachers/forms.py:201 teachers/forms.py:598 teachers/forms.py:719
-#: teachers/forms.py:847
+#: teachers/forms.py:201 teachers/forms.py:598 teachers/forms.py:774
+#: teachers/forms.py:902
 msgid "Вторник"
-msgstr "Seshanba"
+msgstr ""
 
-#: teachers/forms.py:202 teachers/forms.py:599 teachers/forms.py:720
-#: teachers/forms.py:848
+#: teachers/forms.py:202 teachers/forms.py:599 teachers/forms.py:775
+#: teachers/forms.py:903
 msgid "Среда"
-msgstr "Chorshanba"
+msgstr ""
 
-#: teachers/forms.py:203 teachers/forms.py:600 teachers/forms.py:721
-#: teachers/forms.py:849
+#: teachers/forms.py:203 teachers/forms.py:600 teachers/forms.py:776
+#: teachers/forms.py:904
 msgid "Четверг"
-msgstr "Payshanba"
+msgstr ""
 
-#: teachers/forms.py:204 teachers/forms.py:601 teachers/forms.py:722
-#: teachers/forms.py:850
+#: teachers/forms.py:204 teachers/forms.py:601 teachers/forms.py:777
+#: teachers/forms.py:905
 msgid "Пятница"
-msgstr "Juma"
+msgstr ""
 
-#: teachers/forms.py:205 teachers/forms.py:602 teachers/forms.py:723
-#: teachers/forms.py:851
+#: teachers/forms.py:205 teachers/forms.py:602 teachers/forms.py:778
+#: teachers/forms.py:906
 msgid "Суббота"
-msgstr "Shanba"
+msgstr ""
 
-#: teachers/forms.py:206 teachers/forms.py:603 teachers/forms.py:724
-#: teachers/forms.py:852
+#: teachers/forms.py:206 teachers/forms.py:603 teachers/forms.py:779
+#: teachers/forms.py:907
 msgid "Воскресенье"
-msgstr "Yakshanba"
+msgstr ""
 
-#: teachers/forms.py:209 teachers/forms.py:727
-#: templates/logic/teacher_profile.html:807
+#: teachers/forms.py:209 teachers/forms.py:782
+#: templates/logic/teacher_profile.html:979
 msgid "Рабочие дни"
-msgstr "Ish kunlari"
+msgstr ""
 
 #: teachers/forms.py:218 teachers/forms.py:615
-#, fuzzy
-#| msgid "политику конфиденциальности"
 msgid "Я принимаю условия использования и политику конфиденциальности"
-msgstr "Maxfiylik siyosati"
-
-#: teachers/forms.py:233 teachers/forms.py:630
-#: templates/logic/student_profile.html:465
-#: templates/logic/teacher_profile.html:885
-msgid "Имя пользователя"
-msgstr "Foydalanuvchi nomi"
+msgstr ""
 
 #: teachers/forms.py:237 teachers/forms.py:416 teachers/forms.py:634
 msgid "Введите пароль"
-msgstr "Parolni kiriting"
+msgstr ""
 
 #: teachers/forms.py:241 teachers/forms.py:638
 msgid "Повторите пароль"
-msgstr "Parolni takrorlang"
+msgstr ""
 
-#: teachers/forms.py:247 teachers/forms.py:644 teachers/forms.py:1022
+#: teachers/forms.py:247 teachers/forms.py:644 teachers/forms.py:1077
 msgid "Этот email уже используется"
-msgstr "Bu email allaqachon ishlatilmoqda"
+msgstr ""
 
-#: teachers/forms.py:253 teachers/forms.py:650 teachers/forms.py:1030
+#: teachers/forms.py:253 teachers/forms.py:650 teachers/forms.py:1085
 msgid "Этот номер телефона уже используется"
-msgstr "Bu telefon raqami allaqachon ishlatilmoqda"
+msgstr ""
 
 #: teachers/forms.py:259
 msgid "Выберите хотя бы один рабочий день"
-msgstr "Kamida bitta ish kunini tanlang"
+msgstr ""
 
 #: teachers/forms.py:265
 msgid "Выберите хотя бы один язык преподавания"
-msgstr "Kamida bitta o'qitish tilini tanlang"
+msgstr ""
 
 #: teachers/forms.py:315
 #, python-format
 msgid "Предмет %(number)d"
-msgstr "Fan %(number)d"
+msgstr ""
 
-#: teachers/forms.py:320
+#: teachers/forms.py:320 teachers/forms.py:754
 msgid "Выберите предмет"
-msgstr "Fanni tanlang"
+msgstr ""
 
-#: teachers/forms.py:327 templates/logic/home.html:589
+#: teachers/forms.py:327 teachers/forms.py:731 templates/logic/home.html:1189
+#: templates/logic/home_backup.html:654
 msgid "Цена за час (сум)"
-msgstr "Soatiga narx (so'm)"
+msgstr ""
 
-#: teachers/forms.py:338 templates/logic/teacher_register_step2.html:589
-#: templates/logic/teacher_register_step2.html:646
+#: teachers/forms.py:338 teachers/forms.py:732
+#: templates/logic/teacher_register_step2.html:986
+#: templates/logic/teacher_register_step2.html:1043
 msgid "Бесплатное пробное занятие"
-msgstr "Bepul sinov darsi"
+msgstr ""
 
-#: teachers/forms.py:346
+#: teachers/forms.py:346 teachers/forms.py:733
 msgid "Описание"
-msgstr "Tavsif"
+msgstr ""
 
-#: teachers/forms.py:350
+#: teachers/forms.py:350 teachers/forms.py:726
 msgid "Дополнительная информация о преподавании этого предмета"
-msgstr "Ushbu fanni o'qitish haqida qo'shimcha ma'lumot"
+msgstr ""
 
 #: teachers/forms.py:366
 #, python-format
 msgid "Укажите цену для предмета %(number)d"
-msgstr "%(number)d-fan uchun narxni ko'rsating"
+msgstr ""
 
 #: teachers/forms.py:369
 msgid "Добавьте хотя бы один предмет"
-msgstr "Kamida bitta fanni qo'shing"
+msgstr ""
 
 #: teachers/forms.py:383 teachers/forms.py:395
 msgid "Название сертификата"
-msgstr "Sertifikat nomi"
+msgstr ""
 
 #: teachers/forms.py:387
 msgid "Кто выдал"
-msgstr "Kim tomonidan berilgan"
+msgstr ""
 
 #: teachers/forms.py:396
 msgid "Организация/учреждение"
-msgstr "Tashkilot/muassasa"
+msgstr ""
 
 #: teachers/forms.py:397
 msgid "Файл сертификата"
-msgstr "Sertifikat fayli"
+msgstr ""
 
 #: teachers/forms.py:404
 msgid "Имя пользователя или Email"
-msgstr "Foydalanuvchi nomi yoki Email"
+msgstr ""
 
 #: teachers/forms.py:407
 msgid "Введите имя пользователя или email"
-msgstr "Foydalanuvchi nomini yoki emailni kiriting"
+msgstr ""
 
 #: teachers/forms.py:413
 msgid "Пароль"
-msgstr "Parol"
+msgstr ""
 
 #: teachers/forms.py:423
 msgid "Запомнить меня"
-msgstr "Meni eslab qolish"
+msgstr ""
 
 #: teachers/forms.py:496
 msgid "Предметы, которые хочу изучать"
-msgstr "O'rganmoqchi bo'lgan fanlar"
+msgstr ""
 
 #: teachers/forms.py:500
 msgid "Выберите один или несколько предметов"
-msgstr "Bir yoki bir nechta fanni tanlang"
+msgstr ""
 
 #: teachers/forms.py:505
 msgid "Расскажите о ваших целях"
-msgstr "Maqsadlaringiz haqida gapiring"
+msgstr ""
 
 #: teachers/forms.py:508
 msgid ""
 "Например: Хочу подготовиться к экзаменам, улучшить знания по математике, "
 "изучить английский с нуля..."
-msgstr "Masalan: Imtihonlarga tayyorlanmoqchiman, matematika bo'yicha bilimlarimni yaxshilamoqchiman, ingliz tilini noldan o'rganmoqchiman..."
+msgstr ""
 
 #: teachers/forms.py:511
 msgid ""
 "Минимум 20 символов - это поможет учителям лучше понять ваши потребности"
-msgstr "Kamida 20 ta belgi - bu o'qituvchilarga ehtiyojlaringizni yaxshiroq tushunishga yordam beradi"
+msgstr ""
 
-#: teachers/forms.py:528 teachers/forms.py:913
-#: templates/logic/student_profile.html:508
+#: teachers/forms.py:528 teachers/forms.py:968
+#: templates/logic/student_profile.html:912
 msgid "Школа/Университет"
-msgstr "Maktab/Universitet"
+msgstr ""
 
 #: teachers/forms.py:531
 msgid "Название вашей школы или университета"
-msgstr "Maktabingiz yoki universitetingiz nomi"
+msgstr ""
 
 #: teachers/forms.py:538
 msgid "Предпочитаемый формат обучения"
-msgstr "Afzal ko'rilgan o'qitish formati"
+msgstr ""
 
-#: teachers/forms.py:549 teachers/forms.py:916
+#: teachers/forms.py:549 teachers/forms.py:971
 msgid "Минимальный бюджет (сум/час)"
-msgstr "Minimal byudjet (so'm/soat)"
+msgstr ""
 
-#: teachers/forms.py:556 teachers/forms.py:924
+#: teachers/forms.py:556 teachers/forms.py:979
 msgid "Минимальная цена, которую готовы платить"
-msgstr "To'lashga tayyor bo'lgan minimal narx"
+msgstr ""
 
-#: teachers/forms.py:563 teachers/forms.py:917
+#: teachers/forms.py:563 teachers/forms.py:972
 msgid "Максимальный бюджет (сум/час)"
-msgstr "Maksimal byudjet (so'm/soat)"
+msgstr ""
 
-#: teachers/forms.py:570 teachers/forms.py:925
+#: teachers/forms.py:570 teachers/forms.py:980
 msgid "Максимальная цена, которую готовы платить"
-msgstr "To'lashga tayyor bo'lgan maksimal narx"
+msgstr ""
 
-#: teachers/forms.py:579 teachers/forms.py:899
+#: teachers/forms.py:579 teachers/forms.py:954
 msgid "@username или +998901234567"
-msgstr "@username yoki +998901234567"
+msgstr ""
 
 #: teachers/forms.py:581
 msgid "Укажите ваш Telegram для удобной связи с учителями"
-msgstr "O'qituvchilar bilan qulay aloqa uchun Telegram'ingizni ko'rsating"
+msgstr ""
 
 #: teachers/forms.py:592
 msgid "Укажите номер WhatsApp для связи"
-msgstr "Aloqa uchun WhatsApp raqamingizni ko'rsating"
+msgstr ""
 
-#: teachers/forms.py:606 teachers/forms.py:855
+#: teachers/forms.py:606 teachers/forms.py:910
 msgid "Доступные дни для занятий"
-msgstr "Dars uchun mavjud kunlar"
+msgstr ""
 
 #: teachers/forms.py:610
 msgid "Выберите удобные дни для занятий"
-msgstr "Darslar uchun qulay kunlarni tanlang"
+msgstr ""
 
 #: teachers/forms.py:656
 msgid "Выберите хотя бы один предмет"
-msgstr "Kamida bitta fanni tanlang"
+msgstr ""
 
 #: teachers/forms.py:658
 msgid "Можно выбрать максимум 10 предметов"
-msgstr "Maksimal 10 ta fanni tanlash mumkin"
+msgstr ""
 
-#: teachers/forms.py:667 teachers/forms.py:947
-#: templates/logic/register_student.html:691
+#: teachers/forms.py:667 teachers/forms.py:1002
+#: templates/logic/register_student.html:1223
 msgid "Максимальный бюджет должен быть больше минимального"
-msgstr "Maksimal byudjet minimaldan katta bo'lishi kerak"
+msgstr ""
 
-#: teachers/forms.py:744
+#: teachers/forms.py:730 templates/logic/home.html:1144
+#: templates/logic/home_backup.html:612
+#: templates/logic/teacher_register_step2.html:946
+#: templates/logic/teacher_register_step2.html:955
+#: templates/logic/teacher_register_step2.html:1013
+#: templates/logic/teacher_register_step2.html:1022
+#: templates/logic/teacher_register_step2.html:1451
+msgid "Предмет"
+msgstr ""
+
+#: teachers/forms.py:750
+msgid "Укажите цену за час для выбранного предмета"
+msgstr ""
+
+#: teachers/forms.py:799
 msgid "Расскажите о своем опыте преподавания..."
-msgstr "O'qitish tajribangiz haqida gapiring..."
+msgstr ""
 
-#: teachers/forms.py:749
+#: teachers/forms.py:804
 msgid "Название университета"
-msgstr "Universitet nomi"
+msgstr ""
 
-#: teachers/forms.py:794
+#: teachers/forms.py:849
 msgid "Отображать в поиске учителей"
-msgstr "O'qituvchilar qidiruvida ko'rsatish"
+msgstr ""
 
-#: teachers/forms.py:797 teachers/forms.py:923
+#: teachers/forms.py:852 teachers/forms.py:978
 msgid "Если отключено, ваш профиль не будет показываться в поиске"
-msgstr "O'chirilgan bo'lsa, profilingiz qidiruvda ko'rsatilmaydi"
+msgstr ""
 
-#: teachers/forms.py:828 templates/logic/student_profile.html:430
+#: teachers/forms.py:883 templates/logic/student_profile.html:834
 msgid "Интересующие предметы"
-msgstr "Mashhur fanlar"
+msgstr ""
 
-#: teachers/forms.py:837
+#: teachers/forms.py:892
 msgid "Предметы для изучения"
-msgstr "O'rganish uchun fanlar"
+msgstr ""
 
-#: teachers/forms.py:841
+#: teachers/forms.py:896
 msgid "Выберите предметы, которые хотите изучать"
-msgstr "O'rganmoqchi bo'lgan fanlarni tanlang"
+msgstr ""
 
-#: teachers/forms.py:873
+#: teachers/forms.py:928
 msgid "Краткое описание..."
-msgstr "Qisqacha tavsif..."
+msgstr ""
 
-#: teachers/forms.py:878
+#: teachers/forms.py:933
 msgid "Расскажите о своих целях обучения..."
-msgstr "O'qish maqsadlaringiz haqida gapiring..."
+msgstr ""
 
-#: teachers/forms.py:883
+#: teachers/forms.py:938
 msgid "Название школы/университета"
-msgstr "Maktab/universitet nomi"
+msgstr ""
 
-#: teachers/forms.py:910
+#: teachers/forms.py:965
 msgid "Краткое описание"
-msgstr "Qisqacha tavsif"
+msgstr ""
 
-#: teachers/forms.py:911
+#: teachers/forms.py:966
 msgid "Подробное описание целей"
-msgstr "Maqsadlarning batafsil tavsifi"
+msgstr ""
 
-#: teachers/forms.py:915
+#: teachers/forms.py:970
 msgid "Предпочитаемый формат"
-msgstr "Afzal ko'rilgan format"
+msgstr ""
 
-#: teachers/forms.py:920
+#: teachers/forms.py:975
 msgid "Отображать в поиске учеников"
-msgstr "O'quvchilar qidiruvida ko'rsatish"
-
-#: teachers/forms.py:926
-msgid "Ваш Telegram username или номер телефона"
-msgstr "Telegram username yoki telefon raqamingiz"
-
-#: teachers/forms.py:927
-msgid "Номер WhatsApp для связи"
-msgstr "Aloqa uchun WhatsApp raqami"
+msgstr ""
 
 #: teachers/forms.py:981
+msgid "Ваш Telegram username или номер телефона"
+msgstr ""
+
+#: teachers/forms.py:982
+msgid "Номер WhatsApp для связи"
+msgstr ""
+
+#: teachers/forms.py:1036
 msgid "Ваше имя"
-msgstr "Ismingiz"
+msgstr ""
 
-#: teachers/forms.py:985
+#: teachers/forms.py:1040
 msgid "Ваша фамилия"
-msgstr "Familiyangiz"
+msgstr ""
 
-# ========== BASE TEMPLATE ==========
-#: templates/base.html:701
+#: teachers/forms.py:1098
+msgid "Введите ваше сообщение..."
+msgstr ""
+
+#: teachers/forms.py:1105
+msgid "Сообщение"
+msgstr ""
+
+#: teachers/forms.py:1118
+msgid "Сообщение не может быть пустым"
+msgstr ""
+
+#: teachers/forms.py:1120
+msgid "Сообщение слишком короткое"
+msgstr ""
+
+#: teachers/forms.py:1122
+msgid "Сообщение слишком длинное (максимум 2000 символов)"
+msgstr ""
+
+#: teachers/models.py:485 teachers/models.py:487 teachers/models.py:489
+#: templates/logic/favorites_teachers.html:430
+#: templates/logic/student_suggestions.html:34
+#: templates/logic/teacher_detail.html:1800
+#: templates/logic/teacher_profile.html:892
+msgid "сум/час"
+msgstr ""
+
+#: teachers/models.py:487 templates/logic/home.html:1201
+#: templates/logic/home_backup.html:665 templates/logic/students_list.html:1164
+msgid "До"
+msgstr ""
+
+#: teachers/models.py:489 templates/logic/favorites_teachers.html:428
+#: templates/logic/home.html:1195 templates/logic/home_backup.html:660
+#: templates/logic/students_list.html:1158
+msgid "От"
+msgstr ""
+
+#: teachers/models.py:490 templates/logic/home.html:1311
+#: templates/logic/home_backup.html:772
+#: templates/logic/teacher_detail.html:1674
+msgid "Договорная"
+msgstr ""
+
+#: templates/admin/telegram_user_changelist.html:9
+#, python-format
+msgid "Add %(name)s"
+msgstr ""
+
+#: templates/base.html:1408
 msgid "Найти учителя или предмет..."
-msgstr "O'qituvchi yoki fan qidirish..."
+msgstr ""
 
-#: templates/base.html:739 templates/base.html:866 templates/base.html:887
-#: templates/base.html:927
+#: templates/base.html:1477 templates/base.html:1692 templates/base.html:1713
+#: templates/base.html:1756
 msgid "Стать учителем"
-msgstr "O'qituvchi bo'lish"
+msgstr ""
 
-#: templates/base.html:766 templates/base.html:854
+#: templates/base.html:1483
+msgid "Уведомления платформы"
+msgstr ""
+
+#: templates/base.html:1532 templates/base.html:1581 templates/base.html:1677
+#: templates/logic/conversations_list.html:5
+#: templates/logic/conversations_list.html:451
+msgid "Сообщения"
+msgstr ""
+
+#: templates/base.html:1564 templates/base.html:1673
 #: templates/logic/student_profile.html:5
 #: templates/logic/teacher_profile.html:5
 msgid "Мой профиль"
-msgstr "Mening profilim"
+msgstr ""
 
-#: templates/base.html:772
+#: templates/base.html:1570
 msgid "Мои занятия"
-msgstr "Mening darslarim"
+msgstr ""
 
-#: templates/base.html:777 templates/base.html:862
+#: templates/base.html:1575 templates/base.html:1687
 msgid "Избранное"
-msgstr "Sevimlilar"
+msgstr ""
 
-#: templates/base.html:783 templates/base.html:858
-msgid "Сообщения"
-msgstr "Xabarlar"
-
-#: templates/base.html:788
+#: templates/base.html:1586
 msgid "Настройки"
-msgstr "Sozlamalar"
+msgstr ""
 
-#: templates/base.html:797 templates/base.html:873
-#: templates/logic/student_profile.html:403
-#: templates/logic/teacher_profile.html:664
+#: templates/base.html:1595 templates/base.html:1699
+#: templates/logic/student_profile.html:807
+#: templates/logic/teacher_profile.html:836
 msgid "Выйти"
-msgstr "Chiqish"
+msgstr ""
 
-#: templates/base.html:806 templates/base.html:879
-#: templates/logic/login.html:271
+#: templates/base.html:1604 templates/base.html:1705
+#: templates/logic/login.html:386
 msgid "Войти"
-msgstr "Kirish"
+msgstr ""
 
-#: templates/base.html:810 templates/base.html:883
+#: templates/base.html:1608 templates/base.html:1709
 msgid "Регистрация"
-msgstr "Ro'yxatdan o'tish"
+msgstr ""
 
-#: templates/base.html:820
+#: templates/base.html:1618
 msgid "Меню"
-msgstr "Menyu"
+msgstr ""
 
-#: templates/base.html:831
+#: templates/base.html:1629
 msgid "Поиск..."
-msgstr "Qidiruv..."
+msgstr ""
 
-#: templates/base.html:903
+#: templates/base.html:1732
 msgid "Платформа №1 для поиска квалифицированных преподавателей в Узбекистане."
-msgstr "O'zbekistonda malakali o'qituvchilarni topish uchun №1 platforma."
+msgstr ""
 
-#: templates/base.html:918
+#: templates/base.html:1747
 msgid "Ученикам"
-msgstr "O'quvchilarga"
+msgstr ""
 
-#: templates/base.html:919
+#: templates/base.html:1748 templates/logic/conversations_list.html:524
 msgid "Найти учителя"
-msgstr "O'qituvchi topish"
+msgstr ""
 
-#: templates/base.html:920
+#: templates/base.html:1749
 msgid "Онлайн обучение"
-msgstr "Onlayn ta'lim"
+msgstr ""
 
-#: templates/base.html:921
+#: templates/base.html:1750 templates/logic/teacher_register_step2.html:920
 msgid "Популярные предметы"
-msgstr "Mashhur fanlar"
+msgstr ""
 
-#: templates/base.html:922
+#: templates/base.html:1751
 msgid "Как это работает"
-msgstr "Qanday ishlaydi"
+msgstr ""
 
-#: templates/base.html:926
+#: templates/base.html:1755
 msgid "Учителям"
-msgstr "O'qituvchilarga"
+msgstr ""
 
-#: templates/base.html:928
+#: templates/base.html:1757
 msgid "Преимущества"
-msgstr "Afzalliklar"
+msgstr ""
 
-#: templates/base.html:929
+#: templates/base.html:1758
 msgid "Правила платформы"
-msgstr "Platforma qoidalari"
+msgstr ""
 
-#: templates/base.html:930
+#: templates/base.html:1759
 msgid "FAQ для учителей"
-msgstr "O'qituvchilar uchun FAQ"
+msgstr ""
 
-#: templates/base.html:934
+#: templates/base.html:1763
 msgid "Поддержка"
-msgstr "Yordam"
+msgstr ""
 
-#: templates/base.html:937
+#: templates/base.html:1766
 msgid "Центр помощи"
-msgstr "Yordam markazi"
+msgstr ""
 
-#: templates/base.html:938
+#: templates/base.html:1767
 msgid "Связаться с нами"
-msgstr "Biz bilan bog'lanish"
+msgstr ""
 
-#: templates/base.html:943
+#: templates/base.html:1772
 msgid "Все права защищены."
-msgstr "Barcha huquqlar himoyalangan."
+msgstr ""
 
-#: templates/base.html:945
+#: templates/base.html:1774
 msgid "Политика конфиденциальности"
-msgstr "Maxfiylik siyosati"
+msgstr ""
 
-#: templates/base.html:946
+#: templates/base.html:1775
 msgid "Условия использования"
-msgstr "Foydalanish shartlari"
+msgstr ""
 
-#: templates/logic/home.html:4 templates/logic/student_detail.html:563
-#: templates/logic/teacher_detail.html:1088
+#: templates/logic/conversation_detail.html:5
+msgid "Переписка"
+msgstr ""
+
+#: templates/logic/conversation_detail.html:599
+#: templates/logic/teacher_register_step2.html:1067
+#: templates/logic/teacher_register_step3.html:895
+msgid "Назад"
+msgstr ""
+
+#: templates/logic/conversation_detail.html:624
+msgid "Удалить переписку?"
+msgstr ""
+
+#: templates/logic/conversation_detail.html:627
+#: templates/logic/register_student.html:1324
+#: templates/logic/teacher_register_step2.html:949
+#: templates/logic/teacher_register_step2.html:1016
+#: templates/logic/teacher_register_step3.html:878
+msgid "Удалить"
+msgstr ""
+
+#: templates/logic/conversation_detail.html:658
+msgid "Нет сообщений. Начните переписку!"
+msgstr ""
+
+#: templates/logic/conversation_detail.html:669
+msgid "Введите сообщение..."
+msgstr ""
+
+#: templates/logic/conversation_detail.html:677
+msgid "Отправить"
+msgstr ""
+
+#: templates/logic/conversation_detail.html:725
+msgid "Отправка..."
+msgstr ""
+
+#: templates/logic/conversation_detail.html:746
+msgid "Ошибка при отправке сообщения"
+msgstr ""
+
+#: templates/logic/conversations_list.html:487
+msgid "Вы"
+msgstr ""
+
+#: templates/logic/conversations_list.html:493
+msgid "Начните переписку"
+msgstr ""
+
+#: templates/logic/conversations_list.html:513
+msgid "Нет переписок"
+msgstr ""
+
+#: templates/logic/conversations_list.html:516
+msgid "Начните общение с учителями, просматривая их профили"
+msgstr ""
+
+#: templates/logic/conversations_list.html:518
+msgid "Ученики начнут общение с вами через ваш профиль"
+msgstr ""
+
+#: templates/logic/conversations_list.html:527
+msgid "На главную"
+msgstr ""
+
+#: templates/logic/favorites_students.html:4
+#: templates/logic/favorites_students.html:8
+msgid "Мои избранные ученики"
+msgstr ""
+
+#: templates/logic/favorites_students.html:32
+#: templates/logic/favorites_teachers.html:453
+msgid "Список избранных пуст"
+msgstr ""
+
+#: templates/logic/favorites_teachers.html:5
+#: templates/logic/favorites_teachers.html:361
+msgid "Мои избранные учителя"
+msgstr ""
+
+#: templates/logic/favorites_teachers.html:365
+#, python-format
+msgid ""
+"\n"
+"                    %(counter)s учитель в избранном\n"
+"                "
+msgid_plural ""
+"\n"
+"                    %(counter)s учителей в избранном\n"
+"                "
+msgstr[0] ""
+msgstr[1] ""
+
+#: templates/logic/favorites_teachers.html:371
+msgid "Здесь будут отображаться ваши избранные преподаватели"
+msgstr ""
+
+#: templates/logic/favorites_teachers.html:406
+msgid "Опыт"
+msgstr ""
+
+#: templates/logic/favorites_teachers.html:406 templates/logic/home.html:1300
+#: templates/logic/home_backup.html:761
+#: templates/logic/student_detail.html:1551
+#: templates/logic/student_detail_backup.html:1104
+#: templates/logic/student_profile.html:792
+#: templates/logic/student_profile.html:885
+#: templates/logic/teacher_profile.html:934
+msgid "лет"
+msgstr ""
+
+#: templates/logic/favorites_teachers.html:412
+msgid "Предметы"
+msgstr ""
+
+#: templates/logic/favorites_teachers.html:417
+msgid "Не указано"
+msgstr ""
+
+#: templates/logic/favorites_teachers.html:439
+msgid "Посмотреть профиль"
+msgstr ""
+
+#: templates/logic/favorites_teachers.html:441
+msgid "Удалить из избранного"
+msgstr ""
+
+#: templates/logic/favorites_teachers.html:455
+msgid ""
+"Добавьте понравившихся учителей в избранное, чтобы быстро находить их позже"
+msgstr ""
+
+#: templates/logic/favorites_teachers.html:459
+msgid "Найти учителей"
+msgstr ""
+
+#: templates/logic/favorites_teachers.html:467
+msgid "Удалить учителя из избранного?"
+msgstr ""
+
+#: templates/logic/favorites_teachers.html:501
+msgid "Произошла ошибка. Попробуйте позже."
+msgstr ""
+
+#: templates/logic/home.html:4 templates/logic/home_backup.html:4
+#: templates/logic/student_detail.html:1494
+#: templates/logic/student_detail_backup.html:1051
+#: templates/logic/teacher_detail.html:1404
 msgid "Главная"
-msgstr "Bosh sahifa"
+msgstr ""
 
-#: templates/logic/home.html:506 templates/logic/students_list.html:456
-#: templates/logic/teacher_detail.html:1091
+#: templates/logic/home.html:1096 templates/logic/home_backup.html:571
+#: templates/logic/students_list.html:1044
+#: templates/logic/teacher_detail.html:1407
 msgid "Учителя"
-msgstr "O'qituvchilar"
+msgstr ""
 
-#: templates/logic/home.html:510 templates/logic/student_detail.html:565
-#: templates/logic/students_list.html:4 templates/logic/students_list.html:460
+#: templates/logic/home.html:1100 templates/logic/home_backup.html:575
+#: templates/logic/student_detail.html:1496
+#: templates/logic/student_detail_backup.html:1053
+#: templates/logic/students_list.html:4 templates/logic/students_list.html:1048
 msgid "Ученики"
-msgstr "O'quvchilar"
+msgstr ""
 
-# ========== HOME PAGE ==========
-#: templates/logic/home.html:517
+#: templates/logic/home.html:1108 templates/logic/home_backup.html:582
 msgid "Найдите квалифицированного учителя онлайн"
-msgstr "Malakali o'qituvchini onlayn toping"
+msgstr ""
 
-#: templates/logic/home.html:518
+#: templates/logic/home.html:1109 templates/logic/home_backup.html:583
 msgid ""
 "Используйте фильтры поиска, чтобы найти учителей в соответствии с вашим "
 "бюджетом и потребностями. Развивайтесь быстрее с индивидуальным подходом!"
 msgstr ""
-"Byudjetingiz va ehtiyojlaringizga mos o'qituvchilarni topish uchun qidiruv "
-"filtrlaridan foydalaning. Shaxsiy yondashuv bilan tezroq rivojlaning!"
 
-#: templates/logic/home.html:522 templates/logic/home.html:529
-#: templates/logic/students_list.html:473
-#: templates/logic/students_list.html:480
+#: templates/logic/home.html:1114 templates/logic/home.html:1124
+#: templates/logic/home_backup.html:587 templates/logic/home_backup.html:594
+#: templates/logic/students_list.html:1062
+#: templates/logic/students_list.html:1072
 msgid "Фильтры"
-msgstr "Filtrlar"
+msgstr ""
 
-#: templates/logic/home.html:530 templates/logic/students_list.html:481
+#: templates/logic/home.html:1125 templates/logic/home_backup.html:595
+#: templates/logic/students_list.html:1073
 msgid "Сбросить"
-msgstr "Tozalash"
+msgstr ""
 
-#: templates/logic/home.html:536 templates/logic/students_list.html:488
+#: templates/logic/home.html:1132 templates/logic/home_backup.html:601
+#: templates/logic/students_list.html:1080
 msgid "Поиск"
-msgstr "Qidiruv"
+msgstr ""
 
-#: templates/logic/home.html:541
+#: templates/logic/home.html:1137 templates/logic/home_backup.html:606
 msgid "Имя учителя..."
-msgstr "O'qituvchi ismi..."
+msgstr ""
 
-#: templates/logic/home.html:547
-#: templates/logic/teacher_register_step2.html:549
-#: templates/logic/teacher_register_step2.html:558
-#: templates/logic/teacher_register_step2.html:616
-#: templates/logic/teacher_register_step2.html:625
-#: templates/logic/teacher_register_step2.html:793
-msgid "Предмет"
-msgstr "Fan"
-
-#: templates/logic/home.html:550 templates/logic/students_list.html:503
+#: templates/logic/home.html:1147 templates/logic/home_backup.html:615
+#: templates/logic/students_list.html:1095
 msgid "Все предметы"
-msgstr "Barcha fanlar"
+msgstr ""
 
-#: templates/logic/home.html:564 templates/logic/students_list.html:518
+#: templates/logic/home.html:1162 templates/logic/home_backup.html:629
+#: templates/logic/students_list.html:1110
 msgid "Все города"
-msgstr "Barcha shaharlar"
+msgstr ""
 
-#: templates/logic/home.html:578 templates/logic/home.html:612
-#: templates/logic/home.html:632 templates/logic/students_list.html:533
-#: templates/logic/students_list.html:548
+#: templates/logic/home.html:1177 templates/logic/home.html:1215
+#: templates/logic/home.html:1236 templates/logic/home_backup.html:643
+#: templates/logic/home_backup.html:677 templates/logic/home_backup.html:697
+#: templates/logic/students_list.html:1125
+#: templates/logic/students_list.html:1140
 msgid "Любой"
-msgstr "Istalgan"
+msgstr ""
 
-#: templates/logic/home.html:595 templates/logic/students_list.html:566
-msgid "От"
-msgstr "Dan"
-
-#: templates/logic/home.html:600 templates/logic/students_list.html:571
-msgid "До"
-msgstr "Gacha"
-
-#: templates/logic/home.html:607 templates/logic/teacher_profile.html:680
+#: templates/logic/home.html:1210 templates/logic/home_backup.html:672
+#: templates/logic/teacher_profile.html:852
 msgid "Рейтинг"
-msgstr "Reyting"
+msgstr ""
 
-#: templates/logic/home.html:629
+#: templates/logic/home.html:1233 templates/logic/home_backup.html:694
 msgid "Опыт (лет)"
-msgstr "Tajriba (yil)"
+msgstr ""
 
-#: templates/logic/home.html:633
+#: templates/logic/home.html:1237 templates/logic/home_backup.html:698
 msgid "От 1 года"
-msgstr "1 yildan"
+msgstr ""
 
-#: templates/logic/home.html:634
+#: templates/logic/home.html:1238 templates/logic/home_backup.html:699
 msgid "От 3 лет"
-msgstr "3 yildan"
+msgstr ""
 
-#: templates/logic/home.html:635
+#: templates/logic/home.html:1239 templates/logic/home_backup.html:700
 msgid "От 5 лет"
-msgstr "5 yildan"
+msgstr ""
 
-#: templates/logic/home.html:636
+#: templates/logic/home.html:1240 templates/logic/home_backup.html:701
 msgid "От 10 лет"
-msgstr "10 yildan"
+msgstr ""
 
-#: templates/logic/home.html:641 templates/logic/students_list.html:577
+#: templates/logic/home.html:1245 templates/logic/home_backup.html:706
+#: templates/logic/students_list.html:1171
 msgid "Применить фильтры"
-msgstr "Filtrlarni qo'llash"
+msgstr ""
 
-#: templates/logic/home.html:650 templates/logic/students_list.html:586
+#: templates/logic/home.html:1254 templates/logic/home_backup.html:715
+#: templates/logic/register_student.html:1321
+#: templates/logic/students_list.html:1180
 msgid "Найдено:"
-msgstr "Topildi:"
+msgstr ""
 
-#: templates/logic/home.html:651
+#: templates/logic/home.html:1255 templates/logic/home_backup.html:716
 msgid "учитель"
-msgstr "o'qituvchi"
+msgstr ""
 
-#: templates/logic/home.html:651
+#: templates/logic/home.html:1255 templates/logic/home_backup.html:716
 msgid "учителя"
-msgstr "o'qituvchi"
+msgstr ""
 
-#: templates/logic/home.html:651
+#: templates/logic/home.html:1255 templates/logic/home_backup.html:716
 msgid "учителей"
-msgstr "o'qituvchi"
+msgstr ""
 
-#: templates/logic/home.html:696 templates/logic/student_detail.html:616
-#: templates/logic/student_profile.html:395
-#: templates/logic/student_profile.html:481
-#: templates/logic/teacher_profile.html:762
-msgid "лет"
-msgstr "yil"
-
-#: templates/logic/home.html:705 templates/logic/teacher_detail.html:1212
-#: templates/logic/teacher_detail.html:1356
-#: templates/logic/teacher_register_step2.html:573
-#: templates/logic/teacher_register_step2.html:637
+#: templates/logic/home.html:1309 templates/logic/home_backup.html:770
+#: templates/logic/teacher_detail.html:1528
+#: templates/logic/teacher_detail.html:1672
+#: templates/logic/teacher_register_step2.html:970
+#: templates/logic/teacher_register_step2.html:1034
 msgid "сум"
-msgstr "so'm"
+msgstr ""
 
-#: templates/logic/home.html:707 templates/logic/teacher_detail.html:1358
-msgid "Договорная"
-msgstr "Kelishiladi"
-
-#: teachers/models.py:443
-msgid "сум/час"
-msgstr "so'm/soat"
-
-#: teachers/models.py:445
-msgid "До"
-msgstr "Gacha"
-
-#: teachers/models.py:447
-msgid "От"
-msgstr "Dan"
-
-#: templates/logic/home.html:710 templates/logic/teacher_detail.html:1213
-#: templates/logic/teacher_detail.html:1361
+#: templates/logic/home.html:1314 templates/logic/home_backup.html:775
+#: templates/logic/student_detail.html:1758
+#: templates/logic/teacher_detail.html:1529
+#: templates/logic/teacher_detail.html:1677
 msgid "за час"
-msgstr "soatiga"
+msgstr ""
 
-#: templates/logic/home.html:714
+#: templates/logic/home.html:1318 templates/logic/home_backup.html:779
 msgid "Написать"
-msgstr "Yozish"
+msgstr ""
 
-#: templates/logic/home.html:723
+#: templates/logic/home.html:1356 templates/logic/home_backup.html:817
+#: templates/logic/students_list.html:1293
+msgid "Страница"
+msgstr ""
+
+#: templates/logic/home.html:1356 templates/logic/home_backup.html:817
+#: templates/logic/students_list.html:1293
+msgid "из"
+msgstr ""
+
+#: templates/logic/home.html:1363 templates/logic/home_backup.html:825
 msgid "Учителя не найдены"
-msgstr "O'qituvchilar topilmadi"
+msgstr ""
 
-#: templates/logic/home.html:724 templates/logic/students_list.html:676
+#: templates/logic/home.html:1364 templates/logic/home_backup.html:826
+#: templates/logic/students_list.html:1301
 msgid "Попробуйте изменить параметры фильтрации"
-msgstr "Filtrlash parametrlarini o'zgartirib ko'ring"
+msgstr ""
 
-# ========== LOGIN PAGE ==========
 #: templates/logic/login.html:5
 msgid "Вход"
-msgstr "Kirish"
+msgstr ""
 
-#: templates/logic/login.html:213
+#: templates/logic/login.html:328
 msgid "Вход в UstozHub"
-msgstr "UstozHub'ga kirish"
+msgstr ""
 
-#: templates/logic/login.html:214
+#: templates/logic/login.html:329
 msgid "Войдите чтобы продолжить"
-msgstr "Davom etish uchun kiring"
+msgstr ""
 
-#: templates/logic/login.html:267
+#: templates/logic/login.html:382
 msgid "Забыли пароль?"
-msgstr "Parolni unutdingizmi?"
+msgstr ""
 
-#: templates/logic/login.html:275
+#: templates/logic/login.html:390
 msgid "или"
-msgstr "yoki"
+msgstr ""
 
-#: templates/logic/login.html:278
+#: templates/logic/login.html:393
 msgid "Нет аккаунта?"
-msgstr "Akkauntingiz yo'qmi?"
+msgstr ""
 
-#: templates/logic/login.html:278 templates/logic/register_student.html:643
+#: templates/logic/login.html:393 templates/logic/register_student.html:1175
 msgid "Зарегистрироваться"
-msgstr "Ro'yxatdan o'tish"
+msgstr ""
 
-#: templates/logic/login.html:289
+#: templates/logic/login.html:404
 msgid "Вход..."
-msgstr "Kirish..."
+msgstr ""
 
 #: templates/logic/register_choose.html:5
 msgid "Registration"
-msgstr "Ro'yxatdan o'tish"
+msgstr ""
 
-#: templates/logic/register_choose.html:166
+#: templates/logic/register_choose.html:265
 msgid "Welcome to UstozHub"
-msgstr "UstozHub'ga xush kelibsiz"
+msgstr ""
 
-#: templates/logic/register_choose.html:167
+#: templates/logic/register_choose.html:266
 msgid "Choose your account type to register"
-msgstr "Ro'yxatdan o'tish uchun akkaunt turini tanlang"
+msgstr ""
 
-#: templates/logic/register_choose.html:175
+#: templates/logic/register_choose.html:274
 msgid "I am a student"
-msgstr "Men o'quvchiman"
+msgstr ""
 
-#: templates/logic/register_choose.html:177
+#: templates/logic/register_choose.html:276
 msgid "Looking for a qualified teacher? Register as a student"
-msgstr "Malakali o'qituvchi qidiryapsizmi? O'quvchi sifatida ro'yxatdan o'ting"
+msgstr ""
 
-#: templates/logic/register_choose.html:184
+#: templates/logic/register_choose.html:283
 msgid "Find teachers for any subject"
-msgstr "Istalgan fan bo'yicha o'qituvchi toping"
+msgstr ""
 
-#: templates/logic/register_choose.html:190
+#: templates/logic/register_choose.html:289
 msgid "Read reviews from other students"
-msgstr "Boshqa o'quvchilarning sharhlarini o'qing"
+msgstr ""
 
-#: templates/logic/register_choose.html:196
+#: templates/logic/register_choose.html:295
 msgid "Contact teachers directly"
-msgstr "O'qituvchilar bilan to'g'ridan-to'g'ri bog'laning"
+msgstr ""
 
-#: templates/logic/register_choose.html:202
+#: templates/logic/register_choose.html:301
 msgid "Save favorite teachers"
-msgstr "Sevimli o'qituvchilarni saqlang"
+msgstr ""
 
-#: templates/logic/register_choose.html:211
+#: templates/logic/register_choose.html:310
 msgid "I am a teacher"
-msgstr "Men o'qituvchiman"
+msgstr ""
 
-#: templates/logic/register_choose.html:213
+#: templates/logic/register_choose.html:312
 msgid "Are you teaching? Create a teacher profile and find students"
-msgstr "Dars berasizmi? O'qituvchi profili yarating va o'quvchilar toping"
+msgstr ""
 
-#: templates/logic/register_choose.html:220
+#: templates/logic/register_choose.html:319
 msgid "Create a professional profile"
-msgstr "Professional profil yarating"
+msgstr ""
 
-#: templates/logic/register_choose.html:226
+#: templates/logic/register_choose.html:325
 msgid "Set your own prices"
-msgstr "O'z narxlaringizni belgilang"
+msgstr ""
 
-#: templates/logic/register_choose.html:232
+#: templates/logic/register_choose.html:331
 msgid "Receive requests from students"
-msgstr "O'quvchilardan so'rovlar qabul qiling"
+msgstr ""
 
-#: templates/logic/register_choose.html:238
+#: templates/logic/register_choose.html:337
 msgid "Manage your schedule"
-msgstr "Jadvalingizni boshqaring"
+msgstr ""
 
-#: templates/logic/register_choose.html:245
+#: templates/logic/register_choose.html:344
 msgid "Already have an account?"
-msgstr "Akkauntingiz bormi?"
+msgstr ""
 
-#: templates/logic/register_choose.html:245
+#: templates/logic/register_choose.html:344
 msgid "Log in"
-msgstr "Kirish"
-
-#: templates/logic/student_profile_edit.html:5
-msgid "Student Profile Edit"
-msgstr "O'quvchi profilini tahrirlash"
-
-#: templates/logic/student_profile_edit.html:341
-msgid "Display in search:"
-msgstr "Qidiruvda ko'rsatish:"
-
-#: templates/logic/student_profile_edit.html:370
-msgid "Personal Information"
-msgstr "Shaxsiy ma'lumotlar"
-
-#: templates/logic/student_profile_edit.html:374
-msgid "Profile Photo"
-msgstr "Profil rasmi"
-
-#: templates/logic/student_profile_edit.html:470
-msgid "Subjects and Learning Goals"
-msgstr "Fanlar va o'qish maqsadlari"
-
-#: templates/logic/student_profile_edit.html:519
-msgid "Additional Interests"
-msgstr "Qo'shimcha qiziqishlar"
-
-#: templates/logic/student_profile_edit.html:527
-msgid "Learning Preferences"
-msgstr "O'qish uchun afzalliklar"
-
-#: templates/logic/student_profile_edit.html:579
-msgid "Save Changes"
-msgstr "O'zgarishlarni saqlash"
-
-#: templates/logic/student_profile_edit.html:618
-msgid "activated"
-msgstr "faollashtirildi"
-
-#: templates/logic/student_profile_edit.html:618
-msgid "deactivated"
-msgstr "o'chirildi"
-
-#: templates/logic/student_profile_edit.html:619
-msgid "Profile"
-msgstr "Profil"
-
-#: templates/logic/student_profile_edit.html:622
-msgid "Error changing status"
-msgstr "Statusni o'zgartirishda xatolik"
-
-#: templates/logic/student_profile_edit.html:628
-msgid "An error occurred"
-msgstr "Xatolik yuz berdi"
-
-#: templates/logic/student_profile_edit.html:658
-msgid "Select at least one subject to study"
-msgstr "O'rganish uchun kamida bitta fanni tanlang"
-
-#: templates/logic/student_profile_edit.html:667
-msgid "Maximum budget must be greater than minimum"
-msgstr "Maksimal byudjet minimaldan katta bo'lishi kerak"
-
-#: templates/logic/teacher_register_complete.html:4
-msgid "Registration Completed"
-msgstr "Ro'yxatdan o'tish yakunlandi"
-
-#: templates/logic/teacher_register_complete.html:258
-msgid "Under Moderation"
-msgstr "Moderatsiyada"
-
-#: templates/logic/teacher_register_complete.html:261
-msgid "Thank you for registering!"
-msgstr "Ro'yxatdan o'tganingiz uchun rahmat!"
-
-#: templates/logic/teacher_register_complete.html:264
-msgid "Your teacher registration application has been successfully submitted. Our team will review your information and contact you shortly."
-msgstr "O'qituvchi sifatida ro'yxatdan o'tish arizangiz muvaffaqiyatli yuborildi. Jamoamiz ma'lumotlaringizni ko'rib chiqadi va tez orada siz bilan bog'lanadi."
-
-#: templates/logic/teacher_register_complete.html:270
-msgid "What happens next?"
-msgstr "Keyingi qadamlar?"
-
-#: templates/logic/teacher_register_complete.html:272
-msgid "Your application will be reviewed by an administrator within <strong>24 hours</strong>. We will check:"
-msgstr "Arizangiz administrator tomonidan <strong>24 soat</strong> ichida ko'rib chiqiladi. Biz tekshiramiz:"
-
-#: templates/logic/teacher_register_complete.html:274
-msgid "Accuracy of the information provided"
-msgstr "Taqdim etilgan ma'lumotlarning to'g'riligi"
-
-#: templates/logic/teacher_register_complete.html:275
-msgid "Compliance with platform requirements"
-msgstr "Platforma talablariga muvofiqlik"
-
-#: templates/logic/teacher_register_complete.html:276
-msgid "Quality of profile completion"
-msgstr "Profilni to'ldirish sifati"
-
-#: templates/logic/teacher_register_complete.html:278
-msgid "After approval, you will receive a notification at <strong>{{ email }}</strong> and will be able to start working on the platform."
-msgstr "Tasdiqlangandan so'ng, siz <strong>{{ email }}</strong> manziliga xabar olasiz va platformada ishlashni boshlashingiz mumkin."
-
-#: templates/logic/teacher_register_complete.html:282
-msgid "Moderation Process"
-msgstr "Moderatsiya jarayoni"
-
-#: templates/logic/teacher_register_complete.html:289
-msgid "Application Submitted"
-msgstr "Ariza yuborildi"
-
-#: templates/logic/teacher_register_complete.html:290
-msgid "Your data has been received and is in the review queue"
-msgstr "Ma'lumotlaringiz qabul qilindi va ko'rib chiqish navbatida"
-
-#: templates/logic/teacher_register_complete.html:299
-msgid "Review (up to 24 hours)"
-msgstr "Ko'rib chiqish (24 soatgacha)"
-
-#: templates/logic/teacher_register_complete.html:300
-msgid "An administrator will review your application"
-msgstr "Administrator arizangizni ko'rib chiqadi"
-
-#: templates/logic/teacher_register_complete.html:309
-msgid "Notification"
-msgstr "Xabarnoma"
-
-#: templates/logic/teacher_register_complete.html:310
-msgid "You will receive an email with the review result"
-msgstr "Siz ko'rib chiqish natijasi bilan email olasiz"
-
-#: templates/logic/teacher_register_complete.html:319
-msgid "Start Working"
-msgstr "Ishni boshlash"
-
-#: templates/logic/teacher_register_complete.html:320
-msgid "After approval, your profile will appear on the platform"
-msgstr "Tasdiqlangandan so'ng, profilingiz platformada paydo bo'ladi"
-
-#: templates/logic/teacher_register_complete.html:328
-msgid "Go to Home"
-msgstr "Bosh sahifaga o'tish"
-
-#: templates/logic/teacher_register_complete.html:332
-msgid "Contact Us"
-msgstr "Biz bilan bog'lanish"
-
-#: templates/logic/teacher_register_complete.html:337
-msgid "Have questions? Contact us:"
-msgstr "Savollaringiz bormi? Biz bilan bog'laning:"
+msgstr ""
 
 #: templates/logic/register_student.html:5
-#: templates/logic/register_student.html:334
+#: templates/logic/register_student.html:831
 msgid "Регистрация ученика"
-msgstr "Ro'yxatdan o'tish"
+msgstr ""
 
-#: templates/logic/register_student.html:335
+#: templates/logic/register_student.html:832
 msgid "Заполните форму для создания аккаунта"
-msgstr "Akkaunt yaratish uchun formani to'ldiring"
+msgstr ""
 
-#: templates/logic/register_student.html:353
+#: templates/logic/register_student.html:850
 msgid "Личная информация"
-msgstr "Tizim ma'lumotlari"
+msgstr ""
 
-#: templates/logic/register_student.html:386
+#: templates/logic/register_student.html:883
 msgid "Это имя будет использоваться для входа"
-msgstr "Foydalanuvchi nomi yoki emailni kiriting"
+msgstr ""
 
-#: templates/logic/register_student.html:460
+#: templates/logic/register_student.html:957
 msgid "Предметы и цели обучения"
-msgstr "O'rganish uchun fan"
+msgstr ""
 
-#: templates/logic/register_student.html:486
-#: templates/logic/register_student.html:666
+#: templates/logic/register_student.html:972
+#: templates/logic/teacher_register_step2.html:909
+msgid "Начните вводить название предмета..."
+msgstr ""
+
+#: templates/logic/register_student.html:974
+msgid "Поиск предметов"
+msgstr ""
+
+#: templates/logic/register_student.html:978
+#: templates/logic/register_student.html:1320
+msgid "выбрано"
+msgstr ""
+
+#: templates/logic/register_student.html:987
+msgid "Очистить выбор"
+msgstr ""
+
+#: templates/logic/register_student.html:999
+msgid "💡 Начните вводить название или используйте быстрые кнопки ниже"
+msgstr ""
+
+#: templates/logic/register_student.html:1018
+#: templates/logic/register_student.html:1198
 msgid "символов"
-msgstr "belgilar"
+msgstr ""
 
-#: templates/logic/register_student.html:496
+#: templates/logic/register_student.html:1028
 msgid "Контакты для связи"
-msgstr "Aloqa ma'lumotlari"
+msgstr ""
 
-#: templates/logic/register_student.html:499
+#: templates/logic/register_student.html:1031
 msgid ""
 "Укажите удобные способы связи, чтобы учителя могли легко с вами связаться"
 msgstr ""
 
-#: templates/logic/register_student.html:528
+#: templates/logic/register_student.html:1060
 msgid ""
 "Эти данные не обязательны, но помогут учителям быстрее связаться с вами для "
 "обсуждения деталей обучения"
 msgstr ""
 
-#: templates/logic/register_student.html:540
+#: templates/logic/register_student.html:1072
 msgid "Предпочтения по обучению"
-msgstr "O'rganish uchun fan"
+msgstr ""
 
-#: templates/logic/register_student.html:579
+#: templates/logic/register_student.html:1111
 msgid ""
 "Указание бюджета поможет учителям понять ваши возможности. Можно не "
 "указывать и договориться отдельно."
 msgstr ""
 
-#: templates/logic/register_student.html:605
+#: templates/logic/register_student.html:1137
 msgid "Безопасность"
-msgstr "Mavjudlik"
+msgstr ""
 
-#: templates/logic/register_student.html:616
+#: templates/logic/register_student.html:1148
 msgid "Минимум 8 символов"
-msgstr "Maksimum 5 ta fan"
+msgstr ""
 
-#: templates/logic/register_student.html:633
+#: templates/logic/register_student.html:1165
 msgid "Я принимаю"
-msgstr "Men qabul qilaman"
+msgstr ""
 
-#: templates/logic/register_student.html:633
+#: templates/logic/register_student.html:1165
 msgid "условия использования"
-msgstr "Foydalanish shartlari"
+msgstr ""
 
-#: templates/logic/register_student.html:633
+#: templates/logic/register_student.html:1165
 msgid "и"
-msgstr "va"
+msgstr ""
 
-#: templates/logic/register_student.html:633
+#: templates/logic/register_student.html:1165
 msgid "политику конфиденциальности"
-msgstr "Maxfiylik siyosati"
+msgstr ""
 
-#: templates/logic/register_student.html:649
+#: templates/logic/register_student.html:1181
 msgid "Назад к выбору типа аккаунта"
-msgstr "Akkaunt turini tanlashga qaytish"
+msgstr ""
 
-#: templates/logic/register_student.html:705
+#: templates/logic/register_student.html:1237
 msgid "Регистрация..."
-msgstr "Ro'yxatdan o'tish"
+msgstr ""
 
-# ========== STUDENT DETAIL PAGE ==========
+#: templates/logic/register_student.html:1322
+#: templates/logic/teacher_register_step2.html:1308
+msgid "предметов"
+msgstr ""
+
+#: templates/logic/register_student.html:1323
+msgid "Ничего не найдено. Попробуйте изменить запрос"
+msgstr ""
+
 #: templates/logic/student_detail.html:4
+#: templates/logic/student_detail_backup.html:4
 msgid "Профиль ученика"
-msgstr "O'quvchi profili"
+msgstr ""
 
-#: templates/logic/student_detail.html:602
+#: templates/logic/student_detail.html:1493
+msgid "Навигация"
+msgstr ""
+
+#: templates/logic/student_detail.html:1537
+#: templates/logic/student_detail_backup.html:1090
 msgid "Активный поиск"
-msgstr "Faol qidiruv"
+msgstr ""
 
-#: templates/logic/student_detail.html:621
+#: templates/logic/student_detail.html:1556
+#: templates/logic/student_detail_backup.html:1109
 msgid "Зарегистрирован"
-msgstr "Ro'yxatdan o'tgan"
+msgstr ""
 
-#: templates/logic/student_detail.html:633
+#: templates/logic/student_detail.html:1568
+#: templates/logic/student_detail_backup.html:1121
 msgid "Цели и пожелания"
-msgstr "Maqsadlar va istaklar"
+msgstr ""
 
-#: templates/logic/student_detail.html:644
+#: templates/logic/student_detail.html:1579
+#: templates/logic/student_detail_backup.html:1132
 msgid "Хочет изучать"
-msgstr "O'rganmoqchi"
+msgstr ""
 
-#: templates/logic/student_detail.html:661
-#: templates/logic/teacher_register_step2.html:597
-#: templates/logic/teacher_register_step2.html:654
+#: templates/logic/student_detail.html:1596
+#: templates/logic/student_detail_backup.html:1149
+#: templates/logic/teacher_register_step2.html:994
+#: templates/logic/teacher_register_step2.html:1051
 msgid "Дополнительная информация"
-msgstr "Qo'shimcha ma'lumot"
+msgstr ""
 
-#: templates/logic/student_detail.html:677
+#: templates/logic/student_detail.html:1612
+#: templates/logic/student_detail_backup.html:1165
 msgid "Формат занятий"
-msgstr "Dars formati"
+msgstr ""
 
-#: templates/logic/student_detail.html:686
+#: templates/logic/student_detail.html:1621
+#: templates/logic/student_detail_backup.html:1174
 msgid "Доступные дни"
-msgstr "Mavjud kunlar"
+msgstr ""
 
-#: templates/logic/student_detail.html:741
-#: templates/logic/student_detail.html:844
-msgid "Связаться с учеником"
-msgstr "O'quvchi bilan bog'lanish"
-
-#: templates/logic/student_detail.html:749
-msgid "Написать в Telegram"
-msgstr "Telegramda yozish"
-
-#: templates/logic/student_detail.html:759
-msgid "Написать в WhatsApp"
-msgstr "WhatsAppda yozish"
-
-#: templates/logic/student_detail.html:767
-#: templates/logic/student_detail.html:854
-msgid "Позвонить"
-msgstr "Qo'ng'iroq qilish"
-
-#: templates/logic/student_detail.html:772
-msgid "Ученик не указал контактные данные"
-msgstr "O'quvchi aloqa ma'lumotlarini ko'rsatmagan"
-
-#: templates/logic/student_detail.html:782
+#: templates/logic/student_detail.html:1696
+#: templates/logic/student_detail_backup.html:1270
 msgid "Дополнительные интересы"
-msgstr "Qo'shimcha qiziqishlar"
+msgstr ""
 
-#: templates/logic/student_detail.html:800
+#: templates/logic/student_detail.html:1714
+#: templates/logic/student_detail_backup.html:1288
+#: templates/logic/student_suggestions.html:4
+#: templates/logic/student_suggestions.html:8
 msgid "Подходящие учителя"
-msgstr "Mos o'qituvchilar"
+msgstr ""
 
-#: templates/logic/student_detail.html:835
+#: templates/logic/student_detail.html:1755
+#: templates/logic/student_detail_backup.html:1324
 msgid "Бюджет ученика"
-msgstr "O'quvchi byudjeti"
+msgstr ""
 
-#: templates/logic/student_detail.html:838
-msgid "готов платить за час"
-msgstr "soatiga to'lashga tayyor"
+#: templates/logic/student_detail.html:1766
+#: templates/logic/teacher_detail.html:1685
+msgid "Написать сообщение"
+msgstr ""
 
-#: templates/logic/student_detail.html:846
-msgid "Функция в разработке"
-msgstr "Funksiya ishlab chiqilmoqda"
+#: templates/logic/student_detail.html:1774
+#: templates/logic/student_detail.html:1779
+#: templates/logic/student_detail_backup.html:1237
+#: templates/logic/teacher_detail.html:1693
+#: templates/logic/teacher_detail.html:1698
+msgid "Написать в Telegram"
+msgstr ""
 
-#: templates/logic/student_detail.html:848
-msgid "Отправить сообщение"
-msgstr "Xabar yuborish"
+#: templates/logic/student_detail.html:1787
+#: templates/logic/teacher_detail.html:1706
+msgid "В избранном"
+msgstr ""
 
-#: templates/logic/student_detail.html:862
+#: templates/logic/student_detail.html:1787
+#: templates/logic/teacher_detail.html:1706
+msgid "В избранное"
+msgstr ""
+
+#: templates/logic/student_detail.html:1794
+#: templates/logic/teacher_detail.html:1713
+msgid "Безопасная сделка через платформу"
+msgstr ""
+
+#: templates/logic/student_detail.html:1800
+#: templates/logic/teacher_detail.html:1719
+#: templates/logic/teacher_profile.html:993
+msgid "Контактная информация"
+msgstr ""
+
+#: templates/logic/student_detail.html:1839
+#: templates/logic/teacher_detail.html:1758
+msgid "Доступность"
+msgstr ""
+
+#: templates/logic/student_detail.html:1866
+#: templates/logic/student_detail_backup.html:1363
 msgid "Похожие ученики"
-msgstr "O'xshash o'quvchilar"
+msgstr ""
 
-#: templates/logic/student_detail.html:888
+#: templates/logic/student_detail.html:1897
+#: templates/logic/student_detail_backup.html:1389
 msgid "Страница профиля ученика загружена"
-msgstr "O'quvchi profili sahifasi yuklandi"
+msgstr ""
 
-# ========== TEACHER PROFILE ==========
-#: templates/logic/student_profile.html:354
-#: templates/logic/teacher_profile.html:568
+#: templates/logic/student_detail_backup.html:1229
+#: templates/logic/student_detail_backup.html:1333
+msgid "Связаться с учеником"
+msgstr ""
+
+#: templates/logic/student_detail_backup.html:1247
+msgid "Написать в WhatsApp"
+msgstr ""
+
+#: templates/logic/student_detail_backup.html:1255
+#: templates/logic/student_detail_backup.html:1355
+msgid "Позвонить"
+msgstr ""
+
+#: templates/logic/student_detail_backup.html:1260
+msgid "Ученик не указал контактные данные"
+msgstr ""
+
+#: templates/logic/student_detail_backup.html:1327
+msgid "готов платить за час"
+msgstr ""
+
+#: templates/logic/student_detail_backup.html:1338
+#: templates/logic/student_detail_backup.html:1343
+#: templates/logic/student_detail_backup.html:1348
+msgid "Отправить сообщение"
+msgstr ""
+
+#: templates/logic/student_detail_backup.html:1341
+msgid "Ученики не могут писать другим ученикам"
+msgstr ""
+
+#: templates/logic/student_detail_backup.html:1346
+msgid "Войдите в систему, чтобы связаться с учеником"
+msgstr ""
+
+#: templates/logic/student_detail_backup.html:1405
+#: templates/logic/student_detail_backup.html:1408
+#: templates/logic/teacher_detail.html:1827
+msgid "Произошла ошибка"
+msgstr ""
+
+#: templates/logic/student_profile.html:743
+#: templates/logic/teacher_profile.html:737
 msgid "Статистика просмотров профиля"
-msgstr "Profil ko'rishlar statistikasi"
+msgstr ""
 
-#: templates/logic/student_profile.html:360
-#: templates/logic/teacher_profile.html:574
+#: templates/logic/student_profile.html:749
+#: templates/logic/teacher_profile.html:743
 msgid "За сегодня"
-msgstr "Bugun"
+msgstr ""
 
-#: templates/logic/student_profile.html:364
-#: templates/logic/teacher_profile.html:578
+#: templates/logic/student_profile.html:753
+#: templates/logic/teacher_profile.html:747
 msgid "За неделю"
-msgstr "Bir hafta"
+msgstr ""
 
-#: templates/logic/student_profile.html:368
-#: templates/logic/teacher_profile.html:582
+#: templates/logic/student_profile.html:757
+#: templates/logic/teacher_profile.html:751
 msgid "За всё время"
-msgstr "Barcha vaqt"
+msgstr ""
 
-#: templates/logic/student_profile.html:373
-#, fuzzy, python-format
-#| msgid ""
-#| "Ваш профиль просмотрели <strong>%(week)s</strong> раз за последнюю "
-#| "неделю. Уникальных посетителей: <strong>%(unique)s</strong>. Продолжайте "
-#| "обновлять профиль для привлечения новых учеников!"
+#: templates/logic/student_profile.html:762
+#, python-format
 msgid ""
 "Ваш профиль просмотрели <strong>%(week)s</strong> раз за последнюю неделю. "
 "Уникальных посетителей: <strong>%(unique)s</strong>. Это означает, что "
 "учителя интересуются вашим профилем!"
 msgstr ""
-"Sizning profilingiz oxirgi haftada <strong>%(week)s</strong> marta ko'rildi. "
-"Noyob tashrif buyuruvchilar: <strong>%(unique)s</strong>. Yangi "
-"o'quvchilarni jalb qilish uchun profilni yangilab boring!"
 
-#: templates/logic/student_profile.html:389
-#: templates/logic/student_profile.html:528
+#: templates/logic/student_profile.html:774
+#: templates/logic/student_profile.html:786
+#: templates/logic/student_profile.html:932
 msgid "Ученик"
-msgstr "O'quvchi"
+msgstr ""
 
-#: templates/logic/student_profile.html:400
-#: templates/logic/teacher_profile.html:658
+#: templates/logic/student_profile.html:797
+#: templates/logic/teacher_profile.html:827
 msgid "Редактировать профиль"
-msgstr "Profilni tahrirlash"
+msgstr ""
 
-#: templates/logic/student_profile.html:413
+#: templates/logic/student_profile.html:801
+#: templates/logic/teacher_profile.html:830
+msgid "Посмотреть как видят ученики"
+msgstr ""
+
+#: templates/logic/student_profile.html:804
+msgid "Избранные учителя"
+msgstr ""
+
+#: templates/logic/student_profile.html:817
 msgid "Интересующих предметов"
-msgstr "Maksimum 5 ta fan"
+msgstr ""
 
-#: templates/logic/student_profile.html:417
+#: templates/logic/student_profile.html:821
 msgid "Избранных учителей"
-msgstr "O'qituvchi bo'lish"
+msgstr ""
 
-#: templates/logic/student_profile.html:421
+#: templates/logic/student_profile.html:825
 msgid "Активных переписок"
-msgstr "Faol qidiruv"
+msgstr ""
 
-#: templates/logic/student_profile.html:448
+#: templates/logic/student_profile.html:852
 msgid "Мои цели обучения"
-msgstr "Ta'lim formati"
+msgstr ""
 
-#: templates/logic/student_profile.html:460
+#: templates/logic/student_profile.html:864
 msgid "Информация о профиле"
-msgstr "Profilni tahrirlash"
+msgstr ""
 
-#: templates/logic/student_profile.html:523
-#: templates/logic/teacher_profile.html:889
+#: templates/logic/student_profile.html:869
+#: templates/logic/teacher_profile.html:1057
+msgid "Имя пользователя"
+msgstr ""
+
+#: templates/logic/student_profile.html:927
+#: templates/logic/teacher_profile.html:1061
 msgid "Дата регистрации"
-msgstr "Ro'yxatdan o'tish sanasi"
+msgstr ""
 
-#: templates/logic/student_profile.html:527
+#: templates/logic/student_profile.html:931
 msgid "Тип аккаунта"
-msgstr "Hisob turi"
+msgstr ""
 
-#: templates/logic/student_profile.html:538
+#: templates/logic/student_profile.html:942
 msgid "Завершите заполнение профиля для лучшего подбора учителей"
 msgstr ""
 
-#: templates/logic/student_profile.html:540
+#: templates/logic/student_profile.html:944
 msgid "Заполнить профиль"
-msgstr "Profilni tahrirlash"
+msgstr ""
 
-# ========== STUDENTS LIST PAGE ==========
-#: templates/logic/students_list.html:468
+#: templates/logic/student_profile_edit.html:5
+#: templates/logic/student_profile_edit.html:461
+msgid "Student Profile Edit"
+msgstr ""
+
+#: templates/logic/student_profile_edit.html:464
+msgid "Display in search:"
+msgstr ""
+
+#: templates/logic/student_profile_edit.html:490
+msgid "Personal Information"
+msgstr ""
+
+#: templates/logic/student_profile_edit.html:494
+msgid "Profile Photo"
+msgstr ""
+
+#: templates/logic/student_profile_edit.html:590
+msgid "Subjects and Learning Goals"
+msgstr ""
+
+#: templates/logic/student_profile_edit.html:639
+msgid "Additional Interests"
+msgstr ""
+
+#: templates/logic/student_profile_edit.html:647
+msgid "Learning Preferences"
+msgstr ""
+
+#: templates/logic/student_profile_edit.html:696
+#: templates/logic/teacher_register_step1.html:901
+msgid "Cancel"
+msgstr ""
+
+#: templates/logic/student_profile_edit.html:699
+msgid "Save Changes"
+msgstr ""
+
+#: templates/logic/student_profile_edit.html:738
+msgid "activated"
+msgstr ""
+
+#: templates/logic/student_profile_edit.html:738
+msgid "deactivated"
+msgstr ""
+
+#: templates/logic/student_profile_edit.html:739
+msgid "Profile"
+msgstr ""
+
+#: templates/logic/student_profile_edit.html:742
+msgid "Error changing status"
+msgstr ""
+
+#: templates/logic/student_profile_edit.html:748
+msgid "An error occurred"
+msgstr ""
+
+#: templates/logic/student_profile_edit.html:778
+msgid "Select at least one subject to study"
+msgstr ""
+
+#: templates/logic/student_profile_edit.html:787
+msgid "Maximum budget must be greater than minimum"
+msgstr ""
+
+#: templates/logic/student_suggestions.html:11
+msgid "По вашим предметам"
+msgstr ""
+
+#: templates/logic/student_suggestions.html:34
+#: templates/logic/teacher_detail.html:1672
+#: templates/logic/teacher_detail.html:1800
+msgid "от"
+msgstr ""
+
+#: templates/logic/student_suggestions.html:42
+msgid ""
+"Мы не нашли учителей по указанным предметам. Попробуйте обновить профиль или "
+"посмотрите лучших учителей."
+msgstr ""
+
+#: templates/logic/student_suggestions.html:43
+msgid "Посмотреть учителей"
+msgstr ""
+
+#: templates/logic/students_list.html:1056
 msgid "Ученики ищут учителей"
-msgstr "O'quvchilar o'qituvchi qidirmoqda"
+msgstr ""
 
-#: templates/logic/students_list.html:469
+#: templates/logic/students_list.html:1057
 msgid ""
 "Найдите учеников, которым нужна ваша помощь. Свяжитесь с ними напрямую и "
 "начните преподавать!"
 msgstr ""
-"Sizning yordamingizga muhtoj o'quvchilarni toping. Ular bilan bevosita "
-"bog'laning va dars berishni boshlang!"
 
-#: templates/logic/students_list.html:493
+#: templates/logic/students_list.html:1085
 msgid "Имя ученика..."
-msgstr "O'quvchi ismi..."
+msgstr ""
 
-#: templates/logic/students_list.html:500
+#: templates/logic/students_list.html:1092
 msgid "Предмет для изучения"
-msgstr "O'rganish uchun fan"
+msgstr ""
 
-#: templates/logic/students_list.html:560
+#: templates/logic/students_list.html:1152
 msgid "Бюджет ученика (сум/час)"
-msgstr "O'quvchi byudjeti (so'm/soat)"
+msgstr ""
 
-#: templates/logic/students_list.html:587
+#: templates/logic/students_list.html:1181
 msgid "ученик"
-msgstr "o'quvchi"
+msgstr ""
 
-#: templates/logic/students_list.html:587
+#: templates/logic/students_list.html:1181
 msgid "ученика"
-msgstr "o'quvchi"
+msgstr ""
 
-#: templates/logic/students_list.html:587
-#: templates/logic/teacher_detail.html:1133
+#: templates/logic/students_list.html:1181
+#: templates/logic/teacher_detail.html:1449
 msgid "учеников"
-msgstr "o'quvchi"
+msgstr ""
 
-#: templates/logic/students_list.html:630
+#: templates/logic/students_list.html:1221
 msgid "Ищу учителя для изучения новых предметов"
-msgstr "Yangi fanlarni o'rganish uchun o'qituvchi qidiryapman"
+msgstr ""
 
-#: templates/logic/students_list.html:662
+#: templates/logic/students_list.html:1251
 msgid "готов платить"
-msgstr "to'lashga tayyor"
+msgstr ""
 
-#: templates/logic/students_list.html:666
+#: templates/logic/students_list.html:1255
 msgid "Связаться"
-msgstr "Bog'lanish"
+msgstr ""
 
-#: templates/logic/students_list.html:675
+#: templates/logic/students_list.html:1300
 msgid "Ученики не найдены"
-msgstr "O'quvchilar topilmadi"
+msgstr ""
 
-# ========== TEACHER DETAIL PAGE ==========
 #: templates/logic/teacher_detail.html:5
 msgid "Учитель на UstozHub"
-msgstr "UstozHub'da o'qituvchi"
-
-#: templates/logic/teacher_detail.html:1113
-#: templates/logic/teacher_profile.html:649
-msgid "лет опыта"
-msgstr "yillik tajriba"
-
-#: templates/logic/teacher_detail.html:1127
-msgid "отзывов"
-msgstr "sharh"
-
-#: templates/logic/teacher_detail.html:1137
-msgid "Онлайн"
-msgstr "Onlayn"
-
-#: templates/logic/teacher_detail.html:1154
-msgid "Не указаны"
-msgstr "Ko'rsatilmagan"
-
-#: templates/logic/teacher_detail.html:1164
-msgid "Верифицирован"
-msgstr "Tasdiqlangan"
-
-#: templates/logic/teacher_detail.html:1169
-msgid "Топ преподаватель"
-msgstr "Top o'qituvchi"
-
-#: templates/logic/teacher_detail.html:1184
-msgid "О преподавателе"
-msgstr "O'qituvchi haqida"
-
-#: templates/logic/teacher_detail.html:1193
-#: templates/logic/teacher_register_step2.html:488
-#: templates/logic/teacher_register_step2.html:506
-#: templates/logic/teacher_register_step3.html:607
-msgid "Предметы и цены"
-msgstr "Fanlar va narxlar"
-
-#: templates/logic/teacher_detail.html:1215
-msgid "Пробный урок бесплатно"
-msgstr "Sinov darsi bepul"
-
-#: templates/logic/teacher_detail.html:1222
-msgid "Предметы не указаны"
-msgstr "Fanlar ko'rsatilmagan"
-
-#: templates/logic/teacher_detail.html:1232
-msgid "Образование"
-msgstr "Ta'lim"
-
-#: templates/logic/teacher_detail.html:1241
-msgid "Специализация:"
-msgstr "Mutaxassislik:"
-
-#: templates/logic/teacher_detail.html:1252
-#: templates/logic/teacher_register_step3.html:587
-msgid "Сертификаты и достижения"
-msgstr "Sertifikatlar va yutuqlar"
-
-#: templates/logic/teacher_detail.html:1269
-msgid "Отзывы"
-msgstr "Sharhlar"
-
-#: templates/logic/teacher_detail.html:1275
-msgid "Знание предмета"
-msgstr "Fan bilimi"
-
-#: templates/logic/teacher_detail.html:1282
-msgid "Коммуникабельность"
-msgstr "Muloqotchanlik"
-
-#: templates/logic/teacher_detail.html:1289
-msgid "Пунктуальность"
-msgstr "Punktuallik"
-
-#: templates/logic/teacher_detail.html:1313
-msgid "Общий отзыв"
-msgstr "Umumiy sharh"
-
-#: templates/logic/teacher_detail.html:1332
-msgid "Проверенный отзыв"
-msgstr "Tekshirilgan sharh"
-
-#: templates/logic/teacher_detail.html:1339
-msgid "Пока нет отзывов"
-msgstr "Hozircha sharhlar yo'q"
-
-#: templates/logic/teacher_detail.html:1352
-msgid "Стоимость занятий"
-msgstr "Dars narxi"
-
-#: templates/logic/teacher_detail.html:1356
-#: templates/logic/teacher_detail.html:1471
-msgid "от"
-msgstr "dan"
-
-#: templates/logic/teacher_detail.html:1368
-msgid "Написать сообщение"
-msgstr "Xabar yozish"
-
-#: templates/logic/teacher_detail.html:1373
-msgid "Записаться на урок"
-msgstr "Darsga yozilish"
-
-#: templates/logic/teacher_detail.html:1378
-msgid "В избранном"
-msgstr "Sevimlilarda"
-
-#: templates/logic/teacher_detail.html:1378
-msgid "В избранное"
-msgstr "Sevimliga qo'shish"
-
-#: templates/logic/teacher_detail.html:1384
-msgid "Безопасная сделка через платформу"
-msgstr "Platforma orqali xavfsiz bitim"
-
-#: templates/logic/teacher_detail.html:1390
-#: templates/logic/teacher_profile.html:821
-msgid "Контактная информация"
-msgstr "Aloqa ma'lumotlari"
+msgstr ""
 
 #: templates/logic/teacher_detail.html:1429
-msgid "Доступность"
-msgstr "Mavjudlik"
+#: templates/logic/teacher_profile.html:818
+msgid "лет опыта"
+msgstr ""
 
-#: templates/logic/teacher_detail.html:1449
+#: templates/logic/teacher_detail.html:1443
+msgid "отзывов"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1453
+msgid "Онлайн"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1470
+msgid "Не указаны"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1480
+msgid "Верифицирован"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1485
+msgid "Топ преподаватель"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1500
+msgid "О преподавателе"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1509
+#: templates/logic/teacher_register_step2.html:846
+#: templates/logic/teacher_register_step2.html:864
+#: templates/logic/teacher_register_step3.html:739
+msgid "Предметы и цены"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1531
+msgid "Пробный урок бесплатно"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1538
+msgid "Предметы не указаны"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1548
+msgid "Образование"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1557
+msgid "Специализация:"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1568
+#: templates/logic/teacher_register_step3.html:719
+msgid "Сертификаты и достижения"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1585
+msgid "Отзывы"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1591
+msgid "Знание предмета"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1598
+msgid "Коммуникабельность"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1605
+msgid "Пунктуальность"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1629
+msgid "Общий отзыв"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1648
+msgid "Проверенный отзыв"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1655
+msgid "Пока нет отзывов"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1668
+msgid "Стоимость занятий"
+msgstr ""
+
+#: templates/logic/teacher_detail.html:1778
 msgid "Похожие преподаватели"
-msgstr "O'xshash o'qituvchilar"
+msgstr ""
 
-#: templates/logic/teacher_detail.html:1471
-#: templates/logic/teacher_profile.html:720
-msgid "сум/час"
-msgstr "so'm/soat"
-
-# ========== JAVASCRIPT MESSAGES ==========
-#: templates/logic/teacher_detail.html:1498
-msgid "Произошла ошибка"
-msgstr "Xatolik yuz berdi"
-
-#: templates/logic/teacher_detail.html:1503
+#: templates/logic/teacher_detail.html:1832
 msgid "Произошла ошибка при добавлении в избранное"
-msgstr "Sevimliga qo'shishda xatolik yuz berdi"
+msgstr ""
 
-#: templates/logic/teacher_detail.html:1506
+#: templates/logic/teacher_detail.html:1835
 msgid "Войдите в систему, чтобы добавить в избранное"
-msgstr "Sevimliga qo'shish uchun tizimga kiring"
+msgstr ""
 
-#: templates/logic/teacher_detail.html:1514
-msgid "Функция отправки сообщений будет доступна в следующей версии"
-msgstr "Xabar yuborish funksiyasi keyingi versiyada mavjud bo'ladi"
+#: templates/logic/teacher_detail.html:1847
+msgid "Учителя не могут писать другим учителям"
+msgstr ""
 
-#: templates/logic/teacher_detail.html:1516
+#: templates/logic/teacher_detail.html:1850
 msgid "Войдите в систему, чтобы связаться с учителем"
-msgstr "O'qituvchi bilan bog'lanish uchun tizimga kiring"
+msgstr ""
 
-#: templates/logic/teacher_detail.html:1524
-msgid "Функция бронирования будет доступна в следующей версии"
-msgstr "Bron qilish funksiyasi keyingi versiyada mavjud bo'ladi"
-
-#: templates/logic/teacher_detail.html:1526
-msgid "Войдите в систему, чтобы записаться на урок"
-msgstr "Darsga yozilish uchun tizimga kiring"
-
-#: templates/logic/teacher_profile.html:587
+#: templates/logic/teacher_profile.html:756
 #, python-format
 msgid ""
 "Ваш профиль просмотрели <strong>%(week)s</strong> раз за последнюю неделю. "
 "Уникальных посетителей: <strong>%(unique)s</strong>. Продолжайте обновлять "
 "профиль для привлечения новых учеников!"
 msgstr ""
-"Sizning profilingiz oxirgi haftada <strong>%(week)s</strong> marta ko'rildi. "
-"Noyob tashrif buyuruvchilar: <strong>%(unique)s</strong>. Yangi "
-"o'quvchilarni jalb qilish uchun profilni yangilab boring!"
 
-#: templates/logic/teacher_profile.html:596
+#: templates/logic/teacher_profile.html:765
 msgid "Ваш профиль на модерации"
-msgstr "Sizning profilingiz moderatsiyada"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:597
+#: templates/logic/teacher_profile.html:766
 msgid ""
 "Администрация проверит ваш профиль в ближайшее время. После одобрения вы "
 "сможете получать запросы от учеников и ваш профиль будет виден в поиске."
 msgstr ""
-"Ma'muriyat tez orada profilingizni tekshiradi. Tasdiqlangandan so'ng siz "
-"o'quvchilardan so'rovlar olishingiz mumkin va profilingiz qidiruvda "
-"ko'rinadi."
 
-#: templates/logic/teacher_profile.html:604
+#: templates/logic/teacher_profile.html:773
 msgid "Профиль отклонен"
-msgstr "Profil rad etildi"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:608
+#: templates/logic/teacher_profile.html:777
 msgid "Пожалуйста, свяжитесь с поддержкой для уточнения причины отклонения."
 msgstr ""
-"Rad etilish sababini aniqlash uchun qo'llab-quvvatlash bilan bog'laning."
 
-#: templates/logic/teacher_profile.html:616
+#: templates/logic/teacher_profile.html:785
 msgid "Профиль одобрен!"
-msgstr "Profil tasdiqlandi!"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:617
+#: templates/logic/teacher_profile.html:786
 msgid "Ваш профиль виден в поиске. Вы можете получать запросы от учеников."
 msgstr ""
-"Sizning profilingiz qidiruvda ko'rinadi. Siz o'quvchilardan so'rovlar "
-"olishingiz mumkin."
 
-#: templates/logic/teacher_profile.html:626
+#: templates/logic/teacher_profile.html:795
 msgid "На модерации"
-msgstr "Moderatsiyada"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:628
+#: templates/logic/teacher_profile.html:797
 msgid "Одобрено"
-msgstr "Tasdiqlangan"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:630
+#: templates/logic/teacher_profile.html:799
 msgid "Отклонено"
-msgstr "Rad etilgan"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:650
+#: templates/logic/teacher_profile.html:819
 msgid "рейтинг"
-msgstr "reyting"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:661
-msgid "Посмотреть как видят ученики"
-msgstr "O'quvchilar ko'rgan kabi ko'rish"
+#: templates/logic/teacher_profile.html:833
+msgid "Избранные ученики"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:675
+#: templates/logic/teacher_profile.html:847
 msgid "Всего учеников"
-msgstr "Jami o'quvchilar"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:685
+#: templates/logic/teacher_profile.html:857
 msgid "Отзывов"
-msgstr "Sharhlar"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:690
+#: templates/logic/teacher_profile.html:862
 msgid "Предметов"
-msgstr "Fanlar"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:710
+#: templates/logic/teacher_profile.html:882
 msgid "Мои предметы и цены"
-msgstr "Mening fanlarim va narxlarim"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:725
+#: templates/logic/teacher_profile.html:897
 msgid "Пробное занятие бесплатно"
-msgstr "Sinov darsi bepul"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:741
+#: templates/logic/teacher_profile.html:913
 msgid "Образование и опыт"
-msgstr "Ta'lim va tajriba"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:761
+#: templates/logic/teacher_profile.html:933
 msgid "Опыт преподавания"
-msgstr "O'qitish tajribasi"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:789
+#: templates/logic/teacher_profile.html:961
 msgid "Формат и расписание"
-msgstr "Format va jadval"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:801
+#: templates/logic/teacher_profile.html:973
 msgid "Время работы"
-msgstr "Ish vaqti"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:856
+#: templates/logic/teacher_profile.html:1028
 msgid "Сертификаты и дипломы"
-msgstr "Sertifikatlar va diplomlar"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:868
+#: templates/logic/teacher_profile.html:1040
 msgid "Скачать"
-msgstr "Yuklab olish"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:881
+#: templates/logic/teacher_profile.html:1053
 msgid "Системная информация"
-msgstr "Tizim ma'lumotlari"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:893
+#: templates/logic/teacher_profile.html:1065
 msgid "Статус профиля"
-msgstr "Profil holati"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:896
+#: templates/logic/teacher_profile.html:1068
 msgid "Активен"
-msgstr "Faol"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:898
+#: templates/logic/teacher_profile.html:1070
 msgid "Неактивен"
-msgstr "Faol emas"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:903
+#: templates/logic/teacher_profile.html:1075
 msgid "Рекомендуемый"
-msgstr "Tavsiya etilgan"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:906
+#: templates/logic/teacher_profile.html:1078
 msgid "Да"
-msgstr "Ha"
+msgstr ""
 
-#: templates/logic/teacher_profile.html:908
+#: templates/logic/teacher_profile.html:1080
 msgid "Нет"
-msgstr "Yo'q"
+msgstr ""
 
-# ========== TEACHER REGISTRATION STEP 1 ==========
+#: templates/logic/teacher_register_complete.html:4
+msgid "Registration Completed"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:258
+msgid "Under Moderation"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:261
+msgid "Thank you for registering!"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:264
+msgid ""
+"Your teacher registration application has been successfully submitted. Our "
+"team will review your information and contact you shortly."
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:270
+msgid "What happens next?"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:272
+msgid ""
+"Your application will be reviewed by an administrator within <strong>24 "
+"hours</strong>. We will check:"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:274
+msgid "Accuracy of the information provided"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:275
+msgid "Compliance with platform requirements"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:276
+msgid "Quality of profile completion"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:278
+#, python-format
+msgid ""
+"After approval, you will receive a notification at <strong>%(email)s</"
+"strong> and will be able to start working on the platform."
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:282
+msgid "Moderation Process"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:289
+msgid "Application Submitted"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:290
+msgid "Your data has been received and is in the review queue"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:299
+msgid "Review (up to 24 hours)"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:300
+msgid "An administrator will review your application"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:309
+msgid "Notification"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:310
+msgid "You will receive an email with the review result"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:319
+msgid "Start Working"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:320
+msgid "After approval, your profile will appear on the platform"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:328
+msgid "Go to Home"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:332
+msgid "Contact Us"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:337
+msgid "Have questions? Contact us:"
+msgstr ""
+
+#: templates/logic/teacher_register_complete.html:338
+msgid "or"
+msgstr ""
+
 #: templates/logic/teacher_register_step1.html:4
 msgid "Teacher Registration - Step 1 of 3"
-msgstr "O'qituvchi ro'yxatdan o'tish - 1-qadam, 3 tadan"
+msgstr ""
 
-#: templates/logic/teacher_register_step1.html:430
+#: templates/logic/teacher_register_step1.html:542
 msgid "Become a teacher on UstozHub"
-msgstr "UstozHub'da o'qituvchi bo'ling"
+msgstr ""
 
-#: templates/logic/teacher_register_step1.html:431
+#: templates/logic/teacher_register_step1.html:543
 msgid "Share your knowledge and help students achieve success"
 msgstr ""
-"Bilimlaringizni ulashing va o'quvchilarga muvaffaqiyatga erishishda yordam "
-"bering"
 
-#: templates/logic/teacher_register_step1.html:442
-#: templates/logic/teacher_register_step1.html:470
+#: templates/logic/teacher_register_step1.html:554
+#: templates/logic/teacher_register_step1.html:582
 msgid "Personal information"
-msgstr "Shaxsiy ma'lumotlar"
+msgstr ""
 
-#: templates/logic/teacher_register_step1.html:446
+#: templates/logic/teacher_register_step1.html:558
 msgid "Subjects and prices"
-msgstr "Fanlar va narxlar"
+msgstr ""
 
-#: templates/logic/teacher_register_step1.html:450
+#: templates/logic/teacher_register_step1.html:562
 msgid "Certificates"
-msgstr "Sertifikatlar"
+msgstr ""
 
-#: templates/logic/teacher_register_step1.html:504
+#: templates/logic/teacher_register_step1.html:616
 msgid "Will be used for login"
-msgstr "Kirish uchun ishlatiladi"
+msgstr ""
 
-#: templates/logic/teacher_register_step1.html:579
+#: templates/logic/teacher_register_step1.html:691
 msgid "Education and experience"
-msgstr "Ta'lim va tajriba"
+msgstr ""
 
-#: templates/logic/teacher_register_step1.html:642
+#: templates/logic/teacher_register_step1.html:754
 msgid "Teaching languages"
-msgstr "Dars beriladigan tillar"
+msgstr ""
 
-#: templates/logic/teacher_register_step1.html:670
+#: templates/logic/teacher_register_step1.html:782
 msgid "Location and teaching format"
-msgstr "Joylashuv va dars formati"
+msgstr ""
 
-#: templates/logic/teacher_register_step1.html:700
+#: templates/logic/teacher_register_step1.html:812
 msgid "Additional contacts"
-msgstr "Qo'shimcha kontaktlar"
+msgstr ""
 
-#: templates/logic/teacher_register_step1.html:730
+#: templates/logic/teacher_register_step1.html:842
 msgid "Working hours"
-msgstr "Ish vaqti"
+msgstr ""
 
-#: templates/logic/teacher_register_step1.html:778
+#: templates/logic/teacher_register_step1.html:890
 msgid "I accept the"
-msgstr "Men qabul qilaman"
+msgstr ""
 
-#: templates/logic/teacher_register_step1.html:778
+#: templates/logic/teacher_register_step1.html:890
 msgid "terms of use"
-msgstr "foydalanish shartlarini"
+msgstr ""
 
-#: templates/logic/teacher_register_step1.html:778
+#: templates/logic/teacher_register_step1.html:890
 msgid "and"
-msgstr "va"
+msgstr ""
 
-#: templates/logic/teacher_register_step1.html:778
+#: templates/logic/teacher_register_step1.html:890
 msgid "privacy policy"
-msgstr "maxfiylik siyosatini"
+msgstr ""
 
-#: templates/logic/student_profile_edit.html:576
-#: templates/logic/teacher_register_step1.html:789
-msgid "Cancel"
-msgstr "Bekor qilish"
-
-#: templates/logic/teacher_register_step1.html:792
+#: templates/logic/teacher_register_step1.html:904
 msgid "Next"
-msgstr "Keyingi"
+msgstr ""
 
-#: templates/logic/teacher_register_step1.html:830
+#: templates/logic/teacher_register_step1.html:942
 msgid "Please fill in all required fields"
-msgstr "Iltimos, barcha majburiy maydonlarni to'ldiring"
+msgstr ""
 
-# ========== TEACHER REGISTRATION STEP 2 ==========
 #: templates/logic/teacher_register_step2.html:6
 msgid "Регистрация учителя - Шаг 2 из 3"
-msgstr "O'qituvchi ro'yxatdan o'tish - 2-qadam, 3 tadan"
+msgstr ""
 
-#: templates/logic/teacher_register_step2.html:489
+#: templates/logic/teacher_register_step2.html:847
 msgid "Укажите предметы, которые вы преподаете, и стоимость занятий"
-msgstr "O'qitayotgan fanlaringiz va darslar narxini ko'rsating"
+msgstr ""
 
-#: templates/logic/teacher_register_step2.html:502
-#: templates/logic/teacher_register_step3.html:601
+#: templates/logic/teacher_register_step2.html:860
+#: templates/logic/teacher_register_step3.html:733
 msgid "Личные данные"
-msgstr "Shaxsiy ma'lumotlar"
+msgstr ""
 
-#: templates/logic/teacher_register_step2.html:510
-#: templates/logic/teacher_register_step3.html:611
+#: templates/logic/teacher_register_step2.html:868
+#: templates/logic/teacher_register_step3.html:743
 msgid "Сертификаты"
-msgstr "Sertifikatlar va diplomlar"
+msgstr ""
 
-#: templates/logic/teacher_register_step2.html:520
+#: templates/logic/teacher_register_step2.html:878
 msgid "Совет по ценообразованию"
-msgstr "Narx belgilash bo'yicha maslahat"
+msgstr ""
 
-#: templates/logic/teacher_register_step2.html:521
+#: templates/logic/teacher_register_step2.html:879
 msgid ""
 "Укажите честную цену, основанную на вашем опыте. Средняя цена на платформе: "
 "50,000 - 150,000 сум/час. Вы можете добавить до 5 предметов."
 msgstr ""
-"Tajribangizga asoslangan adolatli narxni ko'rsating. Platformadagi o'rtacha "
-"narx: 50,000 - 150,000 so'm/soat. 5 tagacha fan qo'shishingiz mumkin."
 
-#: templates/logic/teacher_register_step2.html:552
-#: templates/logic/teacher_register_step2.html:619
-#: templates/logic/teacher_register_step3.html:746
-msgid "Удалить"
-msgstr "O'chirish"
+#: templates/logic/teacher_register_step2.html:931
+msgid "Выберите категорию"
+msgstr ""
 
-#: templates/logic/teacher_register_step2.html:569
-#: templates/logic/teacher_register_step2.html:633
+#: templates/logic/teacher_register_step2.html:966
+#: templates/logic/teacher_register_step2.html:1030
 msgid "Цена за час"
-msgstr "Soatiga narx"
+msgstr ""
 
-#: templates/logic/teacher_register_step2.html:580
+#: templates/logic/teacher_register_step2.html:977
 msgid "Укажите цену в узбекских сумах"
-msgstr "Narxni o'zbek so'mida ko'rsating"
+msgstr ""
 
-#: templates/logic/teacher_register_step2.html:605
+#: templates/logic/teacher_register_step2.html:1002
 msgid "Опишите особенности преподавания этого предмета"
-msgstr "Ushbu fanni o'qitish xususiyatlarini tasvirlab bering"
+msgstr ""
 
-#: templates/logic/teacher_register_step2.html:664
-#: templates/logic/teacher_register_step2.html:763
+#: templates/logic/teacher_register_step2.html:1061
+#: templates/logic/teacher_register_step2.html:1421
 msgid "Добавить еще предмет"
-msgstr "Yana fan qo'shish"
+msgstr ""
 
-#: templates/logic/teacher_register_step2.html:670
-#: templates/logic/teacher_register_step3.html:763
-msgid "Назад"
-msgstr "Orqaga"
-
-#: templates/logic/teacher_register_step2.html:673
+#: templates/logic/teacher_register_step2.html:1070
 msgid "Далее"
-msgstr "Keyingi"
+msgstr ""
 
-#: templates/logic/teacher_register_step2.html:693
+#: templates/logic/teacher_register_step2.html:1169
+msgid "Предметы не найдены"
+msgstr ""
+
+#: templates/logic/teacher_register_step2.html:1284
+msgid "Популярные предметы загружаются..."
+msgstr ""
+
+#: templates/logic/teacher_register_step2.html:1314
+msgid "Категории загружаются..."
+msgstr ""
+
+#: templates/logic/teacher_register_step2.html:1332
+msgid "Поиск в категории"
+msgstr ""
+
+#: templates/logic/teacher_register_step2.html:1351
 msgid "Максимум 5 предметов"
-msgstr "Maksimum 5 ta fan"
+msgstr ""
 
-#: templates/logic/teacher_register_step2.html:716
+#: templates/logic/teacher_register_step2.html:1374
 msgid "Первый предмет удалить нельзя"
-msgstr "Birinchi fanni o'chirib bo'lmaydi"
+msgstr ""
 
-#: templates/logic/teacher_register_step2.html:759
+#: templates/logic/teacher_register_step2.html:1417
 msgid "Максимум предметов добавлено"
-msgstr "Maksimal fanlar qo'shildi"
+msgstr ""
 
-#: templates/logic/teacher_register_step2.html:793
+#: templates/logic/teacher_register_step2.html:1451
 msgid "укажите цену"
-msgstr "narxni ko'rsating"
+msgstr ""
 
-#: templates/logic/teacher_register_step2.html:806
+#: templates/logic/teacher_register_step2.html:1464
 msgid "Ошибки"
-msgstr "Xatolar"
+msgstr ""
 
-#: templates/logic/teacher_register_step2.html:807
+#: templates/logic/teacher_register_step2.html:1465
 msgid "Добавьте хотя бы один предмет с ценой"
-msgstr "Kamida narxi bilan bitta fan qo'shing"
+msgstr ""
 
-# ========== TEACHER REGISTRATION STEP 3 ==========
 #: templates/logic/teacher_register_step3.html:4
 msgid "Регистрация учителя - Шаг 3 из 3"
-msgstr "O'qituvchi ro'yxatdan o'tish - 3-qadam, 3 tadan"
+msgstr ""
 
-#: templates/logic/teacher_register_step3.html:588
+#: templates/logic/teacher_register_step3.html:720
 msgid "Добавьте сертификаты для повышения доверия (необязательно)"
-msgstr "Ishonchni oshirish uchun sertifikatlar qo'shing (ixtiyoriy)"
+msgstr ""
 
-#: templates/logic/teacher_register_step3.html:621
+#: templates/logic/teacher_register_step3.html:753
 msgid "Этот шаг необязателен"
-msgstr "Bu qadam ixtiyoriy"
+msgstr ""
 
-#: templates/logic/teacher_register_step3.html:622
+#: templates/logic/teacher_register_step3.html:754
 msgid ""
 "Сертификаты повышают доверие учеников и помогают выделиться среди других "
 "учителей. Вы можете добавить их сейчас или позже в личном кабинете."
 msgstr ""
-"Sertifikatlar o'quvchilarning ishonchini oshiradi va boshqa o'qituvchilar "
-"orasida ajralib turishga yordam beradi. Ularni hozir yoki keyinroq shaxsiy "
-"kabinetda qo'shishingiz mumkin."
 
-#: templates/logic/teacher_register_step3.html:637
+#: templates/logic/teacher_register_step3.html:769
 msgid "Ошибка при загрузке"
-msgstr "Yuklashda xatolik"
+msgstr ""
 
-#: templates/logic/teacher_register_step3.html:646
-#: templates/logic/teacher_register_step3.html:707
+#: templates/logic/teacher_register_step3.html:778
+#: templates/logic/teacher_register_step3.html:839
 msgid "Добавить сертификат"
-msgstr "Sertifikat qo'shish"
+msgstr ""
 
-#: templates/logic/teacher_register_step3.html:662
+#: templates/logic/teacher_register_step3.html:794
 msgid "Например: \"Сертификат IELTS\", \"Диплом магистра\""
-msgstr "Masalan: \"IELTS sertifikati\", \"Magistr diplomi\""
+msgstr ""
 
-#: templates/logic/teacher_register_step3.html:676
+#: templates/logic/teacher_register_step3.html:808
 msgid "Организация, выдавшая сертификат"
-msgstr "Sertifikat bergan tashkilot"
+msgstr ""
 
-#: templates/logic/teacher_register_step3.html:690
+#: templates/logic/teacher_register_step3.html:822
 msgid "Перетащите файл сюда"
-msgstr "Faylni bu yerga torting"
+msgstr ""
 
-#: templates/logic/teacher_register_step3.html:691
+#: templates/logic/teacher_register_step3.html:823
 msgid "или нажмите для выбора"
-msgstr "yoki tanlash uchun bosing"
+msgstr ""
 
-#: templates/logic/teacher_register_step3.html:692
+#: templates/logic/teacher_register_step3.html:824
 msgid "Форматы: PDF, JPG, PNG (макс. 5 МБ)"
-msgstr "Formatlar: PDF, JPG, PNG (maks. 5 MB)"
-
-#: templates/logic/teacher_register_step3.html:716
-msgid "Загруженные сертификаты"
-msgstr "Yuklangan sertifikatlar"
-
-#: templates/logic/teacher_register_step3.html:739
-msgid "Просмотр"
-msgstr "Ko'rish"
-
-#: templates/logic/teacher_register_step3.html:755
-msgid "Сертификаты еще не добавлены"
-msgstr "Sertifikatlar hali qo'shilmagan"
-
-#: templates/logic/teacher_register_step3.html:770
-msgid "Пропустить"
-msgstr "O'tkazib yuborish"
-
-#: templates/logic/teacher_register_step3.html:775
-msgid "Завершить"
-msgstr "Yakunlash"
-
-#: templates/logic/teacher_register_step3.html:785
-msgid "Удалить этот сертификат?"
-msgstr "Bu sertifikatni o'chirish?"
-
-#: templates/logic/teacher_register_step3.html:833
-msgid "Пожалуйста, заполните все поля и выберите файл"
-msgstr "Iltimos, barcha maydonlarni to'ldiring va faylni tanlang"
-
-#: templates/logic/teacher_register_step3.html:840
-msgid "Размер файла не должен превышать 5 МБ"
-msgstr "Fayl hajmi 5 MB dan oshmasligi kerak"
+msgstr ""
 
 #: templates/logic/teacher_register_step3.html:848
+msgid "Загруженные сертификаты"
+msgstr ""
+
+#: templates/logic/teacher_register_step3.html:871
+msgid "Просмотр"
+msgstr ""
+
+#: templates/logic/teacher_register_step3.html:887
+msgid "Сертификаты еще не добавлены"
+msgstr ""
+
+#: templates/logic/teacher_register_step3.html:902
+msgid "Пропустить"
+msgstr ""
+
+#: templates/logic/teacher_register_step3.html:907
+msgid "Завершить"
+msgstr ""
+
+#: templates/logic/teacher_register_step3.html:917
+msgid "Удалить этот сертификат?"
+msgstr ""
+
+#: templates/logic/teacher_register_step3.html:965
+msgid "Пожалуйста, заполните все поля и выберите файл"
+msgstr ""
+
+#: templates/logic/teacher_register_step3.html:972
+msgid "Размер файла не должен превышать 5 МБ"
+msgstr ""
+
+#: templates/logic/teacher_register_step3.html:980
 msgid "Разрешены только файлы форматов: PDF, JPG, PNG"
-msgstr "Faqat quyidagi formatdagi fayllar ruxsat etilgan: PDF, JPG, PNG"
-
-#~ msgid "Username"
-#~ msgstr "Foydalanuvchi nomi"
-
-#~ msgid "First name"
-#~ msgstr "Ism"
-
-#~ msgid "Last name"
-#~ msgstr "Familiya"
-
-#~ msgid "Age"
-#~ msgstr "Yosh"
-
-#~ msgid "Phone"
-#~ msgstr "Telefon"
-
-#~ msgid "Password"
-#~ msgstr "Parol"
-
-#~ msgid "Confirm password"
-#~ msgstr "Parolni tasdiqlang"
-
-#~ msgid "Avatar"
-#~ msgstr "Profil rasmi"
-
-#~ msgid "Bio"
-#~ msgstr "O'zim haqimda"
-
-#~ msgid "Education level"
-#~ msgstr "Ta'lim darajasi"
-
-#~ msgid "Experience years"
-#~ msgstr "Tajriba (yil)"
-
-#~ msgid "University"
-#~ msgstr "Universitet"
-
-#~ msgid "Specialization"
-#~ msgstr "Mutaxassislik"
-
-#~ msgid "City"
-#~ msgstr "Shahar"
-
-#~ msgid "Teaching format"
-#~ msgstr "Dars formati"
-
-#~ msgid "Available from"
-#~ msgstr "Boshlanish vaqti"
-
-#~ msgid "Available to"
-#~ msgstr "Tugash vaqti"
-
-#~ msgid "Available weekdays"
-#~ msgstr "Ish kunlari"
-
-#~ msgid "Учитель"
-#~ msgstr "O'qituvchi"
+msgstr ""

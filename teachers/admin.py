@@ -419,7 +419,12 @@ from .models import TelegramUser, NotificationQueue, NotificationLog, PlatformMe
 from django.shortcuts import render, redirect
 from django.urls import path
 from django.contrib import messages
-from .admin_telegram_service import admin_telegram_service
+try:
+    from .admin_telegram_service import admin_telegram_service
+except Exception:
+    # Telegram package may be missing in some environments (dev machines, CI).
+    # Guard the import so management commands and tests can run without telegram.
+    admin_telegram_service = None
 from django.utils import timezone
 
 @admin.register(TelegramUser)
