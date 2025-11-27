@@ -26,6 +26,7 @@
         max-width: 1400px;
         margin: 0 auto;
         padding: 20px 20px 0;
+        padding-top: 90px; /* Отступ от navbar */
     }
 
     .tabs-wrapper {
@@ -87,9 +88,13 @@
        📄 ОСНОВНОЙ КОНТЕЙНЕР СТРАНИЦЫ
        ============================================ */
     .page-container {
-        max-width: 1400px;
+        max-width: 1600px;
         margin: 0 auto;
-        padding: 30px 20px;
+        padding: 30px 15px;
+        margin-top: 0; /* Убираем, так как tabs-container уже имеет отступ */
+        width: 100%;
+        box-sizing: border-box;
+        overflow-x: hidden;
     }
 
     .page-header {
@@ -128,9 +133,11 @@
        ============================================ */
     .content-layout {
         display: grid;
-        grid-template-columns: var(--filter-sidebar-width) 1fr;
-        gap: 30px;
+        grid-template-columns: 260px 1fr;
+        gap: 24px;
         align-items: start;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     /* ============================================
@@ -142,8 +149,8 @@
         padding: 20px;
         box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
         position: sticky;
-        top: calc(var(--navbar-height-desktop) + 20px);
-        max-height: calc(100vh - var(--navbar-height-desktop) - 40px);
+        top: 90px;
+        max-height: calc(100vh - 110px);
         overflow-y: auto;
         transition: all var(--transition-speed);
     }
@@ -312,6 +319,8 @@
        ============================================ */
     .teachers-section {
         min-height: 500px;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .results-header {
@@ -334,8 +343,13 @@
 
     .teachers-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(var(--card-min-width), 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: 20px;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0;
+        margin: 0;
+        justify-content: center;
     }
 
     /* ============================================
@@ -346,10 +360,16 @@
         border-radius: 12px;
         padding: 20px;
         box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
+        border: 1px solid #f0f0f0;
         transition: all var(--transition-speed);
         cursor: pointer;
         display: flex;
         flex-direction: column;
+        width: 100%;
+        max-width: 380px;
+        box-sizing: border-box;
+        min-height: 320px;
+        margin: 0 auto;
     }
 
     .teacher-card:hover {
@@ -646,21 +666,23 @@
 
     /* === TABLET (1024px и меньше) === */
     @media (max-width: 1024px) {
-        :root {
-            --navbar-height-desktop: var(--navbar-height-tablet);
-        }
-
         .tabs-container {
             padding: 16px 12px 0;
+            padding-top: 72px;
         }
 
         .page-container {
-            padding: 24px 16px;
+            padding: 20px 12px;
+            overflow-x: hidden;
         }
 
         .content-layout {
+            display: grid;
             grid-template-columns: 1fr;
             gap: 20px;
+            width: 100%;
+            margin: 0;
+            padding: 0;
         }
 
         /* Фильтры становятся drawer */
@@ -686,12 +708,16 @@
 
         .mobile-filters-toggle {
             display: block;
-            top: calc(var(--navbar-height-tablet) + 10px);
+            top: 66px;
         }
 
         .teachers-grid {
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 16px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 14px;
+            width: 100%;
+            padding: 0;
+            margin: 0;
         }
 
         .tab-button {
@@ -703,12 +729,9 @@
 
     /* === MOBILE (768px и меньше) === */
     @media (max-width: 768px) {
-        :root {
-            --navbar-height-desktop: var(--navbar-height-mobile);
-        }
-
         .tabs-container {
             padding: 12px 8px 0;
+            padding-top: 68px;
         }
 
         .tabs-wrapper {
@@ -727,7 +750,8 @@
         }
 
         .page-container {
-            padding: 20px 12px;
+            padding: 16px 8px;
+            overflow-x: hidden;
         }
 
         .page-header {
@@ -748,7 +772,7 @@
             padding: 10px;
             font-size: 13px;
             margin-bottom: 16px;
-            top: calc(var(--navbar-height-mobile) + 10px);
+            top: 62px;
         }
 
         .filters-sidebar {
@@ -773,22 +797,27 @@
         }
 
         .teachers-grid {
+            display: grid;
             grid-template-columns: 1fr;
-            gap: 14px;
+            gap: 16px;
+            width: 100%;
+            margin: 0;
+            padding: 0;
         }
 
         .teacher-card {
-            padding: 16px;
+            padding: 18px;
+            min-height: 260px;
         }
 
         .teacher-avatar {
-            width: 54px;
-            height: 54px;
-            font-size: 18px;
+            width: 58px;
+            height: 58px;
+            font-size: 20px;
         }
 
         .teacher-name {
-            font-size: 16px;
+            font-size: 17px;
         }
 
         .teacher-rating {
@@ -805,7 +834,8 @@
         }
 
         .teacher-description {
-            font-size: 12px;
+            font-size: 13px;
+            line-height: 1.4;
         }
 
         .teacher-meta {
@@ -814,7 +844,7 @@
         }
 
         .teacher-price {
-            font-size: 16px;
+            font-size: 17px;
         }
 
         .price-period {
@@ -822,8 +852,9 @@
         }
 
         .contact-btn {
-            padding: 7px 14px;
-            font-size: 12px;
+            padding: 9px 16px;
+            font-size: 13px;
+            min-height: 36px;
         }
 
         /* Пагинация */
@@ -847,6 +878,7 @@
     @media (max-width: 480px) {
         .tabs-container {
             padding: 10px 6px 0;
+            padding-top: 64px;
         }
 
         .tabs-wrapper {
@@ -872,6 +904,7 @@
 
         .page-container {
             padding: 16px 8px;
+            overflow-x: hidden;
         }
 
         .page-title {
@@ -893,7 +926,8 @@
         }
 
         .teacher-card {
-            padding: 14px;
+            padding: 16px;
+            min-height: 240px;
         }
 
         .teacher-header {
@@ -901,13 +935,13 @@
         }
 
         .teacher-avatar {
-            width: 50px;
-            height: 50px;
-            font-size: 16px;
+            width: 54px;
+            height: 54px;
+            font-size: 18px;
         }
 
         .teacher-name {
-            font-size: 15px;
+            font-size: 16px;
         }
 
         .teacher-subjects {
@@ -925,12 +959,13 @@
         }
 
         .teacher-price {
-            font-size: 15px;
+            font-size: 16px;
         }
 
         .contact-btn {
-            padding: 6px 12px;
-            font-size: 11px;
+            padding: 8px 14px;
+            font-size: 12px;
+            min-height: 34px;
         }
 
         /* Компактная пагинация */
@@ -967,16 +1002,18 @@
     @media (max-width: 360px) {
         .page-container {
             padding: 12px 6px;
+            overflow-x: hidden;
         }
 
         .teacher-card {
-            padding: 12px;
+            padding: 14px;
+            min-height: 220px;
         }
 
         .teacher-avatar {
-            width: 46px;
-            height: 46px;
-            font-size: 15px;
+            width: 50px;
+            height: 50px;
+            font-size: 17px;
         }
 
         .teacher-name {
@@ -1030,7 +1067,10 @@
        ============================================ */
     @media (max-width: 900px) and (orientation: landscape) {
         .teachers-grid {
+            display: grid;
             grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+            width: 100%;
         }
 
         .filters-sidebar {
@@ -1054,7 +1094,7 @@
 
         .teachers-grid {
             grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
+            gap: 12px;
         }
 
         .teacher-card {
@@ -1085,6 +1125,53 @@
     .filter-select:focus-visible {
         outline: 3px solid #3B82F6;
         outline-offset: 2px;
+    }
+
+    /* === ULTRA SMALL (320px и меньше) === */
+    @media (max-width: 320px) {
+        .page-container {
+            padding: 10px 4px;
+            overflow-x: hidden;
+        }
+
+        .teachers-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .teacher-card {
+            padding: 12px;
+            min-height: 200px;
+            margin: 0 auto;
+            max-width: 300px;
+        }
+
+        .teacher-avatar {
+            width: 48px;
+            height: 48px;
+            font-size: 16px;
+        }
+
+        .teacher-name {
+            font-size: 15px;
+        }
+
+        .teacher-subjects {
+            gap: 3px;
+        }
+
+        .subject-tag {
+            font-size: 9px;
+            padding: 2px 6px;
+        }
+
+        .contact-btn {
+            padding: 6px 10px;
+            font-size: 11px;
+            min-height: 30px;
+        }
     }
 </style>
 

@@ -1,298 +1,9 @@
+{% extends "base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="{% static 'logo/logo.png' %}" type="image/x-icon">
-    <title>{{ title }} - UstozHub Admin</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{% static 'teachers/admin.css' %}">
-    <style>
-        .platform-message-form {
-            display: grid;
-            gap: 20px;
-        }
 
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
+{% block title %}{{ title }} - UstozHub{% endblock %}
 
-        @media (max-width: 768px) {
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-group label {
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .form-control {
-            padding: 12px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s ease;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: #0088cc;
-            box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.1);
-        }
-
-        .form-text {
-            font-size: 12px;
-            color: #666;
-            margin-top: 4px;
-        }
-
-        .checkbox-group {
-            display: flex;
-            gap: 20px;
-            margin-top: 8px;
-        }
-
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .checkbox-item input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-
-        .form-actions {
-            padding-top: 20px;
-            border-top: 1px solid #e1e5e9;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary {
-            background: #0088cc;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #0077bb;
-            transform: translateY(-1px);
-        }
-
-        .btn-success {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-warning {
-            background: #ffc107;
-            color: #333;
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 12px;
-        }
-
-        .message-item {
-            background: white;
-            border-radius: 12px;
-            border: 1px solid #e1e5e9;
-            margin-bottom: 20px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .message-item:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .message-header {
-            padding: 20px;
-            border-bottom: 1px solid #f0f0f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 20px;
-        }
-
-        .message-info {
-            flex: 1;
-        }
-
-        .message-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 8px;
-        }
-
-        .message-meta {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .message-meta span {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .status-badge {
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-
-        .status-active {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status-inactive {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .message-actions {
-            display: flex;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-
-        .message-content {
-            padding: 20px;
-            color: #333;
-            line-height: 1.6;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .message-stats {
-            padding: 15px 20px;
-            background: #f8f9fa;
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-
-        .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #999;
-        }
-
-        .empty-state i {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            color: #ddd;
-        }
-
-        .empty-state h3 {
-            margin-bottom: 10px;
-            color: #666;
-        }
-
-        .empty-state p {
-            margin: 0;
-            font-size: 0.9rem;
-        }
-
-        .alerts {
-            margin-bottom: 20px;
-        }
-
-        .alert {
-            padding: 15px 20px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border-left: 4px solid;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border-left-color: #28a745;
-        }
-
-        .alert-danger, .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border-left-color: #dc3545;
-        }
-
-        .alert-warning {
-            background: #fff3cd;
-            color: #856404;
-            border-left-color: #ffc107;
-        }
-
-        .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border-left-color: #17a2b8;
-        }
-
-        @media (max-width: 768px) {
-            .message-header {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .message-meta {
-                flex-direction: column;
-                gap: 8px;
-            }
-            
-            .checkbox-group {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .message-stats {
-                flex-direction: column;
-                gap: 10px;
-            }
-        }
-    </style>
+{% block extra_css %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 <style>
     .admin-container {
@@ -638,228 +349,162 @@
         }
     }
 </style>
-</head>
-<body>
+{% endblock %}
 
-<!-- SIDEBAR -->
-<aside class="sidebar">
-    <div class="sidebar-header">
-        <div class="sidebar-logo">
-            <img src="{% static 'logo/logo.png' %}" alt="UstozHub" />
-        </div>
-        <div class="sidebar-logo-text">
-            <h2>UstozHub</h2>
-        </div>
-    </div>
-    
-    <ul class="sidebar-menu">
-        <li><a href="{% url 'admin_dashboard' %}"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
-        <li><a href="#teachers"><i class="fas fa-chalkboard-teacher"></i> <span>Учителя</span></a></li>
-        <li><a href="#students"><i class="fas fa-user-graduate"></i> <span>Ученики</span></a></li>
-        <li><a href="{% url 'admin_messages' %}"><i class="fas fa-comments"></i> <span>Сообщения</span></a></li>
-        <li><a href="{% url 'telegram_management' %}"><i class="fab fa-telegram"></i> <span>Telegram пользователи</span></a></li>
-        <li><a href="{% url 'platform_messages_management' %}" class="active"><i class="fas fa-bullhorn"></i> <span>Сообщения платформы</span></a></li>
-        <li><a href="#moderation"><i class="fas fa-check-circle"></i> <span>Модерация</span></a></li>
-        <li><a href="#stats"><i class="fas fa-chart-line"></i> <span>Статистика</span></a></li>
-        <li><a href="{% url 'home' %}"><i class="fas fa-globe"></i> <span>На сайт</span></a></li>
-        <li><a href="/admin/"><i class="fas fa-cog"></i> <span>Django Admin</span></a></li>
-        <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> <span>Выход</span></a></li>
-    </ul>
-</aside>
-
-<!-- TOP NAVBAR -->
-<header class="topbar">
-    <div class="topbar-left">
-        <h1><i class="fas fa-bullhorn"></i> {{ title }}</h1>
-    </div>
-    <div class="topbar-right">
-        <div class="user-profile">
-            <div class="user-avatar">{{ request.user.first_name.0|upper }}</div>
-            <div class="user-info">
-                <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
-                <div class="user-role">Администратор</div>
+{% block content %}
+<div class="admin-container">
+    <div class="container-fluid py-4">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-lg-3 col-md-4">
+                <div class="sidebar">
+                    <h3><i class="fas fa-tachometer-alt"></i> Админ панель</h3>
+                    <ul>
+                        <li><a href="{% url 'admin_dashboard' %}"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+                        <li><a href="{% url 'admin_messages' %}"><i class="fas fa-comments"></i> <span>Сообщения</span></a></li>
+                        <li><a href="{% url 'telegram_management' %}"><i class="fab fa-telegram"></i> <span>Telegram пользователи</span></a></li>
+                        <li><a href="{% url 'platform_messages_management' %}" class="active"><i class="fas fa-bullhorn"></i> <span>Сообщения платформы</span></a></li>
+                        <li><a href="/admin/"><i class="fas fa-cog"></i> <span>Django Admin</span></a></li>
+                        <li><a href="{% url 'home' %}"><i class="fas fa-globe"></i> <span>На сайт</span></a></li>
+                        <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> <span>Выход</span></a></li>
+                    </ul>
+                </div>
             </div>
-        </div>
-    </div>
-</header>
 
-<!-- MAIN CONTENT -->
-<main class="main-content">
-    <div class="page-header">
-        <h2><i class="fas fa-bullhorn"></i> {{ title }}</h2>
-        <p>Создавайте и управляйте сообщениями от платформы для всех пользователей</p>
-    </div>
-
-    <!-- Alerts -->
-    {% if messages %}
-    <div class="alerts">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">
-            <i class="fas fa-info-circle"></i> {{ message }}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <!-- Create Message Form -->
-    <div class="content-card">
-        <div class="card-header">
-            <h3><i class="fas fa-plus-circle"></i> Создать новое сообщение</h3>
-        </div>
-        <div class="card-body">
-            <form method="POST" action="{% url 'create_platform_message' %}" class="platform-message-form">
-                {% csrf_token %}
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="title">Заголовок сообщения *</label>
-                        <input type="text" id="title" name="title" class="form-control" required>
+            <!-- Main Content -->
+            <div class="col-lg-9 col-md-8">
+                <div class="main-content">
+                    <!-- Page Header -->
+                    <div class="page-header">
+                        <h1><i class="fas fa-bullhorn"></i> {{ title }}</h1>
                     </div>
-                    <div class="form-group">
-                        <label for="message_type">Тип сообщения</label>
-                        <select id="message_type" name="message_type" class="form-control">
-                            <option value="info">📋 Информация</option>
-                            <option value="warning">⚠️ Предупреждение</option>
-                            <option value="success">✅ Успех</option>
-                            <option value="danger">🚨 Важно</option>
-                            <option value="announcement">📢 Объявление</option>
-                        </select>
-                    </div>
-                </div>
 
-                <div class="form-group">
-                    <label for="content">Содержание сообщения *</label>
-                    <textarea id="content" name="content" class="form-control" rows="4" required placeholder="Введите текст сообщения..."></textarea>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Показывать для:</label>
-                        <div class="checkbox-group">
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="show_to_teachers" name="show_to_teachers" checked>
-                                <label for="show_to_teachers">👨‍🏫 Учителя</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="show_to_students" name="show_to_students" checked>
-                                <label for="show_to_students">🎓 Ученики</label>
-                            </div>
+                    <!-- Alerts -->
+                    {% if messages %}
+                    <div class="alerts">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">
+                            <i class="fas fa-info-circle"></i> {{ message }}
                         </div>
+                        {% endfor %}
                     </div>
-                    <div class="form-group">
-                        <label for="priority">Приоритет (0-100)</label>
-                        <input type="number" id="priority" name="priority" class="form-control" value="0" min="0" max="100">
-                        <small class="form-text">Чем выше число, тем выше в списке</small>
-                    </div>
-                </div>
+                    {% endif %}
 
-                <div class="form-group">
-                    <label for="expires_at">Истекает (опционально)</label>
-                    <input type="datetime-local" id="expires_at" name="expires_at" class="form-control">
-                    <small class="form-text">Оставьте пустым для постоянного сообщения</small>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-paper-plane"></i> Создать сообщение
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Messages List -->
-    <div class="content-card">
-        <div class="card-header">
-            <h3><i class="fas fa-list"></i> Управление сообщениями ({{ messages.count }})</h3>
-        </div>
-        <div class="card-body">
-            {% for message in messages %}
-            <div class="message-item">
-                <div class="message-header">
-                    <div class="message-info">
-                        <div class="message-title">
-                            {% if message.message_type == 'info' %}📋
-                            {% elif message.message_type == 'warning' %}⚠️
-                            {% elif message.message_type == 'success' %}✅
-                            {% elif message.message_type == 'danger' %}🚨
-                            {% else %}📢{% endif %}
-                            {{ message.title }}
-                        </div>
-                        <div class="message-meta">
-                            <span class="status-badge status-{% if message.is_active %}active{% else %}inactive{% endif %}">
-                                {% if message.is_active %}✅ Активно{% else %}❌ Неактивно{% endif %}
-                            </span>
-                            <span><i class="fas fa-user"></i> {{ message.created_by.username }}</span>
-                            <span><i class="fas fa-calendar"></i> {{ message.created_at|date:"d.m.Y H:i" }}</span>
-                            {% if message.expires_at %}
-                            <span><i class="fas fa-clock"></i> До {{ message.expires_at|date:"d.m.Y H:i" }}</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="message-actions">
-                        <form method="POST" action="{% url 'toggle_platform_message' message.id %}" style="display: inline;">
+                    <!-- Create Message Form -->
+                    <div class="create-form">
+                        <h3><i class="fas fa-plus-circle"></i> Создать новое сообщение</h3>
+                        <form method="POST" action="{% url 'create_platform_message' %}">
                             {% csrf_token %}
-                            {% if message.is_active %}
-                            <button type="submit" class="btn btn-warning btn-sm">
-                                <i class="fas fa-pause"></i> Деактивировать
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="title">Заголовок сообщения *</label>
+                                    <input type="text" id="title" name="title" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="message_type">Тип сообщения</label>
+                                    <select id="message_type" name="message_type" class="form-control">
+                                        <option value="info">Информация</option>
+                                        <option value="warning">Предупреждение</option>
+                                        <option value="success">Успех</option>
+                                        <option value="danger">Важно</option>
+                                        <option value="announcement">Объявление</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="content">Содержание сообщения *</label>
+                                <textarea id="content" name="content" class="form-control textarea" rows="4" required></textarea>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Показывать для:</label>
+                                    <div class="checkbox-group">
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="show_to_teachers" name="show_to_teachers" checked>
+                                            <label for="show_to_teachers">Учителя</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="show_to_students" name="show_to_students" checked>
+                                            <label for="show_to_students">Ученики</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="priority">Приоритет</label>
+                                    <input type="number" id="priority" name="priority" class="form-control" value="0" min="0" max="100">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="expires_at">Истекает (опционально)</label>
+                                <input type="datetime-local" id="expires_at" name="expires_at" class="form-control">
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Создать сообщение
                             </button>
-                            {% else %}
-                            <button type="submit" class="btn btn-success btn-sm">
-                                <i class="fas fa-play"></i> Активировать
-                            </button>
-                            {% endif %}
                         </form>
                     </div>
-                </div>
-                
-                <div class="message-content">
-                    {{ message.content|linebreaks }}
-                </div>
-                
-                <div class="message-stats">
-                    <div class="stat-item">
-                        <i class="fas fa-users"></i>
-                        <span>Всего: {{ message.total_users }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <i class="fas fa-eye"></i>
-                        <span>Прочитали: {{ message.read_count }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <i class="fas fa-eye-slash"></i>
-                        <span>Не прочитали: {{ message.unread_count }}</span>
+
+                    <!-- Messages List -->
+                    <div class="messages-list">
+                        <h3><i class="fas fa-list"></i> Активные сообщения ({{ messages.count }})</h3>
+                        
+                        {% for message in messages %}
+                        <div class="message-card">
+                            <div class="message-header">
+                                <div class="message-info">
+                                    <div class="message-title">{{ message.title }}</div>
+                                    <div class="message-meta">
+                                        <span><i class="fas fa-tag"></i> <span class="type-badge type-{{ message.message_type }}">{{ message.get_message_type_display }}</span></span>
+                                        <span><i class="fas fa-circle"></i> <span class="status-badge status-{% if message.is_active %}active{% else %}inactive{% endif %}">{% if message.is_active %}Активно{% else %}Неактивно{% endif %}</span></span>
+                                        <span><i class="fas fa-user"></i> {{ message.created_by.username }}</span>
+                                        <span><i class="fas fa-calendar"></i> {{ message.created_at|date:"d.m.Y H:i" }}</span>
+                                        {% if message.expires_at %}
+                                        <span><i class="fas fa-clock"></i> До {{ message.expires_at|date:"d.m.Y H:i" }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="message-actions">
+                                    <form method="POST" action="{% url 'toggle_platform_message' message.id %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        {% if message.is_active %}
+                                        <button type="submit" class="btn btn-warning btn-sm">
+                                            <i class="fas fa-pause"></i> Деактивировать
+                                        </button>
+                                        {% else %}
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i class="fas fa-play"></i> Активировать
+                                        </button>
+                                        {% endif %}
+                                    </form>
+                                </div>
+                            </div>
+                            
+                            <div class="message-content">
+                                {{ message.content|linebreaks }}
+                            </div>
+                            
+                            <div class="stats-row">
+                                <span><i class="fas fa-users"></i> Всего пользователей: {{ message.total_users }}</span>
+                                <span><i class="fas fa-eye"></i> Прочитали: {{ message.read_count }}</span>
+                                <span><i class="fas fa-eye-slash"></i> Не прочитали: {{ message.unread_count }}</span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="message-card">
+                            <div class="message-content">
+                                <p><i class="fas fa-info-circle"></i> Пока нет созданных сообщений. Создайте первое сообщение используя форму выше.</p>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
-            {% empty %}
-            <div class="empty-state">
-                <i class="fas fa-inbox"></i>
-                <h3>Нет сообщений</h3>
-                <p>Создайте первое сообщение используя форму выше</p>
-            </div>
-            {% endfor %}
         </div>
     </div>
-</main>
-
-<script>
-    // Auto-select appropriate icon based on message type
-    document.getElementById('message_type').addEventListener('change', function() {
-        const titleInput = document.getElementById('title');
-        if (!titleInput.value) {
-            const type = this.value;
-            const icons = {
-                'info': '📋 ',
-                'warning': '⚠️ ',
-                'success': '✅ ',
-                'danger': '🚨 ',
-                'announcement': '📢 '
-            };
-            titleInput.focus();
-        }
-    });
-</script>
-
-</body>
-</html>
+</div>
+{% endblock %}

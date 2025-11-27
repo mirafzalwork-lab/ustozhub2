@@ -1212,6 +1212,11 @@
                 display: inline-flex;
             }
 
+            /* Платформенные уведомления всегда видимы */
+            .platform-notifications {
+                display: flex !important;
+            }
+
             /* Компактный navbar */
             .nav-container {
                 padding: 0 12px;
@@ -1236,21 +1241,69 @@
 
             .mobile-toggle {
                 display: block;
+                order: 1;
             }
 
-            /* Скрываем обычные кнопки, но оставляем иконку сообщений */
+            /* Скрываем обычные кнопки на мобильных, НО показываем platform-notifications */
             .nav-actions .nav-btn:not(.nav-btn-primary):not(.messages-icon-btn) {
                 display: none;
             }
 
+            /* Кнопка "Стать учителем" скрывается на мобильных */
+            .nav-btn-outline {
+                display: none !important;
+            }
+
+            /* Платформенные уведомления ОБЯЗАТЕЛЬНО видимы на мобильных */
+            .platform-notifications {
+                display: flex !important;
+                order: 2;
+            }
+
+            .platform-messages-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+                color: #FF6B35 !important;
+                display: flex !important;
+            }
+
+            .platform-messages-btn i {
+                font-size: 18px;
+            }
+
+            .platform-badge {
+                position: absolute;
+                top: 4px;
+                right: 4px;
+                font-size: 9px;
+                padding: 1px 5px;
+                min-width: 16px;
+                background: #FF6B35 !important;
+            }
+
+            /* Мобильный dropdown для платформенных сообщений */
+            .platform-messages-dropdown {
+                width: 320px;
+                right: -10px;
+                max-height: 350px;
+                position: fixed;
+                top: 56px;
+                z-index: 9999;
+            }
+
             .nav-actions {
+                display: flex;
+                align-items: center;
                 gap: 8px;
+                flex-wrap: nowrap;
             }
 
             /* Регистрация кнопка компактнее */
             .nav-btn-primary {
                 padding: 8px 12px;
                 font-size: 13px;
+                order: 10;
             }
 
             .nav-btn-primary span {
@@ -1263,11 +1316,38 @@
                 height: 40px;
                 font-size: 18px;
                 color: var(--primary-color);
+                order: 3;
             }
 
             .messages-icon-btn i {
                 font-size: 18px;
                 color: var(--primary-color);
+            }
+
+            /* Language switcher на мобильных */
+            .language-switcher {
+                order: 4;
+            }
+
+            .language-btn {
+                padding: 6px 8px;
+                min-width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .language-btn .lang-text {
+                display: none;
+            }
+
+            .language-btn .flag-icon {
+                font-size: 16px;
+            }
+
+            .language-btn .dropdown-arrow {
+                display: none;
             }
 
             .messages-badge {
@@ -1335,6 +1415,32 @@
             .messages-icon-btn i {
                 font-size: 16px;
                 color: var(--primary-color);
+            }
+
+            /* Платформенные уведомления для очень маленьких экранов */
+            .platform-notifications {
+                display: flex !important;
+            }
+
+            .platform-messages-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+                display: flex !important;
+                color: #FF6B35 !important;
+            }
+
+            .platform-messages-btn i {
+                font-size: 16px;
+            }
+
+            .platform-messages-dropdown {
+                width: calc(100vw - 40px);
+                right: -20px;
+                max-height: 300px;
+                position: fixed;
+                top: 52px;
+                z-index: 9999;
             }
 
             .mobile-toggle {
@@ -1477,56 +1583,63 @@
                     <span>{% trans 'Стать учителем' %}</span>
                 </a>
 
-                {% if user.is_authenticated %}
-                    <!-- Platform Messages Notification -->
-                    <div class="platform-notifications" id="platformNotifications">
-                        <button class="platform-messages-btn" onclick="togglePlatformMessages(event)" title="{% trans 'Уведомления платформы' %}">
-                            <i class="fas fa-bullhorn"></i>
-                            {% if unread_platform_messages_count > 0 %}
-                                <span class="messages-badge platform-badge">{{ unread_platform_messages_count }}</span>
-                            {% endif %}
-                        </button>
-                        
-                        <!-- Platform Messages Dropdown -->
-                        <div class="platform-messages-dropdown" id="platformMessagesDropdown">
-                            <div class="dropdown-header">
-                                <h4><i class="fas fa-bullhorn"></i> UstozHub</h4>
-                                {% if unread_platform_messages_count > 0 %}
-                                <span class="unread-count">{{ unread_platform_messages_count }} новых</span>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="platform-messages-list">
-                                {% for message in platform_messages|slice:":5" %}
-                                <div class="platform-message-item {% if message.id not in read_platform_message_ids %}unread{% endif %}" data-message-id="{{ message.id }}">
-                                    <div class="message-type-icon type-{{ message.message_type }}">
-                                        {% if message.message_type == 'info' %}<i class="fas fa-info-circle"></i>
-                                        {% elif message.message_type == 'warning' %}<i class="fas fa-exclamation-triangle"></i>
-                                        {% elif message.message_type == 'success' %}<i class="fas fa-check-circle"></i>
-                                        {% elif message.message_type == 'danger' %}<i class="fas fa-exclamation-circle"></i>
-                                        {% else %}<i class="fas fa-bullhorn"></i>{% endif %}
-                                    </div>
-                                    <div class="message-content">
-                                        <div class="message-title">{{ message.title }}</div>
-                                        <div class="message-preview">{{ message.content|truncatechars:80 }}</div>
-                                        <div class="message-time">{{ message.created_at|timesince }} назад</div>
-                                    </div>
-                                </div>
-                                {% empty %}
-                                <div class="no-messages">
-                                    <i class="fas fa-inbox"></i>
-                                    <p>Нет уведомлений</p>
-                                </div>
-                                {% endfor %}
-                            </div>
-                            
-                            {% if platform_messages.count > 5 %}
-                            <div class="dropdown-footer">
-                                <a href="#" class="view-all-link">Показать все ({{ platform_messages.count }})</a>
-                            </div>
+                <!-- Platform Messages Notification (для всех пользователей) -->
+                <div class="platform-notifications" id="platformNotifications">
+                    <button class="platform-messages-btn" onclick="togglePlatformMessages(event)" title="{% trans 'Уведомления платформы' %}">
+                        <i class="fas fa-bullhorn"></i>
+                        {% load custom_filters %}
+                        {% get_platform_messages_count as messages_count %}
+                        {% if messages_count > 0 %}
+                            <span class="messages-badge platform-badge">{{ messages_count }}</span>
+                        {% endif %}
+                    </button>
+                    
+                    <!-- Platform Messages Dropdown -->
+                    <div class="platform-messages-dropdown" id="platformMessagesDropdown">
+                        <div class="dropdown-header">
+                            <h4><i class="fas fa-bullhorn"></i> UstozHub</h4>
+                            {% if messages_count > 0 %}
+                            <span class="unread-count">{{ messages_count }} новых</span>
                             {% endif %}
                         </div>
+                        
+                        <div class="platform-messages-list">
+                            {% load custom_filters %}
+                            {% get_platform_messages as active_messages %}
+                            
+                            {% for message in active_messages|slice:":5" %}
+                            <div class="platform-message-item unread" data-message-id="{{ message.id }}">
+                                <div class="message-type-icon type-{{ message.message_type }}">
+                                    {% if message.message_type == 'info' %}<i class="fas fa-info-circle"></i>
+                                    {% elif message.message_type == 'warning' %}<i class="fas fa-exclamation-triangle"></i>
+                                    {% elif message.message_type == 'success' %}<i class="fas fa-check-circle"></i>
+                                    {% elif message.message_type == 'danger' %}<i class="fas fa-exclamation-circle"></i>
+                                    {% else %}<i class="fas fa-bullhorn"></i>{% endif %}
+                                </div>
+                                <div class="message-content">
+                                    <div class="message-title">{{ message.title }}</div>
+                                    <div class="message-preview">{{ message.content|truncatechars:80 }}</div>
+                                    <div class="message-time">{{ message.created_at|timesince }} назад</div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="no-messages">
+                                <i class="fas fa-inbox"></i>
+                                <p>Нет уведомлений</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        {% if active_messages.count > 5 %}
+                        <div class="dropdown-footer">
+                            <a href="#" class="view-all-link">Показать все ({{ active_messages.count }})</a>
+                        </div>
+                        {% endif %}
                     </div>
+                </div>
+
+                {% if user.is_authenticated %}
+
 
                     <!-- Messages Icon Button - Always Visible -->
                     <a href="{% url 'conversations_list' %}" class="messages-icon-btn" title="{% trans 'Сообщения' %}">
@@ -1666,6 +1779,19 @@
                     </div>
                 </form>
             </div>
+
+            <!-- Platform Messages для всех пользователей в мобильном меню -->
+            {% load custom_filters %}
+            {% get_platform_messages_count as mobile_messages_count %}
+            {% if mobile_messages_count > 0 %}
+            <div class="mobile-menu-item" style="position: relative; padding: 12px 16px; color: #FF6B35; font-weight: 600;">
+                <i class="fas fa-bullhorn"></i>
+                <span>Уведомления платформы</span>
+                <span style="position: absolute; right: 16px; background: #FF6B35; color: white; border-radius: 12px; padding: 2px 8px; font-size: 11px; font-weight: 700; min-width: 20px; text-align: center;">
+                    {{ mobile_messages_count }}
+                </span>
+            </div>
+            {% endif %}
 
             {% if user.is_authenticated %}
                 <a href="{% url 'profile' %}" class="mobile-menu-item">
@@ -1953,71 +2079,6 @@
         window.addEventListener('resize', function() {
             if (window.innerWidth > 1024) {
                 closeFilters();
-            }
-        });
-
-        // Platform Messages Functions
-        function markPlatformMessageAsRead(messageId) {
-            fetch('{% url "mark_platform_message_read" %}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: 'message_id=' + messageId
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success && data.was_new) {
-                    // Обновляем UI - убираем класс unread
-                    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-                    if (messageElement) {
-                        messageElement.classList.remove('unread');
-                    }
-                    
-                    // Обновляем счетчик непрочитанных сообщений
-                    updateUnreadPlatformMessagesCount();
-                }
-            })
-            .catch(error => {
-                console.error('Error marking message as read:', error);
-            });
-        }
-
-        function updateUnreadPlatformMessagesCount() {
-            const unreadMessages = document.querySelectorAll('.platform-message-item.unread');
-            const badge = document.querySelector('.platform-badge');
-            const unreadCountSpan = document.querySelector('.platform-messages-dropdown .unread-count');
-            
-            const count = unreadMessages.length;
-            
-            if (badge) {
-                if (count > 0) {
-                    badge.textContent = count;
-                    badge.style.display = 'block';
-                } else {
-                    badge.style.display = 'none';
-                }
-            }
-            
-            if (unreadCountSpan) {
-                if (count > 0) {
-                    unreadCountSpan.textContent = count + ' новых';
-                    unreadCountSpan.style.display = 'inline';
-                } else {
-                    unreadCountSpan.style.display = 'none';
-                }
-            }
-        }
-
-        // Обработчик клика по сообщению платформы
-        document.addEventListener('click', function(event) {
-            const messageItem = event.target.closest('.platform-message-item');
-            if (messageItem && messageItem.classList.contains('unread')) {
-                const messageId = messageItem.dataset.messageId;
-                if (messageId) {
-                    markPlatformMessageAsRead(messageId);
-                }
             }
         });
 

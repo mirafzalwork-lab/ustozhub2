@@ -16,7 +16,7 @@ from .views import (
     telegram_management, send_broadcast_message, send_individual_message, export_telegram_users, messages_management,
     # Platform messages
     platform_messages_management, create_platform_message, toggle_platform_message,
-    mark_platform_message_read, get_platform_messages_api
+    platform_messages_list, mark_platform_message_read
 )
 from .telegram_views import (
     telegram_auth, link_telegram_account, telegram_status, toggle_notifications
@@ -47,9 +47,9 @@ urlpatterns = [
     path('admin-dashboard/platform-messages/create/', create_platform_message, name='create_platform_message'),
     path('admin-dashboard/platform-messages/<int:message_id>/toggle/', toggle_platform_message, name='toggle_platform_message'),
     
-    # Platform Messages API
-    path('api/platform-messages/', get_platform_messages_api, name='get_platform_messages_api'),
-    path('api/platform-messages/mark-read/', mark_platform_message_read, name='mark_platform_message_read'),
+    # Platform Messages for users
+    path('notifications/', platform_messages_list, name='platform_messages_list'),
+    path('api/platform-messages/<int:message_id>/read/', mark_platform_message_read, name='mark_platform_message_read'),
 
     path('register/', teacher_register_step1, name='teacher_register_step1'),
     path('register/step2/', teacher_register_step2, name='teacher_register_step2'),

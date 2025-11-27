@@ -1088,6 +1088,11 @@ class PlatformMessage(models.Model):
         default=True,
         verbose_name='Показывать всем пользователям'
     )
+    show_to_guests = models.BooleanField(
+        default=True,
+        verbose_name='Показывать гостям (незарегистрированным)',
+        help_text='Если включено, сообщение будет видно неавторизованным пользователям'
+    )
     show_to_teachers = models.BooleanField(
         default=True,
         verbose_name='Показывать учителям'
@@ -1120,6 +1125,10 @@ class PlatformMessage(models.Model):
         verbose_name = 'Сообщение платформы'
         verbose_name_plural = 'Сообщения платформы'
         ordering = ['-priority', '-created_at']
+        indexes = [
+            models.Index(fields=['-priority', '-created_at']),
+            models.Index(fields=['is_active', 'expires_at']),
+        ]
 
     def __str__(self):
         return f"{self.title} ({self.get_message_type_display()})"
@@ -1135,9 +1144,15 @@ class PlatformMessage(models.Model):
         if not self.is_active or self.is_expired():
             return False
         
+        # Если показывать всем
         if self.show_to_all:
             return True
         
+        # Для незарегистрированных пользователей
+        if not user or not user.is_authenticated:
+            return self.show_to_guests
+        
+        # Для зарегистрированных пользователей
         if hasattr(user, 'user_type'):
             if user.user_type == 'teacher' and self.show_to_teachers:
                 return True
@@ -1145,6 +1160,17 @@ class PlatformMessage(models.Model):
                 return True
         
         return False
+    
+    def get_icon(self):
+        """Возвращает иконку в зависимости от типа сообщения"""
+        icons = {
+            'info': 'fa-info-circle',
+            'warning': 'fa-exclamation-triangle',
+            'success': 'fa-check-circle',
+            'danger': 'fa-exclamation-circle',
+            'announcement': 'fa-bullhorn',
+        }
+        return icons.get(self.message_type, 'fa-info-circle')
 
 
 class UserMessageRead(models.Model):
