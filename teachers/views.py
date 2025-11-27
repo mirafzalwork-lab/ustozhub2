@@ -1623,67 +1623,8 @@ def subjects_autocomplete(request):
     if not query or len(query) < 2:
         return JsonResponse({'results': []})
 
-    # Простая транслитерация между кириллицей и латиницей
-    # чтобы поиск работал при вводе на узбекском (латиница) и на кириллице (ru)
-    def cyrillic_to_latin(s: str) -> str:
-        table = {
-            'а': 'a','б': 'b','в': 'v','г': 'g','д': 'd','е': 'e','ё': 'yo','ж': 'j','з': 'z','и': 'i',
-            'й': 'y','к': 'k','л': 'l','м': 'm','н': 'n','о': 'o','п': 'p','р': 'r','с': 's','т': 't',
-            'у': 'u','ф': 'f','х': 'x','ц': 'ts','ч': 'ch','ш': 'sh','щ': 'shch','ъ': '', 'ы': 'y','ь': '',
-            'э': 'e','ю': 'yu','я': 'ya',
-            'А': 'A','Б': 'B','В': 'V','Г': 'G','Д': 'D','Е': 'E','Ё': 'Yo','Ж': 'J','З': 'Z','И': 'I',
-            'Й': 'Y','К': 'K','Л': 'L','М': 'M','Н': 'N','О': 'O','П': 'P','Р': 'R','С': 'S','Т': 'T',
-            'У': 'U','Ф': 'F','Х': 'X','Ц': 'Ts','Ч': 'Ch','Ш': 'Sh','Щ': 'Shch','Ъ': '', 'Ы': 'Y','Ь': '',
-            'Э': 'E','Ю': 'Yu','Я': 'Ya'
-        }
-        return ''.join(table.get(ch, ch) for ch in s)
-
-    def latin_to_cyrillic(s: str) -> str:
-        # Очень простой обратный маппинг — для наиболее частых сочетаний
-        rev = {
-            'yo': 'ё','yu': 'ю','ya': 'я','ch': 'ч','shch': 'щ','sh': 'ш','ts': 'ц','zh': 'ж',
-            'a':'а','b':'б','v':'в','g':'г','d':'д','e':'е','z':'з','i':'и','y':'й','k':'к',
-            'l':'л','m':'м','n':'н','o':'о','p':'п','r':'р','s':'с','t':'т','u':'у','f':'ф','x':'х'
-        }
-        s_low = s.lower()
-        i = 0
-        out = ''
-        while i < len(s_low):
-            # проверяем длинные совпадения сначала
-            if s_low.startswith('shch', i):
-                out += 'щ'; i += 4; continue
-            if s_low.startswith('sh', i):
-                out += 'ш'; i += 2; continue
-            if s_low.startswith('ch', i):
-                out += 'ч'; i += 2; continue
-            if s_low.startswith('ts', i):
-                out += 'ц'; i += 2; continue
-            if s_low.startswith('yo', i):
-                out += 'ё'; i += 2; continue
-            if s_low.startswith('yu', i):
-                out += 'ю'; i += 2; continue
-            if s_low.startswith('ya', i):
-                out += 'я'; i += 2; continue
-            ch = s_low[i]
-            out += rev.get(ch, ch)
-            i += 1
-        return out
-
-    variants = {query}
-    try:
-        variants.add(cyrillic_to_latin(query))
-        variants.add(latin_to_cyrillic(query))
-    except Exception:
-        pass
-
-    # Собираем Q-условия для всех вариантов
-    q_filter = Q()
-    for v in variants:
-        if v:
-            q_filter |= Q(name__icontains=v) | Q(description__icontains=v)
-
     subjects = Subject.objects.filter(is_active=True).filter(
-        q_filter
+        Q(name__icontains=query) | Q(description__icontains=query)
     ).select_related('category').annotate(
         relevance=Case(
             When(name__iexact=query, then=Value(4)),
@@ -2120,93 +2061,98 @@ def toggle_platform_message(request, message_id):
     return redirect('platform_messages_management')
 
 
-@login_required
-@require_POST
-def mark_platform_message_read(request):
+def platform_messages_list(request):
     """
-    API для отметки сообщения платформы как прочитанного
+    Страница со всеми сообщениями платформы для пользователей
+    Красивый дизайн с датой, временем и фильтрацией
     """
     from .models import PlatformMessage, UserMessageRead
-    from django.http import JsonResponse
+    
+    user = request.user if request.user.is_authenticated else None
+    
+    # Получаем активные сообщения, которые должны показываться пользователю
+    all_messages = PlatformMessage.objects.filter(
+        is_active=True
+    ).filter(
+        models.Q(expires_at__isnull=True) | models.Q(expires_at__gt=timezone.now())
+    ).order_by('-priority', '-created_at')
+    
+    # Фильтруем сообщения по пользователю
+    messages_list = []
+    for message in all_messages:
+        if message.should_show_to_user(user):
+            messages_list.append(message)
+    
+    # Фильтрация по типу
+    message_type_filter = request.GET.get('type')
+    if message_type_filter and message_type_filter != 'all':
+        messages_list = [msg for msg in messages_list if msg.message_type == message_type_filter]
+    
+    # Для зарегистрированных пользователей - проверяем прочитанные
+    read_message_ids = []
+    if user and user.is_authenticated:
+        read_message_ids = list(UserMessageRead.objects.filter(
+            user=user,
+            message__in=messages_list
+        ).values_list('message_id', flat=True))
+    
+    # Пагинация
+    paginator = Paginator(messages_list, 20)  # 20 сообщений на страницу
+    page = request.GET.get('page', 1)
     
     try:
-        message_id = request.POST.get('message_id')
-        if not message_id:
-            return JsonResponse({'success': False, 'error': 'message_id обязателен'})
+        messages_page = paginator.page(page)
+    except PageNotAnInteger:
+        messages_page = paginator.page(1)
+    except EmptyPage:
+        messages_page = paginator.page(paginator.num_pages)
+    
+    # Статистика
+    total_messages = len(messages_list)
+    unread_count = len([msg for msg in messages_list if msg.id not in read_message_ids])
+    
+    # Типы сообщений для фильтра
+    message_types = [
+        ('all', 'Все сообщения'),
+        ('announcement', 'Объявления'),
+        ('info', 'Информация'),
+        ('warning', 'Предупреждения'),
+        ('success', 'Успехи'),
+        ('danger', 'Важное'),
+    ]
+    
+    context = {
+        'messages_list': messages_page,
+        'total_messages': total_messages,
+        'unread_count': unread_count,
+        'read_message_ids': read_message_ids,
+        'message_types': message_types,
+        'selected_type': message_type_filter or 'all',
+    }
+    
+    return render(request, 'logic/platform_messages.html', context)
+
+
+@require_POST
+def mark_platform_message_read(request, message_id):
+    """
+    Отметить сообщение платформы как прочитанное
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Требуется авторизация'})
+    
+    from .models import PlatformMessage, UserMessageRead
+    
+    try:
+        message = get_object_or_404(PlatformMessage, id=message_id, is_active=True)
         
-        try:
-            message = PlatformMessage.objects.get(id=message_id, is_active=True)
-        except PlatformMessage.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Сообщение не найдено'})
-        
-        # Проверяем, должно ли сообщение показываться этому пользователю
-        if not message.should_show_to_user(request.user):
-            return JsonResponse({'success': False, 'error': 'Нет доступа к этому сообщению'})
-        
-        # Создаем запись о прочтении (get_or_create предотвращает дубли)
-        read_record, created = UserMessageRead.objects.get_or_create(
+        # Создаем запись о прочтении (если еще не прочитано)
+        UserMessageRead.objects.get_or_create(
             user=request.user,
             message=message
         )
         
-        return JsonResponse({
-            'success': True, 
-            'was_new': created,
-            'message': 'Сообщение отмечено как прочитанное'
-        })
-        
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
-
-
-@login_required
-def get_platform_messages_api(request):
-    """
-    API для получения сообщений платформы для текущего пользователя
-    """
-    from .models import PlatformMessage, UserMessageRead
-    from django.http import JsonResponse
-    from django.utils import timezone
-    from django.db import models
-    
-    try:
-        # Получаем активные сообщения
-        active_messages = PlatformMessage.objects.filter(
-            is_active=True
-        ).filter(
-            models.Q(expires_at__isnull=True) | models.Q(expires_at__gt=timezone.now())
-        ).order_by('-priority', '-created_at')
-        
-        # Фильтруем по типу пользователя
-        user_messages = [msg for msg in active_messages if msg.should_show_to_user(request.user)]
-        
-        # Получаем прочитанные сообщения
-        read_message_ids = set(UserMessageRead.objects.filter(
-            user=request.user,
-            message__in=user_messages
-        ).values_list('message_id', flat=True))
-        
-        # Формируем ответ
-        messages_data = []
-        for message in user_messages:
-            messages_data.append({
-                'id': message.id,
-                'title': message.title,
-                'content': message.content,
-                'message_type': message.message_type,
-                'created_at': message.created_at.isoformat(),
-                'is_read': message.id in read_message_ids,
-                'priority': message.priority,
-            })
-        
-        unread_count = len([msg for msg in messages_data if not msg['is_read']])
-        
-        return JsonResponse({
-            'success': True,
-            'messages': messages_data,
-            'total_count': len(messages_data),
-            'unread_count': unread_count
-        })
+        return JsonResponse({'success': True})
         
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
