@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q, Min, Max, Avg, Count, Case, When, Value, IntegerField
+from django.db import models
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.views.decorators.http import require_POST
@@ -2121,10 +2122,13 @@ def platform_messages_list(request):
         ('danger', 'Важное'),
     ]
     
+    read_count = total_messages - unread_count
+    
     context = {
         'messages_list': messages_page,
         'total_messages': total_messages,
         'unread_count': unread_count,
+        'read_count': read_count,
         'read_message_ids': read_message_ids,
         'message_types': message_types,
         'selected_type': message_type_filter or 'all',
@@ -2156,3 +2160,37 @@ def mark_platform_message_read(request, message_id):
         
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+
+def platform_message_detail(request, message_id):
+    """
+    Страница с детальным просмотром платформенного сообщения
+    """
+    from .models import PlatformMessage, UserMessageRead
+    
+    try:
+        message = PlatformMessage.objects.get(id=message_id, is_active=True)
+    except PlatformMessage.DoesNotExist:
+        messages.error(request, 'Сообщение не найдено или больше не доступно.')
+        return redirect('platform_messages_list')
+    
+    user = request.user if request.user.is_authenticated else None
+    
+    # Проверяем, должно ли показываться сообщение пользователю
+    if not message.should_show_to_user(user):
+        messages.error(request, 'У вас нет доступа к этому сообщению.')
+        return redirect('platform_messages_list')
+    
+    # Отмечаем сообщение как прочитанное для зарегистрированных пользователей
+    if user and user.is_authenticated:
+        UserMessageRead.objects.get_or_create(
+            user=user,
+            message=message
+        )
+    
+    context = {
+        'message': message,
+        'page_title': 'Уведомление платформы'
+    }
+    
+    return render(request, 'platform_message_detail.html', context)
