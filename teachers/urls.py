@@ -16,7 +16,7 @@ from .views import (
     telegram_management, send_broadcast_message, send_individual_message, export_telegram_users, messages_management,
     # Platform messages
     platform_messages_management, create_platform_message, toggle_platform_message,
-    platform_messages_list, mark_platform_message_read
+    platform_messages_list, platform_message_detail, mark_platform_message_read
 )
 from .telegram_views import (
     telegram_auth, link_telegram_account, telegram_status, toggle_notifications
@@ -49,6 +49,7 @@ urlpatterns = [
     
     # Platform Messages for users
     path('notifications/', platform_messages_list, name='platform_messages_list'),
+    path('notifications/<int:message_id>/', platform_message_detail, name='platform_message_detail'),
     path('api/platform-messages/<int:message_id>/read/', mark_platform_message_read, name='mark_platform_message_read'),
 
     path('register/', teacher_register_step1, name='teacher_register_step1'),
