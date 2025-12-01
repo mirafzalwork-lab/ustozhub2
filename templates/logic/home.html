@@ -5,6 +5,7 @@
 
 {% block content %}
 <style>
+
     /* ============================================
        🎨 КРИТИЧЕСКИЕ CSS ПЕРЕМЕННЫЕ
        ============================================ */
@@ -26,7 +27,6 @@
         max-width: 1400px;
         margin: 0 auto;
         padding: 20px 20px 0;
-        padding-top: 90px; /* Отступ от navbar */
     }
 
     .tabs-wrapper {
@@ -88,13 +88,9 @@
        📄 ОСНОВНОЙ КОНТЕЙНЕР СТРАНИЦЫ
        ============================================ */
     .page-container {
-        max-width: 1600px;
+        max-width: 1400px;
         margin: 0 auto;
-        padding: 30px 15px;
-        margin-top: 0; /* Убираем, так как tabs-container уже имеет отступ */
-        width: 100%;
-        box-sizing: border-box;
-        overflow-x: hidden;
+        padding: 30px 20px;
     }
 
     .page-header {
@@ -305,7 +301,7 @@
         font-weight: 600;
         cursor: pointer;
         transition: all var(--transition-speed);
-        margin-top: 15px;
+        {% comment %} margin-top: 15px; {% endcomment %}
     }
 
     .apply-filters-btn:hover {
@@ -365,11 +361,6 @@
         cursor: pointer;
         display: flex;
         flex-direction: column;
-        width: 100%;
-        max-width: 380px;
-        box-sizing: border-box;
-        min-height: 320px;
-        margin: 0 auto;
     }
 
     .teacher-card:hover {
@@ -491,7 +482,7 @@
         align-items: center;
         padding-top: 12px;
         border-top: 1px solid #eee;
-        margin-top: auto;
+        {% comment %} margin-top: auto; {% endcomment %}
     }
 
     .teacher-price {
@@ -530,7 +521,7 @@
        📄 ПАГИНАЦИЯ
        ============================================ */
     .pagination-wrapper {
-        margin-top: 40px;
+        {% comment %} margin-top: 40px; {% endcomment %}
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -668,12 +659,10 @@
     @media (max-width: 1024px) {
         .tabs-container {
             padding: 16px 12px 0;
-            padding-top: 72px;
         }
 
         .page-container {
-            padding: 20px 12px;
-            overflow-x: hidden;
+            padding: 24px 16px;
         }
 
         .content-layout {
@@ -731,7 +720,6 @@
     @media (max-width: 768px) {
         .tabs-container {
             padding: 12px 8px 0;
-            padding-top: 68px;
         }
 
         .tabs-wrapper {
@@ -800,20 +788,25 @@
             display: grid;
             grid-template-columns: 1fr;
             gap: 16px;
-            width: 100%;
-            margin: 0;
-            padding: 0;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow-x: hidden !important;
         }
 
         .teacher-card {
-            padding: 18px;
-            min-height: 260px;
+            padding: 16px;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
         }
 
         .teacher-avatar {
-            width: 58px;
-            height: 58px;
-            font-size: 20px;
+            width: 54px;
+            height: 54px;
+            font-size: 18px;
         }
 
         .teacher-name {
@@ -878,7 +871,6 @@
     @media (max-width: 480px) {
         .tabs-container {
             padding: 10px 6px 0;
-            padding-top: 64px;
         }
 
         .tabs-wrapper {
@@ -905,6 +897,10 @@
         .page-container {
             padding: 16px 8px;
             overflow-x: hidden;
+            width: 100% !important;
+            max-width: 100vw !important;
+            margin: 0 !important;
+            box-shadow: none !important;
         }
 
         .page-title {
@@ -926,8 +922,12 @@
         }
 
         .teacher-card {
-            padding: 16px;
-            min-height: 240px;
+            padding: 14px;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
         }
 
         .teacher-header {
@@ -935,9 +935,9 @@
         }
 
         .teacher-avatar {
-            width: 54px;
-            height: 54px;
-            font-size: 18px;
+            width: 50px;
+            height: 50px;
+            font-size: 16px;
         }
 
         .teacher-name {
@@ -1000,20 +1000,25 @@
 
     /* === EXTRA SMALL (360px и меньше) === */
     @media (max-width: 360px) {
+        body {
+            overflow-x: hidden !important;
+            width: 100% !important;
+            max-width: 100vw !important;
+        }
+        
         .page-container {
             padding: 12px 6px;
             overflow-x: hidden;
         }
 
         .teacher-card {
-            padding: 14px;
-            min-height: 220px;
+            padding: 12px;
         }
 
         .teacher-avatar {
-            width: 50px;
-            height: 50px;
-            font-size: 17px;
+            width: 46px;
+            height: 46px;
+            font-size: 15px;
         }
 
         .teacher-name {
@@ -1143,15 +1148,12 @@
 
         .teacher-card {
             padding: 12px;
-            min-height: 200px;
-            margin: 0 auto;
-            max-width: 300px;
         }
 
         .teacher-avatar {
-            width: 48px;
-            height: 48px;
-            font-size: 16px;
+            width: 46px;
+            height: 46px;
+            font-size: 15px;
         }
 
         .teacher-name {
@@ -1173,9 +1175,38 @@
             min-height: 30px;
         }
     }
+    
+    /* ПОЛНОЕ УДАЛЕНИЕ ВСЕХ ТЕНЕЙ НА ЭТОЙ СТРАНИЦЕ */
+    *,
+    *::before,
+    *::after,
+    .tabs-wrapper,
+    .tab-button,
+    .tab-button.active,
+    .teacher-card,
+    .teacher-card:hover,
+    .filters-sidebar,
+    .mobile-filters-toggle,
+    .btn,
+    .btn-primary,
+    .btn-outline,
+    .contact-btn,
+    .search-input,
+    .search-input:focus,
+    .filter-select,
+    .pagination,
+    .page-link,
+    .page-container,
+    .content-container {
+        box-shadow: none !important;
+        -webkit-box-shadow: none !important;
+        -moz-box-shadow: none !important;
+        filter: none !important;
+        -webkit-filter: none !important;
+    }
 </style>
 
-<!-- ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК -->
+<!-- ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК - UPDATED v2.0 -->
 <div class="tabs-container">
     <div class="tabs-wrapper">
         <button class="tab-button active" onclick="window.location.href='{% url 'home' %}'">
