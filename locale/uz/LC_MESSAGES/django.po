@@ -709,14 +709,6 @@ msgstr "Kelishiladi"
 msgid "сум/час"
 msgstr "so'm/soat"
 
-#: teachers/models.py:445
-msgid "До"
-msgstr "Gacha"
-
-#: teachers/models.py:447
-msgid "От"
-msgstr "Dan"
-
 #: templates/logic/home.html:710 templates/logic/teacher_detail.html:1213
 #: templates/logic/teacher_detail.html:1361
 msgid "за час"
@@ -1423,11 +1415,6 @@ msgstr "Mavjudlik"
 #: templates/logic/teacher_detail.html:1449
 msgid "Похожие преподаватели"
 msgstr "O'xshash o'qituvchilar"
-
-#: templates/logic/teacher_detail.html:1471
-#: templates/logic/teacher_profile.html:720
-msgid "сум/час"
-msgstr "so'm/soat"
 
 # ========== JAVASCRIPT MESSAGES ==========
 #: templates/logic/teacher_detail.html:1498

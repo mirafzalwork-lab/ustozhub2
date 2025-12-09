@@ -396,14 +396,6 @@ msgstr "Negotiable"
 msgid "сум/час"
 msgstr "UZS/hour"
 
-#: teachers/models.py:445
-msgid "До"
-msgstr "Up to"
-
-#: teachers/models.py:447
-msgid "От"
-msgstr "From"
-
 #: templates/logic/home.html:710 templates/logic/teacher_detail.html:1213
 #: templates/logic/teacher_detail.html:1361
 msgid "за час"
@@ -1124,11 +1116,6 @@ msgstr "Availability"
 #: templates/logic/teacher_detail.html:1449
 msgid "Похожие преподаватели"
 msgstr "Similar Teachers"
-
-#: templates/logic/teacher_detail.html:1471
-#: templates/logic/teacher_profile.html:720
-msgid "сум/час"
-msgstr "UZS/hour"
 
 # ========== JAVASCRIPT MESSAGES ==========
 #: templates/logic/teacher_detail.html:1498
