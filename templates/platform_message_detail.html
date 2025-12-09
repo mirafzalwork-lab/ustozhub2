@@ -6,23 +6,22 @@
 
 {% block extra_css %}
 <style>
-    .platform-msg-detail-container {
+    .message-detail-container {
         max-width: 800px;
         margin: 0 auto;
         padding: 30px 20px;
         min-height: calc(100vh - 200px);
-        box-shadow: none !important;
     }
 
-    .platform-msg-detail-card {
+    .message-detail-card {
         background: white;
         border-radius: 12px;
-        box-shadow: none !important;
+        box-shadow: 0 4px 20px rgba(10, 37, 64, 0.08);
         overflow: hidden;
         border: 1px solid #f0f0f0;
     }
 
-    .platform-msg-header {
+    .message-header {
         background: linear-gradient(135deg, #3B82F6, #1E40AF);
         color: white;
         padding: 30px;
@@ -30,7 +29,7 @@
         position: relative;
     }
 
-    .platform-msg-type-badge {
+    .message-type-badge {
         position: absolute;
         top: 20px;
         right: 20px;
@@ -43,13 +42,13 @@
         backdrop-filter: blur(10px);
     }
 
-    .platform-msg-icon {
+    .message-icon {
         font-size: 48px;
         margin-bottom: 15px;
         opacity: 0.9;
     }
 
-    .platform-msg-title {
+    .message-title {
         font-size: 28px;
         font-weight: 700;
         margin-bottom: 10px;
@@ -58,7 +57,7 @@
         word-wrap: break-word;
     }
 
-    .platform-msg-meta {
+    .message-meta {
         display: flex;
         justify-content: center;
         gap: 20px;
@@ -68,17 +67,17 @@
         text-align: center;
     }
 
-    .platform-msg-meta-item {
+    .meta-item {
         display: flex;
         align-items: center;
         gap: 5px;
     }
 
-    .platform-msg-content {
+    .message-content {
         padding: 40px;
     }
 
-    .platform-msg-content-text {
+    .content-text {
         font-size: 16px;
         line-height: 1.6;
         color: #374151;
@@ -86,29 +85,23 @@
         text-align: left;
     }
 
-    .platform-msg-content-text p {
+    .content-text p {
         margin-bottom: 16px;
         text-indent: 0;
-        text-align: left;
     }
 
-    .platform-msg-content-text h1, 
-    .platform-msg-content-text h2, 
-    .platform-msg-content-text h3 {
+    .content-text h1, .content-text h2, .content-text h3 {
         color: #1F2937;
         margin-top: 24px;
         margin-bottom: 12px;
-        text-align: left;
     }
 
-    .platform-msg-content-text ul, 
-    .platform-msg-content-text ol {
+    .content-text ul, .content-text ol {
         margin-left: 20px;
         margin-bottom: 16px;
-        text-align: left;
     }
 
-    .platform-msg-actions {
+    .message-actions {
         display: flex;
         gap: 12px;
         justify-content: flex-start;
@@ -116,7 +109,7 @@
         border-top: 1px solid #f0f0f0;
     }
 
-    .platform-msg-back-btn {
+    .back-btn {
         display: inline-flex;
         align-items: center;
         gap: 8px;
@@ -129,7 +122,7 @@
         transition: all 0.2s;
     }
 
-    .platform-msg-back-btn:hover {
+    .back-btn:hover {
         background: #4B5563;
         color: white;
         text-decoration: none;
@@ -137,67 +130,59 @@
     }
 
     /* Стили для разных типов сообщений */
-    .type-info .platform-msg-header {
+    .type-info .message-header {
         background: linear-gradient(135deg, #3B82F6, #1E40AF);
     }
 
-    .type-warning .platform-msg-header {
+    .type-warning .message-header {
         background: linear-gradient(135deg, #F59E0B, #D97706);
     }
 
-    .type-success .platform-msg-header {
+    .type-success .message-header {
         background: linear-gradient(135deg, #10B981, #059669);
     }
 
-    .type-danger .platform-msg-header {
+    .type-danger .message-header {
         background: linear-gradient(135deg, #EF4444, #DC2626);
     }
 
     /* Адаптивность */
     @media (max-width: 768px) {
-        .platform-msg-detail-container {
+        .message-detail-container {
             padding: 20px 15px;
-            text-align: left !important;
         }
 
-        .platform-msg-header {
+        .message-header {
             padding: 25px 20px;
-            text-align: left !important;
         }
 
-        .platform-msg-title {
+        .message-title {
             font-size: 24px;
-            text-align: left !important;
         }
 
-        .platform-msg-icon {
+        .message-icon {
             font-size: 40px;
-            text-align: left !important;
         }
 
-        .platform-msg-meta {
+        .message-meta {
             flex-direction: column;
             gap: 8px;
-            text-align: left !important;
-            justify-content: flex-start !important;
         }
 
-        .platform-msg-content {
+        .message-content {
             padding: 30px 20px;
-            text-align: left !important;
         }
 
-        .platform-msg-content-text {
+        .content-text {
             font-size: 15px;
-            text-align: left !important;
+            text-align: left;
         }
 
-        .platform-msg-content-text p {
+        .content-text p {
             text-indent: 0;
-            text-align: left !important;
         }
 
-        .platform-msg-type-badge {
+        .message-type-badge {
             position: static;
             margin-bottom: 15px;
             display: inline-block;
@@ -235,48 +220,14 @@
             margin-bottom: 12px;
         }
     }
-
-    /* Принудительное выравнивание влево только для мобильных устройств */
-    @media (max-width: 768px) {
-        .platform-msg-detail-container *,
-        .platform-msg-detail-card *,
-        .platform-msg-header *,
-        .platform-msg-content *,
-        .platform-msg-content-text *,
-        .platform-msg-actions * {
-            text-align: left !important;
-            justify-content: flex-start !important;
-        }
-        
-        .platform-msg-detail-container .text-center,
-        .platform-msg-detail-card .text-center {
-            text-align: left !important;
-        }
-        
-        .platform-msg-detail-container .justify-content-center,
-        .platform-msg-detail-card .justify-content-center {
-            justify-content: flex-start !important;
-        }
-    }
-
-    /* Убираем тени только с этой страницы */
-    .platform-msg-detail-container,
-    .platform-msg-detail-card,
-    .platform-msg-header,
-    .platform-msg-content,
-    .platform-msg-back-btn {
-        box-shadow: none !important;
-        -webkit-box-shadow: none !important;
-        -moz-box-shadow: none !important;
-    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="platform-msg-detail-container">
-    <div class="platform-msg-detail-card type-{{ message.message_type }}">
-        <div class="platform-msg-header">
-            <div class="platform-msg-type-badge">
+<div class="message-detail-container">
+    <div class="message-detail-card type-{{ message.message_type }}">
+        <div class="message-header">
+            <div class="message-type-badge">
                 {% if message.message_type == 'info' %}{% trans 'Информация' %}
                 {% elif message.message_type == 'warning' %}{% trans 'Предупреждение' %}
                 {% elif message.message_type == 'success' %}{% trans 'Успех' %}
@@ -284,7 +235,7 @@
                 {% else %}{% trans 'Уведомление' %}{% endif %}
             </div>
             
-            <div class="platform-msg-icon">
+            <div class="message-icon">
                 {% if message.message_type == 'info' %}<i class="fas fa-info-circle"></i>
                 {% elif message.message_type == 'warning' %}<i class="fas fa-exclamation-triangle"></i>
                 {% elif message.message_type == 'success' %}<i class="fas fa-check-circle"></i>
@@ -292,19 +243,19 @@
                 {% else %}<i class="fas fa-bullhorn"></i>{% endif %}
             </div>
             
-            <h1 class="platform-msg-title">{{ message.title }}</h1>
+            <h1 class="message-title">{{ message.title }}</h1>
             
-            <div class="platform-msg-meta">
-                <div class="platform-msg-meta-item">
+            <div class="message-meta">
+                <div class="meta-item">
                     <i class="fas fa-calendar"></i>
                     <span>{{ message.created_at|date:"d.m.Y" }}</span>
                 </div>
-                <div class="platform-msg-meta-item">
+                <div class="meta-item">
                     <i class="fas fa-clock"></i>
                     <span>{{ message.created_at|time:"H:i" }}</span>
                 </div>
                 {% if message.priority %}
-                <div class="platform-msg-meta-item">
+                <div class="meta-item">
                     <i class="fas fa-star"></i>
                     <span>{% trans 'Приоритет' %}: {{ message.priority }}</span>
                 </div>
@@ -312,13 +263,13 @@
             </div>
         </div>
         
-        <div class="platform-msg-content">
-            <div class="platform-msg-content-text">
+        <div class="message-content">
+            <div class="content-text">
                 {{ message.content|linebreaks }}
             </div>
             
-            <div class="platform-msg-actions">
-                <a href="{% url 'platform_messages_list' %}" class="platform-msg-back-btn">
+            <div class="message-actions">
+                <a href="{% url 'platform_messages_list' %}" class="back-btn">
                     <i class="fas fa-arrow-left"></i>
                     <span>{% trans 'Вернуться к уведомлениям' %}</span>
                 </a>

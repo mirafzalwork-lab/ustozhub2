@@ -788,19 +788,13 @@
             display: grid;
             grid-template-columns: 1fr;
             gap: 16px;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow-x: hidden !important;
+            width: 100%;
+            margin: 0;
+            padding: 0;
         }
 
         .teacher-card {
             padding: 16px;
-            width: 100% !important;
-            max-width: 100% !important;
-            margin: 0 !important;
-            box-sizing: border-box !important;
-            overflow: hidden !important;
         }
 
         .teacher-avatar {
@@ -897,10 +891,6 @@
         .page-container {
             padding: 16px 8px;
             overflow-x: hidden;
-            width: 100% !important;
-            max-width: 100vw !important;
-            margin: 0 !important;
-            box-shadow: none !important;
         }
 
         .page-title {
@@ -923,11 +913,6 @@
 
         .teacher-card {
             padding: 14px;
-            width: 100% !important;
-            max-width: 100% !important;
-            margin: 0 !important;
-            box-sizing: border-box !important;
-            overflow: hidden !important;
         }
 
         .teacher-header {
@@ -1000,12 +985,6 @@
 
     /* === EXTRA SMALL (360px и меньше) === */
     @media (max-width: 360px) {
-        body {
-            overflow-x: hidden !important;
-            width: 100% !important;
-            max-width: 100vw !important;
-        }
-        
         .page-container {
             padding: 12px 6px;
             overflow-x: hidden;
@@ -1174,35 +1153,6 @@
             font-size: 11px;
             min-height: 30px;
         }
-    }
-    
-    /* ПОЛНОЕ УДАЛЕНИЕ ВСЕХ ТЕНЕЙ НА ЭТОЙ СТРАНИЦЕ */
-    *,
-    *::before,
-    *::after,
-    .tabs-wrapper,
-    .tab-button,
-    .tab-button.active,
-    .teacher-card,
-    .teacher-card:hover,
-    .filters-sidebar,
-    .mobile-filters-toggle,
-    .btn,
-    .btn-primary,
-    .btn-outline,
-    .contact-btn,
-    .search-input,
-    .search-input:focus,
-    .filter-select,
-    .pagination,
-    .page-link,
-    .page-container,
-    .content-container {
-        box-shadow: none !important;
-        -webkit-box-shadow: none !important;
-        -moz-box-shadow: none !important;
-        filter: none !important;
-        -webkit-filter: none !important;
     }
 </style>
 
