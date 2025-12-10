@@ -1,6 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q, Min, Max, Avg, Count, Case, When, Value, IntegerField
-from django.db import models
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.views.decorators.http import require_POST
@@ -1872,25 +1871,17 @@ def send_individual_message(request):
     """
     Отправка персонального сообщения пользователю
     """
-    import logging
-    logger = logging.getLogger(__name__)
-    
     try:
         user_id = request.POST.get('user_id')
         message_text = request.POST.get('message', '').strip()
         
-        logger.info(f"📤 Попытка отправки сообщения: user_id={user_id}, message_length={len(message_text) if message_text else 0}")
-        
         if not user_id or not message_text:
-            logger.warning("❌ Отсутствуют обязательные данные")
             messages.error(request, 'Необходимо выбрать пользователя и ввести сообщение')
             return redirect('telegram_management')
         
         telegram_user = get_object_or_404(TelegramUser, id=user_id)
-        logger.info(f"👤 Найден пользователь: {telegram_user.first_name} (ID: {telegram_user.telegram_id})")
         
         if not telegram_user.started_bot:
-            logger.warning(f"🚫 Пользователь {telegram_user.first_name} не активировал бота")
             messages.error(request, 'Пользователь не активировал бота')
             return redirect('telegram_management')
         
@@ -1898,7 +1889,6 @@ def send_individual_message(request):
         from .admin_telegram_service import admin_telegram_service
         
         formatted_message = f"💬 *Персональное сообщение от администрации*\n\n{message_text}"
-        logger.info(f"📝 Форматированное сообщение: {formatted_message[:100]}...")
         
         success = admin_telegram_service.send_message_sync(
             telegram_id=telegram_user.telegram_id,
@@ -1906,15 +1896,12 @@ def send_individual_message(request):
             parse_mode='Markdown'
         )
         
-        logger.info(f"📊 Результат отправки: {'✅ Успешно' if success else '❌ Ошибка'}")
-        
         if success:
             messages.success(request, f'Сообщение отправлено пользователю {telegram_user.first_name}')
         else:
             messages.error(request, f'Не удалось отправить сообщение пользователю {telegram_user.first_name} (возможно, заблокировал бота или удалил чат)')
             
     except Exception as e:
-        logger.error(f"💥 Критическая ошибка в send_individual_message: {str(e)}", exc_info=True)
         messages.error(request, f'Ошибка: {str(e)}')
     
     return redirect('telegram_management')
@@ -1964,233 +1951,3 @@ def export_telegram_users(request):
         ])
     
     return response
-
-
-@staff_member_required
-def platform_messages_management(request):
-    """
-    Управление сообщениями платформы
-    """
-    from .models import PlatformMessage, UserMessageRead
-    
-    messages = PlatformMessage.objects.select_related('created_by').order_by('-priority', '-created_at')
-    
-    # Статистика для каждого сообщения
-    for message in messages:
-        message.total_users = User.objects.filter(is_active=True).count()
-        message.read_count = UserMessageRead.objects.filter(message=message).count()
-        message.unread_count = message.total_users - message.read_count
-    
-    context = {
-        'messages': messages,
-        'title': 'Управление сообщениями платформы'
-    }
-    
-    return render(request, 'admin/platform_messages_management.html', context)
-
-
-@staff_member_required
-@require_POST
-def create_platform_message(request):
-    """
-    Создание нового сообщения платформы
-    """
-    from .models import PlatformMessage
-    
-    try:
-        title = request.POST.get('title', '').strip()
-        content = request.POST.get('content', '').strip()
-        message_type = request.POST.get('message_type', 'info')
-        show_to_teachers = request.POST.get('show_to_teachers') == 'on'
-        show_to_students = request.POST.get('show_to_students') == 'on'
-        expires_at = request.POST.get('expires_at')
-        priority = int(request.POST.get('priority', 0))
-        
-        if not title or not content:
-            messages.error(request, 'Заголовок и содержание обязательны для заполнения')
-            return redirect('platform_messages_management')
-        
-        # Обработка даты истечения
-        expires_datetime = None
-        if expires_at:
-            try:
-                from datetime import datetime
-                expires_datetime = datetime.strptime(expires_at, '%Y-%m-%dT%H:%M')
-                expires_datetime = timezone.make_aware(expires_datetime)
-            except ValueError:
-                messages.error(request, 'Неверный формат даты истечения')
-                return redirect('platform_messages_management')
-        
-        platform_message = PlatformMessage.objects.create(
-            title=title,
-            content=content,
-            message_type=message_type,
-            show_to_teachers=show_to_teachers,
-            show_to_students=show_to_students,
-            expires_at=expires_datetime,
-            priority=priority,
-            created_by=request.user
-        )
-        
-        messages.success(request, f'Сообщение "{title}" успешно создано')
-        
-    except Exception as e:
-        messages.error(request, f'Ошибка при создании сообщения: {str(e)}')
-    
-    return redirect('platform_messages_management')
-
-
-@staff_member_required
-@require_POST
-def toggle_platform_message(request, message_id):
-    """
-    Переключение активности сообщения платформы
-    """
-    from .models import PlatformMessage
-    
-    try:
-        message = get_object_or_404(PlatformMessage, id=message_id)
-        message.is_active = not message.is_active
-        message.save()
-        
-        status = 'активировано' if message.is_active else 'деактивировано'
-        messages.success(request, f'Сообщение "{message.title}" {status}')
-        
-    except Exception as e:
-        messages.error(request, f'Ошибка: {str(e)}')
-    
-    return redirect('platform_messages_management')
-
-
-def platform_messages_list(request):
-    """
-    Страница со всеми сообщениями платформы для пользователей
-    Красивый дизайн с датой, временем и фильтрацией
-    """
-    from .models import PlatformMessage, UserMessageRead
-    
-    user = request.user if request.user.is_authenticated else None
-    
-    # Получаем активные сообщения, которые должны показываться пользователю
-    all_messages = PlatformMessage.objects.filter(
-        is_active=True
-    ).filter(
-        models.Q(expires_at__isnull=True) | models.Q(expires_at__gt=timezone.now())
-    ).order_by('-priority', '-created_at')
-    
-    # Фильтруем сообщения по пользователю
-    messages_list = []
-    for message in all_messages:
-        if message.should_show_to_user(user):
-            messages_list.append(message)
-    
-    # Фильтрация по типу
-    message_type_filter = request.GET.get('type')
-    if message_type_filter and message_type_filter != 'all':
-        messages_list = [msg for msg in messages_list if msg.message_type == message_type_filter]
-    
-    # Для зарегистрированных пользователей - проверяем прочитанные
-    read_message_ids = []
-    if user and user.is_authenticated:
-        read_message_ids = list(UserMessageRead.objects.filter(
-            user=user,
-            message__in=messages_list
-        ).values_list('message_id', flat=True))
-    
-    # Пагинация
-    paginator = Paginator(messages_list, 20)  # 20 сообщений на страницу
-    page = request.GET.get('page', 1)
-    
-    try:
-        messages_page = paginator.page(page)
-    except PageNotAnInteger:
-        messages_page = paginator.page(1)
-    except EmptyPage:
-        messages_page = paginator.page(paginator.num_pages)
-    
-    # Статистика
-    total_messages = len(messages_list)
-    unread_count = len([msg for msg in messages_list if msg.id not in read_message_ids])
-    
-    # Типы сообщений для фильтра
-    message_types = [
-        ('all', 'Все сообщения'),
-        ('announcement', 'Объявления'),
-        ('info', 'Информация'),
-        ('warning', 'Предупреждения'),
-        ('success', 'Успехи'),
-        ('danger', 'Важное'),
-    ]
-    
-    read_count = total_messages - unread_count
-    
-    context = {
-        'messages_list': messages_page,
-        'total_messages': total_messages,
-        'unread_count': unread_count,
-        'read_count': read_count,
-        'read_message_ids': read_message_ids,
-        'message_types': message_types,
-        'selected_type': message_type_filter or 'all',
-    }
-    
-    return render(request, 'logic/platform_messages.html', context)
-
-
-@require_POST
-def mark_platform_message_read(request, message_id):
-    """
-    Отметить сообщение платформы как прочитанное
-    """
-    if not request.user.is_authenticated:
-        return JsonResponse({'success': False, 'error': 'Требуется авторизация'})
-    
-    from .models import PlatformMessage, UserMessageRead
-    
-    try:
-        message = get_object_or_404(PlatformMessage, id=message_id, is_active=True)
-        
-        # Создаем запись о прочтении (если еще не прочитано)
-        UserMessageRead.objects.get_or_create(
-            user=request.user,
-            message=message
-        )
-        
-        return JsonResponse({'success': True})
-        
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
-
-
-def platform_message_detail(request, message_id):
-    """
-    Страница с детальным просмотром платформенного сообщения
-    """
-    from .models import PlatformMessage, UserMessageRead
-    
-    try:
-        message = PlatformMessage.objects.get(id=message_id, is_active=True)
-    except PlatformMessage.DoesNotExist:
-        messages.error(request, 'Сообщение не найдено или больше не доступно.')
-        return redirect('platform_messages_list')
-    
-    user = request.user if request.user.is_authenticated else None
-    
-    # Проверяем, должно ли показываться сообщение пользователю
-    if not message.should_show_to_user(user):
-        messages.error(request, 'У вас нет доступа к этому сообщению.')
-        return redirect('platform_messages_list')
-    
-    # Отмечаем сообщение как прочитанное для зарегистрированных пользователей
-    if user and user.is_authenticated:
-        UserMessageRead.objects.get_or_create(
-            user=user,
-            message=message
-        )
-    
-    context = {
-        'message': message,
-        'page_title': 'Уведомление платформы'
-    }
-    
-    return render(request, 'platform_message_detail.html', context)
