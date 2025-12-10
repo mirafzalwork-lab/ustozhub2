@@ -392,17 +392,9 @@ msgstr "UZS"
 msgid "Договорная"
 msgstr "Negotiable"
 
-#: teachers/models.py:443
-msgid "сум/час"
-msgstr "UZS/hour"
 
-#: teachers/models.py:445
-msgid "До"
-msgstr "Up to"
 
-#: teachers/models.py:447
-msgid "От"
-msgstr "From"
+
 
 #: templates/logic/home.html:710 templates/logic/teacher_detail.html:1213
 #: templates/logic/teacher_detail.html:1361
@@ -1628,3 +1620,19 @@ msgstr "Only files in formats: PDF, JPG, PNG are allowed"
 
 #~ msgid "Available to"
 #~ msgstr "Available to"
+
+# New login required messages
+msgid "Цена скрыта"
+msgstr "Price hidden"
+
+msgid "Бюджет скрыт"
+msgstr "Budget hidden"
+
+msgid "Доступ ограничен"
+msgstr "Access restricted"
+
+msgid "Пожалуйста, войдите или создайте учетную запись, чтобы просмотреть полный профиль учителя"
+msgstr "Please login or create an account to view the full teacher profile"
+
+msgid "Пожалуйста, войдите или создайте учетную запись, чтобы просмотреть полный профиль ученика"
+msgstr "Please login or create an account to view the full student profile"

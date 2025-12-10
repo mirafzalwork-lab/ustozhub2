@@ -350,11 +350,39 @@
         cursor: pointer;
         display: flex;
         flex-direction: column;
+        position: relative;
     }
 
     .teacher-card:hover {
         transform: translateY(-3px);
         box-shadow: 0 6px 20px rgba(10, 37, 64, 0.12);
+    }
+
+    /* Стили для скрытой информации и кнопки входа */
+    .login-required-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .price-hidden {
+        font-size: 14px;
+        color: #999;
+        font-style: italic;
+    }
+
+    .login-required-btn {
+        background: #f0f0f0 !important;
+        color: #666 !important;
+        border: 2px solid #ddd !important;
+    }
+
+    .login-required-btn:hover {
+        background: #e0e0e0 !important;
+        color: #333 !important;
+        border-color: #ccc !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
     }
 
     .teacher-header {
@@ -1259,64 +1287,75 @@
             {% if teachers %}
                 <div class="teachers-grid">
                     {% for teacher in teachers %}
-                        <div class="teacher-card" onclick="window.location.href='{% url 'teacher_detail' teacher.id %}'">
-                            <div class="teacher-header">
-                                <div class="teacher-avatar">
-                                    {% if teacher.user.avatar %}
-                                        <img src="{{ teacher.user.avatar.url }}" alt="{{ teacher.user.get_full_name }}">
-                                    {% else %}
-                                        {{ teacher.user.first_name.0|default:"У" }}{{ teacher.user.last_name.0|default:"" }}
-                                    {% endif %}
-                                </div>
-                                <div class="teacher-info">
-                                    <h3 class="teacher-name">
-                                        {{ teacher.user.get_full_name|default:teacher.user.username }}
-                                    </h3>
-                                    <div class="teacher-rating">
-                                        <i class="fas fa-star rating-star"></i>
-                                        <span class="rating-value">{{ teacher.rating|floatformat:1 }}</span>
-                                        <span class="rating-count">({{ teacher.total_reviews }})</span>
+                        <div class="teacher-card" onclick="{% if user.is_authenticated %}window.location.href='{% url 'teacher_detail' teacher.id %}'{% else %}event.preventDefault(); showLoginPrompt(event){% endif %}">
+                            <div class="teacher-content">
+                                <div class="teacher-header">
+                                    <div class="teacher-avatar">
+                                        {% if teacher.user.avatar %}
+                                            <img src="{{ teacher.user.avatar.url }}" alt="{{ teacher.user.get_full_name }}">
+                                        {% else %}
+                                            {{ teacher.user.first_name.0|default:"У" }}{{ teacher.user.last_name.0|default:"" }}
+                                        {% endif %}
+                                    </div>
+                                    <div class="teacher-info">
+                                        <h3 class="teacher-name">
+                                            {{ teacher.user.get_full_name|default:teacher.user.username }}
+                                        </h3>
+                                        <div class="teacher-rating">
+                                            <i class="fas fa-star rating-star"></i>
+                                            <span class="rating-value">{{ teacher.rating|floatformat:1 }}</span>
+                                            <span class="rating-count">({{ teacher.total_reviews }})</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div class="teacher-subjects">
-                                {% for ts in teacher.teachersubject_set.all|slice:":3" %}
-                                    <span class="subject-tag">{{ ts.subject.name }}</span>
-                                {% endfor %}
-                            </div>
-
-                            <p class="teacher-description">
-                                {{ teacher.bio|truncatewords:15 }}
-                            </p>
-
-                            <div class="teacher-meta">
-                                <div class="meta-item">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                    <span>{{ teacher.city.name|default:"Онлайн" }}</span>
+                                <div class="teacher-subjects">
+                                    {% for ts in teacher.teachersubject_set.all|slice:":3" %}
+                                        <span class="subject-tag">{{ ts.subject.name }}</span>
+                                    {% endfor %}
                                 </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-clock"></i>
-                                    <span>{{ teacher.experience_years }} {% trans 'лет' %}</span>
-                                </div>
-                            </div>
 
-                            <div class="teacher-footer">
-                                <div>
-                                    {% with min_price=teacher.get_min_price %}
-                                        <div class="teacher-price">
-                                            {% if min_price > 0 %}
-                                                {{ min_price|floatformat:0 }} {% trans 'сум' %}
-                                            {% else %}
-                                                {% trans 'Договорная' %}
-                                            {% endif %}
+                                <p class="teacher-description">
+                                    {{ teacher.bio|truncatewords:15 }}
+                                </p>
+
+                                <div class="teacher-meta">
+                                    <div class="meta-item">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>{{ teacher.city.name|default:"Онлайн" }}</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <i class="fas fa-clock"></i>
+                                        <span>{{ teacher.experience_years }} {% trans 'лет' %}</span>
+                                    </div>
+                                </div>
+
+                                <div class="teacher-footer">
+                                    {% if user.is_authenticated %}
+                                        <div>
+                                            {% with min_price=teacher.get_min_price %}
+                                                <div class="teacher-price">
+                                                    {% if min_price > 0 %}
+                                                        {{ min_price|floatformat:0 }} {% trans 'сум' %}
+                                                    {% else %}
+                                                        {% trans 'Договорная' %}
+                                                    {% endif %}
+                                                </div>
+                                                <div class="price-period">{% trans 'за час' %}</div>
+                                            {% endwith %}
                                         </div>
-                                        <div class="price-period">{% trans 'за час' %}</div>
-                                    {% endwith %}
+                                        <button class="contact-btn" onclick="event.stopPropagation(); handleMessageClick({{ teacher.user.id }})">
+                                            <i class="fas fa-comment"></i> {% trans 'Написать' %}
+                                        </button>
+                                    {% else %}
+                                        <div class="login-required-info">
+                                            <span class="price-hidden">{% trans 'Цена скрыта' %}</span>
+                                        </div>
+                                        <button class="contact-btn login-required-btn" onclick="event.stopPropagation(); showLoginPrompt(event)">
+                                            <i class="fas fa-lock"></i> {% trans 'Войти' %}
+                                        </button>
+                                    {% endif %}
                                 </div>
-                                <button class="contact-btn" onclick="event.stopPropagation(); handleMessageClick({{ teacher.user.id }})">
-                                    <i class="fas fa-comment"></i> {% trans 'Написать' %}
-                                </button>
                             </div>
                         </div>
                     {% endfor %}
@@ -1465,6 +1504,15 @@
             const currentUrl = encodeURIComponent(window.location.pathname + window.location.search);
             window.location.href = `/login/?next=${currentUrl}`;
         {% endif %}
+    }
+
+    // ========== ОБРАБОТКА BLUR OVERLAY ==========
+    function showLoginPrompt(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        // Перенаправляем на страницу входа
+        const currentUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `/login/?next=${currentUrl}`;
     }
 </script>
 {% endblock %}

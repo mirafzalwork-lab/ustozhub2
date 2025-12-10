@@ -705,17 +705,9 @@ msgstr "so'm"
 msgid "Договорная"
 msgstr "Kelishiladi"
 
-#: teachers/models.py:443
-msgid "сум/час"
-msgstr "so'm/soat"
 
-#: teachers/models.py:445
-msgid "До"
-msgstr "Gacha"
 
-#: teachers/models.py:447
-msgid "От"
-msgstr "Dan"
+
 
 #: templates/logic/home.html:710 templates/logic/teacher_detail.html:1213
 #: templates/logic/teacher_detail.html:1361
@@ -1905,3 +1897,19 @@ msgstr "Faqat quyidagi formatdagi fayllar ruxsat etilgan: PDF, JPG, PNG"
 
 #~ msgid "Учитель"
 #~ msgstr "O'qituvchi"
+
+# New login required messages
+msgid "Цена скрыта"
+msgstr "Narx yashiringan"
+
+msgid "Бюджет скрыт"
+msgstr "Byudjet yashiringan"
+
+msgid "Доступ ограничен"
+msgstr "Kirish cheklangan"
+
+msgid "Пожалуйста, войдите или создайте учетную запись, чтобы просмотреть полный профиль учителя"
+msgstr "Iltimos, o'qituvchining to'liq profilini ko'rish uchun tizimga kiring yoki shaxsiy hisob oching"
+
+msgid "Пожалуйста, войдите или создайте учетную запись, чтобы просмотреть полный профиль ученика"
+msgstr "Iltimos, o'quvchining to'liq profilini ko'rish uchun tizimga kiring yoki shaxsiy hisob oching"
