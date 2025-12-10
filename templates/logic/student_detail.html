@@ -4,7 +4,7 @@
 {% block title %}{{ student.user.get_full_name }} - {% trans "Профиль ученика" %} - UstozHub{% endblock %}
 
 {% block content %}
-<div class="student-detail-page">
+<div class="student-detail-page {% if not user.is_authenticated %}blurred-view{% endif %}">
 <style>
     /* ============================================
        🎨 ОПТИМИЗИРОВАННЫЙ STUDENT DETAIL PAGE
@@ -1486,7 +1486,121 @@
         outline: 3px solid var(--student-primary);
         outline-offset: 2px;
     }
+
+    /* === BLUR OVERLAY FOR NON-AUTHENTICATED USERS === */
+    .student-detail-page.blurred-view {
+        position: relative;
+    }
+
+    .student-detail-page.blurred-view::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 100;
+        pointer-events: auto;
+    }
+
+    .student-detail-page.blurred-view .detail-container {
+        filter: blur(3px);
+        pointer-events: none;
+    }
+
+    .student-detail-page .login-required-modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 40px;
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(10, 37, 64, 0.3);
+        z-index: 200;
+        text-align: center;
+        max-width: 400px;
+        width: 90%;
+    }
+
+    .student-detail-page .login-required-modal i {
+        font-size: 48px;
+        color: var(--student-primary);
+        margin-bottom: 16px;
+    }
+
+    .student-detail-page .login-required-modal h2 {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 12px;
+    }
+
+    .student-detail-page .login-required-modal p {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 24px;
+        line-height: 1.6;
+    }
+
+    .student-detail-page .login-required-modal-buttons {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .student-detail-page .login-required-modal-btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+    }
+
+    .student-detail-page .login-required-modal-btn.primary {
+        background: var(--student-primary);
+        color: white;
+    }
+
+    .student-detail-page .login-required-modal-btn.primary:hover {
+        background: var(--student-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        text-decoration: none;
+    }
+
+    .student-detail-page .login-required-modal-btn.secondary {
+        background: #f0f0f0;
+        color: #333;
+    }
+
+    .student-detail-page .login-required-modal-btn.secondary:hover {
+        background: #e0e0e0;
+        text-decoration: none;
+    }
 </style>
+
+<!-- Login Required Modal -->
+{% if not user.is_authenticated %}
+    <div class="login-required-modal">
+        <i class="fas fa-lock"></i>
+        <h2>{% trans 'Доступ ограничен' %}</h2>
+        <p>{% trans 'Пожалуйста, войдите или создайте учетную запись, чтобы просмотреть полный профиль ученика' %}</p>
+        <div class="login-required-modal-buttons">
+            <a href="{% url 'login' %}" class="login-required-modal-btn primary">
+                {% trans 'Войти' %}
+            </a>
+            <a href="{% url 'register_choose' %}" class="login-required-modal-btn primary">
+                {% trans 'Зарегистрироваться' %}
+            </a>
+        </div>
+    </div>
+{% endif %}
 
 <div class="detail-container">
     <!-- Breadcrumbs -->

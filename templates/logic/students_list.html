@@ -313,11 +313,39 @@
         display: flex;
         flex-direction: column;
         border-left: 4px solid var(--success-color);
+        position: relative;
     }
 
     .student-card:hover {
         transform: translateY(-3px);
         box-shadow: 0 6px 20px rgba(16, 185, 129, 0.12);
+    }
+
+    /* Стили для скрытой информации и кнопки входа */
+    .login-required-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .budget-hidden {
+        font-size: 14px;
+        color: #999;
+        font-style: italic;
+    }
+
+    .login-required-btn {
+        background: #f0f0f0 !important;
+        color: #666 !important;
+        border: 2px solid #ddd !important;
+    }
+
+    .login-required-btn:hover {
+        background: #e0e0e0 !important;
+        color: #333 !important;
+        border-color: #ccc !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
     }
 
     .student-header {
@@ -1185,75 +1213,86 @@
             {% if students %}
                 <div class="students-grid">
                     {% for student in students %}
-                        <div class="student-card" onclick="window.location.href='{% url 'student_detail' student.id %}'">
-                            <div class="student-header">
-                                <div class="student-avatar">
-                                    {% if student.user.avatar %}
-                                        <img src="{{ student.user.avatar.url }}" alt="{{ student.user.get_full_name }}">
+                        <div class="student-card" onclick="{% if user.is_authenticated %}window.location.href='{% url 'student_detail' student.id %}'{% else %}event.preventDefault(); showLoginPrompt(event){% endif %}">
+                            <div class="student-content">
+                                <div class="student-header">
+                                    <div class="student-avatar">
+                                        {% if student.user.avatar %}
+                                            <img src="{{ student.user.avatar.url }}" alt="{{ student.user.get_full_name }}">
+                                        {% else %}
+                                            {{ student.user.first_name.0|default:"У" }}{{ student.user.last_name.0|default:"" }}
+                                        {% endif %}
+                                    </div>
+                                    <div class="student-info">
+                                        <h3 class="student-name">
+                                            {{ student.user.get_full_name|default:student.user.username }}
+                                        </h3>
+                                        {% if student.education_level %}
+                                            <span class="student-level">
+                                                <i class="fas fa-graduation-cap"></i>
+                                                {{ student.get_education_level_display }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                {% if student.desired_subjects.all %}
+                                    <div class="student-subjects">
+                                        {% for subject in student.desired_subjects.all|slice:":3" %}
+                                            <span class="subject-tag">
+                                                <i class="fas fa-book-open"></i> {{ subject.name }}
+                                            </span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+
+                                <p class="student-description">
+                                    {{ student.description|default:student.bio|default:_("Ищу учителя для изучения новых предметов")|truncatewords:20 }}
+                                </p>
+
+                                <div class="student-meta">
+                                    {% if student.city %}
+                                        <div class="meta-item">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            <span>{{ student.city.name }}</span>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <div class="meta-item">
+                                        <i class="fas fa-desktop"></i>
+                                        <span>{{ student.get_learning_format_display }}</span>
+                                    </div>
+
+                                    {% if student.available_weekdays %}
+                                        <div class="meta-item">
+                                            <i class="fas fa-calendar-alt"></i>
+                                            <span>{{ student.get_available_weekdays_display }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="student-footer">
+                                    {% if user.is_authenticated %}
+                                        <div>
+                                            <div class="student-budget">
+                                                {{ student.get_budget_display }}
+                                            </div>
+                                            {% if student.budget_min or student.budget_max %}
+                                                <div class="budget-period">{% trans 'готов платить' %}</div>
+                                            {% endif %}
+                                        </div>
+                                        <button class="contact-btn" onclick="event.stopPropagation(); handleMessageClick({{ student.user.id }})">
+                                            <i class="fas fa-paper-plane"></i> {% trans 'Связаться' %}
+                                        </button>
                                     {% else %}
-                                        {{ student.user.first_name.0|default:"У" }}{{ student.user.last_name.0|default:"" }}
+                                        <div class="login-required-info">
+                                            <span class="budget-hidden">{% trans 'Бюджет скрыт' %}</span>
+                                        </div>
+                                        <button class="contact-btn login-required-btn" onclick="event.stopPropagation(); showLoginPrompt(event)">
+                                            <i class="fas fa-lock"></i> {% trans 'Войти' %}
+                                        </button>
                                     {% endif %}
                                 </div>
-                                <div class="student-info">
-                                    <h3 class="student-name">
-                                        {{ student.user.get_full_name|default:student.user.username }}
-                                    </h3>
-                                    {% if student.education_level %}
-                                        <span class="student-level">
-                                            <i class="fas fa-graduation-cap"></i>
-                                            {{ student.get_education_level_display }}
-                                        </span>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            {% if student.desired_subjects.all %}
-                                <div class="student-subjects">
-                                    {% for subject in student.desired_subjects.all|slice:":3" %}
-                                        <span class="subject-tag">
-                                            <i class="fas fa-book-open"></i> {{ subject.name }}
-                                        </span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-
-                            <p class="student-description">
-                                {{ student.description|default:student.bio|default:_("Ищу учителя для изучения новых предметов")|truncatewords:20 }}
-                            </p>
-
-                            <div class="student-meta">
-                                {% if student.city %}
-                                    <div class="meta-item">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span>{{ student.city.name }}</span>
-                                    </div>
-                                {% endif %}
-                                
-                                <div class="meta-item">
-                                    <i class="fas fa-desktop"></i>
-                                    <span>{{ student.get_learning_format_display }}</span>
-                                </div>
-
-                                {% if student.available_weekdays %}
-                                    <div class="meta-item">
-                                        <i class="fas fa-calendar-alt"></i>
-                                        <span>{{ student.get_available_weekdays_display }}</span>
-                                    </div>
-                                {% endif %}
-                            </div>
-
-                            <div class="student-footer">
-                                <div>
-                                    <div class="student-budget">
-                                        {{ student.get_budget_display }}
-                                    </div>
-                                    {% if student.budget_min or student.budget_max %}
-                                        <div class="budget-period">{% trans 'готов платить' %}</div>
-                                    {% endif %}
-                                </div>
-                                <button class="contact-btn" onclick="event.stopPropagation(); handleMessageClick({{ student.user.id }})">
-                                    <i class="fas fa-paper-plane"></i> {% trans 'Связаться' %}
-                                </button>
                             </div>
                         </div>
                     {% endfor %}
@@ -1402,6 +1441,15 @@
             const currentUrl = encodeURIComponent(window.location.pathname + window.location.search);
             window.location.href = `/login/?next=${currentUrl}`;
         {% endif %}
+    }
+
+    // ========== ОБРАБОТКА BLUR OVERLAY ==========
+    function showLoginPrompt(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        // Перенаправляем на страницу входа
+        const currentUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `/login/?next=${currentUrl}`;
     }
 </script>
 {% endblock %}
