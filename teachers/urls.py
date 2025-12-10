@@ -13,7 +13,10 @@ from .views import (
     # API для поиска предметов
     subjects_autocomplete, subjects_popular, subjects_categories, subjects_by_category,
     # Telegram & admin messages
-    telegram_management, send_broadcast_message, send_individual_message, export_telegram_users, messages_management
+    telegram_management, send_broadcast_message, send_individual_message, export_telegram_users, messages_management,
+    # Platform messages
+    platform_messages_management, create_platform_message, toggle_platform_message,
+    platform_messages_list, platform_message_detail, mark_platform_message_read
 )
 from .telegram_views import (
     telegram_auth, link_telegram_account, telegram_status, toggle_notifications
@@ -38,6 +41,16 @@ urlpatterns = [
 
     # Admin Messages management
     path('admin-dashboard/messages/', messages_management, name='admin_messages'),
+    
+    # Platform Messages management
+    path('admin-dashboard/platform-messages/', platform_messages_management, name='platform_messages_management'),
+    path('admin-dashboard/platform-messages/create/', create_platform_message, name='create_platform_message'),
+    path('admin-dashboard/platform-messages/<int:message_id>/toggle/', toggle_platform_message, name='toggle_platform_message'),
+    
+    # Platform Messages for users
+    path('notifications/', platform_messages_list, name='platform_messages_list'),
+    path('notifications/<int:message_id>/', platform_message_detail, name='platform_message_detail'),
+    path('api/platform-messages/<int:message_id>/read/', mark_platform_message_read, name='mark_platform_message_read'),
 
     path('register/', teacher_register_step1, name='teacher_register_step1'),
     path('register/step2/', teacher_register_step2, name='teacher_register_step2'),

@@ -1057,3 +1057,143 @@ class ViewCounter(models.Model):
     def get_monthly_stats(cls):
         current_month = timezone.now().date().replace(day=1)
         return cls.objects.filter(month=current_month).count()
+
+
+class PlatformMessage(models.Model):
+    """Системные сообщения от платформы для всех пользователей"""
+    title = models.CharField(
+        max_length=200,
+        verbose_name='Заголовок сообщения'
+    )
+    content = models.TextField(
+        verbose_name='Содержание сообщения'
+    )
+    message_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('info', 'Информация'),
+            ('warning', 'Предупреждение'),
+            ('success', 'Успех'),
+            ('danger', 'Важно'),
+            ('announcement', 'Объявление'),
+        ],
+        default='info',
+        verbose_name='Тип сообщения'
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name='Активно'
+    )
+    show_to_all = models.BooleanField(
+        default=True,
+        verbose_name='Показывать всем пользователям'
+    )
+    show_to_guests = models.BooleanField(
+        default=True,
+        verbose_name='Показывать гостям (незарегистрированным)',
+        help_text='Если включено, сообщение будет видно неавторизованным пользователям'
+    )
+    show_to_teachers = models.BooleanField(
+        default=True,
+        verbose_name='Показывать учителям'
+    )
+    show_to_students = models.BooleanField(
+        default=True,
+        verbose_name='Показывать ученикам'
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Создано пользователем'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата создания'
+    )
+    expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Истекает'
+    )
+    priority = models.IntegerField(
+        default=0,
+        verbose_name='Приоритет',
+        help_text='Чем выше число, тем выше в списке'
+    )
+
+    class Meta:
+        verbose_name = 'Сообщение платформы'
+        verbose_name_plural = 'Сообщения платформы'
+        ordering = ['-priority', '-created_at']
+        indexes = [
+            models.Index(fields=['-priority', '-created_at']),
+            models.Index(fields=['is_active', 'expires_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.title} ({self.get_message_type_display()})"
+
+    def is_expired(self):
+        """Проверяет, истекло ли сообщение"""
+        if self.expires_at:
+            return timezone.now() > self.expires_at
+        return False
+
+    def should_show_to_user(self, user):
+        """Определяет, нужно ли показывать сообщение конкретному пользователю"""
+        if not self.is_active or self.is_expired():
+            return False
+        
+        # Если показывать всем
+        if self.show_to_all:
+            return True
+        
+        # Для незарегистрированных пользователей
+        if not user or not user.is_authenticated:
+            return self.show_to_guests
+        
+        # Для зарегистрированных пользователей
+        if hasattr(user, 'user_type'):
+            if user.user_type == 'teacher' and self.show_to_teachers:
+                return True
+            elif user.user_type == 'student' and self.show_to_students:
+                return True
+        
+        return False
+    
+    def get_icon(self):
+        """Возвращает иконку в зависимости от типа сообщения"""
+        icons = {
+            'info': 'fa-info-circle',
+            'warning': 'fa-exclamation-triangle',
+            'success': 'fa-check-circle',
+            'danger': 'fa-exclamation-circle',
+            'announcement': 'fa-bullhorn',
+        }
+        return icons.get(self.message_type, 'fa-info-circle')
+
+
+class UserMessageRead(models.Model):
+    """Отслеживает прочитанные пользователем сообщения платформы"""
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Пользователь'
+    )
+    message = models.ForeignKey(
+        PlatformMessage,
+        on_delete=models.CASCADE,
+        verbose_name='Сообщение'
+    )
+    read_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Прочитано'
+    )
+
+    class Meta:
+        verbose_name = 'Прочитанное сообщение'
+        verbose_name_plural = 'Прочитанные сообщения'
+        unique_together = ['user', 'message']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.message.title}"

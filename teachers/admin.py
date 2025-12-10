@@ -4,7 +4,8 @@ from django.utils.html import format_html
 from .models import (
     User, Subject, SubjectCategory, City, Certificate,
     TeacherProfile, TeacherSubject, StudentProfile,
-    Conversation, Message, Review, Favorite, SubjectSearchLog
+    Conversation, Message, Review, Favorite, SubjectSearchLog,
+    PlatformMessage, UserMessageRead
 )
 
 
@@ -414,11 +415,16 @@ class FavoriteAdmin(admin.ModelAdmin):
 
 
 # --- TelegramUser (Telegram integration) ---
-from .models import TelegramUser, NotificationQueue, NotificationLog
+from .models import TelegramUser, NotificationQueue, NotificationLog, PlatformMessage, UserMessageRead
 from django.shortcuts import render, redirect
 from django.urls import path
 from django.contrib import messages
-from .admin_telegram_service import admin_telegram_service
+try:
+    from .admin_telegram_service import admin_telegram_service
+except Exception:
+    # Telegram package may be missing in some environments (dev machines, CI).
+    # Guard the import so management commands and tests can run without telegram.
+    admin_telegram_service = None
 from django.utils import timezone
 
 @admin.register(TelegramUser)
@@ -825,3 +831,71 @@ class NotificationLogAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         # Разрешаем массовое удаление старых логов
         return True
+
+
+@admin.register(PlatformMessage)
+class PlatformMessageAdmin(admin.ModelAdmin):
+    list_display = ('title', 'message_type', 'is_active', 'show_to_teachers', 'show_to_students', 'created_by', 'created_at', 'expires_at', 'priority')
+    list_filter = ('message_type', 'is_active', 'show_to_teachers', 'show_to_students', 'created_at')
+    search_fields = ('title', 'content')
+    readonly_fields = ('created_by', 'created_at')
+    list_editable = ('is_active', 'priority')
+    ordering = ['-priority', '-created_at']
+    
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('title', 'content', 'message_type', 'priority')
+        }),
+        ('Настройки отображения', {
+            'fields': ('is_active', 'show_to_all', 'show_to_teachers', 'show_to_students', 'expires_at')
+        }),
+        ('Информация', {
+            'fields': ('created_by', 'created_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # Если создаем новое сообщение
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('created_by')
+    
+    actions = ['mark_as_active', 'mark_as_inactive', 'duplicate_message']
+    
+    def mark_as_active(self, request, queryset):
+        count = queryset.update(is_active=True)
+        self.message_user(request, f'{count} сообщений активировано', messages.SUCCESS)
+    mark_as_active.short_description = '✅ Активировать выбранные сообщения'
+    
+    def mark_as_inactive(self, request, queryset):
+        count = queryset.update(is_active=False)
+        self.message_user(request, f'{count} сообщений деактивировано', messages.SUCCESS)
+    mark_as_inactive.short_description = '❌ Деактивировать выбранные сообщения'
+    
+    def duplicate_message(self, request, queryset):
+        for message in queryset:
+            message.pk = None
+            message.title = f"Копия: {message.title}"
+            message.created_by = request.user
+            message.save()
+        count = queryset.count()
+        self.message_user(request, f'{count} сообщений продублировано', messages.SUCCESS)
+    duplicate_message.short_description = '📋 Дублировать выбранные сообщения'
+
+
+@admin.register(UserMessageRead)
+class UserMessageReadAdmin(admin.ModelAdmin):
+    list_display = ('user', 'message_title', 'read_at')
+    list_filter = ('read_at', 'message__message_type')
+    search_fields = ('user__username', 'user__email', 'message__title')
+    readonly_fields = ('user', 'message', 'read_at')
+    
+    def message_title(self, obj):
+        return obj.message.title
+    message_title.short_description = 'Сообщение'
+    
+    def has_add_permission(self, request):
+        return False

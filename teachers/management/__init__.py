@@ -5,7 +5,7 @@ Django management command для управления Telegram пользова�
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth import get_user_model
 from teachers.models import TelegramUser
-from telegram_bot.notifications import notification_service
+# from telegram_bot.notifications import notification_service  # Временно отключено
 
 User = get_user_model()
 
@@ -82,84 +82,13 @@ class Command(BaseCommand):
         if not username and not email:
             raise CommandError('Необходимо указать --username или --email')
 
-        # Находим Telegram пользователя
-        try:
-            tg_user = TelegramUser.objects.get(telegram_id=telegram_id)
-        except TelegramUser.DoesNotExist:
-            raise CommandError(f'Telegram пользователь с ID {telegram_id} не найден')
-
-        # Находим Django пользователя
-        try:
-            if username:
-                django_user = User.objects.get(username=username)
-            else:
-                django_user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            raise CommandError(f'Django пользователь не найден')
-
-        # Привязываем
-        tg_user.user = django_user
-        tg_user.save()
-
-        self.stdout.write(
-            self.style.SUCCESS(
-                f'✅ Успешно привязан: {tg_user.first_name} (@{tg_user.telegram_username}) -> {django_user.username}'
-            )
-        )
+        # Эта команда временно отключена из-за отсутствия модуля telegram
+        raise CommandError('Команда временно недоступна - отсутствует модуль telegram')
 
     def test_message(self, options):
         """Отправить тестовое сообщение"""
-        telegram_id = options.get('telegram_id')
-        username = options.get('username')
-        email = options.get('email')
-
-        if telegram_id:
-            # Отправляем по Telegram ID
-            try:
-                tg_user = TelegramUser.objects.get(telegram_id=telegram_id)
-                success = notification_service.send_message_sync(
-                    telegram_id=telegram_id,
-                    text="🧪 Тестовое сообщение от системы управления"
-                )
-                if success:
-                    self.stdout.write(
-                        self.style.SUCCESS(f'✅ Сообщение отправлено пользователю {tg_user.first_name}')
-                    )
-                else:
-                    self.stdout.write(
-                        self.style.ERROR(f'❌ Ошибка отправки сообщения')
-                    )
-            except TelegramUser.DoesNotExist:
-                raise CommandError(f'Telegram пользователь с ID {telegram_id} не найден')
-        else:
-            # Отправляем через Django пользователя
-            if not username and not email:
-                raise CommandError('Необходимо указать --telegram-id, --username или --email')
-
-            try:
-                if username:
-                    django_user = User.objects.get(username=username)
-                else:
-                    django_user = User.objects.get(email=email)
-            except User.DoesNotExist:
-                raise CommandError(f'Django пользователь не найден')
-
-            # Используем функцию уведомлений
-            from telegram_bot.notifications import send_telegram_notification
-            success = send_telegram_notification(
-                user=django_user,
-                sender_name="Система управления",
-                message_preview="Тестовое сообщение"
-            )
-
-            if success:
-                self.stdout.write(
-                    self.style.SUCCESS(f'✅ Уведомление отправлено пользователю {django_user.username}')
-                )
-            else:
-                self.stdout.write(
-                    self.style.ERROR(f'❌ Ошибка отправки уведомления')
-                )
+        # Эта команда временно отключена из-за отсутствия модуля telegram
+        raise CommandError('Команда временно недоступна - отсутствует модуль telegram')
 
     def unlink_user(self, options):
         """Отвязать Telegram пользователя от Django пользователя"""

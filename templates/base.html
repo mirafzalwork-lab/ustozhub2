@@ -342,6 +342,250 @@
             }
         }
 
+        /* Platform Messages Styles */
+        .platform-notifications {
+            position: relative;
+        }
+
+        .platform-messages-btn {
+            position: relative;
+            padding: 10px;
+            background: none;
+            border: none;
+            border-radius: var(--radius-full);
+            font-size: 20px;
+            color: #FF6B35;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-base);
+            width: 44px;
+            height: 44px;
+        }
+
+        .platform-messages-btn:hover {
+            background: rgba(255, 107, 53, 0.1);
+            color: #FF6B35;
+        }
+
+        .platform-messages-btn i {
+            font-size: 20px;
+        }
+
+        .platform-badge {
+            background: #FF6B35 !important;
+            box-shadow: 0 2px 4px rgba(255, 107, 53, 0.3) !important;
+        }
+
+        .platform-messages-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            width: 320px;
+            max-width: 90vw;
+            max-height: 400px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .platform-messages-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .platform-messages-dropdown .dropdown-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .platform-messages-dropdown .dropdown-header h4 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #FF6B35;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .platform-messages-dropdown .unread-count {
+            background: #FF6B35;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .platform-messages-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .platform-message-item {
+            display: flex;
+            padding: 15px 20px;
+            border-bottom: 1px solid #f8f9fa;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .platform-message-item:hover {
+            background: #f8f9fa;
+        }
+
+        .platform-message-item.unread {
+            background: rgba(255, 107, 53, 0.05);
+            border-left: 3px solid #FF6B35;
+        }
+
+        .message-type-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .message-type-icon.type-info {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+        }
+
+        .message-type-icon.type-warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        .message-type-icon.type-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+        }
+
+        .message-type-icon.type-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .message-type-icon.type-announcement {
+            background: rgba(255, 107, 53, 0.1);
+            color: #FF6B35;
+        }
+
+        .message-content {
+            flex: 1;
+            min-width: 0;
+            {% comment %} max-width: 240px; {% endcomment %}
+            overflow-wrap: break-word;
+            word-break: break-word;
+            overflow: hidden;
+        }
+
+        .message-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+            font-size: 14px;
+            line-height: 1.3;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            hyphens: auto;
+        }
+
+        .message-preview {
+            color: #666;
+            font-size: 13px;
+            line-height: 1.4;
+            margin-bottom: 4px;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            hyphens: auto;
+        }
+
+        .message-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 6px;
+        }
+
+        .message-time {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .read-more-btn {
+            color: #3B82F6;
+            font-size: 11px;
+            font-weight: 600;
+            text-decoration: none;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid #3B82F6;
+            transition: all 0.2s;
+            background: transparent;
+        }
+
+        .read-more-btn:hover {
+            background: #3B82F6;
+            color: white;
+            text-decoration: none;
+        }
+
+        .no-messages {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .no-messages i {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #ddd;
+        }
+
+        .no-messages p {
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .dropdown-footer {
+            padding: 12px 20px;
+            border-top: 1px solid #f0f0f0;
+            background: #f8f9fa;
+            border-radius: 0 0 12px 12px;
+        }
+
+        .view-all-link {
+            color: #FF6B35;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            display: block;
+            text-align: center;
+        }
+
+        .view-all-link:hover {
+            color: #e55a2b;
+        }
+
         /* Profile Button & Dropdown */
         .profile-container {
             position: relative;
@@ -615,7 +859,7 @@
             background: white;
             z-index: 999;
             transform: translateX(-100%);
-            transition: transform 0.3s;
+            transition: transform 0.3s ease;
             overflow-y: auto;
         }
 
@@ -765,7 +1009,7 @@
             .student-card,
             .booking-card,
             .contact-card {
-                box-shadow: var(--shadow-md);
+                {% comment %} box-shadow: var(--shadow-md); {% endcomment %}
                 transition: transform var(--transition-base), box-shadow var(--transition-base);
             }
 
@@ -801,7 +1045,7 @@
                 z-index: 998;
                 transition: left 0.3s ease;
                 overflow-y: auto;
-                box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+                {% comment %} box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1); {% endcomment %}
             }
 
             .filters-sidebar.active {
@@ -1005,6 +1249,11 @@
                 display: inline-flex;
             }
 
+            /* Платформенные уведомления всегда видимы */
+            .platform-notifications {
+                display: flex !important;
+            }
+
             /* Компактный navbar */
             .nav-container {
                 padding: 0 12px;
@@ -1029,21 +1278,97 @@
 
             .mobile-toggle {
                 display: block;
+                order: 1;
             }
 
-            /* Скрываем обычные кнопки, но оставляем иконку сообщений */
+            /* Скрываем обычные кнопки на мобильных, НО показываем platform-notifications */
             .nav-actions .nav-btn:not(.nav-btn-primary):not(.messages-icon-btn) {
                 display: none;
             }
 
+            /* Кнопка "Стать учителем" скрывается на мобильных */
+            .nav-btn-outline {
+                display: none !important;
+            }
+
+            /* Платформенные уведомления ОБЯЗАТЕЛЬНО видимы на мобильных */
+            .platform-notifications {
+                display: flex !important;
+                order: 2;
+            }
+
+            .platform-messages-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+                color: #FF6B35 !important;
+                display: flex !important;
+            }
+
+            .platform-messages-btn i {
+                font-size: 18px;
+            }
+
+            .platform-badge {
+                position: absolute;
+                top: 4px;
+                right: 4px;
+                font-size: 9px;
+                padding: 1px 5px;
+                min-width: 16px;
+                background: #FF6B35 !important;
+            }
+
+            /* Мобильный dropdown для платформенных сообщений */
+            .platform-messages-dropdown {
+                width: 300px;
+                max-width: calc(100vw - 20px);
+                right: -10px;
+                max-height: 350px;
+                position: fixed;
+                top: 56px;
+                z-index: 9999;
+            }
+
+            /* Мобильные стили для сообщений в dropdown */
+            .message-content {
+                max-width: 220px;
+            }
+
+            .message-footer {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+
+            .message-title {
+                font-size: 13px;
+                line-height: 1.2;
+            }
+
+            .message-preview {
+                font-size: 12px;
+                line-height: 1.3;
+            }
+
+            .read-more-btn {
+                font-size: 10px;
+                padding: 3px 6px;
+                align-self: flex-end;
+            }
+
             .nav-actions {
+                display: flex;
+                align-items: center;
                 gap: 8px;
+                flex-wrap: nowrap;
             }
 
             /* Регистрация кнопка компактнее */
             .nav-btn-primary {
                 padding: 8px 12px;
                 font-size: 13px;
+                order: 10;
             }
 
             .nav-btn-primary span {
@@ -1056,11 +1381,38 @@
                 height: 40px;
                 font-size: 18px;
                 color: var(--primary-color);
+                order: 3;
             }
 
             .messages-icon-btn i {
                 font-size: 18px;
                 color: var(--primary-color);
+            }
+
+            /* Language switcher на мобильных */
+            .language-switcher {
+                order: 4;
+            }
+
+            .language-btn {
+                padding: 6px 8px;
+                min-width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .language-btn .lang-text {
+                display: none;
+            }
+
+            .language-btn .flag-icon {
+                font-size: 16px;
+            }
+
+            .language-btn .dropdown-arrow {
+                display: none;
             }
 
             .messages-badge {
@@ -1128,6 +1480,68 @@
             .messages-icon-btn i {
                 font-size: 16px;
                 color: var(--primary-color);
+            }
+
+            /* Платформенные уведомления для очень маленьких экранов */
+            .platform-notifications {
+                display: flex !important;
+            }
+
+            .platform-messages-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+                display: flex !important;
+                color: #FF6B35 !important;
+            }
+
+            .platform-messages-btn i {
+                font-size: 16px;
+            }
+
+            .platform-messages-dropdown {
+                width: calc(100vw - 40px);
+                right: -20px;
+                max-height: 300px;
+                position: fixed;
+                top: 52px;
+                z-index: 9999;
+            }
+
+            /* Компактные сообщения на очень маленьких экранах */
+            .platform-message-item {
+                padding: 10px 12px;
+            }
+
+            .message-content {
+                {% comment %} max-width: 180px; {% endcomment %}
+            }
+
+            .message-footer {
+                flex-direction: column;
+                gap: 4px;
+                margin-top: 4px;
+            }
+
+            .message-time {
+                font-size: 10px;
+            }
+
+            .read-more-btn {
+                font-size: 9px;
+                padding: 2px 6px;
+                border-width: 1px;
+                align-self: flex-start;
+            }
+
+            .message-title {
+                font-size: 12px;
+                line-height: 1.2;
+            }
+
+            .message-preview {
+                font-size: 11px;
+                line-height: 1.3;
             }
 
             .mobile-toggle {
@@ -1270,7 +1684,67 @@
                     <span>{% trans 'Стать учителем' %}</span>
                 </a>
 
+                <!-- Platform Messages Notification (для всех пользователей) -->
+                <div class="platform-notifications" id="platformNotifications">
+                    <button class="platform-messages-btn" onclick="togglePlatformMessages(event)" title="{% trans 'Уведомления платформы' %}">
+                        <i class="fas fa-bullhorn"></i>
+                        {% load custom_filters %}
+                        {% get_platform_messages_count as messages_count %}
+                        {% if messages_count > 0 %}
+                            <span class="messages-badge platform-badge">{{ messages_count }}</span>
+                        {% endif %}
+                    </button>
+                    
+                    <!-- Platform Messages Dropdown -->
+                    <div class="platform-messages-dropdown" id="platformMessagesDropdown">
+                        <div class="dropdown-header">
+                            <h4><i class="fas fa-bullhorn"></i> UstozHub</h4>
+                            {% if messages_count > 0 %}
+                            <span class="unread-count">{{ messages_count }} {% trans 'новых' %}</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="platform-messages-list">
+                            {% load custom_filters %}
+                            {% get_platform_messages as active_messages %}
+                            
+                            {% for message in active_messages|slice:":5" %}
+                            <div class="platform-message-item unread" data-message-id="{{ message.id }}">
+                                <div class="message-type-icon type-{{ message.message_type }}">
+                                    {% if message.message_type == 'info' %}<i class="fas fa-info-circle"></i>
+                                    {% elif message.message_type == 'warning' %}<i class="fas fa-exclamation-triangle"></i>
+                                    {% elif message.message_type == 'success' %}<i class="fas fa-check-circle"></i>
+                                    {% elif message.message_type == 'danger' %}<i class="fas fa-exclamation-circle"></i>
+                                    {% else %}<i class="fas fa-bullhorn"></i>{% endif %}
+                                </div>
+                                <div class="message-content">
+                                    <div class="message-title">{{ message.title|truncatechars:35 }}</div>
+                                    <div class="message-preview">{{ message.content|truncatechars:50 }}</div>
+                                    <div class="message-footer">
+                                        <span class="message-time">{{ message.created_at|timesince }} {% trans 'назад' %}</span>
+                                        <a href="{% url 'platform_message_detail' message.id %}" class="read-more-btn" onclick="event.stopPropagation();">{% trans 'Подробнее' %}</a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="no-messages">
+                                <i class="fas fa-inbox"></i>
+                                <p>{% trans 'Нет уведомлений' %}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        {% if active_messages.count > 5 %}
+                        <div class="dropdown-footer">
+                            <a href="{% url 'platform_messages_list' %}" class="view-all-link">{% trans 'Показать все' %} ({{ active_messages.count }})</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
                 {% if user.is_authenticated %}
+
+
                     <!-- Messages Icon Button - Always Visible -->
                     <a href="{% url 'conversations_list' %}" class="messages-icon-btn" title="{% trans 'Сообщения' %}">
                         <i class="fas fa-comments"></i>
@@ -1409,6 +1883,19 @@
                     </div>
                 </form>
             </div>
+
+            <!-- Platform Messages для всех пользователей в мобильном меню -->
+            {% load custom_filters %}
+            {% get_platform_messages_count as mobile_messages_count %}
+            {% if mobile_messages_count > 0 %}
+            <div class="mobile-menu-item" style="position: relative; padding: 12px 16px; color: #FF6B35; font-weight: 600;">
+                <i class="fas fa-bullhorn"></i>
+                <span>{% trans 'Уведомления платформы' %}</span>
+                <span style="position: absolute; right: 16px; background: #FF6B35; color: white; border-radius: 12px; padding: 2px 8px; font-size: 11px; font-weight: 700; min-width: 20px; text-align: center;">
+                    {{ mobile_messages_count }}
+                </span>
+            </div>
+            {% endif %}
 
             {% if user.is_authenticated %}
                 <a href="{% url 'profile' %}" class="mobile-menu-item">
@@ -1574,15 +2061,37 @@
             });
         }
 
+        // Platform messages dropdown toggle
+        function togglePlatformMessages(event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('platformMessagesDropdown');
+            const profileDropdown = document.getElementById('profileDropdown');
+            const languageDropdown = document.getElementById('languageDropdown');
+            
+            // Закрываем другие dropdown'ы если открыты
+            if (profileDropdown) {
+                profileDropdown.classList.remove('show');
+            }
+            if (languageDropdown) {
+                languageDropdown.classList.remove('show');
+            }
+            
+            dropdown.classList.toggle('show');
+        }
+
         // Profile dropdown toggle
         function toggleProfileDropdown(event) {
             event.stopPropagation();
             const dropdown = document.getElementById('profileDropdown');
             const languageDropdown = document.getElementById('languageDropdown');
+            const platformDropdown = document.getElementById('platformMessagesDropdown');
             
-            // Закрываем language dropdown если открыт
+            // Закрываем другие dropdown'ы если открыты
             if (languageDropdown) {
                 languageDropdown.classList.remove('show');
+            }
+            if (platformDropdown) {
+                platformDropdown.classList.remove('show');
             }
             
             dropdown.classList.toggle('show');
@@ -1638,6 +2147,8 @@
             const languageDropdown = document.getElementById('languageDropdown');
             const profileContainer = document.querySelector('.profile-container');
             const profileDropdown = document.getElementById('profileDropdown');
+            const platformContainer = document.querySelector('.platform-notifications');
+            const platformDropdown = document.getElementById('platformMessagesDropdown');
 
             // Закрываем language dropdown, если клик вне его
             if (languageDropdown && languageSwitcher && !languageSwitcher.contains(event.target)) {
@@ -1648,6 +2159,11 @@
             // Закрываем profile dropdown, если клик вне него
             if (profileDropdown && profileContainer && !profileContainer.contains(event.target)) {
                 profileDropdown.classList.remove('show');
+            }
+
+            // Закрываем platform messages dropdown, если клик вне него
+            if (platformDropdown && platformContainer && !platformContainer.contains(event.target)) {
+                platformDropdown.classList.remove('show');
             }
         });
 
