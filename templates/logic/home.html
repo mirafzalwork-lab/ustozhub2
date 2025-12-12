@@ -369,31 +369,29 @@
         box-shadow: 0 6px 20px rgba(10, 37, 64, 0.12);
     }
 
-    /* Стили для скрытой информации и кнопки входа */
-    .login-required-info {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+    /* Эффект размытия для неавторизованных пользователей */
+    .price-number-blurred {
+        filter: blur(3px);
+        opacity: 0.7;
+        transition: all 0.3s ease;
+        position: relative;
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
     }
 
-    .price-hidden {
-        font-size: 14px;
-        color: #999;
-        font-style: italic;
-    }
-
-    .login-required-btn {
-        background: #f0f0f0 !important;
-        color: #666 !important;
-        border: 2px solid #ddd !important;
-    }
-
-    .login-required-btn:hover {
-        background: #e0e0e0 !important;
-        color: #333 !important;
-        border-color: #ccc !important;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+    .price-number-blurred::after {
+        content: '🔒';
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        font-size: 10px;
+        color: #666;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 1px 3px;
+        border-radius: 3px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
 
     .teacher-header {
@@ -1399,30 +1397,21 @@
                                 </div>
 
                                 <div class="teacher-footer">
-                                    {% if user.is_authenticated %}
-                                        <div>
-                                            {% with min_price=teacher.get_min_price %}
-                                                <div class="teacher-price">
-                                                    {% if min_price > 0 %}
-                                                        {{ min_price|floatformat:0 }} {% trans 'сум' %}
-                                                    {% else %}
-                                                        {% trans 'Договорная' %}
-                                                    {% endif %}
-                                                </div>
-                                                <div class="price-period">{% trans 'за час' %}</div>
-                                            {% endwith %}
-                                        </div>
-                                        <button class="contact-btn" onclick="event.stopPropagation(); handleMessageClick({{ teacher.user.id }})">
-                                            <i class="fas fa-comment"></i> {% trans 'Написать' %}
-                                        </button>
-                                    {% else %}
-                                        <div class="login-required-info">
-                                            <span class="price-hidden">{% trans 'Цена скрыта' %}</span>
-                                        </div>
-                                        <button class="contact-btn login-required-btn" onclick="event.stopPropagation(); showLoginPrompt(event)">
-                                            <i class="fas fa-lock"></i> {% trans 'Войти' %}
-                                        </button>
-                                    {% endif %}
+                                    <div>
+                                        {% with min_price=teacher.get_min_price %}
+                                            <div class="teacher-price">
+                                                {% if min_price > 0 %}
+                                                    <span class="{% if not user.is_authenticated %}price-number-blurred{% endif %}">{{ min_price|floatformat:0 }}</span> {% trans 'сум' %}
+                                                {% else %}
+                                                    <span class="{% if not user.is_authenticated %}price-number-blurred{% endif %}">{% trans 'Договорная' %}</span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="price-period">{% trans 'за час' %}</div>
+                                        {% endwith %}
+                                    </div>
+                                    <button class="contact-btn" onclick="event.stopPropagation(); handleMessageClick({{ teacher.user.id }})">
+                                        <i class="fas fa-comment"></i> {% trans 'Написать' %}
+                                    </button>
                                 </div>
                             </div>
                         </div>
