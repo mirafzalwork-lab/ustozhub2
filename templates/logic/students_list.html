@@ -321,31 +321,29 @@
         box-shadow: 0 6px 20px rgba(16, 185, 129, 0.12);
     }
 
-    /* Стили для скрытой информации и кнопки входа */
-    .login-required-info {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+    /* Эффект размытия для неавторизованных пользователей */
+    .budget-number-blurred {
+        filter: blur(3px);
+        opacity: 0.7;
+        transition: all 0.3s ease;
+        position: relative;
+        display: inline-block;
+        background: rgba(16, 185, 129, 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
     }
 
-    .budget-hidden {
-        font-size: 14px;
-        color: #999;
-        font-style: italic;
-    }
-
-    .login-required-btn {
-        background: #f0f0f0 !important;
-        color: #666 !important;
-        border: 2px solid #ddd !important;
-    }
-
-    .login-required-btn:hover {
-        background: #e0e0e0 !important;
-        color: #333 !important;
-        border-color: #ccc !important;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+    .budget-number-blurred::after {
+        content: '🔒';
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        font-size: 10px;
+        color: #666;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 1px 3px;
+        border-radius: 3px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
 
     .student-header {
@@ -1272,26 +1270,17 @@
                                 </div>
 
                                 <div class="student-footer">
-                                    {% if user.is_authenticated %}
-                                        <div>
-                                            <div class="student-budget">
-                                                {{ student.get_budget_display }}
-                                            </div>
-                                            {% if student.budget_min or student.budget_max %}
-                                                <div class="budget-period">{% trans 'готов платить' %}</div>
-                                            {% endif %}
+                                    <div>
+                                        <div class="student-budget">
+                                            <span class="{% if not user.is_authenticated %}budget-number-blurred{% endif %}">{{ student.get_budget_display }}</span>
                                         </div>
-                                        <button class="contact-btn" onclick="event.stopPropagation(); handleMessageClick({{ student.user.id }})">
-                                            <i class="fas fa-paper-plane"></i> {% trans 'Связаться' %}
-                                        </button>
-                                    {% else %}
-                                        <div class="login-required-info">
-                                            <span class="budget-hidden">{% trans 'Бюджет скрыт' %}</span>
-                                        </div>
-                                        <button class="contact-btn login-required-btn" onclick="event.stopPropagation(); showLoginPrompt(event)">
-                                            <i class="fas fa-lock"></i> {% trans 'Войти' %}
-                                        </button>
-                                    {% endif %}
+                                        {% if student.budget_min or student.budget_max %}
+                                            <div class="budget-period">{% trans 'готов платить' %}</div>
+                                        {% endif %}
+                                    </div>
+                                    <button class="contact-btn" onclick="event.stopPropagation(); handleMessageClick({{ student.user.id }})">
+                                        <i class="fas fa-paper-plane"></i> {% trans 'Связаться' %}
+                                    </button>
                                 </div>
                             </div>
                         </div>

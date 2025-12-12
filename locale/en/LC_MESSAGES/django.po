@@ -392,13 +392,6 @@ msgstr "UZS"
 msgid "Договорная"
 msgstr "Negotiable"
 
-
-<<<<<<< HEAD
-
-
-
-=======
->>>>>>> e421162781e9b205aef11309feab8d6d468ccc50
 #: templates/logic/home.html:710 templates/logic/teacher_detail.html:1213
 #: templates/logic/teacher_detail.html:1361
 msgid "за час"
