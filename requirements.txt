@@ -19,7 +19,7 @@ idna==3.11
 Incremental==24.11.0
 msgpack==1.1.2
 packaging==25.0
-Pillow==10.0.0
+Pillow==10.4.0
 py-ubjson==0.16.1
 pyasn1==0.6.1
 pyasn1_modules==0.4.2
