@@ -771,6 +771,7 @@
         let socket = null;
         let reconnectAttempts = 0;
         const maxReconnectAttempts = 5;
+        let heartbeatInterval = null;
 
         // Создаём индикатор подключения
         const indicator = document.createElement('div');
@@ -822,18 +823,34 @@
                     console.log('✅ WebSocket подключён');
                     updateStatus('connected');
                     reconnectAttempts = 0;
+                    
+                    // Запускаем heartbeat каждые 25 секунд
+                    heartbeatInterval = setInterval(() => {
+                        if (socket && socket.readyState === WebSocket.OPEN) {
+                            socket.send(JSON.stringify({type: 'ping'}));
+                            console.log('📡 Ping sent');
+                        }
+                    }, 25000);
                 };
 
                 socket.onmessage = (event) => {
                     const data = JSON.parse(event.data);
                     if (data.type === 'chat_message') {
                         displayNewMessage(data.message_data);
+                    } else if (data.type === 'pong') {
+                        console.log('📡 Pong received');
                     }
                 };
 
                 socket.onclose = () => {
                     console.log('❌ WebSocket отключён');
                     updateStatus('disconnected');
+                    
+                    // Очищаем heartbeat при отключении
+                    if (heartbeatInterval) {
+                        clearInterval(heartbeatInterval);
+                        heartbeatInterval = null;
+                    }
                     
                     if (reconnectAttempts < maxReconnectAttempts) {
                         reconnectAttempts++;
