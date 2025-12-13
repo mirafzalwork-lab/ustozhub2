@@ -64,7 +64,7 @@ urlpatterns = [
     path('api/telegram/status/', telegram_status, name='telegram_status'),
     path('api/telegram/notifications/toggle/', toggle_notifications, name='toggle_telegram_notifications'),
     
-    # Messages / Сообщения
+    # Messages / Сообщения (с интегрированным real-time чатом)
     path('messages/', conversations_list, name='conversations_list'),
     path('messages/<uuid:conversation_id>/', conversation_detail, name='conversation_detail'),
     path('messages/start/<int:user_id>/', start_conversation, name='start_conversation'),

@@ -33,7 +33,7 @@
         display: flex;
         justify-content: center;
         gap: 12px;
-        margin-bottom: 24px;
+        {% comment %} margin-bottom: 24px; {% endcomment %}
         background: white;
         padding: 12px;
         border-radius: 12px;
@@ -369,30 +369,7 @@
         box-shadow: 0 6px 20px rgba(10, 37, 64, 0.12);
     }
 
-    /* Эффект размытия для неавторизованных пользователей */
-    .price-number-blurred {
-        filter: blur(3px);
-        opacity: 0.7;
-        transition: all 0.3s ease;
-        position: relative;
-        display: inline-block;
-        background: rgba(255, 255, 255, 0.1);
-        padding: 2px 6px;
-        border-radius: 4px;
-    }
 
-    .price-number-blurred::after {
-        content: '🔒';
-        position: absolute;
-        top: -5px;
-        right: -5px;
-        font-size: 10px;
-        color: #666;
-        background: rgba(255, 255, 255, 0.9);
-        padding: 1px 3px;
-        border-radius: 3px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
 
     .teacher-header {
         display: flex;
@@ -1401,9 +1378,9 @@
                                         {% with min_price=teacher.get_min_price %}
                                             <div class="teacher-price">
                                                 {% if min_price > 0 %}
-                                                    <span class="{% if not user.is_authenticated %}price-number-blurred{% endif %}">{{ min_price|floatformat:0 }}</span> {% trans 'сум' %}
+                                                    <span>{{ min_price|floatformat:0 }}</span> {% trans 'сум' %}
                                                 {% else %}
-                                                    <span class="{% if not user.is_authenticated %}price-number-blurred{% endif %}">{% trans 'Договорная' %}</span>
+                                                    <span>{% trans 'Договорная' %}</span>
                                                 {% endif %}
                                             </div>
                                             <div class="price-period">{% trans 'за час' %}</div>

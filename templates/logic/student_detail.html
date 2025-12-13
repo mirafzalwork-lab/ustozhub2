@@ -4,7 +4,7 @@
 {% block title %}{{ student.user.get_full_name }} - {% trans "Профиль ученика" %} - UstozHub{% endblock %}
 
 {% block content %}
-<div class="student-detail-page {% if not user.is_authenticated %}blurred-view{% endif %}">
+<div class="student-detail-page">
 <style>
     /* ============================================
        🎨 ОПТИМИЗИРОВАННЫЙ STUDENT DETAIL PAGE
@@ -1487,27 +1487,7 @@
         outline-offset: 2px;
     }
 
-    /* === BLUR OVERLAY FOR NON-AUTHENTICATED USERS === */
-    .student-detail-page.blurred-view {
-        position: relative;
-    }
 
-    .student-detail-page.blurred-view::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 100;
-        pointer-events: auto;
-    }
-
-    .student-detail-page.blurred-view .detail-container {
-        filter: blur(3px);
-        pointer-events: none;
-    }
 
     .student-detail-page .login-required-modal {
         position: fixed;
@@ -1875,9 +1855,10 @@
 
                     <div class="booking-actions">
                         {% if user.is_authenticated and user.user_type == 'teacher' and user != student.user %}
-                            <a href="{% url 'start_conversation' user_id=student.user.id %}" class="btn-primary">
-                                <i class="fas fa-comment-dots"></i>
-                                {% trans "Написать сообщение" %}
+                            <!-- Онлайн чат с real-time сообщениями -->
+                            <a href="{% url 'start_conversation' user_id=student.user.id %}" class="btn-primary" style="background: linear-gradient(135deg, #10B981, #059669); border: none;">
+                                <i class="fas fa-bolt"></i>
+                                {% trans "Чат онлайн" %}
                             </a>
                         {% endif %}
 

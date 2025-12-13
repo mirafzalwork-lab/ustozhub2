@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Мои чаты" %} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            
+            <!-- Заголовок страницы -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="fas fa-comments text-primary"></i>
+                    {% trans "Мои чаты" %}
+                </h2>
+                <small class="text-muted">
+                    {% trans "Real-time сообщения" %}
+                </small>
+            </div>
+
+            <!-- Список чатов -->
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    {% if rooms %}
+                        <div class="list-group list-group-flush">
+                            {% for chat_data in rooms %}
+                            <a href="{% url 'chat_room' chat_data.other_participant.id %}" 
+                               class="list-group-item list-group-item-action py-3">
+                                <div class="row align-items-center">
+                                    
+                                    <!-- Аватар собеседника -->
+                                    <div class="col-auto">
+                                        {% if chat_data.other_participant.avatar %}
+                                            <img src="{{ chat_data.other_participant.avatar.url }}" 
+                                                 class="rounded-circle" 
+                                                 width="50" height="50" 
+                                                 alt="Avatar"
+                                                 style="object-fit: cover;">
+                                        {% else %}
+                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
+                                                 style="width: 50px; height: 50px; font-size: 1.2rem;">
+                                                {{ chat_data.other_participant.get_full_name|first|upper|default:chat_data.other_participant.username|first|upper }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Информация о чате -->
+                                    <div class="col">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="mb-1">
+                                                    {{ chat_data.other_participant.get_full_name|default:chat_data.other_participant.username }}
+                                                </h6>
+                                                
+                                                {% if chat_data.last_message %}
+                                                    <p class="mb-1 text-muted small">
+                                                        <strong>
+                                                            {% if chat_data.last_message.sender == request.user %}
+                                                                {% trans "Вы" %}:
+                                                            {% else %}
+                                                                {{ chat_data.last_message.sender.get_full_name|default:chat_data.last_message.sender.username }}:
+                                                            {% endif %}
+                                                        </strong>
+                                                        {{ chat_data.last_message.message|truncatechars:50 }}
+                                                    </p>
+                                                {% else %}
+                                                    <p class="mb-1 text-muted small">
+                                                        <em>{% trans "Нет сообщений" %}</em>
+                                                    </p>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <!-- Время и статус -->
+                                            <div class="text-end">
+                                                {% if chat_data.last_message %}
+                                                    <small class="text-muted">
+                                                        {{ chat_data.last_message.created_at|timesince }} {% trans "назад" %}
+                                                    </small>
+                                                    
+                                                    <!-- Индикатор непрочитанных сообщений -->
+                                                    {% if not chat_data.last_message.is_read and chat_data.last_message.sender != request.user %}
+                                                        <div class="mt-1">
+                                                            <span class="badge bg-primary rounded-pill">
+                                                                <i class="fas fa-circle" style="font-size: 0.5rem;"></i>
+                                                            </span>
+                                                        </div>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <!-- Пустое состояние -->
+                        <div class="text-center py-5">
+                            <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">{% trans "У вас пока нет чатов" %}</h5>
+                            <p class="text-muted">
+                                {% trans "Начните общение, написав кому-то сообщение" %}
+                            </p>
+                            <a href="{% url 'home' %}" class="btn btn-primary">
+                                <i class="fas fa-search me-2"></i>
+                                {% trans "Найти собеседника" %}
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Информация о real-time -->
+            {% if rooms %}
+                <div class="alert alert-info mt-3 d-flex align-items-center">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <small>
+                        {% trans "Все сообщения доставляются мгновенно благодаря WebSocket технологии" %}
+                    </small>
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}
