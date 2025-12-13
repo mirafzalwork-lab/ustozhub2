@@ -1,0 +1,467 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Чат с" %} {{ other_user.get_full_name|default:other_user.username }} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Стили для чата - минималистичный дизайн */
+    .chat-container {
+        height: 70vh;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .messages-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 0.5rem 0.5rem 0 0;
+        max-height: 500px;
+    }
+    
+    .message {
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: flex-start;
+    }
+    
+    .message.own {
+        flex-direction: row-reverse;
+    }
+    
+    .message-bubble {
+        max-width: 70%;
+        padding: 0.75rem 1rem;
+        border-radius: 1rem;
+        word-wrap: break-word;
+    }
+    
+    .message.own .message-bubble {
+        background: #007bff;
+        color: white;
+        border-bottom-right-radius: 0.25rem;
+    }
+    
+    .message.other .message-bubble {
+        background: #e9ecef;
+        color: #333;
+        border-bottom-left-radius: 0.25rem;
+    }
+    
+    .message-time {
+        font-size: 0.75rem;
+        color: #6c757d;
+        margin: 0.25rem 0.5rem 0;
+        align-self: flex-end;
+    }
+    
+    .message.own .message-time {
+        color: rgba(255,255,255,0.8);
+    }
+    
+    .chat-input-area {
+        border-top: 1px solid #dee2e6;
+        padding: 1rem;
+        background: white;
+        border-radius: 0 0 0.5rem 0.5rem;
+    }
+    
+    .connection-status {
+        font-size: 0.875rem;
+        padding: 0.5rem 1rem;
+        text-align: center;
+        border-radius: 0.25rem;
+        margin-bottom: 1rem;
+    }
+    
+    .status-connected {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .status-disconnected {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    
+    .typing-indicator {
+        font-style: italic;
+        color: #6c757d;
+        padding: 0.5rem 1rem;
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            
+            <!-- Заголовок чата -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center">
+                    <a href="{% url 'chat_list' %}" class="btn btn-outline-secondary btn-sm me-3">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    
+                    {% if other_user.avatar %}
+                        <img src="{{ other_user.avatar.url }}" 
+                             class="rounded-circle me-3" 
+                             width="40" height="40" 
+                             alt="Avatar"
+                             style="object-fit: cover;">
+                    {% else %}
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3"
+                             style="width: 40px; height: 40px;">
+                            {{ other_user.get_full_name|first|upper|default:other_user.username|first|upper }}
+                        </div>
+                    {% endif %}
+                    
+                    <div>
+                        <h5 class="mb-0">{{ other_user.get_full_name|default:other_user.username }}</h5>
+                        <small class="text-muted" id="userStatus">
+                            {% trans "Статус пользователя" %}
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Индикатор подключения -->
+                <div id="connectionStatus" class="connection-status status-disconnected">
+                    <i class="fas fa-circle me-1"></i>
+                    <span id="statusText">{% trans "Подключение..." %}</span>
+                </div>
+            </div>
+
+            <!-- Чат контейнер -->
+            <div class="card shadow-sm">
+                <div class="chat-container">
+                    
+                    <!-- Область сообщений -->
+                    <div class="messages-area" id="messagesArea">
+                        <!-- Сообщения будут загружаться через WebSocket -->
+                        <div id="initialMessages">
+                            <!-- История сообщений загрузится через WebSocket при подключении -->
+                        </div>
+                        
+                        <!-- Индикатор печатает -->
+                        <div class="typing-indicator" id="typingIndicator">
+                            <i class="fas fa-ellipsis-h"></i>
+                            <span>{% trans "Пользователь печатает..." %}</span>
+                        </div>
+                    </div>
+
+                    <!-- Область ввода -->
+                    <div class="chat-input-area">
+                        <form id="messageForm" class="d-flex">
+                            <div class="input-group">
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="messageInput" 
+                                       placeholder="{% trans 'Введите сообщение...' %}"
+                                       maxlength="1000"
+                                       autocomplete="off">
+                                <button type="submit" 
+                                        class="btn btn-primary" 
+                                        id="sendButton"
+                                        disabled>
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <!-- Статистика -->
+                        <div class="d-flex justify-content-between mt-2">
+                            <small class="text-muted" id="messageCount">
+                                {% trans "Сообщений:" %} {{ messages|length }}
+                            </small>
+                            <small class="text-muted">
+                                <i class="fas fa-shield-alt me-1"></i>
+                                {% trans "Зашифровано" %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/**
+ * Real-time Chat WebSocket Client
+ * Обработка WebSocket соединения и сообщений
+ */
+class ChatWebSocket {
+    constructor(websocketUrl, currentUserId, otherUserName) {
+        this.websocketUrl = websocketUrl;
+        this.currentUserId = currentUserId;
+        this.otherUserName = otherUserName;
+        this.socket = null;
+        this.reconnectInterval = null;
+        this.messageCount = 0; // Будет обновлён при загрузке истории
+        
+        this.init();
+    }
+
+    init() {
+        this.connectWebSocket();
+        this.setupEventHandlers();
+        this.scrollToBottom();
+    }
+
+    connectWebSocket() {
+        try {
+            console.log('Подключение к WebSocket:', this.websocketUrl);
+            
+            this.socket = new WebSocket(this.websocketUrl);
+            
+            // Подключение установлено
+            this.socket.onopen = (event) => {
+                console.log('WebSocket подключён');
+                this.updateConnectionStatus(true);
+                this.clearReconnectInterval();
+            };
+
+            // Получено сообщение
+            this.socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                this.handleMessage(data);
+            };
+
+            // Соединение закрыто
+            this.socket.onclose = (event) => {
+                console.log('WebSocket отключён:', event.code, event.reason);
+                this.updateConnectionStatus(false);
+                
+                // Попытка переподключения
+                if (!event.wasClean) {
+                    this.scheduleReconnect();
+                }
+            };
+
+            // Ошибка соединения
+            this.socket.onerror = (event) => {
+                console.error('WebSocket ошибка:', event);
+                this.updateConnectionStatus(false, 'Ошибка подключения');
+            };
+
+        } catch (error) {
+            console.error('Не удалось создать WebSocket:', error);
+            this.updateConnectionStatus(false, 'Ошибка создания соединения');
+        }
+    }
+
+    handleMessage(data) {
+        console.log('Получено сообщение:', data);
+        
+        switch (data.type) {
+            case 'chat_message':
+                this.displayMessage(data.message_data);
+                break;
+                
+            case 'message_history':
+                // История сообщений уже загружена из Django шаблона
+                break;
+                
+            default:
+                console.log('Неизвестный тип сообщения:', data.type);
+        }
+    }
+
+    displayMessage(messageData) {
+        const messagesArea = document.getElementById('messagesArea');
+        const typingIndicator = document.getElementById('typingIndicator');
+        
+        // Создаём элемент сообщения
+        const messageDiv = document.createElement('div');
+        const isOwnMessage = messageData.sender_id === this.currentUserId;
+        
+        messageDiv.className = `message ${isOwnMessage ? 'own' : 'other'}`;
+        messageDiv.setAttribute('data-message-id', messageData.id);
+        
+        messageDiv.innerHTML = `
+            <div class="message-bubble">
+                ${this.escapeHtml(messageData.message)}
+            </div>
+            <div class="message-time">
+                ${new Date(messageData.created_at).toLocaleTimeString('ru-RU', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })}
+            </div>
+        `;
+        
+        // Добавляем сообщение перед индикатором печатает
+        messagesArea.insertBefore(messageDiv, typingIndicator);
+        
+        // Обновляем счётчик сообщений
+        this.messageCount++;
+        this.updateMessageCount();
+        
+        // Прокручиваем к низу
+        this.scrollToBottom();
+        
+        // Анимация появления
+        setTimeout(() => {
+            messageDiv.style.opacity = '1';
+            messageDiv.style.transform = 'translateY(0)';
+        }, 10);
+    }
+
+    sendMessage(message) {
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            const messageData = {
+                type: 'chat_message',
+                message: message.trim()
+            };
+            
+            console.log('Отправка сообщения:', messageData);
+            this.socket.send(JSON.stringify(messageData));
+            
+            return true;
+        } else {
+            console.error('WebSocket не подключён');
+            this.updateConnectionStatus(false, 'Нет соединения');
+            return false;
+        }
+    }
+
+    setupEventHandlers() {
+        const messageForm = document.getElementById('messageForm');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+
+        // Отправка сообщения
+        messageForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const message = messageInput.value.trim();
+            if (message && this.sendMessage(message)) {
+                messageInput.value = '';
+                sendButton.disabled = true;
+            }
+        });
+
+        // Активация кнопки отправки
+        messageInput.addEventListener('input', () => {
+            const hasText = messageInput.value.trim().length > 0;
+            const isConnected = this.socket && this.socket.readyState === WebSocket.OPEN;
+            sendButton.disabled = !(hasText && isConnected);
+        });
+
+        // Enter для отправки
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                messageForm.dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Фокус на поле ввода
+        messageInput.focus();
+    }
+
+    updateConnectionStatus(isConnected, customMessage = null) {
+        const statusElement = document.getElementById('connectionStatus');
+        const statusText = document.getElementById('statusText');
+        const sendButton = document.getElementById('sendButton');
+        const messageInput = document.getElementById('messageInput');
+
+        if (isConnected) {
+            statusElement.className = 'connection-status status-connected';
+            statusText.textContent = customMessage || '{% trans "Подключено" %}';
+            sendButton.disabled = messageInput.value.trim().length === 0;
+        } else {
+            statusElement.className = 'connection-status status-disconnected';
+            statusText.textContent = customMessage || '{% trans "Отключено" %}';
+            sendButton.disabled = true;
+        }
+    }
+
+    updateMessageCount() {
+        const messageCountElement = document.getElementById('messageCount');
+        if (messageCountElement) {
+            messageCountElement.textContent = `{% trans "Сообщений:" %} ${this.messageCount}`;
+        }
+    }
+
+    scrollToBottom() {
+        const messagesArea = document.getElementById('messagesArea');
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    scheduleReconnect() {
+        if (this.reconnectInterval) return;
+        
+        let attempts = 0;
+        const maxAttempts = 5;
+        
+        this.reconnectInterval = setInterval(() => {
+            attempts++;
+            console.log(`Попытка переподключения ${attempts}/${maxAttempts}`);
+            
+            if (attempts >= maxAttempts) {
+                this.clearReconnectInterval();
+                this.updateConnectionStatus(false, 'Не удалось подключиться');
+                return;
+            }
+            
+            this.connectWebSocket();
+        }, 3000); // Попытка каждые 3 секунды
+    }
+
+    clearReconnectInterval() {
+        if (this.reconnectInterval) {
+            clearInterval(this.reconnectInterval);
+            this.reconnectInterval = null;
+        }
+    }
+
+    // Закрытие соединения при выходе со страницы
+    disconnect() {
+        this.clearReconnectInterval();
+        if (this.socket) {
+            this.socket.close(1000, 'Page unload');
+        }
+    }
+}
+
+// Инициализация чата при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    // Формируем WebSocket URL
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    const roomId = '{{ room_id|safe }}';
+    const websocketUrl = `${protocol}//${host}/ws/chat/${roomId}/`;
+    
+    const currentUserId = {{ request.user.id }};
+    const otherUserName = '{{ other_user.get_full_name|default:other_user.username|safe }}';
+
+    console.log('Инициализация чата с URL:', websocketUrl);
+
+    // Создаём экземпляр чата
+    window.chatSocket = new ChatWebSocket(websocketUrl, currentUserId, otherUserName);
+
+    // Закрываем соединение при уходе со страницы
+    window.addEventListener('beforeunload', function() {
+        if (window.chatSocket) {
+            window.chatSocket.disconnect();
+        }
+    });
+});
+</script>
+{% endblock %}

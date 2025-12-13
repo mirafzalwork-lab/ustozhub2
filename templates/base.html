@@ -1271,9 +1271,9 @@
                 </a>
 
                 {% if user.is_authenticated %}
-                    <!-- Messages Icon Button - Always Visible -->
+                    <!-- Messages Icon Button - С интегрированным real-time чатом -->
                     <a href="{% url 'conversations_list' %}" class="messages-icon-btn" title="{% trans 'Сообщения' %}">
-                        <i class="fas fa-comments"></i>
+                        <i class="fas fa-bolt"></i>
                         {% if unread_messages_count > 0 %}
                             <span class="messages-badge">{{ unread_messages_count }}</span>
                         {% endif %}
@@ -1320,8 +1320,8 @@
                             {% endif %}
 
                             <a href="{% url 'conversations_list' %}" class="dropdown-item">
-                                <i class="fas fa-comments"></i>
-                                <span>{% trans 'Сообщения' %}</span>
+                                <i class="fas fa-bolt text-success"></i>
+                                <span>{% trans 'Чат онлайн' %}</span>
                             </a>
 
                             <a href="{% url 'profile_edit' %}" class="dropdown-item">

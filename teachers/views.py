@@ -1951,3 +1951,123 @@ def export_telegram_users(request):
         ])
     
     return response
+
+
+# =============================================================================
+# 💬 REAL-TIME CHAT VIEWS - Изолированная система чата
+# =============================================================================
+
+@login_required
+def chat_list(request):
+    """
+    Список всех чатов пользователя
+    Показывает активные комнаты с последними сообщениями
+    """
+    from .models import ChatRoom
+    
+    # Получаем все комнаты пользователя с последними сообщениями
+    user_rooms = ChatRoom.objects.filter(
+        participants=request.user
+    ).prefetch_related('participants', 'messages').order_by('-updated_at')
+    
+    # Подготавливаем данные для шаблона
+    chat_rooms_data = []
+    for room in user_rooms:
+        other_participant = room.get_other_participant(request.user)
+        last_message = room.get_last_message()
+        
+        if other_participant:  # Проверяем, что есть собеседник
+            chat_rooms_data.append({
+                'room': room,
+                'other_participant': other_participant,
+                'last_message': last_message,
+            })
+    
+    return render(request, 'logic/chat_list.html', {
+        'chat_rooms': chat_rooms_data,
+        'page_title': 'Мои чаты'
+    })
+
+
+@login_required
+def chat_room(request, user_id):
+    """
+    Комната чата с конкретным пользователем
+    WebSocket подключение для real-time общения
+    """
+    from .models import ChatRoom
+    
+    # Получаем собеседника
+    other_user = get_object_or_404(User, id=user_id)
+    
+    # Проверяем, что пользователь не пытается открыть чат с собой
+    if other_user == request.user:
+        messages.error(request, 'Нельзя открыть чат с самим собой')
+        return redirect('chat_list')
+    
+    # Получаем или создаём комнату чата
+    room = ChatRoom.get_or_create_room(request.user, other_user)
+    
+    # Получаем историю сообщений (последние 50)
+    chat_messages = room.messages.select_related('sender').order_by('-created_at')[:50]
+    chat_messages = list(reversed(chat_messages))  # Сортируем от старых к новым
+    
+    # Помечаем сообщения как прочитанные
+    room.messages.filter(
+        is_read=False
+    ).exclude(sender=request.user).update(is_read=True)
+    
+    # WebSocket URL для подключения
+    ws_protocol = 'wss' if request.is_secure() else 'ws'
+    websocket_url = f"{ws_protocol}://{request.get_host()}/ws/chat/{room.room_identifier}/"
+    
+    return render(request, 'logic/chat_room.html', {
+        'room': room,
+        'other_user': other_user,
+        'messages': chat_messages,
+        'websocket_url': websocket_url,
+        'page_title': f'Чат с {other_user.get_full_name() or other_user.username}'
+    })
+
+
+@login_required
+def get_user_chat_rooms(request):
+    """
+    API: Получить список чатов пользователя в JSON формате
+    Для динамического обновления списка чатов
+    """
+    from .models import ChatRoom
+    
+    user_rooms = ChatRoom.objects.filter(
+        participants=request.user
+    ).prefetch_related('participants', 'messages').order_by('-updated_at')
+    
+    rooms_data = []
+    for room in user_rooms:
+        other_participant = room.get_other_participant(request.user)
+        last_message = room.get_last_message()
+        
+        if other_participant:
+            rooms_data.append({
+                'room_id': room.room_identifier,
+                'other_user': {
+                    'id': other_participant.id,
+                    'name': other_participant.get_full_name() or other_participant.username,
+                    'avatar': other_participant.avatar.url if other_participant.avatar else None,
+                },
+                'last_message': {
+                    'text': last_message.message if last_message else 'Нет сообщений',
+                    'created_at': last_message.created_at.isoformat() if last_message else None,
+                    'sender_name': last_message.sender.get_full_name() if last_message else None,
+                    'is_read': last_message.is_read if last_message else True,
+                } if last_message else None,
+                'updated_at': room.updated_at.isoformat(),
+            })
+    
+    return JsonResponse({
+        'success': True,
+        'rooms': rooms_data
+    })
+
+
+

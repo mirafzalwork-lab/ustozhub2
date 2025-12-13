@@ -34,30 +34,22 @@ def send_message_notification(sender, instance, created, **kwargs):
         sender_user = message.sender
         
         # Определяем получателя (тот, кто НЕ отправитель)
-        participants = conversation.participants.all()
-        
-        if len(participants) != 2:
-            logger.warning(f"Диалог {conversation.id} имеет {len(participants)} участников (ожидалось 2)")
-            return
+        # В модели Conversation есть teacher и student
+        teacher_user = conversation.teacher.user
+        student_user = conversation.student
         
         # Получатель - это не отправитель
-        recipient = None
-        for participant in participants:
-            if participant != sender_user:
-                recipient = participant
-                break
-        
-        if not recipient:
-            logger.error(f"Не удалось определить получателя для сообщения {message.id}")
-            return
-        
-        # Не отправляем уведомление самому себе
-        if recipient == sender_user:
+        if sender_user.id == teacher_user.id:
+            recipient = student_user
+        elif sender_user.id == student_user.id:
+            recipient = teacher_user
+        else:
+            logger.warning(f"Отправитель {sender_user.id} не является участником диалога {conversation.id}")
             return
         
         # Добавляем уведомление в очередь
         sender_name = sender_user.get_full_name() or sender_user.username
-        message_preview = message.text if message.text else "[файл]"
+        message_preview = message.content if message.content else "[файл]"
         
         notification = queue_new_message_notification(
             recipient=recipient,

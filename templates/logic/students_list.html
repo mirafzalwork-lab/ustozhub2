@@ -1272,7 +1272,7 @@
                                 <div class="student-footer">
                                     <div>
                                         <div class="student-budget">
-                                            <span class="{% if not user.is_authenticated %}budget-number-blurred{% endif %}">{{ student.get_budget_display }}</span>
+                                            <span>{{ student.get_budget_display }}</span>
                                         </div>
                                         {% if student.budget_min or student.budget_max %}
                                             <div class="budget-period">{% trans 'готов платить' %}</div>

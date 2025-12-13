@@ -611,6 +611,11 @@
             <div class="conversation-user-details">
                 <div class="conversation-user-name">
                     {{ other_user.get_full_name|default:other_user.username }}
+                    <!-- WebSocket статус -->
+                    <span id="connectionStatus" class="ms-2 text-muted small">
+                        <i class="fas fa-circle" style="color: #dc3545;"></i>
+                        <span id="statusText">{% trans "Подключение..." %}</span>
+                    </span>
                 </div>
                 {% if user_type == 'student' and conversation.teacher.city %}
                     <div class="conversation-user-status">
@@ -752,6 +757,181 @@
                 console.error('Error:', error);
                 window.location.reload();
             });
+        });
+        
+        // 🚀 ИНИЦИАЛИЗАЦИЯ REAL-TIME ЧАТА
+        initRealTimeChat();
+    }
+    
+    /**
+     * REAL-TIME CHAT WITH WEBSOCKET
+     * Интегрированный в существующую страницу сообщений
+     */
+    function initRealTimeChat() {
+        let socket = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+
+        // Создаём индикатор подключения
+        const indicator = document.createElement('div');
+        indicator.id = 'wsStatus';
+        indicator.style.cssText = `
+            position: fixed; top: 70px; right: 20px; padding: 6px 12px; 
+            border-radius: 15px; font-size: 11px; font-weight: 600;
+            z-index: 1000; transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            background: #FEF3C7; color: #92400E;
+        `;
+        indicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Подключение...';
+        document.body.appendChild(indicator);
+
+        function updateStatus(status) {
+            const statusElement = document.getElementById('connectionStatus');
+            const statusText = document.getElementById('statusText');
+            
+            switch (status) {
+                case 'connected':
+                    statusElement.innerHTML = '<i class="fas fa-circle" style="color: #10b981;"></i> <span>{% trans "Онлайн" %}</span>';
+                    indicator.style.background = '#D1FAE5';
+                    indicator.style.color = '#065F46';
+                    indicator.innerHTML = '<i class="fas fa-bolt"></i> Онлайн';
+                    setTimeout(() => indicator.style.opacity = '0', 2000);
+                    break;
+                case 'disconnected':
+                    statusElement.innerHTML = '<i class="fas fa-circle" style="color: #dc3545;"></i> <span>{% trans "Офлайн" %}</span>';
+                    indicator.style.opacity = '1';
+                    indicator.style.background = '#FEE2E2';
+                    indicator.style.color = '#991B1B';
+                    indicator.innerHTML = '<i class="fas fa-wifi"></i> Офлайн';
+                    break;
+            }
+        }
+
+        function connectWebSocket() {
+            try {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const host = window.location.host;
+                const conversationId = '{{ conversation.id }}';
+                
+                const wsUrl = `${protocol}//${host}/ws/conversation/${conversationId}/`;
+                console.log('🔌 WebSocket:', wsUrl);
+                
+                socket = new WebSocket(wsUrl);
+
+                socket.onopen = () => {
+                    console.log('✅ WebSocket подключён');
+                    updateStatus('connected');
+                    reconnectAttempts = 0;
+                };
+
+                socket.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'chat_message') {
+                        displayNewMessage(data.message_data);
+                    }
+                };
+
+                socket.onclose = () => {
+                    console.log('❌ WebSocket отключён');
+                    updateStatus('disconnected');
+                    
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        setTimeout(connectWebSocket, 3000);
+                    }
+                };
+
+                socket.onerror = (error) => {
+                    console.error('🔥 WebSocket error:', error);
+                };
+
+            } catch (error) {
+                console.error('❌ WebSocket init failed:', error);
+            }
+        }
+
+        function displayNewMessage(messageData) {
+            const messagesList = document.getElementById('messagesList');
+            const isOwnMessage = messageData.sender_id === {{ user.id }};
+            
+            // Проверяем дубли
+            if (document.querySelector(`[data-message-id="${messageData.id}"]`)) {
+                return;
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message-item ${isOwnMessage ? 'own-message' : ''}`;
+            messageDiv.setAttribute('data-message-id', messageData.id);
+
+            const avatarInitials = messageData.sender_name.split(' ').map(n => n[0]).join('').substring(0, 2);
+            const messageTime = new Date(messageData.created_at).toLocaleTimeString('ru-RU', {
+                hour: '2-digit', minute: '2-digit'
+            });
+
+            messageDiv.innerHTML = `
+                <div class="message-avatar">${avatarInitials}</div>
+                <div class="message-content-wrapper">
+                    <div class="message-bubble">${messageData.message.replace(/\n/g, '<br>')}</div>
+                    <div class="message-time">${messageTime}</div>
+                </div>
+            `;
+
+            // Удаляем пустое состояние
+            const emptyMessages = messagesList.querySelector('.empty-messages');
+            if (emptyMessages) emptyMessages.remove();
+
+            messagesList.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        // Переопределяем отправку формы для WebSocket
+        const originalForm = document.getElementById('messageForm');
+        const messageInput = document.getElementById('message-content');
+        
+        if (originalForm && messageInput) {
+            originalForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const message = messageInput.value.trim();
+                if (!message) return;
+
+                // Пробуем WebSocket
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    const messageData = {
+                        type: 'chat_message',
+                        message: message
+                    };
+                    
+                    socket.send(JSON.stringify(messageData));
+                    messageInput.value = '';
+                    messageInput.style.height = 'auto';
+                } else {
+                    // Fallback AJAX
+                    const formData = new FormData(originalForm);
+                    fetch('{% url "send_message_ajax" conversation_id=conversation.id %}', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {'X-Requested-With': 'XMLHttpRequest'}
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data && data.success) {
+                            messageInput.value = '';
+                            messageInput.style.height = 'auto';
+                        } else {
+                            alert('Ошибка отправки');
+                        }
+                    });
+                }
+            });
+        }
+
+        // Инициализация
+        connectWebSocket();
+        
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if (socket) socket.close();
         });
     }
 </script>

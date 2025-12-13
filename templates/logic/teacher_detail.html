@@ -211,28 +211,7 @@
         color: #3B82F6;
     }
 
-    /* Blur overlay для неавторизованных пользователей */
-    .detail-container.blurred-view {
-        position: relative;
-    }
 
-    .detail-container.blurred-view::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 100;
-        pointer-events: auto;
-    }
-
-    .detail-container.blurred-view .detail-main,
-    .detail-container.blurred-view .detail-sidebar {
-        filter: blur(3px);
-        pointer-events: none;
-    }
 
     .login-required-modal {
         position: fixed;
@@ -1492,7 +1471,7 @@
     }
 </style>
 
-<div class="detail-container {% if not user.is_authenticated %}blurred-view{% endif %}">
+<div class="detail-container">
     <!-- Login Required Modal -->
     {% if not user.is_authenticated %}
         <div class="login-required-modal">
@@ -1792,9 +1771,10 @@
 
                     <div class="booking-actions">
                         {% if user.is_authenticated and user != teacher.user %}
-                        <a href="{% url 'start_conversation' user_id=teacher.user.id %}" class="btn-primary">
-                            <i class="fas fa-comment-dots"></i>
-                            {% trans 'Написать сообщение' %}
+                        <!-- Онлайн чат с real-time сообщениями -->
+                        <a href="{% url 'start_conversation' user_id=teacher.user.id %}" class="btn-primary" style="background: linear-gradient(135deg, #10B981, #059669); border: none;">
+                            <i class="fas fa-bolt"></i>
+                            {% trans 'Чат онлайн' %}
                         </a>
                         {% endif %}
 

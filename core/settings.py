@@ -35,6 +35,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+    # Third-party apps
+    'channels',  # Django Channels для WebSocket support
+    
+    # Local apps
     'teachers',
 ]
 
@@ -75,6 +80,25 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
+
+# =============================================================================
+# 🔌 DJANGO CHANNELS & WEBSOCKETS CONFIGURATION
+# =============================================================================
+
+# ASGI приложение для WebSocket support
+ASGI_APPLICATION = 'core.asgi.application'
+
+# Конфигурация слоёв каналов с Redis backend
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],  # Redis сервер
+            "capacity": 1500,  # Максимум сообщений в канале
+            "expiry": 60,  # Время жизни сообщений (секунды)
+        },
+    },
+}
 
 # Database
 DATABASES = {

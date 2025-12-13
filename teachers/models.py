@@ -1057,3 +1057,125 @@ class ViewCounter(models.Model):
     def get_monthly_stats(cls):
         current_month = timezone.now().date().replace(day=1)
         return cls.objects.filter(month=current_month).count()
+
+
+# =============================================================================
+# 💬 CHAT MODELS - REAL-TIME MESSAGING SYSTEM
+# =============================================================================
+
+class ChatRoom(models.Model):
+    """
+    Комната чата между двумя пользователями
+    Уникальная комната для каждой пары участников
+    """
+    participants = models.ManyToManyField(
+        User, 
+        related_name='chat_rooms',
+        verbose_name='Участники'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Поле для быстрого поиска комнаты по участникам
+    room_identifier = models.CharField(
+        max_length=200, 
+        unique=True, 
+        help_text="Уникальный идентификатор комнаты (user1_id-user2_id)"
+    )
+
+    class Meta:
+        verbose_name = 'Комната чата'
+        verbose_name_plural = 'Комнаты чата'
+        indexes = [
+            models.Index(fields=['room_identifier']),
+            models.Index(fields=['updated_at']),
+        ]
+
+    def __str__(self):
+        participants_names = [user.get_full_name() or user.username for user in self.participants.all()]
+        return f"Чат: {' ↔ '.join(participants_names)}"
+
+    @classmethod
+    def get_or_create_room(cls, user1, user2):
+        """
+        Получить или создать комнату для двух пользователей
+        Гарантирует уникальность комнаты независимо от порядка пользователей
+        """
+        # Сортируем ID пользователей для создания уникального идентификатора
+        user_ids = sorted([user1.id, user2.id])
+        room_identifier = f"{user_ids[0]}-{user_ids[1]}"
+        
+        room, created = cls.objects.get_or_create(
+            room_identifier=room_identifier,
+            defaults={'room_identifier': room_identifier}
+        )
+        
+        # Добавляем участников, если комната только что создана
+        if created:
+            room.participants.add(user1, user2)
+        
+        return room
+
+    def get_other_participant(self, current_user):
+        """Получить собеседника (другого участника чата)"""
+        return self.participants.exclude(id=current_user.id).first()
+
+    def get_last_message(self):
+        """Получить последнее сообщение в комнате"""
+        return self.messages.order_by('-created_at').first()
+
+
+class ChatMessage(models.Model):
+    """
+    Сообщение в чате
+    Связано с комнатой и отправителем
+    """
+    room = models.ForeignKey(
+        ChatRoom, 
+        on_delete=models.CASCADE, 
+        related_name='messages',
+        verbose_name='Комната'
+    )
+    sender = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='chat_messages_sent',
+        verbose_name='Отправитель'
+    )
+    message = models.TextField(verbose_name='Сообщение')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Статус прочтения сообщения
+    is_read = models.BooleanField(default=False, verbose_name='Прочитано')
+    read_at = models.DateTimeField(null=True, blank=True, verbose_name='Время прочтения')
+
+    class Meta:
+        verbose_name = 'Сообщение чата'
+        verbose_name_plural = 'Сообщения чата'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['room', '-created_at']),
+            models.Index(fields=['sender', '-created_at']),
+            models.Index(fields=['is_read']),
+        ]
+
+    def __str__(self):
+        return f"{self.sender.username}: {self.message[:50]}..."
+
+    def mark_as_read(self):
+        """Пометить сообщение как прочитанное"""
+        if not self.is_read:
+            self.is_read = True
+            self.read_at = timezone.now()
+            self.save(update_fields=['is_read', 'read_at'])
+
+    def to_dict(self):
+        """Конвертировать сообщение в словарь для JSON"""
+        return {
+            'id': self.id,
+            'message': self.message,
+            'sender_id': self.sender.id,
+            'sender_name': self.sender.get_full_name() or self.sender.username,
+            'created_at': self.created_at.isoformat(),
+            'is_read': self.is_read,
+        }
