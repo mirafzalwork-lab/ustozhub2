@@ -77,9 +77,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             
             if message_type == 'ping':
                 # Отвечаем на ping сообщением pong для поддержания соединения
+                logger.info(f"📡 Received ping from {self.scope['user'].username}")
                 await self.send(text_data=json.dumps({
                     'type': 'pong'
                 }))
+                logger.info(f"📡 Sent pong to {self.scope['user'].username}")
                 return
                 
             elif message_type == 'chat_message':
