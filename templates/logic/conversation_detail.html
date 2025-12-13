@@ -824,13 +824,13 @@
                     updateStatus('connected');
                     reconnectAttempts = 0;
                     
-                    // Запускаем heartbeat каждые 5 секунд (для тестирования)
+                    // Запускаем heartbeat каждые 30 секунд для поддержания соединения
                     heartbeatInterval = setInterval(() => {
                         if (socket && socket.readyState === WebSocket.OPEN) {
                             socket.send(JSON.stringify({type: 'ping'}));
                             console.log('📡 Ping sent');
                         }
-                    }, 5000);
+                    }, 30000);
                 };
 
                 socket.onmessage = (event) => {
