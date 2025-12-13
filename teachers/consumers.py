@@ -75,7 +75,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
             text_data_json = json.loads(text_data)
             message_type = text_data_json.get('type', 'chat_message')
             
-            if message_type == 'chat_message':
+            if message_type == 'ping':
+                # Отвечаем на ping сообщением pong для поддержания соединения
+                await self.send(text_data=json.dumps({
+                    'type': 'pong'
+                }))
+                return
+                
+            elif message_type == 'chat_message':
                 message = text_data_json.get('message', '').strip()
                 
                 if message:  # Отправляем только непустые сообщения
