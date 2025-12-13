@@ -710,56 +710,9 @@
         });
     }
 
-    // Отправка формы
+    // 🚀 ИНИЦИАЛИЗАЦИЯ REAL-TIME ЧАТА
     const messageForm = document.getElementById('messageForm');
     if (messageForm) {
-        messageForm.addEventListener('submit', function(e) {
-            e.preventDefault(); // Предотвращаем двойную отправку
-            
-            const formData = new FormData(this);
-            const sendBtn = document.getElementById('sendBtn');
-            const textarea = document.getElementById('message-content');
-            const originalText = sendBtn.innerHTML;
-            
-            // Проверка на пустое сообщение
-            if (!textarea.value.trim()) {
-                return;
-            }
-            
-            sendBtn.disabled = true;
-            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>{% trans "Отправка..." %}</span>';
-            
-            fetch('{% url "send_message_ajax" conversation_id=conversation.id %}', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => {
-                if (response.redirected) {
-                    window.location.reload();
-                } else {
-                    return response.json();
-                }
-            })
-            .then(data => {
-                if (data && data.success) {
-                    // Обновляем страницу для показа нового сообщения
-                    window.location.reload();
-                } else {
-                    alert('{% trans "Ошибка при отправке сообщения" %}');
-                    sendBtn.disabled = false;
-                    sendBtn.innerHTML = originalText;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                window.location.reload();
-            });
-        });
-        
-        // 🚀 ИНИЦИАЛИЗАЦИЯ REAL-TIME ЧАТА
         initRealTimeChat();
     }
     
@@ -834,11 +787,17 @@
                 };
 
                 socket.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    if (data.type === 'chat_message') {
-                        displayNewMessage(data.message_data);
-                    } else if (data.type === 'pong') {
-                        console.log('📡 Pong received');
+                    try {
+                        const data = JSON.parse(event.data);
+                        console.log('📥 WebSocket message received:', data);
+                        
+                        if (data.type === 'chat_message') {
+                            displayNewMessage(data.message_data);
+                        } else if (data.type === 'pong') {
+                            console.log('📡 Pong received');
+                        }
+                    } catch (error) {
+                        console.error('❌ Error parsing WebSocket message:', error);
                     }
                 };
 
@@ -898,19 +857,34 @@
             if (emptyMessages) emptyMessages.remove();
 
             messagesList.appendChild(messageDiv);
-            scrollToBottom();
+            
+            // Автопрокрутка вниз
+            messagesList.scrollTop = messagesList.scrollHeight;
         }
 
-        // Переопределяем отправку формы для WebSocket
+        function scrollToBottom() {
+            const messagesList = document.getElementById('messagesList');
+            if (messagesList) {
+                messagesList.scrollTop = messagesList.scrollHeight;
+            }
+        }
+
+        // Настройка формы для WebSocket отправки
         const originalForm = document.getElementById('messageForm');
         const messageInput = document.getElementById('message-content');
+        const sendBtn = document.getElementById('sendBtn');
         
-        if (originalForm && messageInput) {
+        if (originalForm && messageInput && sendBtn) {
             originalForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
                 const message = messageInput.value.trim();
                 if (!message) return;
+
+                // Блокируем кнопку во время отправки
+                const originalText = sendBtn.innerHTML;
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>{% trans "Отправка..." %}</span>';
 
                 // Пробуем WebSocket
                 if (socket && socket.readyState === WebSocket.OPEN) {
@@ -919,27 +893,52 @@
                         message: message
                     };
                     
-                    socket.send(JSON.stringify(messageData));
-                    messageInput.value = '';
-                    messageInput.style.height = 'auto';
+                    try {
+                        socket.send(JSON.stringify(messageData));
+                        messageInput.value = '';
+                        messageInput.style.height = 'auto';
+                        
+                        // Восстанавливаем кнопку
+                        setTimeout(() => {
+                            sendBtn.disabled = false;
+                            sendBtn.innerHTML = originalText;
+                        }, 500);
+                        
+                    } catch (error) {
+                        console.error('WebSocket send error:', error);
+                        // Fallback to AJAX if WebSocket fails
+                        sendAjaxMessage(originalForm, messageInput, sendBtn, originalText);
+                    }
                 } else {
                     // Fallback AJAX
-                    const formData = new FormData(originalForm);
-                    fetch('{% url "send_message_ajax" conversation_id=conversation.id %}', {
-                        method: 'POST',
-                        body: formData,
-                        headers: {'X-Requested-With': 'XMLHttpRequest'}
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data && data.success) {
-                            messageInput.value = '';
-                            messageInput.style.height = 'auto';
-                        } else {
-                            alert('Ошибка отправки');
-                        }
-                    });
+                    sendAjaxMessage(originalForm, messageInput, sendBtn, originalText);
                 }
+            });
+        }
+
+        function sendAjaxMessage(form, input, btn, originalText) {
+            const formData = new FormData(form);
+            fetch('{% url "send_message_ajax" conversation_id=conversation.id %}', {
+                method: 'POST',
+                body: formData,
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.success) {
+                    input.value = '';
+                    input.style.height = 'auto';
+                } else {
+                    alert('{% trans "Ошибка при отправке сообщения" %}');
+                }
+            })
+            .catch(error => {
+                console.error('AJAX Error:', error);
+                alert('{% trans "Ошибка при отправке сообщения" %}');
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             });
         }
 
