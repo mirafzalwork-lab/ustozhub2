@@ -211,77 +211,82 @@
         color: #3B82F6;
     }
 
+    /* Contact blur overlay for non-authenticated users */
+    .contact-blur-wrapper {
+        position: relative;
+    }
 
+    .contact-blur-wrapper.blurred .contact-list {
+        display: none;
+    }
 
-    .login-required-modal {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        padding: 40px;
-        border-radius: 16px;
-        box-shadow: 0 10px 40px rgba(10, 37, 64, 0.3);
-        z-index: 200;
+    .contact-login-overlay {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        padding: 24px 20px;
+        border-radius: 12px;
         text-align: center;
-        max-width: 400px;
-        width: 90%;
+        border: 2px dashed #3B82F6;
     }
 
-    .login-required-modal i {
-        font-size: 48px;
+    .contact-login-overlay i {
+        font-size: 32px;
         color: #3B82F6;
-        margin-bottom: 16px;
+        margin-bottom: 12px;
+        display: block;
     }
 
-    .login-required-modal h2 {
-        font-size: 22px;
-        font-weight: 700;
+    .contact-login-overlay h3 {
+        font-size: 15px;
+        font-weight: 600;
         color: var(--primary-color);
         margin-bottom: 12px;
+        line-height: 1.3;
     }
 
-    .login-required-modal p {
-        font-size: 14px;
+    .contact-login-overlay p {
+        font-size: 12px;
         color: #666;
-        margin-bottom: 24px;
-        line-height: 1.6;
+        margin-bottom: 12px;
+        line-height: 1.4;
     }
 
-    .login-required-modal-buttons {
+    .contact-login-buttons {
         display: flex;
-        gap: 12px;
+        gap: 8px;
         justify-content: center;
         flex-wrap: wrap;
     }
 
-    .login-required-modal-btn {
-        padding: 12px 24px;
+    .contact-login-btn {
+        padding: 10px 20px;
         border: none;
         border-radius: 8px;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s;
+        text-decoration: none;
+        display: inline-block;
+        white-space: nowrap;
     }
 
-    .login-required-modal-btn.primary {
+    .contact-login-btn.primary {
         background: var(--primary-color);
         color: white;
     }
 
-    .login-required-modal-btn.primary:hover {
+    .contact-login-btn.primary:hover {
         background: #1e4a72;
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(10, 37, 64, 0.2);
     }
 
-    .login-required-modal-btn.secondary {
+    .contact-login-btn.secondary {
         background: #f0f0f0;
         color: #333;
     }
 
-    .login-required-modal-btn.secondary:hover {
+    .contact-login-btn.secondary:hover {
         background: #e0e0e0;
     }
 
@@ -1371,6 +1376,32 @@
             font-size: 12px;
         }
 
+        /* Очень компактный overlay для малых экранов */
+        .contact-login-overlay {
+            padding: 14px 12px;
+            max-width: 85%;
+        }
+
+        .contact-login-overlay i {
+            font-size: 24px;
+            margin-bottom: 6px;
+        }
+
+        .contact-login-overlay h3 {
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .contact-login-overlay p {
+            font-size: 11px;
+            margin-bottom: 10px;
+        }
+
+        .contact-login-btn {
+            padding: 7px 14px;
+            font-size: 11px;
+        }
+
         .availability-item {
             font-size: 12px;
             padding: 6px 0;
@@ -1472,23 +1503,6 @@
 </style>
 
 <div class="detail-container">
-    <!-- Login Required Modal -->
-    {% if not user.is_authenticated %}
-        <div class="login-required-modal">
-            <i class="fas fa-lock"></i>
-            <h2>{% trans 'Доступ ограничен' %}</h2>
-            <p>{% trans 'Пожалуйста, войдите или создайте учетную запись, чтобы просмотреть полный профиль учителя' %}</p>
-            <div class="login-required-modal-buttons">
-                <a href="{% url 'login' %}" class="login-required-modal-btn primary">
-                    {% trans 'Войти' %}
-                </a>
-                <a href="{% url 'register_choose' %}" class="login-required-modal-btn primary">
-                    {% trans 'Зарегистрироваться' %}
-                </a>
-            </div>
-        </div>
-    {% endif %}
-
     <!-- Breadcrumbs -->
     <div class="breadcrumbs">
         <a href="{% url 'home' %}">
@@ -1807,8 +1821,24 @@
                 </div>
 
                 <!-- Contact Info -->
-                <div class="contact-card">
+                <div class="contact-card contact-blur-wrapper {% if not can_view_contacts %}blurred{% endif %}">
                     <h3 class="contact-title">{% trans 'Контактная информация' %}</h3>
+                    
+                    {% if not can_view_contacts %}
+                    <div class="contact-login-overlay">
+                        <i class="fas fa-lock"></i>
+                        <h3>{% trans 'Войдите, чтобы видеть контакты' %}</h3>
+                        <div class="contact-login-buttons">
+                            <a href="{% url 'login' %}?next={{ request.path }}" class="contact-login-btn primary">
+                                <i class="fas fa-sign-in-alt"></i> {% trans 'Войти' %}
+                            </a>
+                            <a href="{% url 'register_choose' %}" class="contact-login-btn secondary">
+                                <i class="fas fa-user-plus"></i> {% trans 'Регистрация' %}
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     <div class="contact-list">
                         {% if teacher.user.phone %}
                             <div class="contact-item">

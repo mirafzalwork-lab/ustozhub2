@@ -37,6 +37,33 @@ def track_view(request, page_name):
     ViewCounter.add_view(request, page_name)
 
 
+def can_view_contact_info(request, profile_owner):
+    """
+    Определяет, может ли пользователь видеть контактную информацию.
+    
+    Args:
+        request: HTTP запрос
+        profile_owner: владелец профиля (User объект)
+    
+    Returns:
+        bool: True если пользователь может видеть контакты, False иначе
+    """
+    # Гость (не авторизованный пользователь) НЕ может видеть контакты
+    if not request.user.is_authenticated:
+        return False
+    
+    # Владелец профиля всегда видит свои контакты
+    if request.user == profile_owner:
+        return True
+    
+    # Администратор всегда видит контакты
+    if request.user.is_staff or request.user.is_superuser:
+        return True
+    
+    # Зарегистрированный пользователь может видеть контакты других
+    return True
+
+
 def get_client_ip(request):
     """Получить IP адрес клиента"""
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -563,6 +590,10 @@ def detail(request, id):
         is_active=True
     ).exclude(id=teacher.id).distinct()[:3]
     
+    # ✅ НОВОЕ: Проверка доступа к контактной информации
+    can_view_contacts = can_view_contact_info(request, teacher.user)
+    show_auth_prompt = not request.user.is_authenticated
+    
     context = {
         'teacher': teacher,
         'reviews': reviews,
@@ -570,6 +601,8 @@ def detail(request, id):
         'rating_distribution': rating_distribution,
         'is_favorite': is_favorite,
         'similar_teachers': similar_teachers,
+        'can_view_contacts': can_view_contacts,  # Флаг для отображения контактов
+        'show_auth_prompt': show_auth_prompt,    # Флаг для показа модального окна регистрации
     }
     
     return render(request, 'logic/teacher_detail.html', context)
@@ -623,6 +656,10 @@ def student_detail(request, id):
         except Exception:
             is_favorited = False
     
+    # ✅ НОВОЕ: Проверка доступа к контактной информации
+    can_view_contacts = can_view_contact_info(request, student.user)
+    show_auth_prompt = not request.user.is_authenticated
+    
     context = {
         'student': student,
         'desired_subjects': desired_subjects,
@@ -630,6 +667,8 @@ def student_detail(request, id):
         'similar_students': similar_students,
         'suggested_teachers': suggested_teachers,
         'is_favorited': is_favorited,
+        'can_view_contacts': can_view_contacts,  # Флаг для отображения контактов
+        'show_auth_prompt': show_auth_prompt,    # Флаг для показа модального окна регистрации
     }
     
     return render(request, 'logic/student_detail.html', context)

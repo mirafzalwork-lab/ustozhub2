@@ -1330,7 +1330,7 @@
             {% if teachers %}
                 <div class="teachers-grid">
                     {% for teacher in teachers %}
-                        <div class="teacher-card" onclick="{% if user.is_authenticated %}window.location.href='{% url 'teacher_detail' teacher.id %}'{% else %}event.preventDefault(); showLoginPrompt(event){% endif %}">
+                        <div class="teacher-card" onclick="window.location.href='{% url 'teacher_detail' teacher.id %}'">
                             <div class="teacher-content">
                                 <div class="teacher-header">
                                     <div class="teacher-avatar">
@@ -1538,15 +1538,6 @@
             const currentUrl = encodeURIComponent(window.location.pathname + window.location.search);
             window.location.href = `/login/?next=${currentUrl}`;
         {% endif %}
-    }
-
-    // ========== ОБРАБОТКА BLUR OVERLAY ==========
-    function showLoginPrompt(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        // Перенаправляем на страницу входа
-        const currentUrl = encodeURIComponent(window.location.pathname + window.location.search);
-        window.location.href = `/login/?next=${currentUrl}`;
     }
 </script>
 {% endblock %}

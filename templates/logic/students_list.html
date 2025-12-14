@@ -1211,7 +1211,7 @@
             {% if students %}
                 <div class="students-grid">
                     {% for student in students %}
-                        <div class="student-card" onclick="{% if user.is_authenticated %}window.location.href='{% url 'student_detail' student.id %}'{% else %}event.preventDefault(); showLoginPrompt(event){% endif %}">
+                        <div class="student-card" onclick="window.location.href='{% url 'student_detail' student.id %}'">
                             <div class="student-content">
                                 <div class="student-header">
                                     <div class="student-avatar">

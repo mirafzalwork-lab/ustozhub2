@@ -626,6 +626,85 @@
         line-height: 1.5;
     }
 
+    /* Contact blur overlay for non-authenticated users */
+    .student-detail-page .contact-blur-wrapper {
+        position: relative;
+    }
+
+    .student-detail-page .contact-blur-wrapper.blurred .contact-list {
+        display: none;
+    }
+
+    .student-detail-page .contact-login-overlay {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        padding: 24px 20px;
+        border-radius: 12px;
+        text-align: center;
+        border: 2px dashed var(--student-primary);
+    }
+
+    .student-detail-page .contact-login-overlay i {
+        font-size: 32px;
+        color: var(--student-primary);
+        margin-bottom: 12px;
+        display: block;
+    }
+
+    .student-detail-page .contact-login-overlay h3 {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 12px;
+        line-height: 1.3;
+    }
+
+    .student-detail-page .contact-login-overlay p {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 12px;
+        line-height: 1.4;
+    }
+
+    .student-detail-page .contact-login-buttons {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .student-detail-page .contact-login-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-block;
+        white-space: nowrap;
+    }
+
+    .student-detail-page .contact-login-btn.primary {
+        background: var(--student-primary);
+        color: white;
+    }
+
+    .student-detail-page .contact-login-btn.primary:hover {
+        background: var(--student-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    }
+
+    .student-detail-page .contact-login-btn.secondary {
+        background: #f0f0f0;
+        color: #333;
+    }
+
+    .student-detail-page .contact-login-btn.secondary:hover {
+        background: #e0e0e0;
+    }
+
     /* Contact List */
     .student-detail-page .contact-list {
         display: flex;
@@ -1116,6 +1195,31 @@
             padding: 20px;
         }
 
+        /* Очень компактный overlay для маленьких экранов */
+        .student-detail-page .contact-login-overlay {
+            padding: 20px 16px;
+        }
+
+        .student-detail-page .contact-login-overlay i {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .student-detail-page .contact-login-overlay h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .student-detail-page .contact-login-overlay p {
+            font-size: 11px;
+            margin-bottom: 10px;
+        }
+
+        .student-detail-page .contact-login-btn {
+            padding: 9px 18px;
+            font-size: 12px;
+        }
+
         .student-detail-page .contact-title,
         .student-detail-page .similar-title {
             font-size: 16px;
@@ -1486,101 +1590,7 @@
         outline: 3px solid var(--student-primary);
         outline-offset: 2px;
     }
-
-
-
-    .student-detail-page .login-required-modal {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        padding: 40px;
-        border-radius: 16px;
-        box-shadow: 0 10px 40px rgba(10, 37, 64, 0.3);
-        z-index: 200;
-        text-align: center;
-        max-width: 400px;
-        width: 90%;
-    }
-
-    .student-detail-page .login-required-modal i {
-        font-size: 48px;
-        color: var(--student-primary);
-        margin-bottom: 16px;
-    }
-
-    .student-detail-page .login-required-modal h2 {
-        font-size: 22px;
-        font-weight: 700;
-        color: var(--primary-color);
-        margin-bottom: 12px;
-    }
-
-    .student-detail-page .login-required-modal p {
-        font-size: 14px;
-        color: #666;
-        margin-bottom: 24px;
-        line-height: 1.6;
-    }
-
-    .student-detail-page .login-required-modal-buttons {
-        display: flex;
-        gap: 12px;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-
-    .student-detail-page .login-required-modal-btn {
-        padding: 12px 24px;
-        border: none;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s;
-        text-decoration: none;
-    }
-
-    .student-detail-page .login-required-modal-btn.primary {
-        background: var(--student-primary);
-        color: white;
-    }
-
-    .student-detail-page .login-required-modal-btn.primary:hover {
-        background: var(--student-hover);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
-        text-decoration: none;
-    }
-
-    .student-detail-page .login-required-modal-btn.secondary {
-        background: #f0f0f0;
-        color: #333;
-    }
-
-    .student-detail-page .login-required-modal-btn.secondary:hover {
-        background: #e0e0e0;
-        text-decoration: none;
-    }
 </style>
-
-<!-- Login Required Modal -->
-{% if not user.is_authenticated %}
-    <div class="login-required-modal">
-        <i class="fas fa-lock"></i>
-        <h2>{% trans 'Доступ ограничен' %}</h2>
-        <p>{% trans 'Пожалуйста, войдите или создайте учетную запись, чтобы просмотреть полный профиль ученика' %}</p>
-        <div class="login-required-modal-buttons">
-            <a href="{% url 'login' %}" class="login-required-modal-btn primary">
-                {% trans 'Войти' %}
-            </a>
-            <a href="{% url 'register_choose' %}" class="login-required-modal-btn primary">
-                {% trans 'Зарегистрироваться' %}
-            </a>
-        </div>
-    </div>
-{% endif %}
 
 <div class="detail-container">
     <!-- Breadcrumbs -->
@@ -1891,8 +1901,24 @@
                 </div>
 
                 <!-- Contact Info -->
-                <div class="contact-card">
+                <div class="contact-card contact-blur-wrapper {% if not can_view_contacts %}blurred{% endif %}">
                     <h3 class="contact-title">{% trans "Контактная информация" %}</h3>
+                    
+                    {% if not can_view_contacts %}
+                    <div class="contact-login-overlay">
+                        <i class="fas fa-lock"></i>
+                        <h3>{% trans 'Войдите, чтобы видеть контакты' %}</h3>
+                        <div class="contact-login-buttons">
+                            <a href="{% url 'login' %}?next={{ request.path }}" class="contact-login-btn primary">
+                                <i class="fas fa-sign-in-alt"></i> {% trans 'Войти' %}
+                            </a>
+                            <a href="{% url 'register_choose' %}" class="contact-login-btn secondary">
+                                <i class="fas fa-user-plus"></i> {% trans 'Регистрация' %}
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     <div class="contact-list">
                         {% if student.user.phone %}
                             <div class="contact-item">
