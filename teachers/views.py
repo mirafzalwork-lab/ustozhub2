@@ -4,7 +4,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.views.decorators.http import require_POST
 from django.contrib import messages
-from django.db import transaction
+from django.db import transaction, models
+from django.db.models.functions import Concat
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.cache import cache  # ⚡ ОПТИМИЗАЦИЯ: Кэширование
 from django.conf import settings  # ⚡ ОПТИМИЗАЦИЯ: Для CACHE_TTL
@@ -1804,6 +1805,38 @@ def telegram_management(request):
         'user__student_profile'
     ).order_by('-created_at')
     
+    # Для персональных сообщений - сортируем пользователей по имени
+    telegram_users_for_select = TelegramUser.objects.filter(
+        started_bot=True,
+        notifications_enabled=True
+    ).select_related('user').annotate(
+        display_name=models.Case(
+            models.When(
+                user__isnull=False,
+                then=Concat(
+                    'user__first_name', 
+                    models.Value(' '), 
+                    'user__last_name',
+                    output_field=models.CharField()
+                )
+            ),
+            default=models.Case(
+                models.When(
+                    last_name__isnull=False,
+                    then=Concat(
+                        'first_name', 
+                        models.Value(' '), 
+                        'last_name',
+                        output_field=models.CharField()
+                    )
+                ),
+                default='first_name',
+                output_field=models.CharField()
+            ),
+            output_field=models.CharField()
+        )
+    ).order_by('display_name')
+    
     # Статистика
     total_users = telegram_users.count()
     active_users = telegram_users.filter(started_bot=True).count()
@@ -1839,6 +1872,7 @@ def telegram_management(request):
     context = {
         'stats': stats,
         'telegram_users': telegram_users[:50],  # Первые 50 для отображения
+        'telegram_users_for_select': telegram_users_for_select,  # Отсортированные для select
     }
     
     return render(request, 'admin/telegram_management.html', context)

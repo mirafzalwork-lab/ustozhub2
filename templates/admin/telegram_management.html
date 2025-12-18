@@ -166,6 +166,31 @@
             min-height: 100px;
         }
         
+        .user-search-input {
+            background: #f8fafc;
+            border: 1px solid #d0d7de;
+            font-size: 13px;
+            padding: 8px 12px;
+        }
+        
+        .user-search-input:focus {
+            background: white;
+            border-color: #0088cc;
+        }
+        
+        .select-help-text {
+            margin-top: 6px;
+        }
+        
+        .select-help-text small {
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .form-select option {
+            padding: 8px 12px;
+        }
+        
         .btn {
             padding: 12px 24px;
             border: none;
@@ -647,15 +672,27 @@
                         {% csrf_token %}
                         <div class="form-group">
                             <label class="form-label">Пользователь</label>
-                            <select name="user_id" class="form-select" required>
-                                <option value="">Выберите пользователя...</option>
-                                {% for user in telegram_users %}
-                                    <option value="{{ user.id }}">
-                                        {{ user.first_name }} {{ user.last_name }}
-                                        {% if user.telegram_username %}(@{{ user.telegram_username }}){% endif %}
+                            <select name="user_id" class="form-select" required id="userSelect">
+                                <option value="">✓ Выберите пользователя...</option>
+                                {% for user in telegram_users_for_select %}
+                                    <option value="{{ user.id }}" 
+                                            data-search="{{ user.first_name|lower }} {{ user.last_name|lower }} {{ user.telegram_username|lower }}">
+                                        {% if user.user %}
+                                            👤 {{ user.user.first_name }} {{ user.user.last_name }}
+                                            {% if user.telegram_username %} (@{{ user.telegram_username }}){% endif %}
+                                            {% if user.user.user_type == 'teacher' %} - 🎓 Учитель{% elif user.user.user_type == 'student' %} - 📚 Ученик{% endif %}
+                                        {% else %}
+                                            👤 {{ user.first_name }}{% if user.last_name %} {{ user.last_name }}{% endif %}
+                                            {% if user.telegram_username %} (@{{ user.telegram_username }}){% endif %}
+                                        {% endif %}
                                     </option>
+                                {% empty %}
+                                    <option value="" disabled>❌ Нет активных пользователей</option>
                                 {% endfor %}
                             </select>
+                            <div class="select-help-text">
+                                <small>📊 Показаны только активные пользователи с включенными уведомлениями ({{ telegram_users_for_select|length }} из {{ telegram_users|length }})</small>
+                            </div>
                         </div>
                         
                         <div class="form-group">
@@ -869,6 +906,64 @@
                 preview.textContent = 'Введите сообщение для предварительного просмотра...';
             }
         }
+
+        // Search in user select dropdown
+        function initUserSelectSearch() {
+            const userSelect = document.getElementById('userSelect');
+            const originalOptions = Array.from(userSelect.options);
+            
+            // Create search input for select
+            const selectWrapper = userSelect.parentNode;
+            const searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.placeholder = '🔍 Поиск пользователя по имени...';
+            searchInput.className = 'form-input user-search-input';
+            searchInput.style.marginBottom = '8px';
+            
+            selectWrapper.insertBefore(searchInput, userSelect);
+            
+            // Filter options on input
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                
+                // Clear and re-populate select
+                userSelect.innerHTML = '';
+                
+                // Add default option
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = '✓ Выберите пользователя...';
+                userSelect.appendChild(defaultOption);
+                
+                // Filter and add matching options
+                let matchCount = 0;
+                originalOptions.forEach((option, index) => {
+                    if (index === 0) return; // Skip default option
+                    
+                    const searchData = option.getAttribute('data-search') || '';
+                    const optionText = option.textContent.toLowerCase();
+                    
+                    if (searchData.includes(searchTerm) || optionText.includes(searchTerm)) {
+                        userSelect.appendChild(option.cloneNode(true));
+                        matchCount++;
+                    }
+                });
+                
+                // Show "no results" if needed
+                if (matchCount === 0 && searchTerm.length > 0) {
+                    const noResultsOption = document.createElement('option');
+                    noResultsOption.value = '';
+                    noResultsOption.disabled = true;
+                    noResultsOption.textContent = '❌ Пользователи не найдены';
+                    userSelect.appendChild(noResultsOption);
+                }
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initUserSelectSearch();
+        });
 
         // Filter users
         function filterUsers() {
