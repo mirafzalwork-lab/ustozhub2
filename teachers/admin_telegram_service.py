@@ -165,7 +165,7 @@ class AdminTelegramService:
     
     def send_to_selected_users(self, telegram_users: List[TelegramUser], message: str, parse_mode='Markdown') -> Dict[str, int]:
         """
-        Отправить сообщение выбранным пользователям
+        Отправить сообщение выбранным пользователям (упрощенная устойчивая версия)
         
         Args:
             telegram_users: Список TelegramUser объектов
@@ -193,61 +193,78 @@ class AdminTelegramService:
         
         logger.info(f"📤 Начинаем отправку {stats['total']} пользователям")
         
-        for tg_user in telegram_users:
-            # Проверяем, что пользователь готов к получению
-            if not tg_user.started_bot:
-                stats['failed'] += 1
-                stats['error_summary']['not_started_bot'] += 1
-                stats['details'].append({
-                    'user': f"{tg_user.first_name} (@{tg_user.telegram_username or 'нет'})",
-                    'status': 'skipped',
-                    'reason': 'Не запустил бота (/start)'
-                })
-                continue
-            
-            if not tg_user.notifications_enabled:
-                stats['failed'] += 1
-                stats['error_summary']['notifications_disabled'] += 1
-                stats['details'].append({
-                    'user': f"{tg_user.first_name} (@{tg_user.telegram_username or 'нет'})",
-                    'status': 'skipped',
-                    'reason': 'Уведомления отключены'
-                })
-                continue
-            
-            # Отправляем сообщение
-            result = self.send_message_sync(
-                telegram_id=tg_user.telegram_id,
-                text=message,
-                parse_mode=parse_mode
-            )
-            
-            if result['success']:
-                stats['success'] += 1
-                stats['details'].append({
-                    'user': f"{tg_user.first_name} (@{tg_user.telegram_username or 'нет'})",
-                    'status': 'success',
-                    'reason': 'Отправлено успешно'
-                })
-            else:
-                stats['failed'] += 1
+        for i, tg_user in enumerate(telegram_users, 1):
+            try:
+                # Проверяем, что пользователь готов к получению
+                if not tg_user.started_bot:
+                    stats['failed'] += 1
+                    stats['error_summary']['not_started_bot'] += 1
+                    logger.debug(f"Пропуск {i}/{stats['total']}: {tg_user.first_name} не запустил бота")
+                    continue
                 
-                # Подсчитываем типы ошибок
-                error_type = result['error_type']
-                if error_type in stats['error_summary']:
-                    stats['error_summary'][error_type] += 1
-                else:
+                if not tg_user.notifications_enabled:
+                    stats['failed'] += 1
+                    stats['error_summary']['notifications_disabled'] += 1
+                    logger.debug(f"Пропуск {i}/{stats['total']}: {tg_user.first_name} отключил уведомления")
+                    continue
+                
+                # Простая отправка как в персональных сообщениях
+                try:
+                    result = self.send_message_sync(
+                        telegram_id=tg_user.telegram_id,
+                        text=message,
+                        parse_mode=parse_mode
+                    )
+                    
+                    if result.get('success', False):
+                        stats['success'] += 1
+                        logger.debug(f"✅ {i}/{stats['total']}: Отправлено {tg_user.first_name}")
+                    else:
+                        stats['failed'] += 1
+                        error_type = result.get('error_type', 'other')
+                        if error_type in stats['error_summary']:
+                            stats['error_summary'][error_type] += 1
+                        else:
+                            stats['error_summary']['other'] += 1
+                        logger.debug(f"❌ {i}/{stats['total']}: Ошибка у {tg_user.first_name} - {result.get('error_message', 'Неизвестная ошибка')}")
+                        
+                except Exception as send_error:
+                    # Если даже send_message_sync падает - просто пропускаем пользователя
+                    stats['failed'] += 1
                     stats['error_summary']['other'] += 1
-                
-                stats['details'].append({
-                    'user': f"{tg_user.first_name} (@{tg_user.telegram_username or 'нет'})",
-                    'status': 'failed',
-                    'reason': result['error_message'],
-                    'error_type': error_type
-                })
+                    logger.warning(f"❌ {i}/{stats['total']}: Критическая ошибка отправки пользователю {tg_user.first_name}: {send_error}")
+                    
+            except Exception as user_error:
+                # Если что-то не так с самим пользователем - пропускаем
+                stats['failed'] += 1
+                stats['error_summary']['other'] += 1
+                logger.warning(f"❌ {i}/{stats['total']}: Ошибка обработки пользователя: {user_error}")
+                continue
         
         logger.info(f"📊 Результаты отправки: ✅ {stats['success']}, ❌ {stats['failed']}, 📊 {stats['total']}")
         return stats
+    
+    def send_to_teachers_only(self, message: str) -> Dict[str, int]:
+        """Отправка сообщения только учителям"""
+        teachers = TelegramUser.objects.filter(
+            user__user_type='teacher',
+            started_bot=True,
+            notifications_enabled=True
+        ).select_related('user')
+        
+        logger.info(f"👨‍🏫 Отправка сообщения {teachers.count()} учителям")
+        return self.send_to_selected_users(list(teachers), f"🎓 *Сообщение для учителей*\n\n{message}")
+    
+    def send_to_students_only(self, message: str) -> Dict[str, int]:
+        """Отправка сообщения только ученикам"""
+        students = TelegramUser.objects.filter(
+            user__user_type='student',
+            started_bot=True,
+            notifications_enabled=True
+        ).select_related('user')
+        
+        logger.info(f"📚 Отправка сообщения {students.count()} ученикам")
+        return self.send_to_selected_users(list(students), f"📖 *Сообщение для учеников*\n\n{message}")
     
     def send_to_all_started_users(self, message: str, user_type: Optional[str] = None) -> Dict[str, int]:
         """

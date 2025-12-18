@@ -1946,14 +1946,20 @@ def send_broadcast_message(request):
             
             formatted_message = f"📢 *Сообщение от администрации UstozHub*\n\n{message_text}"
             
-            logger.info(f"📤 Начинаем отправку {active_users_count} пользователям")
+            logger.info(f"📤 Начинаем отправку {active_users_count} пользователям (тип: {recipients})")
             
-            # Отправляем через admin сервис (конвертируем QuerySet в список)
-            stats = admin_telegram_service.send_to_selected_users(
-                telegram_users=list(users),
-                message=formatted_message,
-                parse_mode='Markdown'
-            )
+            # Используем специализированные методы для учителей и учеников
+            if recipients == 'teachers':
+                stats = admin_telegram_service.send_to_teachers_only(message_text)
+            elif recipients == 'students':
+                stats = admin_telegram_service.send_to_students_only(message_text)
+            else:
+                # Для всех остальных случаев используем стандартный метод
+                stats = admin_telegram_service.send_to_selected_users(
+                    telegram_users=list(users),
+                    message=formatted_message,
+                    parse_mode='Markdown'
+                )
             
             logger.info(f"📊 Результат рассылки: успешно={stats['success']}, ошибок={stats['failed']}")
             
