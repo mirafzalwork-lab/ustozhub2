@@ -1883,11 +1883,14 @@ def send_broadcast_message(request):
             formatted_message = f"📢 *Сообщение от администрации UstozHub*\n\n{message_text}"
             
             # Отправляем через admin сервис
-            success_count, error_count = admin_telegram_service.send_to_selected_users(
-                users=users,
-                text=formatted_message,
+            stats = admin_telegram_service.send_to_selected_users(
+                telegram_users=users,
+                message=formatted_message,
                 parse_mode='Markdown'
             )
+            
+            success_count = stats['success']
+            error_count = stats['failed']
         except Exception as e:
             success_count, error_count = 0, users_count
             messages.error(request, f'Ошибка сервиса отправки: {str(e)}')
