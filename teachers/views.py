@@ -1884,11 +1884,19 @@ def send_broadcast_message(request):
     """
     Отправка массового сообщения через Telegram бота
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"🚀 Начинаем массовую рассылку от пользователя {request.user}")
+    
     try:
         message_text = request.POST.get('message', '').strip()
         recipients = request.POST.get('recipients', 'all')
         
+        logger.info(f"📝 Параметры рассылки: recipients={recipients}, message_length={len(message_text)}")
+        
         if not message_text:
+            logger.warning("❌ Попытка отправки пустого сообщения")
             messages.error(request, 'Сообщение не может быть пустым')
             return redirect('telegram_management')
         
@@ -1909,7 +1917,10 @@ def send_broadcast_message(request):
         total_users_count = all_telegram_users.count()
         active_users_count = users.count()
         
+        logger.info(f"👥 Статистика пользователей: всего={total_users_count}, активных={active_users_count}")
+        
         if active_users_count == 0:
+            logger.warning("❌ Нет активных пользователей для рассылки")
             messages.warning(request, 'Нет активных пользователей для отправки сообщения')
             return redirect('telegram_management')
         
@@ -1920,9 +1931,22 @@ def send_broadcast_message(request):
         
         # Отправляем сообщения (используем AdminTelegramService)
         try:
-            from .admin_telegram_service import admin_telegram_service
+            logger.info("🤖 Инициализируем Telegram сервис")
+            try:
+                from .admin_telegram_service import admin_telegram_service
+            except ImportError as ie:
+                logger.error(f"❌ Ошибка импорта telegram сервиса: {ie}")
+                messages.error(request, 'Ошибка: не удается загрузить Telegram сервис')
+                return redirect('telegram_management')
+            
+            if not admin_telegram_service.bot:
+                logger.error("❌ Telegram bot не инициализирован")
+                messages.error(request, 'Ошибка: Telegram bot не настроен')
+                return redirect('telegram_management')
             
             formatted_message = f"📢 *Сообщение от администрации UstozHub*\n\n{message_text}"
+            
+            logger.info(f"📤 Начинаем отправку {active_users_count} пользователям")
             
             # Отправляем через admin сервис (конвертируем QuerySet в список)
             stats = admin_telegram_service.send_to_selected_users(
@@ -1930,6 +1954,8 @@ def send_broadcast_message(request):
                 message=formatted_message,
                 parse_mode='Markdown'
             )
+            
+            logger.info(f"📊 Результат рассылки: успешно={stats['success']}, ошибок={stats['failed']}")
             
             success_count = stats['success']
             error_count = stats['failed']
@@ -1974,12 +2000,15 @@ def send_broadcast_message(request):
             messages.info(request, f'📊 Статистика: {success_count} доставлено / {active_users_count} активных / {total_users_count} всего пользователей')
             
         except Exception as e:
+            logger.error(f"❌ Критическая ошибка при отправке: {str(e)}", exc_info=True)
             success_count, error_count = 0, active_users_count
             messages.error(request, f'Ошибка сервиса отправки: {str(e)}')
             
     except Exception as e:
+        logger.error(f"❌ Общая ошибка функции массовой рассылки: {str(e)}", exc_info=True)
         messages.error(request, f'Ошибка при отправке сообщений: {str(e)}')
     
+    logger.info("🏁 Завершение функции массовой рассылки")
     return redirect('telegram_management')
 
 

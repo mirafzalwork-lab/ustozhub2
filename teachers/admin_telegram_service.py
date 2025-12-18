@@ -22,13 +22,20 @@ class AdminTelegramService:
     """Сервис для отправки сообщений через админ панель"""
     
     def __init__(self):
-        self.bot_token = settings.TELEGRAM_BOT_TOKEN
-        self.bot = None
-        
-        if self.bot_token:
-            self.bot = Bot(token=self.bot_token)
-        else:
-            logger.error("TELEGRAM_BOT_TOKEN не установлен!")
+        try:
+            self.bot_token = getattr(settings, 'TELEGRAM_BOT_TOKEN', None)
+            self.bot = None
+            
+            if self.bot_token:
+                try:
+                    self.bot = Bot(token=self.bot_token)
+                    logger.info(f"✅ Telegram bot инициализирован успешно")
+                except Exception as e:
+                    logger.error(f"❌ Ошибка создания Telegram bot: {e}")
+            else:
+                logger.error("❌ TELEGRAM_BOT_TOKEN не установлен в настройках!")
+        except Exception as e:
+            logger.error(f"❌ Критическая ошибка инициализации AdminTelegramService: {e}")
     
     def send_message_sync(self, telegram_id: int, text: str, reply_markup=None, parse_mode=None) -> dict:
         """
