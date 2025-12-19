@@ -11,3 +11,12 @@ db.sqlite3
 .idea/
 .idea/
 staticfiles/
+media/
+.DS_Store
+.vscode/
+.env
+.env.*
+.venv/
+venv/
+.venv
+*.log
