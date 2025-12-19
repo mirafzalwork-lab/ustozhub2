@@ -5,6 +5,11 @@
 
 import logging
 import asyncio
+import time
+import json
+import urllib.request
+import urllib.parse
+import urllib.error
 from typing import List, Dict, Optional
 from django.db import models
 from django.contrib.auth import get_user_model
@@ -22,63 +27,64 @@ class AdminTelegramService:
     """Сервис для отправки сообщений через админ панель"""
     
     def __init__(self):
-        try:
-            self.bot_token = getattr(settings, 'TELEGRAM_BOT_TOKEN', None)
-            self.bot = None
-            
-            if self.bot_token:
-                try:
-                    self.bot = Bot(token=self.bot_token)
-                    logger.info(f"✅ Telegram bot инициализирован успешно")
-                except Exception as e:
-                    logger.error(f"❌ Ошибка создания Telegram bot: {e}")
-            else:
-                logger.error("❌ TELEGRAM_BOT_TOKEN не установлен в настройках!")
-        except Exception as e:
-            logger.error(f"❌ Критическая ошибка инициализации AdminTelegramService: {e}")
-    
-    def send_message_sync(self, telegram_id: int, text: str, reply_markup=None, parse_mode=None) -> dict:
-        """
-        Синхронная отправка сообщения с детальной информацией об ошибках
+        self.bot_token = settings.TELEGRAM_BOT_TOKEN
+        self.bot = None
         
-        Returns:
-            dict: {'success': bool, 'error_type': str, 'error_message': str}
-        """
+        print(f"🔑 TELEGRAM DEBUG: Инициализация сервиса с токеном: {self.bot_token[:20] if self.bot_token else 'НЕТ ТОКЕНА'}...")
+        
+        if self.bot_token:
+            try:
+                self.bot = Bot(token=self.bot_token)
+                print("✅ TELEGRAM DEBUG: Bot объект создан успешно")
+            except Exception as e:
+                print(f"❌ TELEGRAM DEBUG: Ошибка создания Bot: {e}")
+                logger.error(f"Ошибка создания Telegram Bot: {e}")
+        else:
+            print("❌ TELEGRAM DEBUG: TELEGRAM_BOT_TOKEN не установлен!")
+            logger.error("TELEGRAM_BOT_TOKEN не установлен!")
+    
+    def send_message_sync(self, telegram_id: int, text: str, reply_markup=None, parse_mode=None) -> bool:
+        """Синхронная отправка сообщения"""
         if not self.bot:
             logger.error("Telegram bot не инициализирован")
-            return {
-                'success': False, 
-                'error_type': 'bot_not_initialized', 
-                'error_message': 'Telegram bot не инициализирован'
-            }
+            return False
         
         try:
-            # Создаем новый event loop если его нет
+            # Проверяем наличие активного event loop
             try:
-                loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
+                # Если loop уже запущен, создаем новый в отдельном потоке
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(self._run_in_new_loop, telegram_id, text, reply_markup, parse_mode)
+                    return future.result(timeout=30)
             except RuntimeError:
+                # Нет активного loop, создаем новый
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
-            
-            # Выполняем асинхронную функцию
+                try:
+                    return loop.run_until_complete(
+                        self._send_message_async(telegram_id, text, reply_markup, parse_mode)
+                    )
+                finally:
+                    loop.close()
+        except Exception as e:
+            logger.error(f"Ошибка в send_message_sync: {e}")
+            return False
+    
+    def _run_in_new_loop(self, telegram_id: int, text: str, reply_markup=None, parse_mode=None) -> bool:
+        """Запуск в новом event loop"""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
             return loop.run_until_complete(
                 self._send_message_async(telegram_id, text, reply_markup, parse_mode)
             )
-        except Exception as e:
-            logger.error(f"Ошибка в send_message_sync: {e}")
-            return {
-                'success': False, 
-                'error_type': 'system_error', 
-                'error_message': str(e)
-            }
+        finally:
+            loop.close()
     
-    async def _send_message_async(self, telegram_id: int, text: str, reply_markup=None, parse_mode=None) -> dict:
-        """
-        Асинхронная отправка сообщения с детальной обработкой ошибок
-        
-        Returns:
-            dict: {'success': bool, 'error_type': str, 'error_message': str}
-        """
+    async def _send_message_async(self, telegram_id: int, text: str, reply_markup=None, parse_mode=None) -> bool:
+        """Асинхронная отправка сообщения"""
         try:
             await self.bot.send_message(
                 chat_id=telegram_id,
@@ -87,85 +93,139 @@ class AdminTelegramService:
                 parse_mode=parse_mode
             )
             logger.info(f"✅ Сообщение отправлено пользователю {telegram_id}")
-            return {'success': True, 'error_type': None, 'error_message': None}
+            return True
             
         except TelegramError as e:
-            error_str = str(e).lower()
-            
-            # Детальная классификация ошибок
-            if 'chat not found' in error_str:
-                error_type = 'chat_not_found'
-                error_message = 'Чат не найден (пользователь удалил чат с ботом)'
-                
-            elif 'bot was blocked' in error_str or 'forbidden' in error_str:
-                error_type = 'bot_blocked'  
-                error_message = 'Пользователь заблокировал бота'
-                
-            elif 'user is deactivated' in error_str:
-                error_type = 'user_deactivated'
-                error_message = 'Аккаунт пользователя деактивирован'
-                
-            elif 'chat_id is empty' in error_str:
-                error_type = 'invalid_chat_id'
-                error_message = 'Неверный ID чата'
-                
-            elif 'too many requests' in error_str or 'retry after' in error_str:
-                error_type = 'rate_limit'
-                error_message = 'Превышен лимит запросов к API Telegram'
-                
-            elif 'network' in error_str or 'timeout' in error_str:
-                error_type = 'network_error'
-                error_message = 'Ошибка сети или таймаут'
-                
-            else:
-                error_type = 'other_telegram_error'
-                error_message = f'Ошибка Telegram API: {str(e)}'
-            
-            logger.warning(f"⚠️ Ошибка отправки пользователю {telegram_id}: {error_message}")
-            
-            return {
-                'success': False, 
-                'error_type': error_type, 
-                'error_message': error_message
-            }
-            
-        except Exception as e:
-            logger.error(f"❌ Системная ошибка при отправке пользователю {telegram_id}: {e}")
-            return {
-                'success': False, 
-                'error_type': 'system_error', 
-                'error_message': f'Системная ошибка: {str(e)}'
-            }
-    
-    def _deactivate_user(self, telegram_id: int):
-        """Деактивирует пользователя в базе данных (безопасно для async)"""
-        try:
-            from django.db import transaction
-            from .models import TelegramUser
-            
-            # Выполняем в отдельном потоке для избежания проблем с async
-            import threading
-            
-            def update_user():
-                with transaction.atomic():
+            error_msg = str(e).lower()
+            # Специальная обработка для заблокированных пользователей
+            if any(phrase in error_msg for phrase in ['chat not found', 'bot was blocked', 'user is deactivated', 'forbidden']):
+                logger.warning(f"🚫 Пользователь {telegram_id} заблокировал бота или удалил чат")
+                # Отмечаем пользователя как неактивного
+                try:
+                    from .models import TelegramUser
                     TelegramUser.objects.filter(telegram_id=telegram_id).update(
                         started_bot=False, 
                         notifications_enabled=False,
                         last_interaction=timezone.now()
                     )
-            
-            # Запускаем в отдельном потоке
-            thread = threading.Thread(target=update_user)
-            thread.start()
-            thread.join(timeout=5)  # Ждем максимум 5 секунд
-            
-            logger.info(f"🔄 Пользователь {telegram_id} помечен для деактивации")
+                except Exception as update_error:
+                    logger.error(f"Ошибка обновления статуса пользователя {telegram_id}: {update_error}")
+            else:
+                logger.error(f"❌ Ошибка отправки сообщения пользователю {telegram_id}: {e}")
+            return False
         except Exception as e:
-            logger.error(f"Ошибка деактивации пользователя {telegram_id}: {e}")
+            logger.error(f"❌ Неожиданная ошибка отправки сообщения пользователю {telegram_id}: {e}")
+            return False
+    
+    def send_message_simple(self, telegram_id: int, text: str, reply_markup=None, parse_mode=None) -> bool:
+        """Упрощенная синхронная отправка без async"""
+        if not self.bot:
+            logger.error("Telegram bot не инициализирован")
+            return False
+        
+        try:
+            # Используем прямой API запрос через urllib
+            url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
+            
+            # Проверяем и ограничиваем длину сообщения (Telegram лимит 4096 символов)
+            if len(text) > 4096:
+                text = text[:4093] + "..."
+                logger.warning(f"⚠️ Сообщение для пользователя {telegram_id} обрезано до 4096 символов")
+            
+            # Убираем потенциально проблемные символы для Markdown
+            if parse_mode == 'Markdown':
+                # Экранируем специальные символы Markdown если они не используются правильно
+                text = text.replace('_', r'\_').replace('*', r'\*').replace('[', r'\[').replace('`', r'\`')
+            
+            payload = {
+                'chat_id': str(telegram_id),  # Убеждаемся что это строка
+                'text': text,
+                'parse_mode': parse_mode or 'Markdown'
+            }
+            
+            logger.debug(f"🔍 Отправляем сообщение пользователю {telegram_id}, длина текста: {len(text)} символов")
+            
+            # Кодируем данные как form-data (более надежно для Telegram API)
+            data = urllib.parse.urlencode(payload).encode('utf-8')
+            
+            # Создаем запрос с заголовками
+            req = urllib.request.Request(
+                url, 
+                data=data,
+                headers={
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'User-Agent': 'Django-Telegram-Bot/1.0'
+                }
+            )
+            
+            # Отправляем с таймаутом
+            with urllib.request.urlopen(req, timeout=30) as response:
+                response_data = response.read().decode('utf-8')
+                result = json.loads(response_data)
+                
+                if result.get('ok'):
+                    logger.info(f"✅ Сообщение отправлено пользователю {telegram_id}")
+                    return True
+                else:
+                    error_description = result.get('description', 'Неизвестная ошибка')
+                    
+                    # Обработка заблокированных пользователей
+                    if any(phrase in error_description.lower() for phrase in ['chat not found', 'bot was blocked', 'user is deactivated', 'forbidden']):
+                        logger.warning(f"🚫 Пользователь {telegram_id} заблокировал бота: {error_description}")
+                        # Отмечаем пользователя как неактивного
+                        try:
+                            TelegramUser.objects.filter(telegram_id=telegram_id).update(
+                                started_bot=False, 
+                                notifications_enabled=False,
+                                last_interaction=timezone.now()
+                            )
+                        except Exception:
+                            pass
+                    else:
+                        logger.error(f"❌ API ошибка для пользователя {telegram_id}: {error_description}")
+                    return False
+                
+        except urllib.error.HTTPError as e:
+            # Читаем тело ответа для получения подробной ошибки
+            try:
+                error_body = e.read().decode('utf-8')
+                error_details = json.loads(error_body)
+                error_description = error_details.get('description', 'Неизвестная ошибка')
+                
+                # Проверяем, заблокирован ли бот пользователем
+                if any(phrase in error_description.lower() for phrase in ['bot was blocked', 'user is deactivated', 'forbidden']):
+                    logger.warning(f"🚫 Пользователь {telegram_id} заблокировал бота: {error_description}")
+                    # Отмечаем пользователя как неактивного
+                    try:
+                        TelegramUser.objects.filter(telegram_id=telegram_id).update(
+                            started_bot=False, 
+                            notifications_enabled=False,
+                            last_interaction=timezone.now()
+                        )
+                        logger.info(f"🔄 Пользователь {telegram_id} отключен от рассылок")
+                    except Exception as update_error:
+                        logger.error(f"❌ Ошибка обновления статуса пользователя {telegram_id}: {update_error}")
+                else:
+                    logger.error(f"❌ HTTP ошибка {e.code} для пользователя {telegram_id}: {error_description}")
+            except:
+                logger.error(f"❌ HTTP ошибка {e.code} для пользователя {telegram_id}: {e.reason}")
+            return False
+        except urllib.error.URLError as e:
+            if 'timeout' in str(e).lower():
+                logger.error(f"⏰ Таймаут при отправке пользователю {telegram_id}")
+            else:
+                logger.error(f"🌐 Ошибка сети при отправке пользователю {telegram_id}: {e}")
+            return False
+        except json.JSONDecodeError as e:
+            logger.error(f"❌ Ошибка декодирования JSON для пользователя {telegram_id}: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"❌ Неожиданная ошибка отправки пользователю {telegram_id}: {e}")
+            return False
     
     def send_to_selected_users(self, telegram_users: List[TelegramUser], message: str, parse_mode='Markdown') -> Dict[str, int]:
         """
-        Отправить сообщение выбранным пользователям (упрощенная устойчивая версия)
+        Отправить сообщение выбранным пользователям батчами
         
         Args:
             telegram_users: Список TelegramUser объектов
@@ -173,98 +233,104 @@ class AdminTelegramService:
             
         Returns:
             dict: Статистика отправки
-        """
+        """        
         stats = {
             'success': 0,
             'failed': 0,
             'total': len(telegram_users),
-            'details': [],
-            'error_summary': {
-                'bot_blocked': 0,
-                'chat_not_found': 0,
-                'user_deactivated': 0,
-                'rate_limit': 0,
-                'network_error': 0,
-                'not_started_bot': 0,
-                'notifications_disabled': 0,
-                'other': 0
-            }
+            'details': []
         }
         
-        logger.info(f"📤 Начинаем отправку {stats['total']} пользователям")
+        # Размер батча - отправляем по 50 пользователей за раз
+        BATCH_SIZE = 50
+        DELAY_BETWEEN_BATCHES = 2  # секунды пауза между батчами
+        DELAY_BETWEEN_MESSAGES = 0.1  # секунды пауза между сообщениями
         
-        for i, tg_user in enumerate(telegram_users, 1):
-            try:
+        logger.info(f"📤 Начинаем отправку {stats['total']} пользователям батчами по {BATCH_SIZE}")
+        
+        # Разбиваем на батчи
+        for batch_num in range(0, len(telegram_users), BATCH_SIZE):
+            batch = telegram_users[batch_num:batch_num + BATCH_SIZE]
+            batch_start = batch_num + 1
+            batch_end = min(batch_num + BATCH_SIZE, len(telegram_users))
+            
+            logger.info(f"📦 Обрабатываем батч {batch_start}-{batch_end} из {len(telegram_users)}")
+            
+            for i, tg_user in enumerate(batch):
+                user_num = batch_num + i + 1
+                logger.info(f"📤 Пользователь {user_num}/{len(telegram_users)}: {tg_user.first_name} (ID: {tg_user.telegram_id})")
+                
                 # Проверяем, что пользователь готов к получению
                 if not tg_user.started_bot:
                     stats['failed'] += 1
-                    stats['error_summary']['not_started_bot'] += 1
-                    logger.debug(f"Пропуск {i}/{stats['total']}: {tg_user.first_name} не запустил бота")
+                    stats['details'].append({
+                        'user': f"{tg_user.first_name} (@{tg_user.telegram_username or 'нет'})",
+                        'status': 'skipped',
+                        'reason': 'Не запустил бота (/start)'
+                    })
                     continue
-                
+
                 if not tg_user.notifications_enabled:
                     stats['failed'] += 1
-                    stats['error_summary']['notifications_disabled'] += 1
-                    logger.debug(f"Пропуск {i}/{stats['total']}: {tg_user.first_name} отключил уведомления")
+                    stats['details'].append({
+                        'user': f"{tg_user.first_name} (@{tg_user.telegram_username or 'нет'})",
+                        'status': 'skipped',
+                        'reason': 'Уведомления отключены'
+                    })
                     continue
-                
-                # Простая отправка как в персональных сообщениях
+
+                # Отправляем сообщение
                 try:
-                    result = self.send_message_sync(
+                    success = self.send_message_simple(
                         telegram_id=tg_user.telegram_id,
                         text=message,
                         parse_mode=parse_mode
                     )
-                    
-                    if result.get('success', False):
+
+                    if success:
                         stats['success'] += 1
-                        logger.debug(f"✅ {i}/{stats['total']}: Отправлено {tg_user.first_name}")
+                        stats['details'].append({
+                            'user': f"{tg_user.first_name} (@{tg_user.telegram_username or 'нет'})",
+                            'status': 'success',
+                            'reason': 'Отправлено успешно'
+                        })
+                        logger.info(f"✅ Успешно отправлено пользователю {tg_user.telegram_id}")
                     else:
-                        stats['failed'] += 1
-                        error_type = result.get('error_type', 'other')
-                        if error_type in stats['error_summary']:
-                            stats['error_summary'][error_type] += 1
+                        # Проверяем, был ли пользователь автоматически деактивирован
+                        updated_user = TelegramUser.objects.filter(telegram_id=tg_user.telegram_id).first()
+                        if updated_user and not updated_user.started_bot:
+                            stats['details'].append({
+                                'user': f"{tg_user.first_name} (@{tg_user.telegram_username or 'нет'})",
+                                'status': 'blocked',
+                                'reason': 'Заблокировал бота (автоматически отключен)'
+                            })
                         else:
-                            stats['error_summary']['other'] += 1
-                        logger.debug(f"❌ {i}/{stats['total']}: Ошибка у {tg_user.first_name} - {result.get('error_message', 'Неизвестная ошибка')}")
-                        
-                except Exception as send_error:
-                    # Если даже send_message_sync падает - просто пропускаем пользователя
+                            stats['failed'] += 1
+                            stats['details'].append({
+                                'user': f"{tg_user.first_name} (@{tg_user.telegram_username or 'нет'})",
+                                'status': 'failed',
+                                'reason': 'Ошибка отправки'
+                            })
+                        logger.warning(f"❌ Не удалось отправить пользователю {tg_user.telegram_id}")
+                except Exception as e:
+                    logger.error(f"❌ Исключение при отправке пользователю {tg_user.telegram_id}: {e}")
                     stats['failed'] += 1
-                    stats['error_summary']['other'] += 1
-                    logger.warning(f"❌ {i}/{stats['total']}: Критическая ошибка отправки пользователю {tg_user.first_name}: {send_error}")
-                    
-            except Exception as user_error:
-                # Если что-то не так с самим пользователем - пропускаем
-                stats['failed'] += 1
-                stats['error_summary']['other'] += 1
-                logger.warning(f"❌ {i}/{stats['total']}: Ошибка обработки пользователя: {user_error}")
-                continue
+                    stats['details'].append({
+                        'user': f"{tg_user.first_name} (@{tg_user.telegram_username or 'нет'})",
+                        'status': 'failed',
+                        'reason': f'Исключение: {str(e)}'
+                    })
+                
+                # Пауза между сообщениями
+                time.sleep(DELAY_BETWEEN_MESSAGES)
+            
+            # Пауза между батчами
+            if batch_end < len(telegram_users):
+                logger.info(f"⏳ Пауза {DELAY_BETWEEN_BATCHES} сек перед следующим батчем...")
+                time.sleep(DELAY_BETWEEN_BATCHES)
         
         logger.info(f"📊 Результаты отправки: ✅ {stats['success']}, ❌ {stats['failed']}, 📊 {stats['total']}")
         return stats
-    
-    def send_to_teachers_only(self, message: str) -> Dict[str, int]:
-        """Отправка сообщения только учителям"""
-        teachers = TelegramUser.objects.filter(
-            user__user_type='teacher',
-            started_bot=True,
-            notifications_enabled=True
-        ).select_related('user')
-        
-        logger.info(f"👨‍🏫 Отправка сообщения {teachers.count()} учителям")
-        return self.send_to_selected_users(list(teachers), f"🎓 *Сообщение для учителей*\n\n{message}")
-    
-    def send_to_students_only(self, message: str) -> Dict[str, int]:
-        """Отправка сообщения только ученикам"""
-        students = TelegramUser.objects.filter(
-            user__user_type='student',
-            started_bot=True,
-            notifications_enabled=True
-        ).select_related('user')
-        
-        logger.info(f"📚 Отправка сообщения {students.count()} ученикам")
-        return self.send_to_selected_users(list(students), f"📖 *Сообщение для учеников*\n\n{message}")
     
     def send_to_all_started_users(self, message: str, user_type: Optional[str] = None) -> Dict[str, int]:
         """
@@ -277,15 +343,26 @@ class AdminTelegramService:
         Returns:
             dict: Статистика отправки
         """
+        if not self.bot:
+            logger.error("❌ Telegram bot не инициализирован!")
+            return {'success': 0, 'failed': 0, 'total': 0, 'details': []}
+        
+        logger.info(f"🚀 Начинаем подготовку массовой рассылки. Текст: {message[:50]}...")
+        
         # Получаем всех пользователей, которые запустили бота
         queryset = TelegramUser.objects.filter(
             started_bot=True,
             notifications_enabled=True
         )
         
+        total_count = queryset.count()
+        logger.info(f"📊 Найдено {total_count} пользователей с включенными уведомлениями")
+        
         # Применяем фильтр по типу пользователя если указан
         if user_type:
             queryset = queryset.filter(user__user_type=user_type)
+            filtered_count = queryset.count()
+            logger.info(f"📊 После фильтрации по типу '{user_type}': {filtered_count} пользователей")
         
         users = list(queryset)
         

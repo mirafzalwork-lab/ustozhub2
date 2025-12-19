@@ -4,8 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.views.decorators.http import require_POST
 from django.contrib import messages
-from django.db import transaction, models
-from django.db.models.functions import Concat
+from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.cache import cache  # ⚡ ОПТИМИЗАЦИЯ: Кэширование
 from django.conf import settings  # ⚡ ОПТИМИЗАЦИЯ: Для CACHE_TTL
@@ -1805,38 +1804,6 @@ def telegram_management(request):
         'user__student_profile'
     ).order_by('-created_at')
     
-    # Для персональных сообщений - сортируем пользователей по имени
-    telegram_users_for_select = TelegramUser.objects.filter(
-        started_bot=True,
-        notifications_enabled=True
-    ).select_related('user').annotate(
-        display_name=models.Case(
-            models.When(
-                user__isnull=False,
-                then=Concat(
-                    'user__first_name', 
-                    models.Value(' '), 
-                    'user__last_name',
-                    output_field=models.CharField()
-                )
-            ),
-            default=models.Case(
-                models.When(
-                    last_name__isnull=False,
-                    then=Concat(
-                        'first_name', 
-                        models.Value(' '), 
-                        'last_name',
-                        output_field=models.CharField()
-                    )
-                ),
-                default='first_name',
-                output_field=models.CharField()
-            ),
-            output_field=models.CharField()
-        )
-    ).order_by('display_name')
-    
     # Статистика
     total_users = telegram_users.count()
     active_users = telegram_users.filter(started_bot=True).count()
@@ -1872,7 +1839,6 @@ def telegram_management(request):
     context = {
         'stats': stats,
         'telegram_users': telegram_users[:50],  # Первые 50 для отображения
-        'telegram_users_for_select': telegram_users_for_select,  # Отсортированные для select
     }
     
     return render(request, 'admin/telegram_management.html', context)
@@ -1884,19 +1850,11 @@ def send_broadcast_message(request):
     """
     Отправка массового сообщения через Telegram бота
     """
-    import logging
-    logger = logging.getLogger(__name__)
-    
-    logger.info(f"🚀 Начинаем массовую рассылку от пользователя {request.user}")
-    
     try:
         message_text = request.POST.get('message', '').strip()
         recipients = request.POST.get('recipients', 'all')
         
-        logger.info(f"📝 Параметры рассылки: recipients={recipients}, message_length={len(message_text)}")
-        
         if not message_text:
-            logger.warning("❌ Попытка отправки пустого сообщения")
             messages.error(request, 'Сообщение не может быть пустым')
             return redirect('telegram_management')
         
@@ -1912,109 +1870,37 @@ def send_broadcast_message(request):
         else:
             users = TelegramUser.objects.filter(notifications_enabled=True, started_bot=True)
         
-        # Получаем статистику всех пользователей
-        all_telegram_users = TelegramUser.objects.all()
-        total_users_count = all_telegram_users.count()
-        active_users_count = users.count()
+        users_count = users.count()
         
-        logger.info(f"👥 Статистика пользователей: всего={total_users_count}, активных={active_users_count}")
-        
-        if active_users_count == 0:
-            logger.warning("❌ Нет активных пользователей для рассылки")
-            messages.warning(request, 'Нет активных пользователей для отправки сообщения')
+        if users_count == 0:
+            messages.warning(request, 'Нет пользователей для отправки сообщения')
             return redirect('telegram_management')
-        
-        # Подсчитываем причины исключения
-        inactive_users = all_telegram_users.filter(started_bot=False).count()
-        disabled_notifications = all_telegram_users.filter(notifications_enabled=False).count()
-        not_eligible = total_users_count - active_users_count
         
         # Отправляем сообщения (используем AdminTelegramService)
         try:
-            logger.info("🤖 Инициализируем Telegram сервис")
-            try:
-                from .admin_telegram_service import admin_telegram_service
-            except ImportError as ie:
-                logger.error(f"❌ Ошибка импорта telegram сервиса: {ie}")
-                messages.error(request, 'Ошибка: не удается загрузить Telegram сервис')
-                return redirect('telegram_management')
-            
-            if not admin_telegram_service.bot:
-                logger.error("❌ Telegram bot не инициализирован")
-                messages.error(request, 'Ошибка: Telegram bot не настроен')
-                return redirect('telegram_management')
+            from .admin_telegram_service import admin_telegram_service
             
             formatted_message = f"📢 *Сообщение от администрации UstozHub*\n\n{message_text}"
             
-            logger.info(f"📤 Начинаем отправку {active_users_count} пользователям (тип: {recipients})")
-            
-            # Используем специализированные методы для учителей и учеников
-            if recipients == 'teachers':
-                stats = admin_telegram_service.send_to_teachers_only(message_text)
-            elif recipients == 'students':
-                stats = admin_telegram_service.send_to_students_only(message_text)
-            else:
-                # Для всех остальных случаев используем стандартный метод
-                stats = admin_telegram_service.send_to_selected_users(
-                    telegram_users=list(users),
-                    message=formatted_message,
-                    parse_mode='Markdown'
-                )
-            
-            logger.info(f"📊 Результат рассылки: успешно={stats['success']}, ошибок={stats['failed']}")
-            
-            success_count = stats['success']
-            error_count = stats['failed']
-            
-            # Формируем подробное сообщение
-            if success_count > 0:
-                messages.success(request, f'✅ Сообщение успешно отправлено {success_count} пользователям')
-            
-            if error_count > 0:
-                # Формируем детальное описание ошибок
-                error_summary = stats.get('error_summary', {})
-                error_details = []
-                
-                if error_summary.get('bot_blocked', 0) > 0:
-                    error_details.append(f"{error_summary['bot_blocked']} заблокировали бота")
-                    
-                if error_summary.get('chat_not_found', 0) > 0:
-                    error_details.append(f"{error_summary['chat_not_found']} удалили чат")
-                    
-                if error_summary.get('user_deactivated', 0) > 0:
-                    error_details.append(f"{error_summary['user_deactivated']} деактивированы")
-                    
-                if error_summary.get('rate_limit', 0) > 0:
-                    error_details.append(f"{error_summary['rate_limit']} лимит API")
-                    
-                if error_summary.get('network_error', 0) > 0:
-                    error_details.append(f"{error_summary['network_error']} ошибки сети")
-                    
-                if error_summary.get('other', 0) > 0:
-                    error_details.append(f"{error_summary['other']} другие ошибки")
-                
-                error_text = f'⚠️ Не удалось отправить {error_count} пользователям'
-                if error_details:
-                    error_text += f': {", ".join(error_details)}'
-                    
-                messages.warning(request, error_text)
-            
-            if not_eligible > 0:
-                messages.info(request, f'ℹ️ {not_eligible} пользователей исключены из рассылки: не запустили бота ({inactive_users}) или отключили уведомления ({disabled_notifications})')
-            
-            # Общая статистика
-            messages.info(request, f'📊 Статистика: {success_count} доставлено / {active_users_count} активных / {total_users_count} всего пользователей')
-            
+            # Отправляем через admin сервис
+            success_count, error_count = admin_telegram_service.send_to_selected_users(
+                users=users,
+                text=formatted_message,
+                parse_mode='Markdown'
+            )
         except Exception as e:
-            logger.error(f"❌ Критическая ошибка при отправке: {str(e)}", exc_info=True)
-            success_count, error_count = 0, active_users_count
+            success_count, error_count = 0, users_count
             messages.error(request, f'Ошибка сервиса отправки: {str(e)}')
+        
+        if success_count > 0:
+            messages.success(request, f'Сообщение успешно отправлено {success_count} пользователям')
+        
+        if error_count > 0:
+            messages.warning(request, f'Не удалось отправить {error_count} пользователям (возможно, заблокировали бота или удалили чат)')
             
     except Exception as e:
-        logger.error(f"❌ Общая ошибка функции массовой рассылки: {str(e)}", exc_info=True)
         messages.error(request, f'Ошибка при отправке сообщений: {str(e)}')
     
-    logger.info("🏁 Завершение функции массовой рассылки")
     return redirect('telegram_management')
 
 
@@ -2043,16 +1929,16 @@ def send_individual_message(request):
         
         formatted_message = f"💬 *Персональное сообщение от администрации*\n\n{message_text}"
         
-        result = admin_telegram_service.send_message_sync(
+        success = admin_telegram_service.send_message_sync(
             telegram_id=telegram_user.telegram_id,
             text=formatted_message,
             parse_mode='Markdown'
         )
         
-        if result['success']:
+        if success:
             messages.success(request, f'Сообщение отправлено пользователю {telegram_user.first_name}')
         else:
-            messages.error(request, f'Не удалось отправить сообщение пользователю {telegram_user.first_name}: {result["error_message"]}')
+            messages.error(request, f'Не удалось отправить сообщение пользователю {telegram_user.first_name} (возможно, заблокировал бота или удалил чат)')
             
     except Exception as e:
         messages.error(request, f'Ошибка: {str(e)}')

@@ -654,11 +654,27 @@ class TelegramUserAdmin(admin.ModelAdmin):
                 )
                 return redirect('..')
             
+            # Логируем начало процесса
+            print(f"🚀 ADMIN DEBUG: Начинаем отправку сообщения: '{message[:50]}...'")
+            print(f"🚀 ADMIN DEBUG: Тип пользователей: {user_type}")
+            
             # Используем новый сервис для массовой рассылки
-            stats = admin_telegram_service.send_to_all_started_users(
-                message=message,
-                user_type=user_type if user_type != 'all' else None
-            )
+            try:
+                stats = admin_telegram_service.send_to_all_started_users(
+                    message=message,
+                    user_type=user_type if user_type != 'all' else None
+                )
+                print(f"🚀 ADMIN DEBUG: Получили статистику: {stats}")
+            except Exception as e:
+                print(f"❌ ADMIN DEBUG: Ошибка в send_to_all_started_users: {e}")
+                import traceback
+                traceback.print_exc()
+                self.message_user(
+                    request,
+                    f"❌ Ошибка при отправке: {str(e)}",
+                    messages.ERROR
+                )
+                return redirect('..')
             
             # Формируем сообщение с результатами
             if stats['failed'] > 0:
