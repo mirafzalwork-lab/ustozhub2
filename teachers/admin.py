@@ -654,55 +654,56 @@ class TelegramUserAdmin(admin.ModelAdmin):
                 )
                 return redirect('..')
             
-            # Логируем начало процесса
-            print(f"🚀 ADMIN DEBUG: Начинаем отправку сообщения: '{message[:50]}...'")
-            print(f"🚀 ADMIN DEBUG: Тип пользователей: {user_type}")
-            
-            # Используем новый сервис для массовой рассылки
+            # Запускаем отправку в фоновом режиме
             try:
-                stats = admin_telegram_service.send_to_all_started_users(
-                    message=message,
-                    user_type=user_type if user_type != 'all' else None
+                from threading import Thread
+                
+                # Подсчитываем количество получателей
+                queryset = TelegramUser.objects.filter(
+                    started_bot=True,
+                    notifications_enabled=True
                 )
-                print(f"🚀 ADMIN DEBUG: Получили статистику: {stats}")
-            except Exception as e:
-                print(f"❌ ADMIN DEBUG: Ошибка в send_to_all_started_users: {e}")
-                import traceback
-                traceback.print_exc()
+                if user_type != 'all':
+                    queryset = queryset.filter(user__user_type=user_type)
+                
+                total_users = queryset.count()
+                
+                # Создаем фоновую задачу
+                def background_send():
+                    try:
+                        admin_telegram_service.send_to_all_started_users(
+                            message=message,
+                            user_type=user_type if user_type != 'all' else None
+                        )
+                    except Exception as e:
+                        print(f"❌ Ошибка в фоновой отправке: {e}")
+                
+                # Запускаем в отдельном потоке
+                thread = Thread(target=background_send)
+                thread.daemon = True
+                thread.start()
+                
+                # Сразу показываем сообщение пользователю
                 self.message_user(
                     request,
-                    f"❌ Ошибка при отправке: {str(e)}",
+                    f"🚀 Массовая рассылка запущена!\n"
+                    f"📊 Получателей: {total_users} пользователей\n"
+                    f"⏱️ Процесс выполняется в фоновом режиме.\n"
+                    f"📝 Сообщения отправляются батчами по 50 пользователей с паузами.\n"
+                    f"🔍 Следите за логами сервера для отслеживания прогресса.",
+                    messages.SUCCESS
+                )
+                
+                return redirect('..')
+                
+            except Exception as e:
+                print(f"❌ ADMIN DEBUG: Ошибка запуска фоновой задачи: {e}")
+                self.message_user(
+                    request,
+                    f"❌ Ошибка при запуске отправки: {str(e)}",
                     messages.ERROR
                 )
                 return redirect('..')
-            
-            # Формируем сообщение с результатами
-            if stats['failed'] > 0:
-                message_text = (
-                    f"📊 **Результаты массовой рассылки:**\n"
-                    f"✅ Успешно: {stats['success']}\n"
-                    f"❌ Ошибок: {stats['failed']}\n"
-                    f"📊 Всего: {stats['total']}\n\n"
-                    f"💡 **Причины ошибок:**\n"
-                )
-                
-                # Добавляем детали ошибок
-                failed_details = [detail for detail in stats['details'] if detail['status'] == 'failed']
-                for detail in failed_details[:5]:  # Показываем первые 5 ошибок
-                    message_text += f"• {detail['user']}: {detail['reason']}\n"
-                
-                if len(failed_details) > 5:
-                    message_text += f"... и еще {len(failed_details) - 5} ошибок\n"
-                
-                self.message_user(request, message_text, messages.WARNING)
-            else:
-                self.message_user(
-                    request,
-                    f"✅ Массовая рассылка завершена успешно!\n📊 Отправлено: {stats['success']} пользователям",
-                    messages.SUCCESS
-                )
-            
-            return redirect('..')
         
         # Получаем статистику для отображения
         stats = admin_telegram_service.get_user_status_info()

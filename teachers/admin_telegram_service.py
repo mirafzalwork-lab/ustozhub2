@@ -254,11 +254,14 @@ class AdminTelegramService:
             batch_start = batch_num + 1
             batch_end = min(batch_num + BATCH_SIZE, len(telegram_users))
             
+            print(f"📦 Обрабатываем батч {batch_start}-{batch_end} из {len(telegram_users)}")
             logger.info(f"📦 Обрабатываем батч {batch_start}-{batch_end} из {len(telegram_users)}")
+            
+            batch_success = 0
+            batch_failed = 0
             
             for i, tg_user in enumerate(batch):
                 user_num = batch_num + i + 1
-                logger.info(f"📤 Пользователь {user_num}/{len(telegram_users)}: {tg_user.first_name} (ID: {tg_user.telegram_id})")
                 
                 # Проверяем, что пользователь готов к получению
                 if not tg_user.started_bot:
@@ -289,13 +292,14 @@ class AdminTelegramService:
 
                     if success:
                         stats['success'] += 1
+                        batch_success += 1
                         stats['details'].append({
                             'user': f"{tg_user.first_name} (@{tg_user.telegram_username or 'нет'})",
                             'status': 'success',
                             'reason': 'Отправлено успешно'
                         })
-                        logger.info(f"✅ Успешно отправлено пользователю {tg_user.telegram_id}")
                     else:
+                        batch_failed += 1
                         # Проверяем, был ли пользователь автоматически деактивирован
                         updated_user = TelegramUser.objects.filter(telegram_id=tg_user.telegram_id).first()
                         if updated_user and not updated_user.started_bot:
@@ -315,6 +319,7 @@ class AdminTelegramService:
                 except Exception as e:
                     logger.error(f"❌ Исключение при отправке пользователю {tg_user.telegram_id}: {e}")
                     stats['failed'] += 1
+                    batch_failed += 1
                     stats['details'].append({
                         'user': f"{tg_user.first_name} (@{tg_user.telegram_username or 'нет'})",
                         'status': 'failed',
@@ -324,11 +329,18 @@ class AdminTelegramService:
                 # Пауза между сообщениями
                 time.sleep(DELAY_BETWEEN_MESSAGES)
             
+            # Логирование результатов батча
+            print(f"📊 Батч {batch_start}-{batch_end} завершен: ✅ {batch_success} успешно, ❌ {batch_failed} ошибок")
+            logger.info(f"📊 Батч {batch_start}-{batch_end} завершен: ✅ {batch_success} успешно, ❌ {batch_failed} ошибок")
+            
             # Пауза между батчами
             if batch_end < len(telegram_users):
+                print(f"⏳ Пауза {DELAY_BETWEEN_BATCHES} сек перед следующим батчем...")
                 logger.info(f"⏳ Пауза {DELAY_BETWEEN_BATCHES} сек перед следующим батчем...")
                 time.sleep(DELAY_BETWEEN_BATCHES)
         
+        print(f"🏁 МАССОВАЯ РАССЫЛКА ЗАВЕРШЕНА!")
+        print(f"📊 Итоговые результаты: ✅ {stats['success']} успешно, ❌ {stats['failed']} ошибок, 📊 {stats['total']} всего")
         logger.info(f"📊 Результаты отправки: ✅ {stats['success']}, ❌ {stats['failed']}, 📊 {stats['total']}")
         return stats
     
