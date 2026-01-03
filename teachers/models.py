@@ -7,6 +7,7 @@ from django.utils import timezone
 from PIL import Image
 import uuid
 import datetime
+import os
 
 class User(AbstractUser):
     """Расширенная модель пользователя"""
@@ -25,12 +26,18 @@ class User(AbstractUser):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        if self.avatar:
-            img = Image.open(self.avatar.path)
-            if img.height > 300 or img.width > 300:
-                output_size = (300, 300)
-                img.thumbnail(output_size)
-                img.save(self.avatar.path)
+        
+        # Проверяем наличие аватара и существование файла
+        if self.avatar and hasattr(self.avatar, 'path') and os.path.exists(self.avatar.path):
+            try:
+                img = Image.open(self.avatar.path)
+                if img.height > 300 or img.width > 300:
+                    output_size = (300, 300)
+                    img.thumbnail(output_size)
+                    img.save(self.avatar.path)
+            except (IOError, OSError) as e:
+                # Логируем ошибку, но не прерываем сохранение пользователя
+                print(f"Error processing avatar for user {self.username}: {e}")
 
 class SubjectCategory(models.Model):
     """Категории предметов для удобной группировки"""
