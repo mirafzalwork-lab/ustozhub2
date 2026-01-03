@@ -4,10 +4,20 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.urls import reverse
 from django.utils import timezone
+from django.core.cache import cache
 from PIL import Image
 import uuid
 import datetime
 import os
+import logging
+
+# Глобальный logger для моделей
+logger = logging.getLogger(__name__)
+
+# Константы для кэширования
+CACHE_TTL = 300  # 5 минут по умолчанию
+CACHE_TTL_SHORT = 60  # 1 минута для часто меняющихся данных
+CACHE_TTL_LONG = 3600  # 1 час для редко меняющихся данных
 
 class User(AbstractUser):
     """Расширенная модель пользователя"""
@@ -37,7 +47,7 @@ class User(AbstractUser):
                     img.save(self.avatar.path)
             except (IOError, OSError) as e:
                 # Логируем ошибку, но не прерываем сохранение пользователя
-                print(f"Error processing avatar for user {self.username}: {e}")
+                logger.warning(f"Error processing avatar for user {self.username}: {e}", exc_info=True)
 
 class SubjectCategory(models.Model):
     """Категории предметов для удобной группировки"""
@@ -58,8 +68,13 @@ class SubjectCategory(models.Model):
         return self.name
     
     def get_subjects_count(self):
-        """Количество активных предметов в категории"""
-        return self.subjects.filter(is_active=True).count()
+        """Количество активных предметов в категории (с кэшированием)"""
+        cache_key = f'category_subjects_count_{self.id}'
+        count = cache.get(cache_key)
+        if count is None:
+            count = self.subjects.filter(is_active=True).count()
+            cache.set(cache_key, count, CACHE_TTL_LONG)
+        return count
 
 
 class Subject(models.Model):
@@ -92,8 +107,13 @@ class Subject(models.Model):
         return self.name
     
     def get_teachers_count(self):
-        """Количество учителей, преподающих этот предмет"""
-        return self.teachersubject_set.filter(teacher__is_active=True).count()
+        """Количество учителей, преподающих этот предмет (с кэшированием)"""
+        cache_key = f'subject_teachers_count_{self.id}'
+        count = cache.get(cache_key)
+        if count is None:
+            count = self.teachersubject_set.filter(teacher__is_active=True).count()
+            cache.set(cache_key, count, CACHE_TTL)
+        return count
 
 class City(models.Model):
     """Модель городов"""
@@ -272,10 +292,16 @@ class TeacherProfile(models.Model):
 
     def get_views_count(self, period='all'):
         """
-        Получить количество просмотров профиля
+        Получить количество просмотров профиля (с кэшированием)
         period: 'day', 'week', 'month', 'all'
         """
         from datetime import timedelta
+        
+        cache_key = f'teacher_views_{self.id}_{period}'
+        count = cache.get(cache_key)
+        if count is not None:
+            return count
+        
         views = self.profile_views.all()
         
         if period == 'day':
@@ -288,11 +314,20 @@ class TeacherProfile(models.Model):
             start_date = timezone.now() - timedelta(days=30)
             views = views.filter(viewed_at__gte=start_date)
         
-        return views.count()
+        count = views.count()
+        # Короткий TTL для статистики просмотров
+        cache.set(cache_key, count, CACHE_TTL_SHORT)
+        return count
 
     def get_unique_viewers_count(self, period='all'):
-        """Получить количество уникальных просмотров (по IP)"""
+        """Получить количество уникальных просмотров (по IP, с кэшированием)"""
         from datetime import timedelta
+        
+        cache_key = f'teacher_unique_views_{self.id}_{period}'
+        count = cache.get(cache_key)
+        if count is not None:
+            return count
+        
         views = self.profile_views.all()
         
         if period == 'day':
@@ -305,7 +340,9 @@ class TeacherProfile(models.Model):
             start_date = timezone.now() - timedelta(days=30)
             views = views.filter(viewed_at__gte=start_date)
         
-        return views.values('viewer_ip').distinct().count()
+        count = views.values('viewer_ip').distinct().count()
+        cache.set(cache_key, count, CACHE_TTL_SHORT)
+        return count
 
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.get_subjects_display()}"
@@ -316,11 +353,19 @@ class TeacherProfile(models.Model):
         return ", ".join([ts.subject.name for ts in subjects])
 
     def get_min_price(self):
-        # ⚡ ОПТИМИЗАЦИЯ: Используем values для более быстрого запроса
+        """Получить минимальную цену (с кэшированием)"""
+        cache_key = f'teacher_min_price_{self.id}'
+        min_price = cache.get(cache_key)
+        if min_price is not None:
+            return min_price
+        
+        # ⚡ ОПТИМИЗАЦИЯ: Используем aggregate для более быстрого запроса
         min_price = self.teachersubject_set.aggregate(
             min_price=models.Min('hourly_rate')
         )['min_price']
-        return min_price or 0
+        result = min_price or 0
+        cache.set(cache_key, result, CACHE_TTL)
+        return result
 
     def get_available_weekdays_display(self):
         days_map = {
@@ -332,6 +377,25 @@ class TeacherProfile(models.Model):
 
     def get_absolute_url(self):
         return reverse('teacher_detail', kwargs={'pk': self.pk})
+    
+    def save(self, *args, **kwargs):
+        """Переопределяем save для инвалидации кэша"""
+        super().save(*args, **kwargs)
+        # Инвалидируем кэш при обновлении профиля
+        self.clear_cache()
+    
+    def clear_cache(self):
+        """Очистить весь кэш связанный с этим профилем учителя"""
+        cache_patterns = [
+            f'teacher_views_{self.id}_*',
+            f'teacher_unique_views_{self.id}_*',
+            f'teacher_min_price_{self.id}',
+        ]
+        # Удаляем конкретные ключи
+        for period in ['all', 'day', 'week', 'month']:
+            cache.delete(f'teacher_views_{self.id}_{period}')
+            cache.delete(f'teacher_unique_views_{self.id}_{period}')
+        cache.delete(f'teacher_min_price_{self.id}')
     
 
 class TeacherSubject(models.Model):
@@ -360,6 +424,23 @@ class TeacherSubject(models.Model):
 
     def __str__(self):
         return f"{self.teacher.user.get_full_name()} - {self.subject.name} ({self.hourly_rate} сум/час)"
+    
+    def save(self, *args, **kwargs):
+        """Переопределяем save для инвалидации кэша"""
+        super().save(*args, **kwargs)
+        # Инвалидируем кэш минимальной цены учителя
+        cache.delete(f'teacher_min_price_{self.teacher.id}')
+        # Инвалидируем кэш количества учителей для предмета
+        cache.delete(f'subject_teachers_count_{self.subject.id}')
+    
+    def delete(self, *args, **kwargs):
+        """Переопределяем delete для инвалидации кэша"""
+        teacher_id = self.teacher.id
+        subject_id = self.subject.id
+        super().delete(*args, **kwargs)
+        # Инвалидируем кэш после удаления
+        cache.delete(f'teacher_min_price_{teacher_id}')
+        cache.delete(f'subject_teachers_count_{subject_id}')
 
 class StudentProfile(models.Model):
     """Профиль ученика"""
@@ -509,10 +590,16 @@ class StudentProfile(models.Model):
 
     def get_views_count(self, period='all'):
         """
-        Получить количество просмотров профиля
+        Получить количество просмотров профиля (с кэшированием)
         period: 'day', 'week', 'month', 'all'
         """
         from datetime import timedelta
+        
+        cache_key = f'student_views_{self.id}_{period}'
+        count = cache.get(cache_key)
+        if count is not None:
+            return count
+        
         views = self.profile_views.all()
         
         if period == 'day':
@@ -525,11 +612,19 @@ class StudentProfile(models.Model):
             start_date = timezone.now() - timedelta(days=30)
             views = views.filter(viewed_at__gte=start_date)
         
-        return views.count()
+        count = views.count()
+        cache.set(cache_key, count, CACHE_TTL_SHORT)
+        return count
 
     def get_unique_viewers_count(self, period='all'):
-        """Получить количество уникальных просмотров (по IP)"""
+        """Получить количество уникальных просмотров (по IP, с кэшированием)"""
         from datetime import timedelta
+        
+        cache_key = f'student_unique_views_{self.id}_{period}'
+        count = cache.get(cache_key)
+        if count is not None:
+            return count
+        
         views = self.profile_views.all()
         
         if period == 'day':
@@ -542,10 +637,36 @@ class StudentProfile(models.Model):
             start_date = timezone.now() - timedelta(days=30)
             views = views.filter(viewed_at__gte=start_date)
         
-        return views.values('viewer_ip').distinct().count()
+        count = views.values('viewer_ip').distinct().count()
+        cache.set(cache_key, count, CACHE_TTL_SHORT)
+        return count
 
     def __str__(self):
         return f"{self.user.get_full_name()} - Ученик"
+    
+    def save(self, *args, **kwargs):
+        """Переопределяем save для инвалидации кэша"""
+        super().save(*args, **kwargs)
+        # Инвалидируем кэш при обновлении профиля
+        self.clear_cache()
+    
+    def clear_cache(self):
+        """Очистить весь кэш связанный с этим профилем ученика"""
+        for period in ['all', 'day', 'week', 'month']:
+            cache.delete(f'student_views_{self.id}_{period}')
+            cache.delete(f'student_unique_views_{self.id}_{period}')
+    
+    def save(self, *args, **kwargs):
+        """Переопределяем save для инвалидации кэша"""
+        super().save(*args, **kwargs)
+        # Инвалидируем кэш при обновлении профиля
+        self.clear_cache()
+    
+    def clear_cache(self):
+        """Очистить весь кэш связанный с этим профилем ученика"""
+        for period in ['all', 'day', 'week', 'month']:
+            cache.delete(f'student_views_{self.id}_{period}')
+            cache.delete(f'student_unique_views_{self.id}_{period}')
 
 class Conversation(models.Model):
     """Модель переписки между учителем и учеником"""
@@ -568,7 +689,12 @@ class Conversation(models.Model):
         return f"Переписка: {self.student.get_full_name()} - {self.teacher.user.get_full_name()}"
 
     def get_last_message(self):
-        return self.messages.first()
+        """Получить последнее сообщение (возвращает None если сообщений нет)"""
+        return self.messages.order_by('-created_at').first()
+    
+    def get_unread_count(self, user):
+        """Получить количество непрочитанных сообщений для пользователя"""
+        return self.messages.filter(is_read=False).exclude(sender=user).count()
 
 class Message(models.Model):
     """Модель сообщения"""
@@ -791,6 +917,12 @@ class ProfileView(models.Model):
         elif self.student_profile:
             self.profile_type = 'student'
         super().save(*args, **kwargs)
+        
+        # Инвалидируем кэш статистики просмотров
+        if self.teacher_profile:
+            self.teacher_profile.clear_cache()
+        elif self.student_profile:
+            self.student_profile.clear_cache()
 
 
 class NotificationQueue(models.Model):
@@ -1053,12 +1185,15 @@ class ViewCounter(models.Model):
     @classmethod
     def add_view(cls, request, page):
         current_month = timezone.now().date().replace(day=1)
-        cls.objects.get_or_create(
-            ip_address=request.META.get('REMOTE_ADDR'),
-            user_agent=request.META.get('HTTP_USER_AGENT', ''),
-            page=page,
-            month=current_month
-        )
+        try:
+            cls.objects.get_or_create(
+                ip_address=request.META.get('REMOTE_ADDR'),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],  # Ограничиваем длину
+                page=page[:100],  # Ограничиваем длину страницы
+                month=current_month
+            )
+        except Exception as e:
+            logger.warning(f"Failed to record view for page {page}: {e}")
 
     @classmethod
     def get_monthly_stats(cls):
@@ -1113,8 +1248,7 @@ class ChatRoom(models.Model):
         room_identifier = f"{user_ids[0]}-{user_ids[1]}"
         
         room, created = cls.objects.get_or_create(
-            room_identifier=room_identifier,
-            defaults={'room_identifier': room_identifier}
+            room_identifier=room_identifier
         )
         
         # Добавляем участников, если комната только что создана
@@ -1125,6 +1259,13 @@ class ChatRoom(models.Model):
 
     def get_other_participant(self, current_user):
         """Получить собеседника (другого участника чата)"""
+        # Если participants уже загружены (prefetch), используем Python фильтрацию
+        if self.participants.all()._result_cache is not None:
+            for participant in self.participants.all():
+                if participant.id != current_user.id:
+                    return participant
+            return None
+        # Иначе делаем запрос к БД
         return self.participants.exclude(id=current_user.id).first()
 
     def get_last_message(self):
@@ -1178,11 +1319,16 @@ class ChatMessage(models.Model):
 
     def to_dict(self):
         """Конвертировать сообщение в словарь для JSON"""
+        try:
+            sender_name = self.sender.get_full_name() or self.sender.username
+        except AttributeError:
+            sender_name = "Unknown"
+        
         return {
             'id': self.id,
             'message': self.message,
             'sender_id': self.sender.id,
-            'sender_name': self.sender.get_full_name() or self.sender.username,
+            'sender_name': sender_name,
             'created_at': self.created_at.isoformat(),
             'is_read': self.is_read,
         }

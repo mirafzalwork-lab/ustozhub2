@@ -15,6 +15,10 @@ from django.urls import reverse
 import csv
 import logging
 from datetime import datetime, timedelta
+
+# Глобальный logger для всего модуля
+logger = logging.getLogger(__name__)
+
 from .models import (
     TeacherProfile, StudentProfile, Subject, City, ProfileView,
     TeacherSubject, Certificate, User, Favorite, FavoriteStudent,
@@ -116,7 +120,7 @@ def record_profile_view(request, profile, profile_type):
         ProfileView.objects.create(**view_data)
     except Exception as e:
         # Логируем ошибку, но не прерываем работу приложения
-        print(f"Error recording profile view: {e}")
+        logger.error(f"Error recording profile view: {e}", exc_info=True)
 
 
 def home(request):
@@ -1223,7 +1227,11 @@ def toggle_favorite_student(request, student_id):
     if request.user.user_type != 'teacher' or not hasattr(request.user, 'teacher_profile'):
         return JsonResponse({'success': False, 'error': 'Доступ запрещен'})
 
-    teacher_profile = request.user.teacher_profile
+    try:
+        teacher_profile = request.user.teacher_profile
+    except TeacherProfile.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Профиль учителя не найден'})
+    
     student = get_object_or_404(StudentProfile, id=student_id, is_active=True)
 
     fav, created = FavoriteStudent.objects.get_or_create(teacher=teacher_profile, student=student)
@@ -1432,9 +1440,7 @@ def conversation_detail(request, conversation_id):
         })
         
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Ошибка в conversation_detail: {e}")
+        logger.error(f"Ошибка в conversation_detail: {e}", exc_info=True)
         messages.error(request, 'Переписка не найдена или доступ запрещен')
         return redirect('conversations_list')
 
@@ -1548,9 +1554,7 @@ def send_message_ajax(request, conversation_id):
             })
             
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Ошибка в send_message_ajax: {e}")
+        logger.error(f"Ошибка в send_message_ajax: {e}", exc_info=True)
         return JsonResponse({
             'success': False,
             'error': 'Произошла ошибка при отправке сообщения'
@@ -1595,9 +1599,7 @@ def mark_messages_read(request, conversation_id):
         })
         
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Ошибка в mark_messages_read: {e}")
+        logger.error(f"Ошибка в mark_messages_read: {e}", exc_info=True)
         return JsonResponse({
             'success': False,
             'error': 'Произошла ошибка'
@@ -1638,9 +1640,7 @@ def delete_conversation(request, conversation_id):
         return redirect('conversations_list')
         
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Ошибка в delete_conversation: {e}")
+        logger.error(f"Ошибка в delete_conversation: {e}", exc_info=True)
         messages.error(request, 'Ошибка при удалении переписки')
         return redirect('conversations_list')
 
@@ -1661,6 +1661,9 @@ def subjects_autocomplete(request):
 
     if not query or len(query) < 2:
         return JsonResponse({'results': []})
+    
+    # Ограничиваем длину запроса для безопасности
+    query = query[:100]
 
     subjects = Subject.objects.filter(is_active=True).filter(
         Q(name__icontains=query) | Q(description__icontains=query)
@@ -1692,13 +1695,13 @@ def subjects_autocomplete(request):
     # Логируем поиск для аналитики
     try:
         SubjectSearchLog.objects.create(
-            query=query,
+            query=query[:200],  # Ограничиваем длину
             user=request.user if request.user.is_authenticated else None,
             ip_address=get_client_ip(request),
             found_results_count=len(results)
         )
-    except:
-        pass
+    except Exception as e:
+        logger.warning(f"Failed to log subject search: {e}")
 
     return JsonResponse({'results': results})
 
@@ -1856,6 +1859,11 @@ def send_broadcast_message(request):
         
         if not message_text:
             messages.error(request, 'Сообщение не может быть пустым')
+            return redirect('telegram_management')
+        
+        # Ограничиваем длину сообщения
+        if len(message_text) > 4000:
+            messages.error(request, 'Сообщение слишком длинное (максимум 4000 символов)')
             return redirect('telegram_management')
         
         # Определяем получателей
