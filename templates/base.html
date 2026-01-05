@@ -169,13 +169,35 @@
         .logo {
             display: flex;
             align-items: center;
+            gap: 10px;
             text-decoration: none;
         }
 
         .logo img {
-            width: 80px;
-            height: 80px;
+            width: 60px;
+            height: 60px;
             object-fit: contain;
+        }
+
+        .logo-text {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+             Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans',
+             'Helvetica Neue', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            line-height: 1;
+        }
+
+        .logo-ustoz {
+            color: var(--text-primary);
+        }
+
+        .logo-hub {
+            color: var(--primary-color);
+
         }
 
         .nav-search {
@@ -1019,8 +1041,12 @@
             }
 
             .logo img {
-                width: 60px;
-                height: 60px;
+                width: 36px;
+                height: 36px;
+            }
+
+            .logo-text {
+                font-size: 20px;
             }
 
             .nav-search {
@@ -1109,8 +1135,12 @@
             }
 
             .logo img {
-                width: 50px;
-                height: 50px;
+                width: 32px;
+                height: 32px;
+            }
+
+            .logo-text {
+                font-size: 18px;
             }
 
             .nav-btn-primary {
@@ -1191,22 +1221,13 @@
             <!-- Logo -->
             <a href="{% url 'home' %}" class="logo">
                 <img src="{% static 'logo/logo.png' %}" alt="UstozHub">
+                <span class="logo-text">
+                    <span class="logo-ustoz">Ustoz</span><span style="font-weight: 800; color: #034486;" class="logo-hub">Hub</span>
+                </span>
             </a>
 
             <!-- Search Bar (Desktop) -->
-            <div class="nav-search">
-                <input 
-                    type="text" 
-                    class="search-input" 
-                    placeholder="{% trans 'Найти учителя или предмет...' %}" 
-                    id="navSearchInput"
-                >
-                <i class="fas fa-search search-icon"></i>
-
-                <button class="clear-search" onclick="clearSearch()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
+    
             
 
             <!-- Actions -->

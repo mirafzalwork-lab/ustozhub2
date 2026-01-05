@@ -5,7 +5,6 @@
 
 {% block content %}
 <style>
-
     /* ============================================
        🎨 КРИТИЧЕСКИЕ CSS ПЕРЕМЕННЫЕ
        ============================================ */
@@ -33,12 +32,10 @@
         display: flex;
         justify-content: center;
         gap: 12px;
-        {% comment %} margin-bottom: 24px; {% endcomment %}
         background: white;
         padding: 12px;
         border-radius: 12px;
         box-shadow: 0 2px 8px rgba(10, 37, 64, 0.06);
-        /* Плавная прокрутка на мобильных */
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
@@ -151,7 +148,6 @@
         transition: all var(--transition-speed);
     }
 
-    /* Кастомный скроллбар для фильтров */
     .filters-sidebar::-webkit-scrollbar {
         width: 6px;
     }
@@ -301,7 +297,6 @@
         font-weight: 600;
         cursor: pointer;
         transition: all var(--transition-speed);
-        {% comment %} margin-top: 15px; {% endcomment %}
     }
 
     .apply-filters-btn:hover {
@@ -339,13 +334,12 @@
 
     .teachers-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 20px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
         width: 100%;
         box-sizing: border-box;
         padding: 0;
         margin: 0;
-        justify-content: center;
     }
 
     /* ============================================
@@ -354,14 +348,16 @@
     .teacher-card {
         background: white;
         border-radius: 12px;
-        padding: 20px;
+        padding: 0;
         box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
         border: 1px solid #f0f0f0;
         transition: all var(--transition-speed);
         cursor: pointer;
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         position: relative;
+        overflow: hidden;
+        min-height: 220px;
     }
 
     .teacher-card:hover {
@@ -369,26 +365,39 @@
         box-shadow: 0 6px 20px rgba(10, 37, 64, 0.12);
     }
 
+    .teacher-card-left {
+        width: 30%;
+        min-width: 180px;
+        position: relative;
+        overflow: hidden;
+    }
 
+    .teacher-card-right {
+        width: 70%;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
 
     .teacher-header {
         display: flex;
-        gap: 15px;
-        margin-bottom: 15px;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
     }
 
     .teacher-avatar {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
+        width: 100%;
+        height: 100%;
         background: linear-gradient(135deg, #3B82F6, #1E40AF);
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
-        font-size: 20px;
+        font-size: 48px;
         font-weight: 700;
-        flex-shrink: 0;
         overflow: hidden;
     }
 
@@ -398,19 +407,37 @@
         object-fit: cover;
     }
 
+    .recommended-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: linear-gradient(135deg, #10B981, #059669);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .recommended-badge i {
+        font-size: 10px;
+    }
+
     .teacher-info {
         flex: 1;
         min-width: 0;
     }
 
     .teacher-name {
-        font-size: 18px;
-        font-weight: 600;
+        font-size: 19px;
+        font-weight: 700;
         color: var(--primary-color);
-        margin-bottom: 5px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        margin: 0;
+        line-height: 1.3;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        max-width: 100%;
     }
 
     .teacher-rating {
@@ -433,88 +460,209 @@
         color: #999;
     }
 
-    .teacher-subjects {
+    .info-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .info-row i {
+        color: #9ca3af;
+        font-size: 15px;
+        flex-shrink: 0;
+        width: 18px;
+        text-align: center;
+    }
+
+    .info-label {
+        color: #6b7280;
+        font-weight: 600;
+        font-size: 13px;
+        flex-shrink: 0;
+    }
+
+    .info-content {
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
-        margin-bottom: 12px;
+        flex: 1;
+        align-items: center;
+    }
+
+    .subject-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        max-width: 100%;
+        overflow: hidden;
     }
 
     .subject-tag {
-        background: rgba(59, 130, 246, 0.1);
-        color: #3B82F6;
-        padding: 4px 10px;
-        border-radius: 12px;
+        background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+        color: #1e40af;
+        padding: 5px 12px;
+        border-radius: 14px;
         font-size: 12px;
-        font-weight: 500;
+        font-weight: 600;
+        white-space: nowrap;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        transition: all 0.2s;
+    }
+
+    .subject-tag:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
+    }
+
+    .language-tag {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        color: #92400e;
+        padding: 5px 12px;
+        border-radius: 14px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        transition: all 0.2s;
+    }
+
+    .language-tag:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
     }
 
     .teacher-description {
-        color: #666;
-        font-size: 13px;
-        line-height: 1.5;
-        margin-bottom: 12px;
+        color: #4b5563;           /* ✓ Цвет текста */
+        font-size: 14px;          /* ✓ Размер шрифта */
+        line-height: 1.7;         /* ✓ Межстрочный интервал */
+        margin-bottom: 14px;      /* ✓ Отступ снизу */
+        margin-top: 8px;          /* ✓ Отступ сверху */
+        position: relative;       /* ✓ Для позиционирования кнопки */
+        word-wrap: break-word;    /* ✓ Перенос длинных слов */
+        overflow-wrap: break-word;/* ✓ Современный аналог */
+        padding: 12px;            /* ✓ Внутренний отступ */
+        background: #f9fafb;      /* ✓ Светлый фон */
+        border-radius: 10px;      /* ✓ Скругление */
+        border-left: 3px solid #3b82f6; /* ✓ Акцентная полоска */
+        width: 100%;              /* ✓ Полная ширина */
+        box-sizing: border-box;   /* ✓ Учёт padding в ширине */
+    }   
+
+    .description-text {
+        display: block;
+        transition: max-height 0.3s ease;
+    }
+
+    .description-text.collapsed {
         display: -webkit-box;
-        -webkit-line-clamp: 2;
+        -webkit-line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
 
-    .teacher-meta {
-        display: flex;
-        gap: 15px;
-        margin-bottom: 12px;
-        font-size: 13px;
-        color: #666;
-        flex-wrap: wrap;
-    }
-
-    .meta-item {
-        display: flex;
+    .show-more-btn {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+        border: none;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 7px 16px;
+        border-radius: 14px;
+        margin-top: 8px;
+        box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+        transition: all 0.3s;
+        display: inline-flex;
         align-items: center;
-        gap: 5px;
+        gap: 6px;
     }
 
-    .meta-item i {
-        color: var(--primary-color);
+    .show-more-btn:hover {
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);
+    }
+
+    .show-more-btn i {
+        font-size: 10px;
     }
 
     .teacher-footer {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding-top: 12px;
-        border-top: 1px solid #eee;
-        {% comment %} margin-top: auto; {% endcomment %}
+        padding-top: 14px;
+        margin-top: auto;
+        gap: 12px;
+        flex-wrap: wrap;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .price-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
     }
 
     .teacher-price {
-        font-size: 18px;
+        font-size: 20px;
         font-weight: 700;
         color: var(--primary-color);
+        line-height: 1.2;
     }
 
     .price-period {
         font-size: 12px;
         color: #999;
+        font-weight: 500;
     }
 
-    .contact-btn {
-        padding: 8px 16px;
-        background: var(--primary-color);
-        color: white;
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .contact-btn,
+    .book-btn {
+        padding: 10px 16px;
         border: none;
-        border-radius: 6px;
+        border-radius: 8px;
         font-size: 13px;
-        font-weight: 500;
+        font-weight: 600;
         cursor: pointer;
         transition: all var(--transition-speed);
         display: flex;
         align-items: center;
         gap: 6px;
+        white-space: nowrap;
+        flex: 1;
+        min-width: 110px;
+        justify-content: center;
+    }
+
+    .contact-btn {
+        background: white;
+        color: var(--primary-color);
+        border: 2px solid var(--primary-color);
     }
 
     .contact-btn:hover {
+        background: var(--primary-color);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(10, 37, 64, 0.2);
+    }
+
+    .book-btn {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .book-btn:hover {
         background: #1e4a72;
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(10, 37, 64, 0.2);
@@ -524,7 +672,7 @@
        📄 ПАГИНАЦИЯ
        ============================================ */
     .pagination-wrapper {
-        {% comment %} margin-top: 40px; {% endcomment %}
+        margin-top: 40px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -637,7 +785,6 @@
         transform: scale(0.98);
     }
 
-    /* Backdrop для мобильных фильтров */
     .filters-backdrop {
         display: none;
         position: fixed;
@@ -655,7 +802,7 @@
     }
 
     /* ============================================
-       📱 АДАПТИВНЫЙ ДИЗАЙН - ПРАВИЛЬНАЯ СТРУКТУРА
+       📱 АДАПТИВНЫЙ ДИЗАЙН
        ============================================ */
 
     /* === TABLET (1024px и меньше) === */
@@ -669,15 +816,10 @@
         }
 
         .content-layout {
-            display: grid;
             grid-template-columns: 1fr;
             gap: 20px;
-            width: 100%;
-            margin: 0;
-            padding: 0;
         }
 
-        /* Фильтры становятся drawer */
         .filters-sidebar {
             position: fixed;
             top: 0;
@@ -688,7 +830,6 @@
             max-height: 100vh;
             z-index: 1000;
             border-radius: 0;
-            padding: 20px;
             overflow-y: auto;
             box-shadow: 2px 0 20px rgba(0, 0, 0, 0.2);
             transition: left var(--transition-speed) ease-in-out;
@@ -704,12 +845,24 @@
         }
 
         .teachers-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 14px;
+            grid-template-columns: 1fr;
+            gap: 18px;
+        }
+
+        .teacher-card {
+            flex-direction: column;
+            min-height: auto;
+        }
+
+        .teacher-card-left {
             width: 100%;
-            padding: 0;
-            margin: 0;
+            height: 200px;
+            min-width: auto;
+        }
+
+        .teacher-card-right {
+            width: 100%;
+            padding: 16px;
         }
 
         .tab-button {
@@ -788,22 +941,11 @@
         }
 
         .teachers-grid {
-            display: grid;
-            grid-template-columns: 1fr;
             gap: 16px;
-            width: 100%;
-            margin: 0;
-            padding: 0;
         }
 
-        .teacher-card {
-            padding: 16px;
-        }
-
-        .teacher-avatar {
-            width: 54px;
-            height: 54px;
-            font-size: 18px;
+        .teacher-card-right {
+            padding: 14px;
         }
 
         .teacher-name {
@@ -814,23 +956,30 @@
             font-size: 13px;
         }
 
-        .teacher-subjects {
-            gap: 5px;
+        .info-row {
+            gap: 8px;
+            margin-bottom: 8px;
         }
 
-        .subject-tag {
+        .info-row i {
+            font-size: 14px;
+        }
+
+        .info-label {
+            font-size: 12px;
+        }
+
+        .subject-tag,
+        .language-tag {
             font-size: 11px;
-            padding: 3px 8px;
+            padding: 3px 9px;
         }
 
         .teacher-description {
             font-size: 13px;
             line-height: 1.4;
-        }
-
-        .teacher-meta {
-            font-size: 12px;
-            gap: 12px;
+            padding: 10px;
+            margin-bottom: 10px;
         }
 
         .teacher-price {
@@ -841,13 +990,18 @@
             font-size: 11px;
         }
 
-        .contact-btn {
-            padding: 9px 16px;
-            font-size: 13px;
+        .contact-btn,
+        .book-btn {
+            padding: 8px 12px;
+            font-size: 12px;
             min-height: 36px;
+            gap: 4px;
         }
 
-        /* Пагинация */
+        .action-buttons {
+            gap: 6px;
+        }
+
         .pagination {
             gap: 6px;
         }
@@ -893,7 +1047,6 @@
 
         .page-container {
             padding: 16px 8px;
-            overflow-x: hidden;
         }
 
         .page-title {
@@ -914,49 +1067,49 @@
             padding: 14px;
         }
 
-        .teacher-card {
-            padding: 14px;
+        .teacher-card-right {
+            padding: 12px;
+        }
+
+        .teacher-card-left {
+            height: 180px;
         }
 
         .teacher-header {
             gap: 12px;
         }
 
-        .teacher-avatar {
-            width: 50px;
-            height: 50px;
-            font-size: 16px;
-        }
-
         .teacher-name {
             font-size: 16px;
         }
 
-        .teacher-subjects {
-            gap: 4px;
-        }
-
-        .subject-tag {
+        .subject-tag,
+        .language-tag {
             font-size: 10px;
             padding: 2px 7px;
-        }
-
-        .teacher-meta {
-            gap: 10px;
-            font-size: 11px;
         }
 
         .teacher-price {
             font-size: 16px;
         }
 
-        .contact-btn {
-            padding: 8px 14px;
-            font-size: 12px;
+        .contact-btn,
+        .book-btn {
+            padding: 7px 10px;
+            font-size: 11px;
             min-height: 34px;
+            gap: 3px;
         }
 
-        /* Компактная пагинация */
+        .contact-btn i,
+        .book-btn i {
+            font-size: 11px;
+        }
+
+        .action-buttons {
+            gap: 5px;
+        }
+
         .pagination {
             gap: 4px;
         }
@@ -968,7 +1121,6 @@
             font-size: 12px;
         }
 
-        /* Скрываем некоторые номера страниц на маленьких экранах */
         .pagination .page-link:not(.current):not(.first):not(.last):not(.prev):not(.next) {
             display: none;
         }
@@ -986,25 +1138,10 @@
         }
     }
 
-    /* === EXTRA SMALL (360px и меньше) === */
-    @media (max-width: 360px) {
+    /* === ULTRA SMALL (320px и меньше) === */
+    @media (max-width: 320px) {
         .page-container {
-            padding: 12px 6px;
-            overflow-x: hidden;
-        }
-
-        .teacher-card {
-            padding: 12px;
-        }
-
-        .teacher-avatar {
-            width: 46px;
-            height: 46px;
-            font-size: 15px;
-        }
-
-        .teacher-name {
-            font-size: 14px;
+            padding: 10px 4px;
         }
 
         .tab-button {
@@ -1014,13 +1151,53 @@
         .tab-button i {
             font-size: 16px;
         }
+
+        .teachers-grid {
+            gap: 12px;
+        }
+
+        .teacher-name {
+            font-size: 14px;
+        }
+
+        .teacher-price {
+            font-size: 15px;
+        }
+
+        .price-period {
+            font-size: 10px;
+        }
+
+        .contact-btn,
+        .book-btn {
+            padding: 6px 8px;
+            font-size: 10px;
+            min-height: 30px;
+            gap: 2px;
+        }
+
+        .action-buttons {
+            width: 100%;
+        }
+    }
+
+    /* === LANDSCAPE MODE === */
+    @media (max-width: 900px) and (orientation: landscape) {
+        .teachers-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+        }
+
+        .filters-sidebar {
+            width: 60%;
+            max-width: 400px;
+        }
     }
 
     /* ============================================
        🎯 TOUCH OPTIMIZATIONS
        ============================================ */
     @media (hover: none) and (pointer: coarse) {
-        /* Убираем hover эффекты на touch устройствах */
         .teacher-card:hover,
         .contact-btn:hover,
         .tab-button:hover,
@@ -1030,7 +1207,6 @@
             box-shadow: inherit;
         }
 
-        /* Active состояния для touch */
         .teacher-card:active {
             transform: scale(0.98);
         }
@@ -1046,23 +1222,6 @@
 
         .page-link:active:not(.current) {
             transform: scale(0.95);
-        }
-    }
-
-    /* ============================================
-       📱 LANDSCAPE MODE
-       ============================================ */
-    @media (max-width: 900px) and (orientation: landscape) {
-        .teachers-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 14px;
-            width: 100%;
-        }
-
-        .filters-sidebar {
-            width: 60%;
-            max-width: 400px;
         }
     }
 
@@ -1104,7 +1263,6 @@
         }
     }
 
-    /* Focus visible для клавиатурной навигации */
     .tab-button:focus-visible,
     .contact-btn:focus-visible,
     .page-link:focus-visible,
@@ -1113,65 +1271,10 @@
         outline: 3px solid #3B82F6;
         outline-offset: 2px;
     }
-
-    /* === ULTRA SMALL (320px и меньше) === */
-    @media (max-width: 320px) {
-        .page-container {
-            padding: 10px 4px;
-            overflow-x: hidden;
-        }
-
-        .teachers-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-            width: 100%;
-        }
-
-        .teacher-card {
-            padding: 12px;
-        }
-
-        .teacher-avatar {
-            width: 46px;
-            height: 46px;
-            font-size: 15px;
-        }
-
-        .teacher-name {
-            font-size: 15px;
-        }
-
-        .teacher-subjects {
-            gap: 3px;
-        }
-
-        .subject-tag {
-            font-size: 9px;
-            padding: 2px 6px;
-        }
-
-        .contact-btn {
-            padding: 6px 10px;
-            font-size: 11px;
-            min-height: 30px;
-        }
-    }
 </style>
 
+
 <!-- ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК - UPDATED v2.0 -->
-<div class="tabs-container">
-    <div class="tabs-wrapper">
-        <button class="tab-button active" onclick="window.location.href='{% url 'home' %}'">
-            <i class="fas fa-chalkboard-teacher"></i>
-            <span>{% trans 'Учителя' %}</span>
-        </button>
-        <button class="tab-button" onclick="window.location.href='{% url 'students_list' %}'">
-            <i class="fas fa-user-graduate"></i>
-            <span>{% trans 'Ученики' %}</span>
-        </button>
-    </div>
-</div>
 
 <div class="page-container">
     <!-- ЗАГОЛОВОК СТРАНИЦЫ -->
@@ -1330,65 +1433,96 @@
             {% if teachers %}
                 <div class="teachers-grid">
                     {% for teacher in teachers %}
-                        <div class="teacher-card" onclick="window.location.href='{% url 'teacher_detail' teacher.id %}'">
-                            <div class="teacher-content">
-                                <div class="teacher-header">
-                                    <div class="teacher-avatar">
-                                        {% if teacher.user.avatar %}
-                                            <img src="{{ teacher.user.avatar.url }}" alt="{{ teacher.user.get_full_name }}">
-                                        {% else %}
-                                            {{ teacher.user.first_name.0|default:"У" }}{{ teacher.user.last_name.0|default:"" }}
-                                        {% endif %}
-                                    </div>
-                                    <div class="teacher-info">
-                                        <h3 class="teacher-name">
+                        <div class="teacher-card">
+                            <!-- Левая часть: Фото учителя -->
+                            <div class="teacher-card-left" onclick="window.location.href='{% url 'teacher_detail' teacher.id %}'">
+                                <div class="teacher-avatar">
+                                    {% if teacher.user.avatar %}
+                                        <img src="{{ teacher.user.avatar.url }}" alt="{{ teacher.user.get_full_name }}">
+                                    {% else %}
+                                        {{ teacher.user.first_name.0|default:"У" }}{{ teacher.user.last_name.0|default:"" }}
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Правая часть: Информация -->
+                            <div class="teacher-card-right">
+                                <div>
+                                    <!-- Имя и бейдж -->
+                                    <div class="teacher-header">
+                                        <h3 class="teacher-name" onclick="window.location.href='{% url 'teacher_detail' teacher.id %}'" style="cursor: pointer;">
                                             {{ teacher.user.get_full_name|default:teacher.user.username }}
                                         </h3>
-                                        <div class="teacher-rating">
-                                            <i class="fas fa-star rating-star"></i>
-                                            <span class="rating-value">{{ teacher.rating|floatformat:1 }}</span>
-                                            <span class="rating-count">({{ teacher.total_reviews }})</span>
+                                        {% if teacher.is_recommended %}
+                                            <span class="recommended-badge">
+                                                <i class="fas fa-check-circle"></i> {% trans 'Рекомендуемый учитель' %}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Предметы -->
+                                    <div class="info-row">
+                                        <i class="fas fa-book"></i>
+                                        <span class="info-label">{% trans 'Предметы' %}</span>
+                                        <div class="info-content">
+                                            {% for ts in teacher.teachersubject_set.all|slice:":5" %}
+                                                <span class="subject-tag">{{ ts.subject.name }}</span>
+                                            {% endfor %}
                                         </div>
                                     </div>
-                                </div>
 
-                                <div class="teacher-subjects">
-                                    {% for ts in teacher.teachersubject_set.all|slice:":3" %}
-                                        <span class="subject-tag">{{ ts.subject.name }}</span>
-                                    {% endfor %}
-                                </div>
-
-                                <p class="teacher-description">
-                                    {{ teacher.bio|truncatewords:15 }}
-                                </p>
-
-                                <div class="teacher-meta">
-                                    <div class="meta-item">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span>{{ teacher.city.name|default:"Онлайн" }}</span>
+                                    <!-- Языки преподавания -->
+                                    <div class="info-row">
+                                        <i class="fas fa-language"></i>
+                                        <span class="info-label">{% trans 'Языки' %}</span>
+                                        <div class="info-content">
+                                            {% with langs=teacher.get_teaching_languages_list %}
+                                                {% if langs %}
+                                                    {% for lang in langs %}
+                                                        <span class="language-tag">{{ lang }}</span>
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <span style="color: #9ca3af; font-size: 13px;">{% trans 'Не указано' %}</span>
+                                                {% endif %}
+                                            {% endwith %}
+                                        </div>
                                     </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-clock"></i>
-                                        <span>{{ teacher.experience_years }} {% trans 'лет' %}</span>
+
+                                    <!-- Описание с кнопкой "Показать больше" -->
+                                    <div class="teacher-description">
+                                        <span class="description-text collapsed" id="desc-{{ teacher.id }}" data-full-text="{{ teacher.bio|default:'Нет описания' }}">
+                                            {{ teacher.bio|default:"Нет описания"|truncatechars:200 }}
+                                        </span>
+                                        {% if teacher.bio|length > 200 %}
+                                            <button class="show-more-btn" onclick="event.stopPropagation(); toggleDescription({{ teacher.id }}, '{{ teacher.bio|escapejs }}')" id="btn-{{ teacher.id }}">
+                                                <i class="fas fa-chevron-down"></i> {% trans 'Показать больше' %}
+                                            </button>
+                                        {% endif %}
                                     </div>
                                 </div>
 
+                                <!-- Футер: Цена и кнопки -->
                                 <div class="teacher-footer">
-                                    <div>
+                                    <div class="price-info">
                                         {% with min_price=teacher.get_min_price %}
                                             <div class="teacher-price">
                                                 {% if min_price > 0 %}
-                                                    <span>{{ min_price|floatformat:0 }}</span> {% trans 'сум' %}
+                                                    {% trans 'от' %} {{ min_price|floatformat:0 }} {% trans 'сум' %}
                                                 {% else %}
-                                                    <span>{% trans 'Договорная' %}</span>
+                                                    {% trans 'Договорная' %}
                                                 {% endif %}
                                             </div>
-                                            <div class="price-period">{% trans 'за час' %}</div>
                                         {% endwith %}
+                                        <div class="price-period">60-{% trans 'мин. урок' %}</div>
                                     </div>
-                                    <button class="contact-btn" onclick="event.stopPropagation(); handleMessageClick({{ teacher.user.id }})">
-                                        <i class="fas fa-comment"></i> {% trans 'Написать' %}
-                                    </button>
+                                    <div class="action-buttons">
+                                        <button class="contact-btn" onclick="event.stopPropagation(); handleMessageClick({{ teacher.user.id }})">
+                                            <i class="fas fa-comment"></i> {% trans 'Написать' %}
+                                        </button>
+                                        <button class="book-btn" onclick="event.stopPropagation(); window.location.href='{% url 'teacher_detail' teacher.id %}'">
+                                            {% trans 'Забронировать' %}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1526,6 +1660,42 @@
                 e.preventDefault();
             }
         }, { passive: false });
+    }
+
+    // ========== ПОКАЗАТЬ/СКРЫТЬ ОПИСАНИЕ ==========
+    const fullTexts = {};
+    const shortTexts = {};
+    
+    function toggleDescription(teacherId, fullText) {
+        const descElement = document.getElementById(`desc-${teacherId}`);
+        const btnElement = document.getElementById(`btn-${teacherId}`);
+        
+        if (descElement && btnElement) {
+            // Сохраняем короткий текст при первом клике
+            if (!shortTexts[teacherId]) {
+                shortTexts[teacherId] = descElement.textContent.trim();
+            }
+            // Сохраняем полный текст
+            if (!fullTexts[teacherId] && fullText) {
+                fullTexts[teacherId] = fullText;
+            }
+            
+            if (descElement.classList.contains('collapsed')) {
+                // Показываем полный текст
+                if (fullTexts[teacherId]) {
+                    descElement.textContent = fullTexts[teacherId];
+                }
+                descElement.classList.remove('collapsed');
+                btnElement.innerHTML = '<i class="fas fa-chevron-up"></i> {% trans "Скрыть" %}';
+            } else {
+                // Возвращаем короткий текст
+                if (shortTexts[teacherId]) {
+                    descElement.textContent = shortTexts[teacherId];
+                }
+                descElement.classList.add('collapsed');
+                btnElement.innerHTML = '<i class="fas fa-chevron-down"></i> {% trans "Показать больше" %}';
+            }
+        }
     }
 
     // ========== ОБРАБОТКА КНОПКИ "НАПИСАТЬ" ==========
