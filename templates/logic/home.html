@@ -8,15 +8,13 @@
     /* ============================================
        🎨 КРИТИЧЕСКИЕ CSS ПЕРЕМЕННЫЕ
        ============================================ */
-    :root {
-        --navbar-height-desktop: 70px;
+    .home-page {
+        --navbar-height-desktop: 50x;
         --navbar-height-tablet: 56px;
         --navbar-height-mobile: 52px;
         --filter-sidebar-width: 280px;
         --card-min-width: 320px;
         --transition-speed: 0.3s;
-        --primary-color: #0A2540;
-        --success-color: #10B981;
     }
 
     /* ============================================
@@ -87,7 +85,7 @@
     .page-container {
         max-width: 1400px;
         margin: 0 auto;
-        padding: 30px 20px;
+        padding: 10px 20px;
     }
 
     .page-header {
@@ -119,6 +117,126 @@
         margin: 0;
         line-height: 1.4;
         opacity: 0.9;
+    }
+
+    /* ============================================
+       🔎 GLOBAL SEARCH (TOP)
+       ============================================ */
+    .global-search {
+        display: flex;
+        justify-content: center;
+        margin: 18px auto 22px;
+        width: 100%;
+    }
+
+    .global-search-form {
+        width: min(720px, 100%);
+        display: flex;
+        justify-content: center;
+        padding: 0 10px;
+        box-sizing: border-box;
+    }
+
+    .global-search-field {
+        position: relative;
+        width: 100%;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .global-search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--primary-color);
+        opacity: 0.7;
+        pointer-events: none;
+        font-size: 14px;
+    }
+
+    .global-search-input {
+        width: 100%;
+        height: 46px;
+        border: 1px solid rgba(10, 37, 64, 0.14);
+        border-radius: 999px;
+        padding: 0 14px 0 42px;
+        font-size: 14px;
+        background: white;
+        box-shadow: 0 6px 18px rgba(10, 37, 64, 0.08);
+        transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+    }
+
+    .global-search-btn {
+        height: 46px;
+        padding: 0 18px;
+        border: none;
+        border-radius: 999px;
+        background: var(--primary-color);
+        color: white;
+        font-weight: 700;
+        font-size: 14px;
+        cursor: pointer;
+        box-shadow: 0 6px 18px rgba(10, 37, 64, 0.10);
+        transition: transform var(--transition-speed), background var(--transition-speed);
+        white-space: nowrap;
+        flex: 0 0 auto;
+    }
+
+    .global-search-btn:hover {
+        background: var(--primary-hover);
+        transform: translateY(-1px);
+    }
+
+    .quick-search {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: -10px auto 22px;
+        padding: 0 10px;
+        box-sizing: border-box;
+    }
+
+    .quick-search-btn {
+        border: 1px solid rgba(10, 37, 64, 0.14);
+        background: white;
+        color: var(--primary-color);
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background var(--transition-speed), transform var(--transition-speed), border-color var(--transition-speed);
+    }
+
+    .quick-search-btn:hover {
+        background: rgba(10, 37, 64, 0.04);
+        border-color: rgba(10, 37, 64, 0.22);
+        transform: translateY(-1px);
+    }
+
+    @media (max-width: 480px) {
+        .global-search-field {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+        }
+
+        .global-search-btn {
+            width: 100%;
+        }
+
+        .global-search-icon {
+            top: 23px;
+        }
+    }
+
+    .global-search-input:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12), 0 10px 20px rgba(10, 37, 64, 0.10);
     }
 
     /* ============================================
@@ -184,7 +302,7 @@
     .reset-filters {
         background: none;
         border: none;
-        color: #3B82F6;
+        color: var(--accent-color);
         font-size: 13px;
         cursor: pointer;
         text-decoration: underline;
@@ -193,7 +311,7 @@
     }
 
     .reset-filters:hover {
-        color: #2563EB;
+        color: var(--accent-hover);
     }
 
     .filter-group {
@@ -216,10 +334,10 @@
 
     .filter-label i {
         margin-right: 6px;
-        color: #3B82F6;
+        color: var(--accent-color);
     }
 
-    .search-input,
+    .filter-search-input,
     .filter-select {
         width: 100%;
         padding: 10px 12px;
@@ -230,10 +348,10 @@
         transition: all var(--transition-speed);
     }
 
-    .search-input:focus,
+    .filter-search-input:focus,
     .filter-select:focus {
         outline: none;
-        border-color: #3B82F6;
+        border-color: var(--accent-color);
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
 
@@ -253,7 +371,7 @@
 
     .price-input:focus {
         outline: none;
-        border-color: #3B82F6;
+        border-color: var(--accent-color);
     }
 
     .rating-options {
@@ -348,16 +466,16 @@
     .teacher-card {
         background: white;
         border-radius: 12px;
-        padding: 0;
+        padding: 18px;
         box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
         border: 1px solid #f0f0f0;
         transition: all var(--transition-speed);
         cursor: pointer;
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
         position: relative;
         overflow: hidden;
-        min-height: 220px;
+        gap: 12px;
     }
 
     .teacher-card:hover {
@@ -365,40 +483,43 @@
         box-shadow: 0 6px 20px rgba(10, 37, 64, 0.12);
     }
 
-    .teacher-card-left {
-        width: 30%;
-        min-width: 180px;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .teacher-card-right {
-        width: 70%;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
-
-    .teacher-header {
+    .teacher-card-head {
         display: flex;
         align-items: flex-start;
-        gap: 10px;
-        margin-bottom: 12px;
+        gap: 14px;
+        min-width: 0;
+    }
+
+    .teacher-head-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .teacher-name-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
         flex-wrap: wrap;
+        min-width: 0;
     }
 
     .teacher-avatar {
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(135deg, #3B82F6, #1E40AF);
+        width: 76px;
+        height: 76px;
+        background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
-        font-size: 48px;
+        font-size: 26px;
         font-weight: 700;
         overflow: hidden;
+        border-radius: 50%;
+        box-shadow: 0 6px 18px rgba(10, 37, 64, 0.16);
+        flex-shrink: 0;
     }
 
     .teacher-avatar img {
@@ -409,28 +530,34 @@
 
     .recommended-badge {
         display: inline-flex;
+        align-self: flex-start;   /* 🔥 ВАЖНО */
+        width: fit-content;       /* 🔥 ВАЖНО */
+
         align-items: center;
-        gap: 4px;
-        background: linear-gradient(135deg, #10B981, #059669);
+        gap: 5px;
+        background: linear-gradient(135deg, #10b981, #059669);
         color: white;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 11px;
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 10px;
         font-weight: 600;
         white-space: nowrap;
+        box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+    }
+
+
+
+    .recommended-badge:hover {
+        box-shadow: 0 3px 8px rgba(16, 185, 129, 0.35);
+        transform: translateY(-1px);
     }
 
     .recommended-badge i {
-        font-size: 10px;
-    }
-
-    .teacher-info {
-        flex: 1;
-        min-width: 0;
+        font-size: 11px;
     }
 
     .teacher-name {
-        font-size: 19px;
+        font-size: 18px;
         font-weight: 700;
         color: var(--primary-color);
         margin: 0;
@@ -438,6 +565,39 @@
         word-wrap: break-word;
         overflow-wrap: break-word;
         max-width: 100%;
+    }
+
+    .meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        max-width: 100%;
+        overflow: hidden;
+    }
+
+    .meta-label {
+        color: #6b7280;
+        font-weight: 600;
+        font-size: 12px;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .meta-label i {
+        font-size: 13px;
+        color: var(--primary-color);
+    }
+
+    .teacher-subjects,
+    .teacher-languages {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        min-width: 0;
     }
 
     .teacher-rating {
@@ -460,120 +620,66 @@
         color: #999;
     }
 
-    .info-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 10px;
-        font-size: 14px;
-        line-height: 1.6;
-    }
-
-    .info-row i {
-        color: #9ca3af;
-        font-size: 15px;
-        flex-shrink: 0;
-        width: 18px;
-        text-align: center;
-    }
-
-    .info-label {
-        color: #6b7280;
-        font-weight: 600;
-        font-size: 13px;
-        flex-shrink: 0;
-    }
-
-    .info-content {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        flex: 1;
-        align-items: center;
-    }
-
-    .subject-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        max-width: 100%;
-        overflow: hidden;
-    }
-
     .subject-tag {
         background: linear-gradient(135deg, #dbeafe, #bfdbfe);
         color: #1e40af;
-        padding: 5px 12px;
+        padding: 3px 10px;
         border-radius: 14px;
-        font-size: 12px;
+        font-size: 10px;
         font-weight: 600;
         white-space: nowrap;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
         transition: all 0.2s;
     }
 
-    .subject-tag:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
-    }
 
     .language-tag {
         background: linear-gradient(135deg, #fef3c7, #fde68a);
         color: #92400e;
-        padding: 5px 12px;
+        padding: 3px 10px;
         border-radius: 14px;
-        font-size: 12px;
+        font-size: 10px;
         font-weight: 600;
         white-space: nowrap;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
         transition: all 0.2s;
     }
 
-    .language-tag:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
-    }
-
     .teacher-description {
-        color: #4b5563;           /* ✓ Цвет текста */
+        color: #000000;           /* ✓ Цвет текста */
         font-size: 14px;          /* ✓ Размер шрифта */
         line-height: 1.7;         /* ✓ Межстрочный интервал */
         margin-bottom: 14px;      /* ✓ Отступ снизу */
-        margin-top: 8px;          /* ✓ Отступ сверху */
+        margin-top: 0;            /* ✓ Отступ сверху */
         position: relative;       /* ✓ Для позиционирования кнопки */
         word-wrap: break-word;    /* ✓ Перенос длинных слов */
         overflow-wrap: break-word;/* ✓ Современный аналог */
         padding: 12px;            /* ✓ Внутренний отступ */
         background: #f9fafb;      /* ✓ Светлый фон */
         border-radius: 10px;      /* ✓ Скругление */
-        border-left: 3px solid #3b82f6; /* ✓ Акцентная полоска */
         width: 100%;              /* ✓ Полная ширина */
         box-sizing: border-box;   /* ✓ Учёт padding в ширине */
+        overflow: hidden;
+        transition: max-height 0.25s ease;
     }   
 
     .description-text {
         display: block;
-        transition: max-height 0.3s ease;
-    }
-
-    .description-text.collapsed {
-        display: -webkit-box;
-        -webkit-line-clamp: 3;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
+        white-space: pre-wrap;
     }
 
     .show-more-btn {
-        background: linear-gradient(135deg, #3b82f6, #2563eb);
-        color: white;
+
+        color:var(--accent-color);
         border: none;
-        font-size: 12px;
-        font-weight: 700;
+        background: #f9fafb;
+        /* font-size: 10px; */
+        /* font-weight: 500; */
         cursor: pointer;
-        padding: 7px 16px;
-        border-radius: 14px;
-        margin-top: 8px;
-        box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+        /* padding: 5px 16px; */
+        /* border-radius: 14px; */
+        /* margin-top: 8px; */
+        /* box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3); */
         transition: all 0.3s;
         display: inline-flex;
         align-items: center;
@@ -581,9 +687,9 @@
     }
 
     .show-more-btn:hover {
-        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        /* background: linear-gradient(135deg, var(--accent-hover), var(--primary-hover));
         transform: translateY(-1px);
-        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4); */
     }
 
     .show-more-btn i {
@@ -623,7 +729,7 @@
     .action-buttons {
         display: flex;
         gap: 8px;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
     }
 
     .contact-btn,
@@ -639,9 +745,10 @@
         align-items: center;
         gap: 6px;
         white-space: nowrap;
-        flex: 1;
+        flex: 0 0 auto;
         min-width: 110px;
         justify-content: center;
+        min-height: 40px;
     }
 
     .contact-btn {
@@ -785,21 +892,7 @@
         transform: scale(0.98);
     }
 
-    .filters-backdrop {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 999;
-        transition: opacity var(--transition-speed);
-    }
-
-    .filters-backdrop.active {
-        display: block;
-    }
+    /* Backdrop берём из base.html (id="filtersBackdrop") */
 
     /* ============================================
        📱 АДАПТИВНЫЙ ДИЗАЙН
@@ -822,13 +915,13 @@
 
         .filters-sidebar {
             position: fixed;
-            top: 0;
+            top: 70px;
             left: -100%;
             width: 85%;
             max-width: 360px;
-            height: 100vh;
-            max-height: 100vh;
-            z-index: 1000;
+            height: calc(100vh - 70px);
+            max-height: calc(100vh - 70px);
+            z-index: 998;
             border-radius: 0;
             overflow-y: auto;
             box-shadow: 2px 0 20px rgba(0, 0, 0, 0.2);
@@ -841,7 +934,11 @@
 
         .mobile-filters-toggle {
             display: block;
-            top: 66px;
+            top: 70px;
+        }
+
+        .filters-backdrop {
+            top: 70px;
         }
 
         .teachers-grid {
@@ -850,19 +947,13 @@
         }
 
         .teacher-card {
-            flex-direction: column;
-            min-height: auto;
-        }
-
-        .teacher-card-left {
-            width: 100%;
-            height: 200px;
-            min-width: auto;
-        }
-
-        .teacher-card-right {
-            width: 100%;
             padding: 16px;
+        }
+
+        .teacher-avatar {
+            width: 68px;
+            height: 68px;
+            font-size: 24px;
         }
 
         .tab-button {
@@ -916,7 +1007,11 @@
             padding: 10px;
             font-size: 13px;
             margin-bottom: 16px;
-            top: 62px;
+            top: 56px;
+        }
+
+        .filters-backdrop {
+            top: 56px;
         }
 
         .filters-sidebar {
@@ -934,7 +1029,7 @@
             margin-bottom: 8px;
         }
 
-        .search-input,
+        .filter-search-input,
         .filter-select {
             padding: 9px 10px;
             font-size: 13px;
@@ -944,29 +1039,12 @@
             gap: 16px;
         }
 
-        .teacher-card-right {
-            padding: 14px;
-        }
-
         .teacher-name {
             font-size: 17px;
         }
 
         .teacher-rating {
             font-size: 13px;
-        }
-
-        .info-row {
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-
-        .info-row i {
-            font-size: 14px;
-        }
-
-        .info-label {
-            font-size: 12px;
         }
 
         .subject-tag,
@@ -1000,6 +1078,7 @@
 
         .action-buttons {
             gap: 6px;
+            flex-wrap: wrap;
         }
 
         .pagination {
@@ -1060,6 +1139,11 @@
         .mobile-filters-toggle {
             padding: 9px;
             font-size: 12px;
+            top: 52px;
+        }
+
+        .filters-backdrop {
+            top: 52px;
         }
 
         .filters-sidebar {
@@ -1067,16 +1151,10 @@
             padding: 14px;
         }
 
-        .teacher-card-right {
-            padding: 12px;
-        }
-
-        .teacher-card-left {
-            height: 180px;
-        }
-
-        .teacher-header {
-            gap: 12px;
+        .teacher-avatar {
+            width: 64px;
+            height: 64px;
+            font-size: 22px;
         }
 
         .teacher-name {
@@ -1266,9 +1344,9 @@
     .tab-button:focus-visible,
     .contact-btn:focus-visible,
     .page-link:focus-visible,
-    .search-input:focus-visible,
+    .filter-search-input:focus-visible,
     .filter-select:focus-visible {
-        outline: 3px solid #3B82F6;
+        outline: 3px solid var(--accent-color);
         outline-offset: 2px;
     }
 </style>
@@ -1276,20 +1354,52 @@
 
 <!-- ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК - UPDATED v2.0 -->
 
-<div class="page-container">
+<div class="page-container home-page">
     <!-- ЗАГОЛОВОК СТРАНИЦЫ -->
     <div class="page-header">
         <h1 class="page-title">{% trans 'Найдите квалифицированного учителя онлайн' %}</h1>
         <p class="page-description">{% trans 'Используйте фильтры поиска, чтобы найти учителей в соответствии с вашим бюджетом и потребностями. Развивайтесь быстрее с индивидуальным подходом!' %}</p>
     </div>
 
+    <!-- GLOBAL SEARCH (TOP CENTER) -->
+    <div class="global-search" aria-label="Teacher search">
+        <form class="global-search-form" method="GET" action="">
+            <div class="global-search-field">
+                <i class="fas fa-search global-search-icon" aria-hidden="true"></i>
+                <input
+                    class="global-search-input"
+                    type="search"
+                    name="search"
+                    placeholder="Search teachers, subjects, skills…"
+                    value="{{ search_query|default:'' }}"
+                    autocomplete="off"
+                />
+
+                <button class="global-search-btn" type="submit">Search</button>
+
+                {% if selected_subject %}<input type="hidden" name="subject" value="{{ selected_subject }}">{% endif %}
+                {% if selected_city %}<input type="hidden" name="city" value="{{ selected_city }}">{% endif %}
+                {% if selected_format %}<input type="hidden" name="format" value="{{ selected_format }}">{% endif %}
+                {% if selected_min_price %}<input type="hidden" name="min_price" value="{{ selected_min_price }}">{% endif %}
+                {% if selected_max_price %}<input type="hidden" name="max_price" value="{{ selected_max_price }}">{% endif %}
+                {% if selected_min_rating %}<input type="hidden" name="min_rating" value="{{ selected_min_rating }}">{% endif %}
+                {% if selected_min_experience %}<input type="hidden" name="min_experience" value="{{ selected_min_experience }}">{% endif %}
+                {% if suggest %}<input type="hidden" name="suggest" value="{{ suggest }}">{% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- QUICK SEARCH BUTTONS -->
+    <div class="quick-search" aria-label="Quick searches">
+        <button type="button" class="quick-search-btn" data-quick-search="English">English</button>
+        <button type="button" class="quick-search-btn" data-quick-search="Arabic">Arabic</button>
+        <button type="button" class="quick-search-btn" data-quick-search="Programming">Programming</button>
+    </div>
+
     <!-- КНОПКА ФИЛЬТРОВ ДЛЯ МОБИЛЬНЫХ -->
     <button class="mobile-filters-toggle" onclick="toggleFilters()">
         <i class="fas fa-filter"></i> {% trans 'Фильтры' %}
     </button>
-
-    <!-- BACKDROP ДЛЯ ФИЛЬТРОВ -->
-    <div class="filters-backdrop" id="filtersBackdrop" onclick="closeFilters()"></div>
 
     <div class="content-layout">
         <!-- БОКОВАЯ ПАНЕЛЬ ФИЛЬТРОВ -->
@@ -1300,17 +1410,7 @@
             </div>
 
             <form method="GET" action="" id="filtersForm">
-                <!-- ПОИСК -->
-                <div class="filter-group">
-                    <label class="filter-label">
-                        <i class="fas fa-search"></i> {% trans 'Поиск' %}
-                    </label>
-                    <input type="text" 
-                           name="search" 
-                           class="search-input" 
-                           placeholder="{% trans 'Имя учителя...' %}"
-                           value="{{ search_query|default:'' }}">
-                </div>
+                <input type="hidden" name="search" value="{{ search_query|default:'' }}">
 
                 <!-- ПРЕДМЕТ -->
                 <div class="filter-group">
@@ -1433,9 +1533,8 @@
             {% if teachers %}
                 <div class="teachers-grid">
                     {% for teacher in teachers %}
-                        <div class="teacher-card">
-                            <!-- Левая часть: Фото учителя -->
-                            <div class="teacher-card-left" onclick="window.location.href='{% url 'teacher_detail' teacher.id %}'">
+                        <div class="teacher-card" onclick="window.location.href='{% url 'teacher_detail' teacher.id %}'">
+                            <div class="teacher-card-head">
                                 <div class="teacher-avatar">
                                     {% if teacher.user.avatar %}
                                         <img src="{{ teacher.user.avatar.url }}" alt="{{ teacher.user.get_full_name }}">
@@ -1443,86 +1542,78 @@
                                         {{ teacher.user.first_name.0|default:"У" }}{{ teacher.user.last_name.0|default:"" }}
                                     {% endif %}
                                 </div>
-                            </div>
 
-                            <!-- Правая часть: Информация -->
-                            <div class="teacher-card-right">
-                                <div>
-                                    <!-- Имя и бейдж -->
-                                    <div class="teacher-header">
-                                        <h3 class="teacher-name" onclick="window.location.href='{% url 'teacher_detail' teacher.id %}'" style="cursor: pointer;">
+                                <div class="teacher-head-info">
+                                    <div class="teacher-name-row">
+                                        <h3 class="teacher-name">
                                             {{ teacher.user.get_full_name|default:teacher.user.username }}
                                         </h3>
-                                        {% if teacher.is_recommended %}
-                                            <span class="recommended-badge">
-                                                <i class="fas fa-check-circle"></i> {% trans 'Рекомендуемый учитель' %}
-                                            </span>
-                                        {% endif %}
                                     </div>
-
-                                    <!-- Предметы -->
-                                    <div class="info-row">
-                                        <i class="fas fa-book"></i>
-                                        <span class="info-label">{% trans 'Предметы' %}</span>
-                                        <div class="info-content">
-                                            {% for ts in teacher.teachersubject_set.all|slice:":5" %}
-                                                <span class="subject-tag">{{ ts.subject.name }}</span>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-
-                                    <!-- Языки преподавания -->
-                                    <div class="info-row">
-                                        <i class="fas fa-language"></i>
-                                        <span class="info-label">{% trans 'Языки' %}</span>
-                                        <div class="info-content">
-                                            {% with langs=teacher.get_teaching_languages_list %}
-                                                {% if langs %}
-                                                    {% for lang in langs %}
-                                                        <span class="language-tag">{{ lang }}</span>
-                                                    {% endfor %}
-                                                {% else %}
-                                                    <span style="color: #9ca3af; font-size: 13px;">{% trans 'Не указано' %}</span>
-                                                {% endif %}
-                                            {% endwith %}
-                                        </div>
-                                    </div>
-
-                                    <!-- Описание с кнопкой "Показать больше" -->
-                                    <div class="teacher-description">
-                                        <span class="description-text collapsed" id="desc-{{ teacher.id }}" data-full-text="{{ teacher.bio|default:'Нет описания' }}">
-                                            {{ teacher.bio|default:"Нет описания"|truncatechars:200 }}
+                                    
+                                    {% if teacher.is_featured %}
+                                        <span class="recommended-badge">
+                                            <i class="fas fa-check-circle"></i> {% trans 'Рекомендуемый учитель' %}
                                         </span>
-                                        {% if teacher.bio|length > 200 %}
-                                            <button class="show-more-btn" onclick="event.stopPropagation(); toggleDescription({{ teacher.id }}, '{{ teacher.bio|escapejs }}')" id="btn-{{ teacher.id }}">
-                                                <i class="fas fa-chevron-down"></i> {% trans 'Показать больше' %}
-                                            </button>
-                                        {% endif %}
+                                    {% endif %}
+
+                                    <div class="teacher-subjects">
+                                        <span class="meta-label">
+                                            <i class="fas fa-book"></i> {% trans 'Предметы:' %}
+                                        </span>
+                                        {% for ts in teacher.teachersubject_set.all|slice:":3" %}
+                                            <span class="subject-tag">{{ ts.subject.name }}</span>
+                                        {% endfor %}
+                                    </div>
+
+                                    <div class="teacher-languages">
+                                        <span class="meta-label">
+                                            <i class="fas fa-language"></i> {% trans 'Языки:' %}
+                                        </span>
+                                        {% with langs=teacher.get_teaching_languages_list %}
+                                            {% if langs %}
+                                                {% for lang in langs %}
+                                                    <span class="language-tag">{{ lang }}</span>
+                                                {% endfor %}
+                                            {% else %}
+                                                <span style="color: #9ca3af; font-size: 13px;">{% trans 'Не указано' %}</span>
+                                            {% endif %}
+                                        {% endwith %}
                                     </div>
                                 </div>
+                            </div>
 
-                                <!-- Футер: Цена и кнопки -->
-                                <div class="teacher-footer">
-                                    <div class="price-info">
-                                        {% with min_price=teacher.get_min_price %}
-                                            <div class="teacher-price">
-                                                {% if min_price > 0 %}
-                                                    {% trans 'от' %} {{ min_price|floatformat:0 }} {% trans 'сум' %}
-                                                {% else %}
-                                                    {% trans 'Договорная' %}
-                                                {% endif %}
-                                            </div>
-                                        {% endwith %}
-                                        <div class="price-period">60-{% trans 'мин. урок' %}</div>
-                                    </div>
-                                    <div class="action-buttons">
-                                        <button class="contact-btn" onclick="event.stopPropagation(); handleMessageClick({{ teacher.user.id }})">
-                                            <i class="fas fa-comment"></i> {% trans 'Написать' %}
-                                        </button>
-                                        <button class="book-btn" onclick="event.stopPropagation(); window.location.href='{% url 'teacher_detail' teacher.id %}'">
-                                            {% trans 'Забронировать' %}
-                                        </button>
-                                    </div>
+                            <div class="teacher-description" data-description-wrap>
+                                <span class="description-text" id="desc-{{ teacher.id }}" data-full-text="{{ teacher.bio|default:'Нет описания' }}">
+                                    {{ teacher.bio|default:"Нет описания"|truncatechars:150 }}
+                                </span>
+                                {% if teacher.bio|length > 150 %}
+                                    <button type="button" class="show-more-btn" data-toggle-description data-teacher-id="{{ teacher.id }}" aria-expanded="false">
+                                        <i class="fas fa-chevron-down"></i> {% trans 'Показать больше' %}
+                                    </button>
+                                {% endif %}
+                            </div>
+
+                            <div class="teacher-footer">
+                                <div class="price-info">
+                                    {% with min_price=teacher.get_min_price %}
+                                        <div class="teacher-price">
+                                            {% if min_price > 0 %}
+                                                {% trans 'от' %} {{ min_price|floatformat:0 }} {% trans 'сум' %}
+                                            {% else %}
+                                                {% trans 'Договорная' %}
+                                            {% endif %}
+                                        </div>
+                                    {% endwith %}
+                                    <div class="price-period">60-{% trans 'мин. урок' %}</div>
+                                </div>
+
+                                <div class="action-buttons">
+                                    <button class="contact-btn" onclick="event.stopPropagation(); handleMessageClick({{ teacher.user.id }})">
+                                        <i class="fas fa-comment"></i> {% trans 'Написать' %}
+                                    </button>
+                                    <button class="book-btn" onclick="event.stopPropagation(); window.location.href='{% url 'teacher_detail' teacher.id %}'">
+                                        {% trans 'Забронировать' %}
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1567,8 +1658,8 @@
             {% else %}
                 <div class="no-results">
                     <i class="fas fa-search"></i>
-                    <h3>{% trans 'Учителя не найдены' %}</h3>
-                    <p>{% trans 'Попробуйте изменить параметры фильтрации' %}</p>
+                    <h3>{% trans 'No results found' %}</h3>
+                    <p>{% trans 'Try adjusting your search or filters' %}</p>
                 </div>
             {% endif %}
         </section>
@@ -1662,41 +1753,67 @@
         }, { passive: false });
     }
 
-    // ========== ПОКАЗАТЬ/СКРЫТЬ ОПИСАНИЕ ==========
-    const fullTexts = {};
-    const shortTexts = {};
-    
-    function toggleDescription(teacherId, fullText) {
-        const descElement = document.getElementById(`desc-${teacherId}`);
-        const btnElement = document.getElementById(`btn-${teacherId}`);
-        
-        if (descElement && btnElement) {
-            // Сохраняем короткий текст при первом клике
-            if (!shortTexts[teacherId]) {
-                shortTexts[teacherId] = descElement.textContent.trim();
-            }
-            // Сохраняем полный текст
-            if (!fullTexts[teacherId] && fullText) {
-                fullTexts[teacherId] = fullText;
-            }
-            
-            if (descElement.classList.contains('collapsed')) {
-                // Показываем полный текст
-                if (fullTexts[teacherId]) {
-                    descElement.textContent = fullTexts[teacherId];
-                }
-                descElement.classList.remove('collapsed');
-                btnElement.innerHTML = '<i class="fas fa-chevron-up"></i> {% trans "Скрыть" %}';
-            } else {
-                // Возвращаем короткий текст
-                if (shortTexts[teacherId]) {
-                    descElement.textContent = shortTexts[teacherId];
-                }
-                descElement.classList.add('collapsed');
-                btnElement.innerHTML = '<i class="fas fa-chevron-down"></i> {% trans "Показать больше" %}';
-            }
-        }
+    // ========== ПОКАЗАТЬ/СКРЫТЬ ОПИСАНИЕ (150 символов) ==========
+    const ABOUT_LIMIT = 150;
+    const ABOUT_MORE_LABEL = '{% trans "Показать больше" %}';
+    const ABOUT_LESS_LABEL = '{% trans "Скрыть" %}';
+
+    function truncateText(text, limit) {
+        const normalized = (text || '').trim();
+        if (normalized.length <= limit) return normalized;
+        return normalized.slice(0, limit).trimEnd() + '…';
     }
+
+    function setDescriptionHeight(container) {
+        if (!container) return;
+        container.style.maxHeight = container.scrollHeight + 'px';
+    }
+
+    function initDescriptionToggles() {
+        const toggles = document.querySelectorAll('[data-toggle-description]');
+        toggles.forEach((btn) => {
+            const teacherId = btn.getAttribute('data-teacher-id');
+            const descEl = document.getElementById(`desc-${teacherId}`);
+            const wrap = btn.closest('[data-description-wrap]');
+
+            if (!teacherId || !descEl || !wrap) return;
+
+            const fullText = (descEl.dataset.fullText || descEl.textContent || '').trim();
+            const shortText = truncateText(fullText || '{% trans "Нет описания" %}', ABOUT_LIMIT);
+
+            descEl.textContent = shortText;
+            btn.setAttribute('aria-expanded', 'false');
+            btn.innerHTML = `<i class="fas fa-chevron-down"></i> ${ABOUT_MORE_LABEL}`;
+
+            requestAnimationFrame(() => setDescriptionHeight(wrap));
+
+            btn.addEventListener('click', (event) => {
+                event.stopPropagation();
+
+                const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+                if (isExpanded) {
+                    descEl.textContent = shortText;
+                    btn.setAttribute('aria-expanded', 'false');
+                    btn.innerHTML = `<i class="fas fa-chevron-down"></i> ${ABOUT_MORE_LABEL}`;
+                } else {
+                    descEl.textContent = fullText || '{% trans "Нет описания" %}';
+                    btn.setAttribute('aria-expanded', 'true');
+                    btn.innerHTML = `<i class="fas fa-chevron-up"></i> ${ABOUT_LESS_LABEL}`;
+                }
+
+                requestAnimationFrame(() => setDescriptionHeight(wrap));
+            });
+        });
+
+        // Подстройка высоты при ресайзе (для раскрытых/свернутых блоков)
+        window.addEventListener('resize', () => {
+            document.querySelectorAll('[data-description-wrap]').forEach((wrap) => {
+                setDescriptionHeight(wrap);
+            });
+        });
+    }
+
+    initDescriptionToggles();
 
     // ========== ОБРАБОТКА КНОПКИ "НАПИСАТЬ" ==========
     function handleMessageClick(teacherUserId) {
@@ -1709,5 +1826,20 @@
             window.location.href = `/login/?next=${currentUrl}`;
         {% endif %}
     }
+
+    // ========== QUICK SEARCH BUTTONS ==========
+    (function initQuickSearch() {
+        const form = document.querySelector('.global-search-form');
+        const input = document.querySelector('.global-search-input');
+        if (!form || !input) return;
+
+        document.querySelectorAll('[data-quick-search]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const value = btn.getAttribute('data-quick-search') || '';
+                input.value = value;
+                form.submit();
+            });
+        });
+    })();
 </script>
 {% endblock %}

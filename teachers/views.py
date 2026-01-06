@@ -145,7 +145,7 @@ def home(request):
     max_price = request.GET.get('max_price')
     min_rating = request.GET.get('min_rating')
     min_experience = request.GET.get('min_experience')
-    search_query = request.GET.get('search')
+    search_query = request.GET.get('search') or request.GET.get('q')
     suggest = request.GET.get('suggest')
     
     # Применяем фильтры
@@ -179,18 +179,21 @@ def home(request):
     if max_price:
         teachers = teachers.filter(teachersubject__hourly_rate__lte=float(max_price))
     
-    # Поиск по имени, городу, биографии, предметам и описаниям предметов
+    # GLOBAL search (case-insensitive, partial match)
+    # IMPORTANT: do NOT search by teaching languages (teaching_languages/languages).
+    # Scope is limited to: title, description, subject (+ optional skills if a field exists).
     if search_query:
         q = search_query.strip()
         if q:
+            # title -> specialization/university (closest equivalents in this schema)
+            # description -> teacher.bio + TeacherSubject.description + Subject.description
+            # subject -> Subject.name
             teachers = teachers.filter(
-                Q(user__first_name__icontains=q) |
-                Q(user__last_name__icontains=q) |
-                Q(user__username__icontains=q) |
+                Q(specialization__icontains=q) |
+                Q(university__icontains=q) |
                 Q(bio__icontains=q) |
-                Q(city__name__icontains=q) |
-                Q(teachersubject__subject__name__icontains=q) |
                 Q(teachersubject__description__icontains=q) |
+                Q(teachersubject__subject__name__icontains=q) |
                 Q(subjects__name__icontains=q) |
                 Q(subjects__description__icontains=q)
             )
