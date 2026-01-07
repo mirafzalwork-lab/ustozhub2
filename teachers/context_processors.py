@@ -1,7 +1,7 @@
 """
 Context processors для добавления глобальных переменных во все шаблоны
 """
-from .models import Message, Conversation
+from .models import Message, Conversation, Notification
 from django.db.models import Q
 
 
@@ -90,3 +90,19 @@ def user_conversations_count(request):
     except Exception as e:
         print(f"Error in user_conversations_count: {e}")
         return {'conversations_count': 0}
+
+
+def unread_notifications_count(request):
+    """
+    Добавляет количество непрочитанных уведомлений для текущего пользователя
+    во все шаблоны
+    """
+    if not request.user.is_authenticated:
+        return {'unread_notifications_count': 0}
+    
+    try:
+        count = Notification.get_unread_count(request.user)
+        return {'unread_notifications_count': count}
+    except Exception as e:
+        print(f"Error in unread_notifications_count: {e}")
+        return {'unread_notifications_count': 0}

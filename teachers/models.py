@@ -1332,3 +1332,252 @@ class ChatMessage(models.Model):
             'created_at': self.created_at.isoformat(),
             'is_read': self.is_read,
         }
+
+
+# ============================================
+# СИСТЕМА УВЕДОМЛЕНИЙ
+# ============================================
+
+class Notification(models.Model):
+    """
+    Модель уведомлений для пользователей
+    Управляется через Django Admin
+    """
+    TARGET_CHOICES = [
+        ('all', 'Все пользователи'),
+        ('students', 'Только ученики'),
+        ('teachers', 'Только учителя'),
+        ('admins', 'Только администраторы'),
+    ]
+    
+    title = models.CharField(
+        max_length=200,
+        verbose_name='Заголовок',
+        help_text='Краткий заголовок уведомления'
+    )
+    
+    short_text = models.CharField(
+        max_length=300,
+        verbose_name='Краткий текст',
+        help_text='Текст для отображения в списке уведомлений'
+    )
+    
+    full_text = models.TextField(
+        verbose_name='Полный текст',
+        help_text='Подробное описание уведомления'
+    )
+    
+    image = models.ImageField(
+        upload_to='notifications/',
+        blank=True,
+        null=True,
+        verbose_name='Изображение',
+        help_text='Опциональное изображение к уведомлению'
+    )
+    
+    action_url = models.URLField(
+        blank=True,
+        null=True,
+        verbose_name='Ссылка действия',
+        help_text='URL для перехода при клике (опционально)'
+    )
+    
+    target = models.CharField(
+        max_length=20,
+        choices=TARGET_CHOICES,
+        default='all',
+        verbose_name='Целевая аудитория'
+    )
+    
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name='Активно',
+        help_text='Только активные уведомления видны пользователям'
+    )
+    
+    priority = models.IntegerField(
+        default=0,
+        verbose_name='Приоритет',
+        help_text='Чем выше число, тем выше в списке. 0 = обычный приоритет'
+    )
+    
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Создано'
+    )
+    
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Обновлено'
+    )
+    
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_notifications',
+        verbose_name='Создал'
+    )
+
+    class Meta:
+        verbose_name = 'Уведомление'
+        verbose_name_plural = 'Уведомления'
+        ordering = ['-priority', '-created_at']
+        indexes = [
+            models.Index(fields=['is_active', 'target']),
+            models.Index(fields=['-priority', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.title} ({self.get_target_display()})"
+    
+    def is_visible_for_user(self, user):
+        """
+        Проверяет, должен ли пользователь видеть это уведомление
+        """
+        if not self.is_active:
+            return False
+        
+        if self.target == 'all':
+            return True
+        
+        if self.target == 'students':
+            return user.user_type == 'student'
+        
+        if self.target == 'teachers':
+            return user.user_type == 'teacher'
+        
+        if self.target == 'admins':
+            return user.is_staff or user.is_superuser
+        
+        return False
+    
+    def get_unread_count_for_user(self, user):
+        """
+        Возвращает количество непрочитанных уведомлений для пользователя
+        """
+        if not self.is_visible_for_user(user):
+            return 0
+        
+        is_read = NotificationRead.objects.filter(
+            notification=self,
+            user=user
+        ).exists()
+        
+        return 0 if is_read else 1
+    
+    @classmethod
+    def get_unread_count(cls, user):
+        """
+        Возвращает общее количество непрочитанных уведомлений для пользователя
+        """
+        if not user.is_authenticated:
+            return 0
+        
+        # Получаем все активные уведомления для данного пользователя
+        all_notifications = cls.objects.filter(is_active=True)
+        
+        # Фильтруем по целевой аудитории
+        visible_notifications = []
+        for notification in all_notifications:
+            if notification.is_visible_for_user(user):
+                visible_notifications.append(notification.id)
+        
+        if not visible_notifications:
+            return 0
+        
+        # Получаем прочитанные уведомления
+        read_notification_ids = NotificationRead.objects.filter(
+            user=user,
+            notification_id__in=visible_notifications
+        ).values_list('notification_id', flat=True)
+        
+        # Считаем непрочитанные
+        unread_count = len(visible_notifications) - len(read_notification_ids)
+        return max(0, unread_count)
+    
+    @classmethod
+    def get_user_notifications(cls, user, include_read=False):
+        """
+        Возвращает список уведомлений для пользователя
+        """
+        if not user.is_authenticated:
+            return cls.objects.none()
+        
+        # Получаем все активные уведомления
+        all_notifications = cls.objects.filter(is_active=True)
+        
+        # Фильтруем по целевой аудитории
+        visible_notifications = []
+        for notification in all_notifications:
+            if notification.is_visible_for_user(user):
+                visible_notifications.append(notification.id)
+        
+        notifications = cls.objects.filter(id__in=visible_notifications)
+        
+        if not include_read:
+            # Исключаем прочитанные
+            read_notification_ids = NotificationRead.objects.filter(
+                user=user
+            ).values_list('notification_id', flat=True)
+            notifications = notifications.exclude(id__in=read_notification_ids)
+        
+        return notifications
+    
+    def mark_as_read(self, user):
+        """
+        Помечает уведомление как прочитанное для пользователя
+        """
+        NotificationRead.objects.get_or_create(
+            notification=self,
+            user=user
+        )
+        
+        # Инвалидируем кэш непрочитанных уведомлений
+        cache_key = f'unread_notifications_count_{user.id}'
+        cache.delete(cache_key)
+    
+    def is_read_by(self, user):
+        """
+        Проверяет, прочитано ли уведомление пользователем
+        """
+        return NotificationRead.objects.filter(
+            notification=self,
+            user=user
+        ).exists()
+
+
+class NotificationRead(models.Model):
+    """
+    Модель для отслеживания прочитанных уведомлений
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='read_notifications',
+        verbose_name='Пользователь'
+    )
+    
+    notification = models.ForeignKey(
+        Notification,
+        on_delete=models.CASCADE,
+        related_name='read_by_users',
+        verbose_name='Уведомление'
+    )
+    
+    read_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Прочитано'
+    )
+
+    class Meta:
+        verbose_name = 'Прочитанное уведомление'
+        verbose_name_plural = 'Прочитанные уведомления'
+        unique_together = ['user', 'notification']
+        indexes = [
+            models.Index(fields=['user', 'notification']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.notification.title}"

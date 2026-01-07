@@ -13,7 +13,10 @@ from .views import (
     # API для поиска предметов
     subjects_autocomplete, subjects_popular, subjects_categories, subjects_by_category,
     # Telegram & admin messages
-    telegram_management, send_broadcast_message, send_individual_message, export_telegram_users, messages_management
+    telegram_management, send_broadcast_message, send_individual_message, export_telegram_users, messages_management,
+    # Notifications / Уведомления
+    notifications_list, notification_detail, mark_notification_read, 
+    mark_all_notifications_read, notifications_dropdown
 )
 from .telegram_views import (
     telegram_auth, link_telegram_account, telegram_status, toggle_notifications
@@ -77,4 +80,11 @@ urlpatterns = [
     path('api/subjects/popular/', subjects_popular, name='subjects_popular'),
     path('api/subjects/categories/', subjects_categories, name='subjects_categories'),
     path('api/subjects/category/<int:category_id>/', subjects_by_category, name='subjects_by_category'),
+    
+    # Notifications / Уведомления
+    path('notifications/', notifications_list, name='notifications_list'),
+    path('notifications/<int:notification_id>/', notification_detail, name='notification_detail'),
+    path('notifications/<int:notification_id>/mark-read/', mark_notification_read, name='mark_notification_read'),
+    path('notifications/mark-all-read/', mark_all_notifications_read, name='mark_all_notifications_read'),
+    path('api/notifications/dropdown/', notifications_dropdown, name='notifications_dropdown'),
 ]

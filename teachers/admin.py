@@ -842,3 +842,209 @@ class NotificationLogAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         # Разрешаем массовое удаление старых логов
         return True
+
+
+# ============================================
+# АДМИНКА СИСТЕМЫ УВЕДОМЛЕНИЙ
+# ============================================
+
+from .models import Notification, NotificationRead
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    """
+    Полное управление уведомлениями через Django Admin
+    """
+    list_display = (
+        'title',
+        'get_status_badge',
+        'get_target_badge',
+        'get_priority_badge',
+        'get_reads_count',
+        'created_at',
+        'created_by'
+    )
+    list_display_links = ('title',)
+    list_filter = (
+        'is_active',
+        'target',
+        'priority',
+        'created_at',
+    )
+    search_fields = ('title', 'short_text', 'full_text')
+    ordering = ('-priority', '-created_at')
+    list_per_page = 25
+    
+    readonly_fields = ('created_at', 'updated_at', 'get_statistics')
+    
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('title', 'short_text', 'full_text'),
+            'description': 'Заголовок и текст уведомления'
+        }),
+        ('Медиа и действие', {
+            'fields': ('image', 'action_url'),
+            'classes': ('collapse',),
+            'description': 'Опциональное изображение и ссылка'
+        }),
+        ('Настройки публикации', {
+            'fields': ('target', 'priority', 'is_active'),
+            'description': 'Целевая аудитория и приоритет отображения'
+        }),
+        ('Информация о создании', {
+            'fields': ('created_by', 'created_at', 'updated_at'),
+            'classes': ('collapse',),
+        }),
+        ('Статистика', {
+            'fields': ('get_statistics',),
+            'classes': ('collapse',),
+        }),
+    )
+    
+    actions = ['activate_notifications', 'deactivate_notifications', 'mark_as_high_priority']
+    
+    def get_status_badge(self, obj):
+        """Статус активности уведомления"""
+        if obj.is_active:
+            return format_html(
+                '<span style="background: #10B981; color: white; padding: 4px 10px; '
+                'border-radius: 12px; font-size: 11px; font-weight: 600;">✓ Активно</span>'
+            )
+        return format_html(
+            '<span style="background: #6B7280; color: white; padding: 4px 10px; '
+            'border-radius: 12px; font-size: 11px; font-weight: 600;">○ Неактивно</span>'
+        )
+    get_status_badge.short_description = 'Статус'
+    
+    def get_target_badge(self, obj):
+        """Целевая аудитория"""
+        colors = {
+            'all': '#3B82F6',
+            'students': '#10B981',
+            'teachers': '#F59E0B',
+            'admins': '#EF4444'
+        }
+        icons = {
+            'all': '👥',
+            'students': '🎓',
+            'teachers': '👨‍🏫',
+            'admins': '⚙️'
+        }
+        color = colors.get(obj.target, '#6B7280')
+        icon = icons.get(obj.target, '📢')
+        return format_html(
+            '<span style="background: {}; color: white; padding: 4px 10px; '
+            'border-radius: 12px; font-size: 11px; font-weight: 600;">{} {}</span>',
+            color, icon, obj.get_target_display()
+        )
+    get_target_badge.short_description = 'Аудитория'
+    
+    def get_priority_badge(self, obj):
+        """Приоритет"""
+        if obj.priority > 0:
+            return format_html(
+                '<span style="background: #EF4444; color: white; padding: 4px 8px; '
+                'border-radius: 12px; font-size: 11px; font-weight: 700;">⬆ {}</span>',
+                obj.priority
+            )
+        elif obj.priority < 0:
+            return format_html(
+                '<span style="background: #6B7280; color: white; padding: 4px 8px; '
+                'border-radius: 12px; font-size: 11px;">⬇ {}</span>',
+                obj.priority
+            )
+        return format_html(
+            '<span style="color: #9CA3AF; font-size: 11px;">—</span>'
+        )
+    get_priority_badge.short_description = 'Приоритет'
+    
+    def get_reads_count(self, obj):
+        """Количество прочтений"""
+        count = obj.read_by_users.count()
+        if count > 0:
+            return format_html(
+                '<span style="background: #E0E7FF; color: #3B82F6; padding: 3px 8px; '
+                'border-radius: 10px; font-size: 11px; font-weight: 600;">👁 {}</span>',
+                count
+            )
+        return format_html('<span style="color: #D1D5DB;">0</span>')
+    get_reads_count.short_description = 'Прочитали'
+    
+    def get_statistics(self, obj):
+        """Детальная статистика уведомления"""
+        if not obj.id:
+            return "Сохраните уведомление для просмотра статистики"
+        
+        total_reads = obj.read_by_users.count()
+        
+        # Подсчет по типам пользователей
+        from django.db.models import Q
+        students_read = obj.read_by_users.filter(user__user_type='student').count()
+        teachers_read = obj.read_by_users.filter(user__user_type='teacher').count()
+        admins_read = obj.read_by_users.filter(
+            Q(user__is_staff=True) | Q(user__is_superuser=True)
+        ).count()
+        
+        return format_html(
+            '<div style="background: #F9FAFB; padding: 15px; border-radius: 8px;">'
+            '<h4 style="margin: 0 0 10px 0; color: #1F2937;">📊 Статистика прочтений</h4>'
+            '<p style="margin: 5px 0;"><strong>Всего прочитали:</strong> {}</p>'
+            '<p style="margin: 5px 0;"><strong>Студенты:</strong> {}</p>'
+            '<p style="margin: 5px 0;"><strong>Учителя:</strong> {}</p>'
+            '<p style="margin: 5px 0;"><strong>Администраторы:</strong> {}</p>'
+            '</div>',
+            total_reads, students_read, teachers_read, admins_read
+        )
+    get_statistics.short_description = 'Статистика'
+    
+    def save_model(self, request, obj, form, change):
+        """Автоматически устанавливаем создателя"""
+        if not change:  # Если создается новое уведомление
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+    
+    def activate_notifications(self, request, queryset):
+        """Массовая активация уведомлений"""
+        updated = queryset.update(is_active=True)
+        self.message_user(request, f'Активировано уведомлений: {updated}')
+    activate_notifications.short_description = '✓ Активировать выбранные'
+    
+    def deactivate_notifications(self, request, queryset):
+        """Массовая деактивация уведомлений"""
+        updated = queryset.update(is_active=False)
+        self.message_user(request, f'Деактивировано уведомлений: {updated}')
+    deactivate_notifications.short_description = '○ Деактивировать выбранные'
+    
+    def mark_as_high_priority(self, request, queryset):
+        """Установить высокий приоритет"""
+        updated = queryset.update(priority=10)
+        self.message_user(request, f'Установлен высокий приоритет для {updated} уведомлений')
+    mark_as_high_priority.short_description = '⬆ Высокий приоритет'
+
+
+@admin.register(NotificationRead)
+class NotificationReadAdmin(admin.ModelAdmin):
+    """
+    Просмотр прочитанных уведомлений (только для чтения)
+    """
+    list_display = ('user', 'notification_title', 'read_at')
+    list_filter = ('read_at', 'user__user_type')
+    search_fields = ('user__username', 'user__email', 'notification__title')
+    ordering = ('-read_at',)
+    list_per_page = 50
+    
+    readonly_fields = ('user', 'notification', 'read_at')
+    
+    def notification_title(self, obj):
+        """Показать заголовок уведомления"""
+        return obj.notification.title
+    notification_title.short_description = 'Уведомление'
+    
+    def has_add_permission(self, request):
+        """Запретить ручное добавление"""
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        """Запретить редактирование"""
+        return False

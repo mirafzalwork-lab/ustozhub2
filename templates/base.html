@@ -307,7 +307,8 @@
         }
 
         /* Messages Icon Button - Always Visible */
-        .messages-icon-btn {
+        .messages-icon-btn,
+        .notifications-icon-btn {
             position: relative;
             padding: 10px;
             background: none;
@@ -325,18 +326,21 @@
             height: 44px;
         }
 
-        .messages-icon-btn:hover {
+        .messages-icon-btn:hover,
+        .notifications-icon-btn:hover {
             background: var(--bg-hover);
             color: var(--primary-color);
         }
 
-        .messages-icon-btn i {
+        .messages-icon-btn i,
+        .notifications-icon-btn i {
             font-size: 20px;
             color: var(--primary-color);
         }
 
-        /* Messages Unread Badge */
-        .messages-badge {
+        /* Messages & Notifications Unread Badge */
+        .messages-badge,
+        .notifications-badge {
             position: absolute;
             top: 6px;
             right: 6px;
@@ -1074,20 +1078,23 @@
                 display: inline; /* Оставляем текст на мобильных */
             }
 
-            /* Иконка сообщений остаётся видимой на мобильных */
-            .messages-icon-btn {
+            /* Иконка сообщений и уведомлений остаётся видимой на мобильных */
+            .messages-icon-btn,
+            .notifications-icon-btn {
                 width: 40px;
                 height: 40px;
                 font-size: 18px;
                 color: var(--primary-color);
             }
 
-            .messages-icon-btn i {
+            .messages-icon-btn i,
+            .notifications-icon-btn i {
                 font-size: 18px;
                 color: var(--primary-color);
             }
 
-            .messages-badge {
+            .messages-badge,
+            .notifications-badge {
                 top: 4px;
                 right: 4px;
                 font-size: 9px;
@@ -1146,14 +1153,16 @@
                 font-size: 12px;
             }
 
-            .messages-icon-btn {
+            .messages-icon-btn,
+            .notifications-icon-btn {
                 width: 36px;
                 height: 36px;
                 font-size: 16px;
                 color: var(--primary-color);
             }
 
-            .messages-icon-btn i {
+            .messages-icon-btn i,
+            .notifications-icon-btn i {
                 font-size: 16px;
                 color: var(--primary-color);
             }
@@ -1179,6 +1188,7 @@
         @media (hover: none) {
             .nav-btn:hover,
             .messages-icon-btn:hover,
+            .notifications-icon-btn:hover,
             .profile-btn:hover,
             .mobile-menu-item:hover {
                 background: transparent;
@@ -1290,6 +1300,14 @@
                 </a> -->
 
                 {% if user.is_authenticated %}
+                    <!-- Notifications Icon Button -->
+                    <a href="{% url 'notifications_list' %}" class="notifications-icon-btn" title="{% trans 'Уведомления' %}">
+                        <i class="fas fa-bell"></i>
+                        {% if unread_notifications_count > 0 %}
+                            <span class="notifications-badge">{{ unread_notifications_count }}</span>
+                        {% endif %}
+                    </a>
+                    
                     <!-- Messages Icon Button - С интегрированным real-time чатом -->
                     <a href="{% url 'conversations_list' %}" class="messages-icon-btn" title="{% trans 'Сообщения' %}">
                         <i class="fas fa-bolt"></i>

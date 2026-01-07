@@ -1,0 +1,371 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ notification.title }} - Уведомления - UstozHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ============================================
+       ДЕТАЛЬНАЯ СТРАНИЦА УВЕДОМЛЕНИЯ
+       ============================================ */
+    
+    .notification-detail-page {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: var(--spacing-xl) var(--spacing-lg);
+    }
+    
+    /* Breadcrumbs */
+    .breadcrumbs {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        margin-bottom: var(--spacing-lg);
+        font-size: 14px;
+        color: var(--text-tertiary);
+    }
+    
+    .breadcrumbs a {
+        color: var(--accent-color);
+        text-decoration: none;
+        transition: color var(--transition-base);
+    }
+    
+    .breadcrumbs a:hover {
+        color: var(--accent-hover);
+        text-decoration: underline;
+    }
+    
+    .breadcrumbs i {
+        font-size: 10px;
+    }
+    
+    /* Notification Card */
+    .notification-card-detail {
+        background: var(--bg-primary);
+        border: 2px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-xl);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    /* Header */
+    .notification-header {
+        margin-bottom: var(--spacing-lg);
+        padding-bottom: var(--spacing-lg);
+        border-bottom: 2px solid var(--border-light);
+    }
+    
+    .notification-meta {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+        flex-wrap: wrap;
+    }
+    
+    .meta-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+    
+    .meta-badge.date {
+        background: #F3F4F6;
+        color: var(--text-secondary);
+    }
+    
+    .meta-badge.status {
+        background: var(--success-color);
+        color: white;
+    }
+    
+    .meta-badge.status.unread {
+        background: var(--accent-color);
+    }
+    
+    .notification-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-primary);
+        line-height: 1.3;
+        margin: 0;
+    }
+    
+    /* Content */
+    .notification-content {
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .notification-image {
+        width: 100%;
+        max-height: 400px;
+        object-fit: cover;
+        border-radius: var(--radius-md);
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .notification-text {
+        font-size: 16px;
+        color: var(--text-secondary);
+        line-height: 1.8;
+        white-space: pre-line;
+    }
+    
+    .notification-text p {
+        margin-bottom: var(--spacing-md);
+    }
+    
+    /* Action Button */
+    .action-button-wrapper {
+        margin-top: var(--spacing-lg);
+        padding-top: var(--spacing-lg);
+        border-top: 2px solid var(--border-light);
+    }
+    
+    .action-button {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        background: var(--accent-color);
+        color: white;
+        padding: 14px 28px;
+        border-radius: var(--radius-md);
+        font-size: 16px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all var(--transition-base);
+        border: none;
+        cursor: pointer;
+    }
+    
+    .action-button:hover {
+        background: var(--accent-hover);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .action-button i {
+        font-size: 18px;
+    }
+    
+    /* Back Button */
+    .back-button {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        padding: 12px 24px;
+        border-radius: var(--radius-md);
+        font-size: 15px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all var(--transition-base);
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .back-button:hover {
+        background: var(--bg-tertiary);
+        transform: translateX(-4px);
+    }
+    
+    /* Footer */
+    .notification-footer {
+        margin-top: var(--spacing-xl);
+        padding-top: var(--spacing-lg);
+        border-top: 2px solid var(--border-light);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: var(--spacing-md);
+    }
+    
+    .footer-info {
+        font-size: 13px;
+        color: var(--text-tertiary);
+    }
+    
+    .mark-read-btn {
+        background: var(--success-color);
+        color: white;
+        padding: 10px 20px;
+        border-radius: var(--radius-md);
+        font-size: 14px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all var(--transition-base);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .mark-read-btn:hover {
+        background: var(--success-hover);
+        transform: translateY(-2px);
+    }
+    
+    .mark-read-btn:disabled {
+        background: var(--border-color);
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+        .notification-detail-page {
+            padding: var(--spacing-lg) var(--spacing-md);
+        }
+        
+        .notification-card-detail {
+            padding: var(--spacing-lg);
+        }
+        
+        .notification-title {
+            font-size: 22px;
+        }
+        
+        .notification-text {
+            font-size: 15px;
+        }
+        
+        .notification-meta {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .notification-footer {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notification-detail-page">
+    <!-- Back Button -->
+    <a href="{% url 'notifications_list' %}" class="back-button">
+        <i class="fas fa-arrow-left"></i>
+        <span>Назад к уведомлениям</span>
+    </a>
+    
+    <!-- Breadcrumbs -->
+    <div class="breadcrumbs">
+        <a href="{% url 'home' %}">Главная</a>
+        <i class="fas fa-chevron-right"></i>
+        <a href="{% url 'notifications_list' %}">Уведомления</a>
+        <i class="fas fa-chevron-right"></i>
+        <span>{{ notification.title }}</span>
+    </div>
+    
+    <!-- Notification Detail Card -->
+    <div class="notification-card-detail">
+        <!-- Header -->
+        <div class="notification-header">
+            <div class="notification-meta">
+                <span class="meta-badge date">
+                    <i class="far fa-calendar"></i>
+                    {{ notification.created_at|date:"d.m.Y H:i" }}
+                </span>
+                
+                <span class="meta-badge status {% if not is_read %}unread{% endif %}">
+                    {% if is_read %}
+                        <i class="fas fa-check-circle"></i>
+                        Прочитано
+                    {% else %}
+                        <i class="fas fa-circle"></i>
+                        Новое
+                    {% endif %}
+                </span>
+            </div>
+            
+            <h1 class="notification-title">{{ notification.title }}</h1>
+        </div>
+        
+        <!-- Content -->
+        <div class="notification-content">
+            {% if notification.image %}
+            <img src="{{ notification.image.url }}" alt="{{ notification.title }}" class="notification-image">
+            {% endif %}
+            
+            <div class="notification-text">
+                {{ notification.full_text|linebreaks }}
+            </div>
+        </div>
+        
+        <!-- Action URL (если есть) -->
+        {% if notification.action_url %}
+        <div class="action-button-wrapper">
+            <a href="{{ notification.action_url }}" class="action-button" target="_blank" rel="noopener noreferrer">
+                <span>Перейти</span>
+                <i class="fas fa-external-link-alt"></i>
+            </a>
+        </div>
+        {% endif %}
+        
+        <!-- Footer -->
+        <div class="notification-footer">
+            <div class="footer-info">
+                <i class="fas fa-info-circle"></i>
+                Целевая аудитория: <strong>{{ notification.get_target_display }}</strong>
+            </div>
+            
+            {% if not is_read %}
+            <button class="mark-read-btn" id="markReadBtn" data-notification-id="{{ notification.id }}">
+                <i class="fas fa-check"></i>
+                <span>Отметить как прочитанное</span>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Пометить как прочитанное
+    const markReadBtn = document.getElementById('markReadBtn');
+    
+    if (markReadBtn) {
+        markReadBtn.addEventListener('click', async function() {
+            const notificationId = this.dataset.notificationId;
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обработка...';
+            
+            try {
+                const response = await fetch(`/notifications/${notificationId}/mark-read/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Перезагружаем страницу для обновления статуса
+                    window.location.reload();
+                } else {
+                    alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-check"></i> Отметить как прочитанное';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Произошла ошибка при обработке запроса');
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-check"></i> Отметить как прочитанное';
+            }
+        });
+    }
+</script>
+{% endblock %}

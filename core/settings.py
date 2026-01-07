@@ -76,6 +76,7 @@ TEMPLATES = [
                 'django.template.context_processors.i18n',  # ОБЯЗАТЕЛЬНО для i18n
                 'teachers.context_processors.unread_messages_count',  # Счётчик непрочитанных сообщений
                 'teachers.context_processors.user_conversations_count',  # Счётчик активных переписок
+                'teachers.context_processors.unread_notifications_count',  # Счётчик непрочитанных уведомлений
             ],
         },
     },

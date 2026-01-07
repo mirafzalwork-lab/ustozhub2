@@ -1,0 +1,400 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Уведомления - UstozHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ============================================
+       СТИЛИ СТРАНИЦЫ УВЕДОМЛЕНИЙ
+       ============================================ */
+    
+    .notifications-page {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: var(--spacing-xl) var(--spacing-lg);
+    }
+    
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: var(--spacing-xl);
+        padding-bottom: var(--spacing-lg);
+        border-bottom: 2px solid var(--border-light);
+    }
+    
+    .page-title {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+    }
+    
+    .page-title h1 {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0;
+    }
+    
+    .page-title i {
+        font-size: 32px;
+        color: var(--accent-color);
+    }
+    
+    .unread-badge {
+        background: var(--danger-color);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 700;
+    }
+    
+    .mark-all-read-btn {
+        background: var(--accent-color);
+        color: white;
+        padding: 10px 20px;
+        border-radius: var(--radius-md);
+        border: none;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all var(--transition-base);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .mark-all-read-btn:hover {
+        background: var(--accent-hover);
+        transform: translateY(-2px);
+    }
+    
+    .mark-all-read-btn:disabled {
+        background: var(--border-color);
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    /* Список уведомлений */
+    .notifications-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+    
+    .notification-card {
+        background: var(--bg-primary);
+        border: 2px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-lg);
+        transition: all var(--transition-base);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .notification-card:hover {
+        border-color: var(--accent-color);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+    
+    .notification-card.unread {
+        background: linear-gradient(to right, #EBF4FF 0%, #FFFFFF 100%);
+        border-color: var(--accent-color);
+        border-left-width: 4px;
+    }
+    
+    .notification-card.unread::before {
+        content: '';
+        position: absolute;
+        top: var(--spacing-lg);
+        right: var(--spacing-lg);
+        width: 10px;
+        height: 10px;
+        background: var(--danger-color);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+        50% {
+            opacity: 0.6;
+            transform: scale(1.2);
+        }
+    }
+    
+    .notification-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    .notification-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0 0 8px 0;
+        padding-right: 30px;
+    }
+    
+    .notification-date {
+        font-size: 13px;
+        color: var(--text-tertiary);
+        white-space: nowrap;
+    }
+    
+    .notification-text {
+        font-size: 15px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin: 0;
+    }
+    
+    .notification-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: var(--spacing-md);
+        padding-top: var(--spacing-md);
+        border-top: 1px solid var(--border-light);
+    }
+    
+    .read-status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+    
+    .read-status.read {
+        color: var(--success-color);
+    }
+    
+    .read-status.unread {
+        color: var(--accent-color);
+    }
+    
+    .view-details-btn {
+        background: var(--accent-color);
+        color: white;
+        padding: 8px 16px;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all var(--transition-base);
+    }
+    
+    .view-details-btn:hover {
+        background: var(--accent-hover);
+    }
+    
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        padding: var(--spacing-xxl) var(--spacing-lg);
+        color: var(--text-tertiary);
+    }
+    
+    .empty-state i {
+        font-size: 64px;
+        margin-bottom: var(--spacing-lg);
+        color: var(--border-color);
+    }
+    
+    .empty-state h3 {
+        font-size: 20px;
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    .empty-state p {
+        font-size: 15px;
+    }
+    
+    /* Pagination */
+    .pagination-wrapper {
+        display: flex;
+        justify-content: center;
+        margin-top: var(--spacing-xl);
+        padding-top: var(--spacing-lg);
+    }
+    
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+        .notifications-page {
+            padding: var(--spacing-lg) var(--spacing-md);
+        }
+        
+        .page-header {
+            flex-direction: column;
+            gap: var(--spacing-md);
+            align-items: flex-start;
+        }
+        
+        .page-title h1 {
+            font-size: 24px;
+        }
+        
+        .notification-card {
+            padding: var(--spacing-md);
+        }
+        
+        .notification-title {
+            font-size: 16px;
+        }
+        
+        .notification-text {
+            font-size: 14px;
+        }
+        
+        .notification-footer {
+            flex-direction: column;
+            gap: var(--spacing-sm);
+            align-items: flex-start;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notifications-page">
+    <!-- Заголовок страницы -->
+    <div class="page-header">
+        <div class="page-title">
+            <i class="fas fa-bell"></i>
+            <h1>Уведомления</h1>
+            {% if unread_count > 0 %}
+            <span class="unread-badge">{{ unread_count }}</span>
+            {% endif %}
+        </div>
+        
+        {% if unread_count > 0 %}
+        <button class="mark-all-read-btn" id="markAllReadBtn">
+            <i class="fas fa-check-double"></i>
+            <span>Отметить все как прочитанные</span>
+        </button>
+        {% endif %}
+    </div>
+    
+    <!-- Список уведомлений -->
+    {% if notifications %}
+    <div class="notifications-list">
+        {% for item in notifications %}
+        <div class="notification-card {% if not item.is_read %}unread{% endif %}" 
+             onclick="window.location.href='{% url 'notification_detail' item.notification.id %}'">
+            <div class="notification-header">
+                <h3 class="notification-title">{{ item.notification.title }}</h3>
+                <span class="notification-date">
+                    {{ item.notification.created_at|date:"d.m.Y H:i" }}
+                </span>
+            </div>
+            
+            <p class="notification-text">{{ item.notification.short_text }}</p>
+            
+            <div class="notification-footer">
+                <span class="read-status {% if item.is_read %}read{% else %}unread{% endif %}">
+                    {% if item.is_read %}
+                        <i class="fas fa-check-circle"></i>
+                        <span>Прочитано</span>
+                    {% else %}
+                        <i class="fas fa-circle"></i>
+                        <span>Новое</span>
+                    {% endif %}
+                </span>
+                
+                <button class="view-details-btn" onclick="event.stopPropagation(); window.location.href='{% url 'notification_detail' item.notification.id %}'">
+                    Подробнее <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Пагинация -->
+    {% if notifications.has_other_pages %}
+    <div class="pagination-wrapper">
+        <div class="pagination">
+            {% if notifications.has_previous %}
+            <a href="?page={{ notifications.previous_page_number }}" class="page-link">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+            {% endif %}
+            
+            {% for num in notifications.paginator.page_range %}
+                {% if notifications.number == num %}
+                <span class="page-link active">{{ num }}</span>
+                {% elif num > notifications.number|add:'-3' and num < notifications.number|add:'3' %}
+                <a href="?page={{ num }}" class="page-link">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            
+            {% if notifications.has_next %}
+            <a href="?page={{ notifications.next_page_number }}" class="page-link">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <!-- Пустое состояние -->
+    <div class="empty-state">
+        <i class="fas fa-bell-slash"></i>
+        <h3>У вас пока нет уведомлений</h3>
+        <p>Здесь будут отображаться важные обновления и новости</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Отметить все как прочитанные
+    document.getElementById('markAllReadBtn')?.addEventListener('click', async function(e) {
+        e.preventDefault();
+        
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обработка...';
+        
+        try {
+            const response = await fetch('{% url "mark_all_notifications_read" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Перезагружаем страницу
+                window.location.reload();
+            } else {
+                alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-double"></i> Отметить все как прочитанные';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Произошла ошибка при обработке запроса');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check-double"></i> Отметить все как прочитанные';
+        }
+    });
+</script>
+{% endblock %}

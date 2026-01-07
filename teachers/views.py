@@ -2186,4 +2186,190 @@ def get_user_chat_rooms(request):
     })
 
 
+# ============================================
+# СИСТЕМА УВЕДОМЛЕНИЙ
+# ============================================
+
+from .models import Notification, NotificationRead
+
+
+@login_required
+def notifications_list(request):
+    """
+    Список уведомлений для текущего пользователя
+    Показывает как прочитанные, так и непрочитанные
+    """
+    # Получаем уведомления с информацией о прочтении
+    all_notifications = Notification.get_user_notifications(
+        request.user, 
+        include_read=True
+    )
+    
+    # Добавляем флаг прочитанности для каждого уведомления
+    notifications_with_status = []
+    for notification in all_notifications:
+        notifications_with_status.append({
+            'notification': notification,
+            'is_read': notification.is_read_by(request.user)
+        })
+    
+    # Пагинация
+    paginator = Paginator(notifications_with_status, 15)
+    page = request.GET.get('page', 1)
+    
+    try:
+        notifications_page = paginator.page(page)
+    except PageNotAnInteger:
+        notifications_page = paginator.page(1)
+    except EmptyPage:
+        notifications_page = paginator.page(paginator.num_pages)
+    
+    # Количество непрочитанных
+    unread_count = Notification.get_unread_count(request.user)
+    
+    context = {
+        'notifications': notifications_page,
+        'unread_count': unread_count,
+    }
+    
+    return render(request, 'notifications/list.html', context)
+
+
+@login_required
+def notification_detail(request, notification_id):
+    """
+    Детальный просмотр уведомления
+    Помечает уведомление как прочитанное при просмотре
+    """
+    notification = get_object_or_404(Notification, id=notification_id)
+    
+    # Проверяем, имеет ли пользователь доступ к уведомлению
+    if not notification.is_visible_for_user(request.user):
+        messages.error(request, 'У вас нет доступа к этому уведомлению.')
+        return redirect('notifications_list')
+    
+    # Помечаем как прочитанное
+    notification.mark_as_read(request.user)
+    
+    # Проверяем, было ли уведомление прочитано ранее
+    is_read = notification.is_read_by(request.user)
+    
+    context = {
+        'notification': notification,
+        'is_read': is_read,
+    }
+    
+    return render(request, 'notifications/detail.html', context)
+
+
+@login_required
+@require_POST
+def mark_notification_read(request, notification_id):
+    """
+    AJAX endpoint для пометки уведомления как прочитанного
+    """
+    try:
+        notification = get_object_or_404(Notification, id=notification_id)
+        
+        # Проверяем доступ
+        if not notification.is_visible_for_user(request.user):
+            return JsonResponse({
+                'success': False,
+                'error': 'Нет доступа'
+            }, status=403)
+        
+        # Помечаем как прочитанное
+        notification.mark_as_read(request.user)
+        
+        # Получаем обновленное количество непрочитанных
+        unread_count = Notification.get_unread_count(request.user)
+        
+        return JsonResponse({
+            'success': True,
+            'unread_count': unread_count
+        })
+    
+    except Exception as e:
+        logger.error(f"Error marking notification as read: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_POST
+def mark_all_notifications_read(request):
+    """
+    AJAX endpoint для пометки всех уведомлений как прочитанных
+    """
+    try:
+        # Получаем все непрочитанные уведомления пользователя
+        unread_notifications = Notification.get_user_notifications(
+            request.user, 
+            include_read=False
+        )
+        
+        # Помечаем все как прочитанные
+        for notification in unread_notifications:
+            notification.mark_as_read(request.user)
+        
+        return JsonResponse({
+            'success': True,
+            'marked_count': unread_notifications.count(),
+            'unread_count': 0
+        })
+    
+    except Exception as e:
+        logger.error(f"Error marking all notifications as read: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+def notifications_dropdown(request):
+    """
+    AJAX endpoint для получения списка уведомлений для dropdown
+    Возвращает последние 5 уведомлений
+    """
+    try:
+        # Получаем последние уведомления
+        notifications = Notification.get_user_notifications(
+            request.user, 
+            include_read=True
+        )[:5]
+        
+        # Формируем данные для JSON
+        notifications_data = []
+        for notification in notifications:
+            notifications_data.append({
+                'id': notification.id,
+                'title': notification.title,
+                'short_text': notification.short_text,
+                'is_read': notification.is_read_by(request.user),
+                'created_at': notification.created_at.strftime('%d.%m.%Y %H:%M'),
+                'url': reverse('notification_detail', args=[notification.id])
+            })
+        
+        # Количество непрочитанных
+        unread_count = Notification.get_unread_count(request.user)
+        
+        return JsonResponse({
+            'success': True,
+            'notifications': notifications_data,
+            'unread_count': unread_count,
+            'has_more': Notification.get_user_notifications(request.user, include_read=True).count() > 5
+        })
+    
+    except Exception as e:
+        logger.error(f"Error fetching notifications dropdown: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+
 
