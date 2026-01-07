@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Q, Min, Max, Avg, Count, Case, When, Value, IntegerField
+from django.db.models import F, Q, Min, Max, Avg, Count, Case, When, Value, IntegerField
+from django.db.models.functions import Coalesce
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.views.decorators.http import require_POST
@@ -179,27 +180,69 @@ def home(request):
     if max_price:
         teachers = teachers.filter(teachersubject__hourly_rate__lte=float(max_price))
     
-    # GLOBAL search (case-insensitive, partial match)
-    # IMPORTANT: do NOT search by teaching languages (teaching_languages/languages).
-    # Scope is limited to: title, description, subject (+ optional skills if a field exists).
+    # ========== ENHANCED GLOBAL SEARCH WITH RELEVANCE RANKING ==========
+    # Search scope: Teacher names (first/last), Subject names, Bio/Description
+    # Exclusions: teaching_languages, price, city, availability
+    # Priority: 1) Subject match, 2) Name match, 3) Bio match
     if search_query:
         q = search_query.strip()
         if q:
-            # title -> specialization/university (closest equivalents in this schema)
-            # description -> teacher.bio + TeacherSubject.description + Subject.description
-            # subject -> Subject.name
-            teachers = teachers.filter(
-                Q(specialization__icontains=q) |
-                Q(university__icontains=q) |
-                Q(bio__icontains=q) |
-                Q(teachersubject__description__icontains=q) |
-                Q(teachersubject__subject__name__icontains=q) |
-                Q(subjects__name__icontains=q) |
-                Q(subjects__description__icontains=q)
+            # Relevance scoring with weighted priorities
+            subject_rank = Coalesce(
+                Max(
+                    Case(
+                        When(subjects__name__iexact=q, then=Value(100)),
+                        When(subjects__name__istartswith=q, then=Value(90)),
+                        When(subjects__name__icontains=q, then=Value(80)),
+                        default=Value(0),
+                        output_field=IntegerField(),
+                    )
+                ),
+                Value(0),
             )
-    
-    # Убираем дубликаты и сортируем
-    teachers = teachers.distinct().order_by('-rating', '-created_at')
+            
+            name_rank = Coalesce(
+                Max(
+                    Case(
+                        When(user__first_name__iexact=q, then=Value(70)),
+                        When(user__last_name__iexact=q, then=Value(70)),
+                        When(user__first_name__istartswith=q, then=Value(60)),
+                        When(user__last_name__istartswith=q, then=Value(60)),
+                        When(user__first_name__icontains=q, then=Value(50)),
+                        When(user__last_name__icontains=q, then=Value(50)),
+                        default=Value(0),
+                        output_field=IntegerField(),
+                    )
+                ),
+                Value(0),
+            )
+            
+            bio_rank = Case(
+                When(bio__icontains=q, then=Value(40)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+            
+            # Annotate with relevance scores and filter
+            teachers = teachers.annotate(
+                subject_rank=subject_rank,
+                name_rank=name_rank,
+                bio_rank=bio_rank,
+            ).annotate(
+                # Weighted relevance: subjects (3x), names (2x), bio (1x)
+                relevance=F('subject_rank') * 3 + F('name_rank') * 2 + F('bio_rank')
+            ).filter(
+                Q(subjects__name__icontains=q) |
+                Q(user__first_name__icontains=q) |
+                Q(user__last_name__icontains=q) |
+                Q(bio__icontains=q)
+            ).distinct().order_by('-relevance', '-rating', '-total_reviews', '-created_at')
+        else:
+            # No search query - just normal sorting
+            teachers = teachers.distinct().order_by('-rating', '-created_at')
+    else:
+        # Убираем дубликаты и сортируем
+        teachers = teachers.distinct().order_by('-rating', '-created_at')
     
     # ========== ПАГИНАЦИЯ ==========
     # Создаем объект пагинатора (12 учителей на страницу)
@@ -688,6 +731,8 @@ def teacher_register_step1(request):
         form = TeacherRegistrationForm(request.POST, request.FILES)
         if form.is_valid():
             user = form.save()
+            # Автоматический вход в систему после регистрации
+            login(request, user)
             request.session['teacher_registration_user_id'] = user.id
             messages.success(
                 request, 
@@ -728,14 +773,15 @@ def teacher_register_step2(request):
             TeacherSubject.objects.filter(teacher=teacher_profile).delete()
             
             subjects_added = 0
+            added_subjects = set()  # Отслеживаем уже добавленные предметы
             
             # Проходим по всем 5 возможным предметам
             for i in range(1, 6):
                 subject = form.cleaned_data.get(f'subject_{i}')
                 hourly_rate = form.cleaned_data.get(f'hourly_rate_{i}')
                 
-                # Сохраняем только если указаны И предмет И цена
-                if subject and hourly_rate and hourly_rate > 0:
+                # Сохраняем только если указаны И предмет И цена И предмет еще не был добавлен
+                if subject and hourly_rate and hourly_rate > 0 and subject.id not in added_subjects:
                     TeacherSubject.objects.create(
                         teacher=teacher_profile,
                         subject=subject,
@@ -743,6 +789,7 @@ def teacher_register_step2(request):
                         is_free_trial=form.cleaned_data.get(f'is_free_trial_{i}', False),
                         description=form.cleaned_data.get(f'description_{i}', '')
                     )
+                    added_subjects.add(subject.id)
                     subjects_added += 1
             
             # Проверка что добавлен хотя бы один предмет
@@ -837,11 +884,16 @@ def teacher_register_complete(request):
         messages.error(request, 'Профиль учителя не найден')
         return redirect('teacher_register_step1')
     
+    # Очищаем сессию
     if 'teacher_registration_user_id' in request.session:
         del request.session['teacher_registration_user_id']
     
+    # Показываем страницу завершения на 3 секунды, затем автоматически перенаправляем в профиль
+    messages.success(request, 'Регистрация успешно завершена! Добро пожаловать в UstozHub!')
+    
     context = {
-        'teacher': teacher_profile
+        'teacher': teacher_profile,
+        'redirect_to_profile': True  # Флаг для автоматического редиректа
     }
     return render(request, 'logic/teacher_register_complete.html', context)
 
@@ -941,8 +993,22 @@ def register_student(request):
             
             messages.success(
                 request,
-                'Регистрация прошла успешно! Добро пожаловать в UstozHub!'
+                'Регистрация прошла успешно! Сейчас мы подберем для вас подходящих учителей.'
             )
+            
+            # Получаем желаемые предметы студента и перенаправляем на home с поиском
+            try:
+                student_profile = user.student_profile
+                desired_subjects = student_profile.desired_subjects.all()
+                
+                # Если есть желаемые предметы, перенаправляем на home с поиском по первому предмету
+                if desired_subjects.exists():
+                    first_subject = desired_subjects.first()
+                    return redirect(f'{reverse("home")}?search={first_subject.name}')
+            except (StudentProfile.DoesNotExist, AttributeError):
+                pass
+            
+            # Если нет предметов, просто перенаправляем на home
             return redirect('home')
     else:
         form = StudentRegistrationForm()
