@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
 from .models import (
@@ -218,9 +218,54 @@ class TeacherSubjectInline(admin.TabularInline):
 class TeacherProfileAdmin(admin.ModelAdmin):
     inlines = [TeacherSubjectInline]
     list_display = ("user", "education_level", "teaching_languages", "experience_years", "city", "teaching_format",
-                    "rating", "total_reviews", "total_students", "is_featured", "is_active")
-    list_filter = ("education_level", "teaching_format", "is_featured", "is_active", "city")
+                    "rating", "total_reviews", "total_students", "moderation_status", "is_featured", "is_active")
+    list_filter = ("education_level", "teaching_format", "moderation_status", "is_featured", "is_active", "city")
     search_fields = ("user__username", "user__first_name", "user__last_name", "specialization", "university")
+    actions = ['approve_teachers', 'reject_teachers']
+    
+    def approve_teachers(self, request, queryset):
+        """Одобрить выбранные профили учителей"""
+        count = 0
+        for profile in queryset:
+            try:
+                profile.approve(moderator=request.user, comment='Одобрено через админ-панель')
+                count += 1
+            except Exception as e:
+                self.message_user(
+                    request,
+                    f"Ошибка одобрения профиля {profile.user.username}: {str(e)}",
+                    messages.ERROR
+                )
+        
+        if count > 0:
+            self.message_user(
+                request,
+                f"✅ Одобрено профилей: {count}. Уведомления отправлены учителям.",
+                messages.SUCCESS
+            )
+    approve_teachers.short_description = '✅ Одобрить выбранные профили'
+    
+    def reject_teachers(self, request, queryset):
+        """Отклонить выбранные профили учителей"""
+        count = 0
+        for profile in queryset:
+            try:
+                profile.reject(moderator=request.user, comment='Отклонено через админ-панель')
+                count += 1
+            except Exception as e:
+                self.message_user(
+                    request,
+                    f"Ошибка отклонения профиля {profile.user.username}: {str(e)}",
+                    messages.ERROR
+                )
+        
+        if count > 0:
+            self.message_user(
+                request,
+                f"❌ Отклонено профилей: {count}. Уведомления отправлены учителям.",
+                messages.SUCCESS
+            )
+    reject_teachers.short_description = '❌ Отклонить выбранные профили'
 
 
 # Импорт для ProfileView
@@ -889,8 +934,8 @@ class NotificationAdmin(admin.ModelAdmin):
             'description': 'Опциональное изображение и ссылка'
         }),
         ('Настройки публикации', {
-            'fields': ('target', 'priority', 'is_active'),
-            'description': 'Целевая аудитория и приоритет отображения'
+            'fields': ('target', 'target_user', 'priority', 'is_active'),
+            'description': 'Целевая аудитория и приоритет отображения. target_user используется только если target="specific_user"'
         }),
         ('Информация о создании', {
             'fields': ('created_by', 'created_at', 'updated_at'),

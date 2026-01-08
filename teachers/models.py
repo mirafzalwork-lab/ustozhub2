@@ -261,14 +261,108 @@ class TeacherProfile(models.Model):
             models.Index(fields=['teaching_format']),  # Для фильтра формата
             models.Index(fields=['experience_years']),  # Для фильтра опыта
         ]
+    
+    def save(self, *args, **kwargs):
+        """Переопределяем save для автоматического создания уведомлений при изменении статуса"""
+        # Проверяем, меняется ли статус модерации
+        if self.pk:  # Если объект уже существует в БД
+            try:
+                old_instance = TeacherProfile.objects.get(pk=self.pk)
+                old_status = old_instance.moderation_status
+                new_status = self.moderation_status
+                
+                # Если статус изменился
+                if old_status != new_status:
+                    print(f"🔍 DEBUG: Статус изменился с {old_status} на {new_status}")
+                    
+                    # Сохраняем изменения
+                    super().save(*args, **kwargs)
+                    
+                    # Создаём уведомление ПОСЛЕ сохранения
+                    if new_status == 'approved' and old_status != 'approved':
+                        # Получаем модератора (текущего пользователя из админки)
+                        moderator = self.moderated_by or User.objects.filter(is_staff=True).first()
+                        if moderator:
+                            self._create_approval_notification(moderator, self.moderation_comment or '')
+                    
+                    elif new_status == 'rejected' and old_status != 'rejected':
+                        moderator = self.moderated_by or User.objects.filter(is_staff=True).first()
+                        if moderator:
+                            self._create_rejection_notification(moderator, self.moderation_comment or '')
+                    
+                    return  # Выходим, так как уже сохранили
+            
+            except TeacherProfile.DoesNotExist:
+                pass
+        
+        # Обычное сохранение
+        super().save(*args, **kwargs)
         
     def approve(self, moderator, comment=''):
         """Одобрить профиль учителя"""
+        print(f"🔍 DEBUG: approve() вызван для {self.user.username}")
+        
         self.moderation_status = 'approved'
         self.moderation_comment = comment
         self.moderation_date = timezone.now()
         self.moderated_by = moderator
         self.save()
+        
+        print(f"🔍 DEBUG: Статус изменён на approved")
+        
+        # Создаем персонализированное уведомление для учителя об одобрении
+        try:
+            print(f"🔍 DEBUG: Начинаем создание уведомления...")
+            
+            teacher_name = self.user.get_full_name() or self.user.username
+            
+            # Формируем текст уведомления
+            short_text = "Поздравляем! Ваш профиль учителя успешно одобрен администратором."
+            
+            full_text = f"""Здравствуйте, {teacher_name}!
+
+Рады сообщить вам, что ваш профиль учителя успешно прошёл модерацию и был одобрен администратором {moderator.get_full_name() or moderator.username}.
+
+Теперь ваш профиль виден всем пользователям платформы, и ученики смогут находить вас и связываться с вами!
+
+🎉 Желаем вам успехов в преподавании и много благодарных учеников!
+
+Рекомендации для успешного старта:
+• Регулярно проверяйте сообщения от учеников
+• Отвечайте оперативно на запросы
+• Поддерживайте актуальность информации в профиле
+• Будьте пунктуальны и профессиональны
+
+С уважением,
+Команда UstozHub"""
+
+            if comment:
+                full_text += f"\n\nКомментарий модератора: {comment}"
+            
+            print(f"🔍 DEBUG: Попытка создать Notification для user_id={self.user.id}")
+            
+            # Создаем персональное уведомление только для этого учителя
+            notif = Notification.objects.create(
+                title="✅ Ваш профиль одобрен!",
+                short_text=short_text,
+                full_text=full_text,
+                target='specific_user',
+                target_user=self.user,  # Персонализированное уведомление
+                is_active=True,
+                priority=10,  # Высокий приоритет
+                created_by=moderator
+            )
+            
+            print(f"✅ DEBUG: Уведомление создано! ID={notif.id}, target_user={notif.target_user.username}")
+            logger.info(f"Approval notification created for teacher: {self.user.username}")
+            
+        except Exception as e:
+            # Логируем ошибку, но не прерываем процесс одобрения
+            print(f"❌ DEBUG: ОШИБКА при создании уведомления: {e}")
+            print(f"❌ DEBUG: Тип ошибки: {type(e).__name__}")
+            import traceback
+            traceback.print_exc()
+            logger.error(f"Failed to create approval notification for teacher {self.user.username}: {e}", exc_info=True)
 
     def reject(self, moderator, comment=''):
         """Отклонить профиль учителя"""
@@ -277,6 +371,54 @@ class TeacherProfile(models.Model):
         self.moderation_date = timezone.now()
         self.moderated_by = moderator
         self.save()
+        
+        # Создаем персонализированное уведомление для учителя об отклонении
+        try:
+            teacher_name = self.user.get_full_name() or self.user.username
+            
+            # Формируем текст уведомления
+            short_text = "К сожалению, ваш профиль учителя не был одобрен администратором."
+            
+            full_text = f"""Здравствуйте, {teacher_name}!
+
+К сожалению, ваш профиль учителя не прошёл модерацию.
+
+"""
+            
+            if comment:
+                full_text += f"""Причина отклонения:
+{comment}
+
+"""
+            
+            full_text += """Что делать дальше?
+• Внимательно изучите комментарий модератора
+• Исправьте указанные недостатки в профиле
+• Обновите информацию и отправьте профиль на повторную проверку
+• При необходимости обратитесь в службу поддержки
+
+Мы всегда рады видеть качественных преподавателей на нашей платформе!
+
+С уважением,
+Команда UstozHub"""
+            
+            # Создаем персональное уведомление только для этого учителя
+            Notification.objects.create(
+                title="❌ Профиль не одобрен",
+                short_text=short_text,
+                full_text=full_text,
+                target='specific_user',
+                target_user=self.user,  # Персонализированное уведомление
+                is_active=True,
+                priority=10,  # Высокий приоритет
+                created_by=moderator
+            )
+            
+            logger.info(f"Rejection notification created for teacher: {self.user.username}")
+            
+        except Exception as e:
+            # Логируем ошибку, но не прерываем процесс отклонения
+            logger.error(f"Failed to create rejection notification for teacher {self.user.username}: {e}", exc_info=True)
     
     def get_teaching_languages_display(self):
         """Получить названия языков преподавания"""
@@ -1348,6 +1490,7 @@ class Notification(models.Model):
         ('students', 'Только ученики'),
         ('teachers', 'Только учителя'),
         ('admins', 'Только администраторы'),
+        ('specific_user', 'Конкретный пользователь'),
     ]
     
     title = models.CharField(
@@ -1419,6 +1562,17 @@ class Notification(models.Model):
         related_name='created_notifications',
         verbose_name='Создал'
     )
+    
+    # Поле для персонализированных уведомлений
+    target_user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='personal_notifications',
+        verbose_name='Конкретный пользователь',
+        help_text='Если указан, уведомление будет видно только этому пользователю'
+    )
 
     class Meta:
         verbose_name = 'Уведомление'
@@ -1427,9 +1581,12 @@ class Notification(models.Model):
         indexes = [
             models.Index(fields=['is_active', 'target']),
             models.Index(fields=['-priority', '-created_at']),
+            models.Index(fields=['target_user', 'is_active']),
         ]
 
     def __str__(self):
+        if self.target_user:
+            return f"{self.title} (для {self.target_user.get_full_name()})"
         return f"{self.title} ({self.get_target_display()})"
     
     def is_visible_for_user(self, user):
@@ -1438,6 +1595,10 @@ class Notification(models.Model):
         """
         if not self.is_active:
             return False
+        
+        # Если указан конкретный пользователь - показываем только ему
+        if self.target_user:
+            return self.target_user.id == user.id
         
         if self.target == 'all':
             return True
