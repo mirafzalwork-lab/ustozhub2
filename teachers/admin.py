@@ -1,6 +1,7 @@
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
+from django.utils import timezone
 from .models import (
     User, Subject, SubjectCategory, City, Certificate,
     TeacherProfile, TeacherSubject, StudentProfile,
@@ -222,6 +223,32 @@ class TeacherProfileAdmin(admin.ModelAdmin):
     list_filter = ("education_level", "teaching_format", "moderation_status", "is_featured", "is_active", "city")
     search_fields = ("user__username", "user__first_name", "user__last_name", "specialization", "university")
     actions = ['approve_teachers', 'reject_teachers']
+    
+    def save_model(self, request, obj, form, change):
+        """Переопределяем сохранение для установки модератора"""
+        print(f"🔍 DEBUG: save_model вызван, change={change}")
+        
+        if change:  # Если редактируется существующий объект
+            # Получаем старое значение из БД
+            try:
+                old_obj = TeacherProfile.objects.get(pk=obj.pk)
+                old_status = old_obj.moderation_status
+                new_status = obj.moderation_status
+                
+                print(f"🔍 DEBUG: Статусы - old={old_status}, new={new_status}")
+                
+                # Если статус изменился на approved или rejected
+                if old_status != new_status and new_status in ['approved', 'rejected']:
+                    print(f"🔍 DEBUG: Устанавливаем moderated_by={request.user.username}")
+                    obj.moderated_by = request.user
+                    obj.moderation_date = timezone.now()
+            
+            except TeacherProfile.DoesNotExist:
+                pass
+        
+        # Сохраняем (метод save() модели сработает автоматически)
+        super().save_model(request, obj, form, change)
+        print(f"🔍 DEBUG: save_model завершён")
     
     def approve_teachers(self, request, queryset):
         """Одобрить выбранные профили учителей"""

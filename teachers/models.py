@@ -262,42 +262,6 @@ class TeacherProfile(models.Model):
             models.Index(fields=['experience_years']),  # Для фильтра опыта
         ]
     
-    def save(self, *args, **kwargs):
-        """Переопределяем save для автоматического создания уведомлений при изменении статуса"""
-        # Проверяем, меняется ли статус модерации
-        if self.pk:  # Если объект уже существует в БД
-            try:
-                old_instance = TeacherProfile.objects.get(pk=self.pk)
-                old_status = old_instance.moderation_status
-                new_status = self.moderation_status
-                
-                # Если статус изменился
-                if old_status != new_status:
-                    print(f"🔍 DEBUG: Статус изменился с {old_status} на {new_status}")
-                    
-                    # Сохраняем изменения
-                    super().save(*args, **kwargs)
-                    
-                    # Создаём уведомление ПОСЛЕ сохранения
-                    if new_status == 'approved' and old_status != 'approved':
-                        # Получаем модератора (текущего пользователя из админки)
-                        moderator = self.moderated_by or User.objects.filter(is_staff=True).first()
-                        if moderator:
-                            self._create_approval_notification(moderator, self.moderation_comment or '')
-                    
-                    elif new_status == 'rejected' and old_status != 'rejected':
-                        moderator = self.moderated_by or User.objects.filter(is_staff=True).first()
-                        if moderator:
-                            self._create_rejection_notification(moderator, self.moderation_comment or '')
-                    
-                    return  # Выходим, так как уже сохранили
-            
-            except TeacherProfile.DoesNotExist:
-                pass
-        
-        # Обычное сохранение
-        super().save(*args, **kwargs)
-        
     def approve(self, moderator, comment=''):
         """Одобрить профиль учителя"""
         print(f"🔍 DEBUG: approve() вызван для {self.user.username}")
@@ -420,6 +384,105 @@ class TeacherProfile(models.Model):
             # Логируем ошибку, но не прерываем процесс отклонения
             logger.error(f"Failed to create rejection notification for teacher {self.user.username}: {e}", exc_info=True)
     
+    def _create_approval_notification(self, moderator, comment=''):
+        """Вспомогательный метод для создания уведомления об одобрении"""
+        try:
+            print(f"🔍 DEBUG: _create_approval_notification вызван для {self.user.username}")
+            
+            teacher_name = self.user.get_full_name() or self.user.username
+            short_text = "Поздравляем! Ваш профиль учителя успешно одобрен администратором."
+            
+            full_text = f"""Здравствуйте, {teacher_name}!
+
+Рады сообщить вам, что ваш профиль учителя успешно прошёл модерацию и был одобрен администратором {moderator.get_full_name() or moderator.username}.
+
+Теперь ваш профиль виден всем пользователям платформы, и ученики смогут находить вас и связываться с вами!
+
+🎉 Желаем вам успехов в преподавании и много благодарных учеников!
+
+Рекомендации для успешного старта:
+• Регулярно проверяйте сообщения от учеников
+• Отвечайте оперативно на запросы
+• Поддерживайте актуальность информации в профиле
+• Будьте пунктуальны и профессиональны
+
+С уважением,
+Команда UstozHub"""
+
+            if comment:
+                full_text += f"\n\nКомментарий модератора: {comment}"
+            
+            notif = Notification.objects.create(
+                title="✅ Ваш профиль одобрен!",
+                short_text=short_text,
+                full_text=full_text,
+                target='specific_user',
+                target_user=self.user,
+                is_active=True,
+                priority=10,
+                created_by=moderator
+            )
+            
+            print(f"✅ DEBUG: Уведомление создано! ID={notif.id}, для {notif.target_user.username}")
+            logger.info(f"Approval notification created for teacher: {self.user.username}")
+            
+        except Exception as e:
+            print(f"❌ DEBUG: Ошибка создания уведомления: {e}")
+            import traceback
+            traceback.print_exc()
+            logger.error(f"Failed to create approval notification: {e}", exc_info=True)
+    
+    def _create_rejection_notification(self, moderator, comment=''):
+        """Вспомогательный метод для создания уведомления об отклонении"""
+        try:
+            print(f"🔍 DEBUG: _create_rejection_notification вызван для {self.user.username}")
+            
+            teacher_name = self.user.get_full_name() or self.user.username
+            short_text = "К сожалению, ваш профиль учителя не был одобрен администратором."
+            
+            full_text = f"""Здравствуйте, {teacher_name}!
+
+К сожалению, ваш профиль учителя не прошёл модерацию.
+
+"""
+            
+            if comment:
+                full_text += f"""Причина отклонения:
+{comment}
+
+"""
+            
+            full_text += """Что делать дальше?
+• Внимательно изучите комментарий модератора
+• Исправьте указанные недостатки в профиле
+• Обновите информацию и отправьте профиль на повторную проверку
+• При необходимости обратитесь в службу поддержки
+
+Мы всегда рады видеть качественных преподавателей на нашей платформе!
+
+С уважением,
+Команда UstozHub"""
+            
+            notif = Notification.objects.create(
+                title="❌ Профиль не одобрен",
+                short_text=short_text,
+                full_text=full_text,
+                target='specific_user',
+                target_user=self.user,
+                is_active=True,
+                priority=10,
+                created_by=moderator
+            )
+            
+            print(f"✅ DEBUG: Уведомление создано! ID={notif.id}, для {notif.target_user.username}")
+            logger.info(f"Rejection notification created for teacher: {self.user.username}")
+            
+        except Exception as e:
+            print(f"❌ DEBUG: Ошибка создания уведомления: {e}")
+            import traceback
+            traceback.print_exc()
+            logger.error(f"Failed to create rejection notification: {e}", exc_info=True)
+    
     def get_teaching_languages_display(self):
         """Получить названия языков преподавания"""
         languages_dict = dict(self.TEACHING_LANGUAGES)
@@ -521,10 +584,62 @@ class TeacherProfile(models.Model):
         return reverse('teacher_detail', kwargs={'pk': self.pk})
     
     def save(self, *args, **kwargs):
-        """Переопределяем save для инвалидации кэша"""
+        """Переопределяем save для автоматического создания уведомлений и инвалидации кэша"""
+        print(f"🔍 DEBUG save(): Вызван для TeacherProfile pk={self.pk}, user={self.user.username}")
+        
+        # Проверяем, меняется ли статус модерации
+        if self.pk:  # Если объект уже существует в БД
+            try:
+                old_instance = TeacherProfile.objects.get(pk=self.pk)
+                old_status = old_instance.moderation_status
+                new_status = self.moderation_status
+                
+                print(f"🔍 DEBUG save(): old_status={old_status}, new_status={new_status}")
+                
+                # Если статус изменился
+                if old_status != new_status:
+                    print(f"🔍 DEBUG save(): ✓ Статус изменился с {old_status} на {new_status}")
+                    print(f"🔍 DEBUG save(): moderated_by={self.moderated_by}")
+                    
+                    # Сохраняем изменения
+                    super().save(*args, **kwargs)
+                    print(f"🔍 DEBUG save(): ✓ Сохранено в БД")
+                    
+                    # Инвалидируем кэш
+                    self.clear_cache()
+                    
+                    # Создаём уведомление ПОСЛЕ сохранения
+                    if new_status == 'approved' and old_status != 'approved':
+                        print(f"🔍 DEBUG save(): Попытка создать approval notification")
+                        moderator = self.moderated_by or User.objects.filter(is_staff=True).first()
+                        print(f"🔍 DEBUG save(): Модератор для уведомления: {moderator}")
+                        if moderator:
+                            self._create_approval_notification(moderator, self.moderation_comment or '')
+                        else:
+                            print(f"❌ DEBUG save(): Модератор не найден!")
+                    
+                    elif new_status == 'rejected' and old_status != 'rejected':
+                        print(f"🔍 DEBUG save(): Попытка создать rejection notification")
+                        moderator = self.moderated_by or User.objects.filter(is_staff=True).first()
+                        if moderator:
+                            self._create_rejection_notification(moderator, self.moderation_comment or '')
+                        else:
+                            print(f"❌ DEBUG save(): Модератор не найден!")
+                    
+                    print(f"🔍 DEBUG save(): Завершено с изменением статуса")
+                    return  # Выходим, так как уже сохранили
+                else:
+                    print(f"🔍 DEBUG save(): Статус НЕ изменился, обычное сохранение")
+            
+            except TeacherProfile.DoesNotExist:
+                print(f"🔍 DEBUG save(): TeacherProfile.DoesNotExist для pk={self.pk}")
+        
+        # Обычное сохранение
+        print(f"🔍 DEBUG save(): Обычное сохранение через super().save()")
         super().save(*args, **kwargs)
         # Инвалидируем кэш при обновлении профиля
         self.clear_cache()
+        print(f"🔍 DEBUG save(): Завершено")
     
     def clear_cache(self):
         """Очистить весь кэш связанный с этим профилем учителя"""
