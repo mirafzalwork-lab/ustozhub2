@@ -26,9 +26,15 @@ class User(AbstractUser):
         ('teacher', 'Учитель'),
     ]
     
+    GENDER_CHOICES = [
+        ('male', 'Мужской'),
+        ('female', 'Женский'),
+    ]
+    
     user_type = models.CharField(max_length=10, choices=USER_TYPES, default='student')
     phone = models.CharField(max_length=20, blank=True, null=True)
     age = models.PositiveIntegerField(validators=[MinValueValidator(10), MaxValueValidator(100)], null=True, blank=True)
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, null=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
     is_verified = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -201,6 +207,15 @@ class TeacherProfile(models.Model):
     available_to = models.TimeField(default=datetime.time(21, 0))
     available_weekdays = models.CharField(max_length=20, default='1,2,3,4,5,6,7', 
                                         help_text="Дни недели через запятую (1-7)")
+    
+    # Индивидуальное расписание для каждого дня (JSON)
+    # Формат: {"monday": {"from": "09:00", "to": "18:00"}, "tuesday": {...}, ...}
+    weekly_schedule = models.JSONField(
+        null=True,
+        blank=True,
+        default=dict,
+        help_text="Индивидуальное расписание для каждого дня недели"
+    )
     
     # Рейтинг и статус
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)

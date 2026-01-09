@@ -400,22 +400,34 @@
     @media (max-width: 768px) {
         .conversation-detail-container {
             padding: 0;
-            height: calc(100vh - 60px);
+            height: calc(100vh - 56px);
+            max-width: 100%;
         }
 
         .conversation-header {
             border-radius: 0;
-            padding: 12px 16px;
+            padding: 10px 12px;
+            position: fixed;
+            top: 56px;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: white;
+        }
+
+        .conversation-user-info {
+            gap: 10px;
         }
 
         .conversation-user-avatar {
-            width: 40px;
-            height: 40px;
-            font-size: 15px;
+            width: 38px;
+            height: 38px;
+            font-size: 14px;
         }
 
         .conversation-user-name {
             font-size: 15px;
+            font-weight: 600;
         }
 
         .conversation-user-status {
@@ -423,26 +435,51 @@
         }
 
         .back-link {
-            font-size: 13px;
-            padding: 6px 10px;
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            padding: 8px;
+            z-index: 10;
+        }
+
+        .back-link span {
+            display: none;
+        }
+
+        .conversation-actions {
+            gap: 6px;
         }
 
         .delete-conversation-btn {
-            padding: 6px 12px;
-            font-size: 13px;
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        .delete-conversation-btn span {
+            display: none;
         }
 
         .messages-wrapper {
             border-radius: 0;
+            margin-top: 60px;
+            height: calc(100vh - 56px - 60px - 70px);
+        }
+
+        .messages-list {
+            padding: 12px;
+            gap: 10px;
         }
 
         .message-item {
-            max-width: 85%;
+            max-width: 80%;
         }
 
         .message-bubble {
-            font-size: 14px;
+            font-size: 15px;
             padding: 10px 14px;
+            line-height: 1.4;
         }
 
         .message-time {
@@ -451,36 +488,63 @@
 
         .message-form-container {
             border-radius: 0;
-            padding: 12px;
+            padding: 10px 12px;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid var(--border-color);
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
         }
 
-        .message-input {
+        .message-form {
+            gap: 8px;
+        }
+
+        .message-input-wrapper textarea {
             min-height: 44px;
+            max-height: 100px;
             font-size: 16px !important; /* iOS zoom prevention */
             padding: 12px 14px;
+            border-radius: 20px;
         }
 
         .send-btn {
             min-height: 44px;
-            padding: 12px 18px;
-            font-size: 14px;
+            min-width: 44px;
+            padding: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-btn span {
+            display: none;
+        }
+
+        .send-btn i {
+            margin: 0;
+            font-size: 18px;
         }
     }
 
     /* Small Mobile (480px and below) */
     @media (max-width: 480px) {
         .conversation-detail-container {
-            height: calc(100vh - 56px);
+            height: calc(100vh - 52px);
         }
 
         .conversation-header {
-            padding: 10px 12px;
+            padding: 8px 10px;
+            top: 52px;
         }
 
         .conversation-user-avatar {
-            width: 36px;
-            height: 36px;
-            font-size: 14px;
+            width: 34px;
+            height: 34px;
+            font-size: 13px;
         }
 
         .conversation-user-name {
@@ -492,32 +556,39 @@
         }
 
         .back-link {
-            font-size: 12px;
-            padding: 6px 8px;
-            gap: 4px;
+            left: 8px;
+            font-size: 18px;
+            padding: 6px;
         }
 
         .delete-conversation-btn {
-            padding: 6px 10px;
-            font-size: 12px;
+            padding: 6px 8px;
+            font-size: 11px;
         }
 
-        .delete-conversation-btn i {
-            display: none; /* Hide icon on very small screens */
+        .messages-wrapper {
+            margin-top: 55px;
+            height: calc(100vh - 52px - 55px - 70px);
+        }
+
+        .messages-list {
+            padding: 10px;
+            gap: 8px;
         }
 
         .message-item {
-            max-width: 90%;
+            max-width: 85%;
+            gap: 8px;
         }
 
         .message-avatar {
-            width: 28px;
-            height: 28px;
-            font-size: 12px;
+            width: 26px;
+            height: 26px;
+            font-size: 11px;
         }
 
         .message-bubble {
-            font-size: 13px;
+            font-size: 14px;
             padding: 8px 12px;
             max-width: 100%;
         }
@@ -527,34 +598,49 @@
         }
 
         .message-form-container {
-            padding: 10px;
+            padding: 8px 10px;
         }
 
-        .message-input {
-            min-height: 44px;
+        .message-form {
+            gap: 6px;
+        }
+
+        .message-input-wrapper textarea {
+            min-height: 40px;
+            max-height: 90px;
             font-size: 16px !important;
             padding: 10px 12px;
+            border-radius: 18px;
         }
 
         .send-btn {
-            min-height: 44px;
-            padding: 10px 14px;
-            font-size: 13px;
+            min-height: 40px;
+            min-width: 40px;
         }
 
-        .empty-state-icon {
-            font-size: 64px;
+        .send-btn i {
+            font-size: 16px;
+        }
+
+        .empty-messages-icon {
+            font-size: 48px;
+        }
+
+        .empty-messages p {
+            font-size: 14px;
         }
     }
 
     /* Touch Optimizations */
     @media (hover: none) and (pointer: coarse) {
+        /* Убираем hover эффекты на мобильных */
         .back-link:hover {
             background: transparent;
         }
 
         .back-link:active {
             background: #F3F4F6;
+            transform: scale(0.95);
         }
 
         .delete-conversation-btn:hover {
@@ -564,29 +650,62 @@
 
         .delete-conversation-btn:active {
             background: #FEF2F2;
+            transform: scale(0.95);
         }
 
         .send-btn:hover {
-            background: #3B82F6;
+            background: linear-gradient(135deg, #3B82F6, #2563EB);
+            transform: none;
         }
 
         .send-btn:active {
-            background: #2563EB;
-            transform: scale(0.97);
+            background: linear-gradient(135deg, #2563EB, #1D4ED8);
+            transform: scale(0.95);
+        }
+
+        /* Touch-friendly области нажатия */
+        .message-item {
+            padding: 2px 0;
+        }
+
+        .message-bubble {
+            user-select: text;
+            -webkit-user-select: text;
         }
     }
 
-    /* Fixed input on iOS */
-    @supports (-webkit-touch-callout: none) {
-        .message-form-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
+    /* Дополнительные стили для лучшего UX на мобильных */
+    @media (max-width: 768px) {
+        /* Скрываем статус соединения на мобильных для экономии места */
+        #connectionStatus {
+            display: none;
         }
 
-        .messages-wrapper {
-            padding-bottom: 100px; /* Extra space for fixed input */
+        /* Улучшенная прокрутка на iOS */
+        .messages-list {
+            -webkit-overflow-scrolling: touch;
+            overflow-y: scroll;
+        }
+
+        /* Предотвращаем зум на iOS при фокусе */
+        .message-input-wrapper textarea:focus {
+            font-size: 16px !important;
+        }
+
+        /* Анимация появления новых сообщений */
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .message-item {
+            animation: messageSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
     }
 </style>
@@ -594,9 +713,10 @@
 
 {% block content %}
 <div class="conversation-detail-container">
+    <!-- Back Link - отдельно для мобильных -->
     <a href="{% url 'conversations_list' %}" class="back-link">
         <i class="fas fa-arrow-left"></i>
-        {% trans "Назад" %}
+        <span>{% trans "Назад" %}</span>
     </a>
 
     <div class="conversation-header">
@@ -611,10 +731,10 @@
             <div class="conversation-user-details">
                 <div class="conversation-user-name">
                     {{ other_user.get_full_name|default:other_user.username }}
-                    <!-- WebSocket статус -->
+                    <!-- WebSocket статус - скрыт на мобильных -->
                     <span id="connectionStatus" class="ms-2 text-muted small">
-                        <i class="fas fa-circle" style="color: #dc3545;"></i>
-                        <span id="statusText">{% trans "Подключение..." %}</span>
+                        <i class="fas fa-circle" style="color: #dc3545; font-size: 8px;"></i>
+                        <span id="statusText" style="font-size: 11px;">{% trans "Подключение..." %}</span>
                     </span>
                 </div>
                 {% if user_type == 'student' and conversation.teacher.city %}
@@ -628,8 +748,8 @@
         <div class="conversation-actions">
             <form method="post" action="{% url 'delete_conversation' conversation_id=conversation.id %}" onsubmit="return confirm('{% trans 'Удалить переписку?' %}');" style="margin: 0;">
                 {% csrf_token %}
-                <button type="submit" class="delete-conversation-btn">
-                    <i class="fas fa-trash-alt"></i> {% trans "Удалить" %}
+                <button type="submit" class="delete-conversation-btn" title="{% trans 'Удалить' %}">
+                    <i class="fas fa-trash-alt"></i> <span>{% trans "Удалить" %}</span>
                 </button>
             </form>
         </div>
@@ -671,13 +791,17 @@
                 <div class="message-input-wrapper">
                     <textarea 
                         name="content" 
-                        placeholder="{% trans 'Введите сообщение...' %}" 
+                        placeholder="{% trans 'Сообщение...' %}" 
                         id="message-content"
                         required
                         maxlength="2000"
+                        rows="1"
+                        autocomplete="off"
+                        autocorrect="on"
+                        autocapitalize="sentences"
                     ></textarea>
                 </div>
-                <button type="submit" class="send-btn" id="sendBtn">
+                <button type="submit" class="send-btn" id="sendBtn" title="{% trans 'Отправить' %}">
                     <i class="fas fa-paper-plane"></i>
                     <span>{% trans "Отправить" %}</span>
                 </button>
@@ -687,27 +811,70 @@
 </div>
 
 <script>
+    // 📱 MOBILE-FIRST CHAT IMPROVEMENTS
+    
     // Автопрокрутка вниз при загрузке
     const messagesList = document.getElementById('messagesList');
-    if (messagesList) {
-        messagesList.scrollTop = messagesList.scrollHeight;
+    
+    function scrollToBottom(smooth = false) {
+        if (messagesList) {
+            if (smooth) {
+                messagesList.scrollTo({
+                    top: messagesList.scrollHeight,
+                    behavior: 'smooth'
+                });
+            } else {
+                messagesList.scrollTop = messagesList.scrollHeight;
+            }
+        }
     }
+    
+    // Начальная прокрутка
+    scrollToBottom();
 
-    // Автоматическое увеличение высоты textarea
+    // Автоматическое увеличение высоты textarea (как в Telegram)
     const textarea = document.querySelector('textarea[name="content"]');
     if (textarea) {
+        // Начальная настройка
+        textarea.style.height = 'auto';
+        
         textarea.addEventListener('input', function() {
             this.style.height = 'auto';
-            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            const newHeight = Math.min(this.scrollHeight, window.innerWidth <= 480 ? 90 : 100);
+            this.style.height = newHeight + 'px';
+            
+            // Автопрокрутка при вводе текста
+            scrollToBottom(true);
         });
 
         // Enter для отправки, Shift+Enter для новой строки
         textarea.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                document.getElementById('messageForm').dispatchEvent(new Event('submit'));
+                document.getElementById('messageForm').dispatchEvent(new Event('submit', { cancelable: true }));
             }
         });
+
+        // Фокус на textarea при загрузке (только на десктопе)
+        if (window.innerWidth > 768) {
+            textarea.focus();
+        }
+
+        // Предотвращаем zoom на iOS при фокусе
+        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            textarea.addEventListener('focus', function() {
+                this.style.fontSize = '16px';
+            });
+        }
+    }
+
+    // Скрываем клавиатуру после отправки на мобильных
+    function hideKeyboard() {
+        if (window.innerWidth <= 768) {
+            if (document.activeElement) {
+                document.activeElement.blur();
+            }
+        }
     }
 
     // 🚀 ИНИЦИАЛИЗАЦИЯ REAL-TIME ЧАТА
@@ -858,14 +1025,12 @@
 
             messagesList.appendChild(messageDiv);
             
-            // Автопрокрутка вниз
-            messagesList.scrollTop = messagesList.scrollHeight;
-        }
-
-        function scrollToBottom() {
-            const messagesList = document.getElementById('messagesList');
-            if (messagesList) {
-                messagesList.scrollTop = messagesList.scrollHeight;
+            // Плавная автопрокрутка вниз
+            scrollToBottom(true);
+            
+            // Вибрация на мобильных при получении нового сообщения (не от себя)
+            if (!isOwnMessage && 'vibrate' in navigator && window.innerWidth <= 768) {
+                navigator.vibrate(50);
             }
         }
 
@@ -898,11 +1063,17 @@
                         messageInput.value = '';
                         messageInput.style.height = 'auto';
                         
+                        // Скрываем клавиатуру на мобильных после отправки
+                        if (window.innerWidth <= 768) {
+                            messageInput.blur();
+                        }
+                        
                         // Восстанавливаем кнопку
                         setTimeout(() => {
                             sendBtn.disabled = false;
                             sendBtn.innerHTML = originalText;
-                        }, 500);
+                            scrollToBottom(true);
+                        }, 300);
                         
                     } catch (error) {
                         console.error('WebSocket send error:', error);
@@ -928,6 +1099,13 @@
                 if (data && data.success) {
                     input.value = '';
                     input.style.height = 'auto';
+                    
+                    // Скрываем клавиатуру на мобильных
+                    if (window.innerWidth <= 768) {
+                        input.blur();
+                    }
+                    
+                    scrollToBottom(true);
                 } else {
                     alert('{% trans "Ошибка при отправке сообщения" %}');
                 }

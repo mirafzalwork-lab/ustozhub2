@@ -1,0 +1,89 @@
+{% extends 'registration/base_wizard.html' %}
+{% load static %}
+
+{% block step_content %}
+<div class="form-section">
+    <h3 class="section-title">Сертификаты и дипломы</h3>
+    <p class="section-description">Этот шаг необязательный. Вы можете добавить сертификаты сейчас или позже в профиле.</p>
+    
+    <div class="optional-notice">
+        <svg class="notice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <p>Профили с сертификатами выглядят более профессионально и получают больше доверия от учеников.</p>
+    </div>
+</div>
+
+<div class="form-section">
+    <div class="form-group">
+        <label class="form-label" for="{{ wizard.form.name.id_for_label }}">
+            {{ wizard.form.name.label }}
+        </label>
+        {{ wizard.form.name }}
+        <div class="field-help">{{ wizard.form.name.help_text }}</div>
+        {% if wizard.form.name.errors %}
+        <div class="field-errors">
+            {% for error in wizard.form.name.errors %}
+            <p class="error-text">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="form-group">
+        <label class="form-label" for="{{ wizard.form.issuer.id_for_label }}">
+            {{ wizard.form.issuer.label }}
+        </label>
+        {{ wizard.form.issuer }}
+        <div class="field-help">{{ wizard.form.issuer.help_text }}</div>
+        {% if wizard.form.issuer.errors %}
+        <div class="field-errors">
+            {% for error in wizard.form.issuer.errors %}
+            <p class="error-text">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="form-group">
+        <label class="form-label" for="{{ wizard.form.file.id_for_label }}">
+            {{ wizard.form.file.label }}
+        </label>
+        <div class="file-upload-area" id="certificateUpload">
+            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <p class="upload-text">Нажмите или перетащите файл сюда</p>
+            <p class="upload-hint">PDF, JPG или PNG до 10 МБ</p>
+        </div>
+        {{ wizard.form.file }}
+        <div class="field-help">{{ wizard.form.file.help_text }}</div>
+        {% if wizard.form.file.errors %}
+        <div class="field-errors">
+            {% for error in wizard.form.file.errors %}
+            <p class="error-text">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="certificate-examples">
+    <h4>📜 Примеры сертификатов:</h4>
+    <ul>
+        <li>Дипломы о высшем образовании</li>
+        <li>Языковые сертификаты (IELTS, TOEFL, CEFR)</li>
+        <li>Сертификаты о повышении квалификации</li>
+        <li>Профессиональные сертификаты</li>
+        <li>Дипломы магистратуры или PhD</li>
+    </ul>
+</div>
+
+<div class="skip-notice">
+    <p>Вы можете пропустить этот шаг и добавить сертификаты позже в настройках профиля.</p>
+</div>
+{% endblock %}

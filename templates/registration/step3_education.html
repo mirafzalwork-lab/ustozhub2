@@ -1,0 +1,108 @@
+{% extends 'registration/base_wizard.html' %}
+{% load static %}
+
+{% block step_content %}
+<div class="form-section">
+    <h3 class="section-title">Образование</h3>
+    <p class="section-description">Расскажите о вашем образовании. Это важно для учеников.</p>
+    
+    <div class="form-group">
+        <label class="form-label" for="{{ wizard.form.education_level.id_for_label }}">
+            {{ wizard.form.education_level.label }}
+        </label>
+        {{ wizard.form.education_level }}
+        <div class="field-help">{{ wizard.form.education_level.help_text }}</div>
+        {% if wizard.form.education_level.errors %}
+        <div class="field-errors">
+            {% for error in wizard.form.education_level.errors %}
+            <p class="error-text">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="form-group">
+        <label class="form-label" for="{{ wizard.form.university.id_for_label }}">
+            {{ wizard.form.university.label }}
+        </label>
+        {{ wizard.form.university }}
+        <div class="field-help">{{ wizard.form.university.help_text }}</div>
+        {% if wizard.form.university.errors %}
+        <div class="field-errors">
+            {% for error in wizard.form.university.errors %}
+            <p class="error-text">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="form-group">
+        <label class="form-label" for="{{ wizard.form.specialization.id_for_label }}">
+            {{ wizard.form.specialization.label }}
+        </label>
+        {{ wizard.form.specialization }}
+        <div class="field-help">{{ wizard.form.specialization.help_text }}</div>
+        {% if wizard.form.specialization.errors %}
+        <div class="field-errors">
+            {% for error in wizard.form.specialization.errors %}
+            <p class="error-text">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="form-section">
+    <h3 class="section-title">Опыт преподавания</h3>
+    
+    <div class="form-group">
+        <label class="form-label" for="{{ wizard.form.experience_years.id_for_label }}">
+            {{ wizard.form.experience_years.label }}
+            <span class="required">*</span>
+        </label>
+        {{ wizard.form.experience_years }}
+        <div class="field-help">{{ wizard.form.experience_years.help_text }}</div>
+        {% if wizard.form.experience_years.errors %}
+        <div class="field-errors">
+            {% for error in wizard.form.experience_years.errors %}
+            <p class="error-text">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="form-section">
+    <h3 class="section-title">О вас</h3>
+    <p class="section-description">Это первое, что прочитают ученики. Расскажите о себе профессионально и увлекательно.</p>
+    
+    <div class="form-group">
+        <label class="form-label" for="{{ wizard.form.bio.id_for_label }}">
+            {{ wizard.form.bio.label }}
+            <span class="required">*</span>
+        </label>
+        {{ wizard.form.bio }}
+        <div class="char-counter">
+            <span id="charCount">0</span> / 1000 символов
+        </div>
+        <div class="field-help">{{ wizard.form.bio.help_text }}</div>
+        {% if wizard.form.bio.errors %}
+        <div class="field-errors">
+            {% for error in wizard.form.bio.errors %}
+            <p class="error-text">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="bio-tips">
+        <h4>💡 Что написать:</h4>
+        <ul>
+            <li>Ваш подход к обучению и методика</li>
+            <li>Достижения ваших учеников</li>
+            <li>Что вам нравится в преподавании</li>
+            <li>Ваши профессиональные интересы</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

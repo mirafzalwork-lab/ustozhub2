@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     
     # Third-party apps
     'channels',  # Django Channels для WebSocket support
+    'formtools',  # Django Form Tools для multi-step forms
     
     # Local apps
     'teachers',

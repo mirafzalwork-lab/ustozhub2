@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Регистрация завершена{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/registration.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="completion-wrapper">
+    <div class="completion-container">
+        
+        <!-- Success Icon -->
+        <div class="success-icon-wrapper">
+            <div class="success-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Main Message -->
+        <div class="completion-content">
+            <h1 class="completion-title">Благодарим за регистрацию!</h1>
+            <p class="completion-subtitle">Ваш профиль успешно создан</p>
+
+            <div class="completion-message">
+                <h2>Что дальше?</h2>
+                <p>Ваш профиль отправлен на модерацию. Наша команда проверит его в течение <strong>24 часов</strong>.</p>
+                <p>После одобрения ваш профиль станет виден всем пользователям платформы, и ученики смогут связаться с вами.</p>
+            </div>
+
+            <!-- Status Info -->
+            <div class="status-card">
+                <div class="status-row">
+                    <span class="status-label">Статус профиля:</span>
+                    <span class="status-badge pending">
+                        <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        На модерации
+                    </span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Имя учителя:</span>
+                    <span class="status-value">{{ user.get_full_name }}</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Email:</span>
+                    <span class="status-value">{{ user.email }}</span>
+                </div>
+            </div>
+
+            <!-- Next Steps -->
+            <div class="next-steps">
+                <h3>Рекомендации на время модерации:</h3>
+                <ul class="steps-list">
+                    <li>
+                        <svg class="step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Проверьте вашу почту — мы отправим уведомление о результатах модерации
+                    </li>
+                    <li>
+                        <svg class="step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Убедитесь, что ваш Telegram активен для связи с учениками
+                    </li>
+                    <li>
+                        <svg class="step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Подготовьтесь к первым урокам: проверьте материалы и расписание
+                    </li>
+                    <li>
+                        <svg class="step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        После одобрения вы сможете редактировать профиль в личном кабинете
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Actions -->
+            <div class="completion-actions">
+                <a href="{% url 'profile' %}" class="btn btn-primary">
+                    Перейти в профиль
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </a>
+                <a href="{% url 'home' %}" class="btn btn-secondary">На главную</a>
+            </div>
+
+            <!-- Support Info -->
+            <div class="support-info">
+                <svg class="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <p>Возникли вопросы? Свяжитесь с нами: <a href="mailto:support@ustozhub.uz">support@ustozhub.uz</a></p>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,380 @@
+{% extends 'registration/base_wizard.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block step_content %}
+<div class="form-section">
+    <h3 class="section-title">Предметы и цены</h3>
+    <p class="section-description">Укажите предметы, которые вы преподаете, и стоимость часа занятий. Вы можете добавить до 4 предметов.</p>
+</div>
+
+<div id="subjectsContainer">
+    <!-- Первый предмет (обязательный) -->
+    <div class="subject-card" data-subject-num="1">
+        <div class="subject-header">
+            <h4>Предмет 1</h4>
+            <span class="badge-required">Обязательно</span>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="id_subject_1">
+                Выберите предмет <span class="required">*</span>
+            </label>
+            {{ wizard.form.subject_1 }}
+            {% if wizard.form.subject_1.errors %}
+            <div class="field-errors">
+                {% for error in wizard.form.subject_1.errors %}
+                <p class="error-text">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label" for="id_hourly_rate_1">
+                    Цена за час (сум) <span class="required">*</span>
+                </label>
+                {{ wizard.form.hourly_rate_1 }}
+                {% if wizard.form.hourly_rate_1.errors %}
+                <div class="field-errors">
+                    {% for error in wizard.form.hourly_rate_1.errors %}
+                    <p class="error-text">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group checkbox-wrapper">
+                <label class="checkbox-label free-trial-label">
+                    {{ wizard.form.is_free_trial_1 }}
+                    <span class="checkbox-text">Пробный урок бесплатно</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="id_description_1">
+                Описание (желательно)
+            </label>
+            {{ wizard.form.description_1 }}
+            <div class="field-help">Опишите особенности преподавания этого предмета</div>
+        </div>
+    </div>
+
+    <!-- Карточки для предметов 2, 3, 4 (скрыты по умолчанию) -->
+    <div class="subject-card" data-subject-num="2" style="display: none;">
+        <div class="subject-header">
+            <h4>Предмет 2</h4>
+            <button type="button" class="remove-subject-btn" onclick="removeSubject(2)">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="id_subject_2">Выберите предмет</label>
+            {{ wizard.form.subject_2 }}
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label" for="id_hourly_rate_2">Цена за час (сум)</label>
+                {{ wizard.form.hourly_rate_2 }}
+            </div>
+
+            <div class="form-group checkbox-wrapper">
+                <label class="checkbox-label free-trial-label">
+                    {{ wizard.form.is_free_trial_2 }}
+                    <span class="checkbox-text">Пробный урок бесплатно</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="id_description_2">Описание (желательно)</label>
+            {{ wizard.form.description_2 }}
+            <div class="field-help">Опишите особенности преподавания этого предмета</div>
+        </div>
+    </div>
+
+    <div class="subject-card" data-subject-num="3" style="display: none;">
+        <div class="subject-header">
+            <h4>Предмет 3</h4>
+            <button type="button" class="remove-subject-btn" onclick="removeSubject(3)">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="id_subject_3">Выберите предмет</label>
+            {{ wizard.form.subject_3 }}
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label" for="id_hourly_rate_3">Цена за час (сум)</label>
+                {{ wizard.form.hourly_rate_3 }}
+            </div>
+
+            <div class="form-group checkbox-wrapper">
+                <label class="checkbox-label free-trial-label">
+                    {{ wizard.form.is_free_trial_3 }}
+                    <span class="checkbox-text">Пробный урок бесплатно</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="id_description_3">Описание (желательно)</label>
+            {{ wizard.form.description_3 }}
+            <div class="field-help">Опишите особенности преподавания этого предмета</div>
+        </div>
+    </div>
+
+    <div class="subject-card" data-subject-num="4" style="display: none;">
+        <div class="subject-header">
+            <h4>Предмет 4</h4>
+            <button type="button" class="remove-subject-btn" onclick="removeSubject(4)">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="id_subject_4">Выберите предмет</label>
+            {{ wizard.form.subject_4 }}
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label" for="id_hourly_rate_4">Цена за час (сум)</label>
+                {{ wizard.form.hourly_rate_4 }}
+            </div>
+
+            <div class="form-group checkbox-wrapper">
+                <label class="checkbox-label free-trial-label">
+                    {{ wizard.form.is_free_trial_4 }}
+                    <span class="checkbox-text">Пробный урок бесплатно</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="id_description_4">Описание (желательно)</label>
+            {{ wizard.form.description_4 }}
+            <div class="field-help">Опишите особенности преподавания этого предмета</div>
+        </div>
+    </div>
+</div>
+
+<!-- Кнопка добавления предмета -->
+<div class="add-subject-wrapper" id="addSubjectWrapper">
+    <button type="button" class="add-subject-btn" onclick="addSubject()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span>Добавить еще предмет</span>
+    </button>
+    <p class="add-subject-hint">Вы можете добавить до 4 предметов</p>
+</div>
+
+<div class="pricing-tips">
+    <h4>💡 Рекомендации по ценообразованию:</h4>
+    <ul>
+        <li>Средняя цена за час в Узбекистане: 50,000 - 150,000 сум</li>
+        <li>Опытные преподаватели берут 100,000 - 250,000 сум</li>
+        <li>Пробный урок помогает привлечь больше учеников</li>
+        <li>Вы сможете изменить цены позже в профиле</li>
+    </ul>
+</div>
+
+<script>
+let visibleSubjects = 1;
+const maxSubjects = 4;
+
+function addSubject() {
+    if (visibleSubjects >= maxSubjects) {
+        return;
+    }
+    
+    visibleSubjects++;
+    const subjectCard = document.querySelector(`[data-subject-num="${visibleSubjects}"]`);
+    
+    if (subjectCard) {
+        subjectCard.style.display = 'block';
+        
+        // Плавная анимация появления
+        setTimeout(() => {
+            subjectCard.style.opacity = '0';
+            subjectCard.style.transform = 'translateY(10px)';
+            subjectCard.style.transition = 'all 0.3s ease';
+            
+            setTimeout(() => {
+                subjectCard.style.opacity = '1';
+                subjectCard.style.transform = 'translateY(0)';
+            }, 10);
+        }, 10);
+        
+        // Прокрутка к новой карточке
+        setTimeout(() => {
+            subjectCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+    }
+    
+    // Скрыть кнопку, если достигнут максимум
+    if (visibleSubjects >= maxSubjects) {
+        document.getElementById('addSubjectWrapper').style.display = 'none';
+    }
+    
+    updateSubjectCount();
+}
+
+function removeSubject(num) {
+    const subjectCard = document.querySelector(`[data-subject-num="${num}"]`);
+    
+    if (subjectCard && num > 1) {
+        // Очистить поля
+        const subjectSelect = subjectCard.querySelector(`#id_subject_${num}`);
+        const priceInput = subjectCard.querySelector(`#id_hourly_rate_${num}`);
+        const trialCheckbox = subjectCard.querySelector(`#id_is_free_trial_${num}`);
+        const descriptionTextarea = subjectCard.querySelector(`#id_description_${num}`);
+        
+        if (subjectSelect) subjectSelect.value = '';
+        if (priceInput) priceInput.value = '';
+        if (trialCheckbox) trialCheckbox.checked = false;
+        if (descriptionTextarea) descriptionTextarea.value = '';
+        
+        // Анимация исчезновения
+        subjectCard.style.opacity = '0';
+        subjectCard.style.transform = 'translateY(-10px)';
+        
+        setTimeout(() => {
+            subjectCard.style.display = 'none';
+            subjectCard.style.opacity = '1';
+            subjectCard.style.transform = 'translateY(0)';
+        }, 300);
+        
+        visibleSubjects--;
+        
+        // Показать кнопку добавления
+        document.getElementById('addSubjectWrapper').style.display = 'block';
+        
+        updateSubjectCount();
+    }
+}
+
+function updateSubjectCount() {
+    const hint = document.querySelector('.add-subject-hint');
+    if (hint) {
+        const remaining = maxSubjects - visibleSubjects;
+        if (remaining > 0) {
+            hint.textContent = `Вы можете добавить еще ${remaining} ${remaining === 1 ? 'предмет' : remaining < 5 ? 'предмета' : 'предметов'}`;
+        }
+    }
+}
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    // Проверяем, есть ли уже заполненные предметы (при возврате на шаг)
+    for (let i = 2; i <= maxSubjects; i++) {
+        const subjectSelect = document.querySelector(`#id_subject_${i}`);
+        if (subjectSelect && subjectSelect.value) {
+            visibleSubjects = i;
+            document.querySelector(`[data-subject-num="${i}"]`).style.display = 'block';
+        }
+    }
+    
+    if (visibleSubjects >= maxSubjects) {
+        document.getElementById('addSubjectWrapper').style.display = 'none';
+    }
+    
+    updateSubjectCount();
+});
+</script>
+
+<style>
+.add-subject-wrapper {
+    margin: 24px 0;
+    text-align: center;
+}
+
+.add-subject-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: #ffffff;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    color: #3b82f6;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.add-subject-btn:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    transform: translateY(-1px);
+}
+
+.add-subject-btn svg {
+    color: #3b82f6;
+}
+
+.add-subject-hint {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.subject-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.remove-subject-btn {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.remove-subject-btn:hover {
+    background: #fee2e2;
+    transform: rotate(90deg);
+}
+
+.badge-required {
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.badge-optional {
+    background: #f3f4f6;
+    color: #6b7280;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+}
+</style>
+{% endblock %}

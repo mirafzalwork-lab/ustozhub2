@@ -261,15 +261,15 @@
         .nav-actions {
             display: flex;
             align-items: center;
-            gap: var(--spacing-sm);
+            gap: 6px;
         }
 
         .nav-btn {
-            padding: var(--spacing-xs) var(--spacing-md);
+            padding: 8px 12px;
             background: none;
             border: none;
             border-radius: var(--radius-sm);
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             color: var(--text-primary);
             cursor: pointer;
@@ -285,7 +285,7 @@
         }
 
         .nav-btn i {
-            font-size: 16px;
+            font-size: 15px;
         }
 
         .nav-btn-primary {
@@ -310,11 +310,11 @@
         .messages-icon-btn,
         .notifications-icon-btn {
             position: relative;
-            padding: 10px;
+            padding: 5px;
             background: none;
             border: none;
             border-radius: var(--radius-full);
-            font-size: 20px;
+            font-size: 15px;
             color: var(--primary-color);
             cursor: pointer;
             text-decoration: none;
@@ -322,8 +322,8 @@
             align-items: center;
             justify-content: center;
             transition: all var(--transition-base);
-            width: 44px;
-            height: 44px;
+            width: 35px;
+            height: 35px;
         }
 
         .messages-icon-btn:hover,
@@ -334,7 +334,7 @@
 
         .messages-icon-btn i,
         .notifications-icon-btn i {
-            font-size: 20px;
+            font-size: 17px;
             color: var(--primary-color);
         }
 
@@ -343,14 +343,14 @@
         .notifications-badge {
             position: absolute;
             top: 6px;
-            right: 6px;
+            right: 2px;
             background: var(--danger-color);
             color: white;
             border-radius: 10px;
             padding: 2px 6px;
             font-size: 10px;
             font-weight: 700;
-            min-width: 18px;
+            min-width: 15px;
             text-align: center;
             line-height: 1.2;
             box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
@@ -374,10 +374,10 @@
         .profile-btn {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 6px 12px;
+            gap: 6px;
+            padding: 5px 10px;
             border: 1px solid #e0e0e0;
-            border-radius: 20px;
+            border-radius: 18px;
             background: white;
             cursor: pointer;
             transition: all 0.2s;
@@ -389,15 +389,15 @@
         }
 
         .profile-avatar {
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             background: linear-gradient(135deg, #0A2540, #1e4a72);
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             overflow: hidden;
         }
@@ -409,9 +409,9 @@
         }
 
         .profile-name {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
-            max-width: 120px;
+            max-width: 100px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -448,19 +448,19 @@
         .language-btn {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
+            gap: 6px;
+            padding: 6px 12px;
             background: white;
             border: 1px solid #e0e0e0;
-            border-radius: 20px;
-            font-size: 14px;
+            border-radius: 18px;
+            font-size: 13px;
             font-weight: 500;
             color: #1a1a1a;
             cursor: pointer;
             transition: all 0.2s;
             white-space: nowrap;
             position: relative;
-            min-width: 110px;
+            min-width: 95px;
             justify-content: space-between;
         }
 
@@ -470,12 +470,12 @@
         }
 
         .language-btn .flag-icon {
-            font-size: 18px;
+            font-size: 16px;
             line-height: 1;
         }
 
         .language-btn .lang-text {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 500;
         }
 
@@ -1293,11 +1293,7 @@
 
 
 
-                <!-- Become Teacher Button -->
-                <!-- <a href="{% url 'teacher_register_step1' %}" class="nav-btn nav-btn-outline">
-                    <i class="fas fa-chalkboard-teacher"></i>
-                    <span>{% trans 'Стать учителем' %}</span>
-                </a> -->
+
 
                 {% if user.is_authenticated %}
                     <!-- Notifications Icon Button -->
@@ -1467,7 +1463,7 @@
                     <span>{% trans 'Избранное' %}</span>
                 </a>
                 {% endif %}
-                <a href="{% url 'teacher_register_step1' %}" class="mobile-menu-item">
+                <a href="{% url 'teacher_register' %}" class="mobile-menu-item">
                     <i class="fas fa-chalkboard-teacher"></i>
                     <span>{% trans 'Стать учителем' %}</span>
                 </a>
@@ -1488,7 +1484,7 @@
                     <i class="fas fa-user-plus"></i>
                     <span>{% trans 'Регистрация' %}</span>
                 </a>
-                <a href="{% url 'teacher_register_step1' %}" class="mobile-menu-item">
+                <a href="{% url 'teacher_register' %}" class="mobile-menu-item">
                     <i class="fas fa-chalkboard-teacher"></i>
                     <span>{% trans 'Стать учителем' %}</span>
                 </a>
@@ -1533,7 +1529,7 @@
 
             <div class="footer-section">
                 <h3>{% trans 'Учителям' %}</h3>
-                <a href="{% url 'teacher_register_step1' %}">{% trans 'Стать учителем' %}</a>
+                <a href="{% url 'teacher_register' %}">{% trans 'Стать учителем' %}</a>
                 <a href="#">{% trans 'Преимущества' %}</a>
                 <a href="#">{% trans 'Правила платформы' %}</a>
                 <a href="#">{% trans 'FAQ для учителей' %}</a>

@@ -1,0 +1,401 @@
+{% extends 'registration/base_wizard.html' %}
+{% load static %}
+
+{% block step_content %}
+<div class="form-section">
+    <h3 class="section-title">Связь с учениками</h3>
+    <p class="section-description">Укажите, как ученики смогут с вами связаться.</p>
+    
+    <div class="form-group">
+        <label class="form-label" for="{{ wizard.form.telegram.id_for_label }}">
+            {{ wizard.form.telegram.label }}
+            <span class="required">*</span>
+        </label>
+        {{ wizard.form.telegram }}
+        <div class="field-help">{{ wizard.form.telegram.help_text }}</div>
+        {% if wizard.form.telegram.errors %}
+        <div class="field-errors">
+            {% for error in wizard.form.telegram.errors %}
+            <p class="error-text">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="form-group">
+        <label class="form-label" for="{{ wizard.form.whatsapp.id_for_label }}">
+            {{ wizard.form.whatsapp.label }}
+        </label>
+        {{ wizard.form.whatsapp }}
+        <div class="field-help">{{ wizard.form.whatsapp.help_text }}</div>
+        {% if wizard.form.whatsapp.errors %}
+        <div class="field-errors">
+            {% for error in wizard.form.whatsapp.errors %}
+            <p class="error-text">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="form-section">
+    <h3 class="section-title">Формат обучения</h3>
+    
+    <div class="form-group">
+        <label class="form-label">
+            {{ wizard.form.teaching_format.label }}
+            <span class="required">*</span>
+        </label>
+        <div class="radio-group">
+            {% for choice in wizard.form.teaching_format %}
+            <label class="radio-card">
+                {{ choice.tag }}
+                <div class="radio-content">
+                    <span class="radio-title">{{ choice.choice_label }}</span>
+                </div>
+            </label>
+            {% endfor %}
+        </div>
+        <div class="field-help">{{ wizard.form.teaching_format.help_text }}</div>
+        {% if wizard.form.teaching_format.errors %}
+        <div class="field-errors">
+            {% for error in wizard.form.teaching_format.errors %}
+            <p class="error-text">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="form-group">
+        <label class="form-label" for="{{ wizard.form.city.id_for_label }}">
+            {{ wizard.form.city.label }}
+        </label>
+        {{ wizard.form.city }}
+        <div class="field-help">{{ wizard.form.city.help_text }}</div>
+        {% if wizard.form.city.errors %}
+        <div class="field-errors">
+            {% for error in wizard.form.city.errors %}
+            <p class="error-text">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="form-section">
+    <h3 class="section-title">Ваше расписание</h3>
+    <p class="section-description">Выберите дни недели и укажите время, когда вы доступны для занятий. Для каждого дня можно установить индивидуальное время.</p>
+    
+    <!-- Скрытые поля для обратной совместимости -->
+    {{ wizard.form.available_weekdays }}
+    {{ wizard.form.available_from }}
+    {{ wizard.form.available_to }}
+    
+    <div class="schedule-container">
+        <!-- Понедельник -->
+        <div class="schedule-day-card">
+            <div class="schedule-day-header">
+                <label class="schedule-checkbox-label">
+                    {{ wizard.form.monday_enabled }}
+                    <span class="schedule-day-name">Понедельник</span>
+                </label>
+            </div>
+            <div class="schedule-time-inputs" data-day="monday">
+                <div class="time-input-group">
+                    <label for="{{ wizard.form.monday_from.id_for_label }}">С</label>
+                    {{ wizard.form.monday_from }}
+                </div>
+                <div class="time-separator">—</div>
+                <div class="time-input-group">
+                    <label for="{{ wizard.form.monday_to.id_for_label }}">До</label>
+                    {{ wizard.form.monday_to }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Вторник -->
+        <div class="schedule-day-card">
+            <div class="schedule-day-header">
+                <label class="schedule-checkbox-label">
+                    {{ wizard.form.tuesday_enabled }}
+                    <span class="schedule-day-name">Вторник</span>
+                </label>
+            </div>
+            <div class="schedule-time-inputs" data-day="tuesday">
+                <div class="time-input-group">
+                    <label for="{{ wizard.form.tuesday_from.id_for_label }}">С</label>
+                    {{ wizard.form.tuesday_from }}
+                </div>
+                <div class="time-separator">—</div>
+                <div class="time-input-group">
+                    <label for="{{ wizard.form.tuesday_to.id_for_label }}">До</label>
+                    {{ wizard.form.tuesday_to }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Среда -->
+        <div class="schedule-day-card">
+            <div class="schedule-day-header">
+                <label class="schedule-checkbox-label">
+                    {{ wizard.form.wednesday_enabled }}
+                    <span class="schedule-day-name">Среда</span>
+                </label>
+            </div>
+            <div class="schedule-time-inputs" data-day="wednesday">
+                <div class="time-input-group">
+                    <label for="{{ wizard.form.wednesday_from.id_for_label }}">С</label>
+                    {{ wizard.form.wednesday_from }}
+                </div>
+                <div class="time-separator">—</div>
+                <div class="time-input-group">
+                    <label for="{{ wizard.form.wednesday_to.id_for_label }}">До</label>
+                    {{ wizard.form.wednesday_to }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Четверг -->
+        <div class="schedule-day-card">
+            <div class="schedule-day-header">
+                <label class="schedule-checkbox-label">
+                    {{ wizard.form.thursday_enabled }}
+                    <span class="schedule-day-name">Четверг</span>
+                </label>
+            </div>
+            <div class="schedule-time-inputs" data-day="thursday">
+                <div class="time-input-group">
+                    <label for="{{ wizard.form.thursday_from.id_for_label }}">С</label>
+                    {{ wizard.form.thursday_from }}
+                </div>
+                <div class="time-separator">—</div>
+                <div class="time-input-group">
+                    <label for="{{ wizard.form.thursday_to.id_for_label }}">До</label>
+                    {{ wizard.form.thursday_to }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Пятница -->
+        <div class="schedule-day-card">
+            <div class="schedule-day-header">
+                <label class="schedule-checkbox-label">
+                    {{ wizard.form.friday_enabled }}
+                    <span class="schedule-day-name">Пятница</span>
+                </label>
+            </div>
+            <div class="schedule-time-inputs" data-day="friday">
+                <div class="time-input-group">
+                    <label for="{{ wizard.form.friday_from.id_for_label }}">С</label>
+                    {{ wizard.form.friday_from }}
+                </div>
+                <div class="time-separator">—</div>
+                <div class="time-input-group">
+                    <label for="{{ wizard.form.friday_to.id_for_label }}">До</label>
+                    {{ wizard.form.friday_to }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Суббота -->
+        <div class="schedule-day-card">
+            <div class="schedule-day-header">
+                <label class="schedule-checkbox-label">
+                    {{ wizard.form.saturday_enabled }}
+                    <span class="schedule-day-name">Суббота</span>
+                </label>
+            </div>
+            <div class="schedule-time-inputs" data-day="saturday">
+                <div class="time-input-group">
+                    <label for="{{ wizard.form.saturday_from.id_for_label }}">С</label>
+                    {{ wizard.form.saturday_from }}
+                </div>
+                <div class="time-separator">—</div>
+                <div class="time-input-group">
+                    <label for="{{ wizard.form.saturday_to.id_for_label }}">До</label>
+                    {{ wizard.form.saturday_to }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Воскресенье -->
+        <div class="schedule-day-card">
+            <div class="schedule-day-header">
+                <label class="schedule-checkbox-label">
+                    {{ wizard.form.sunday_enabled }}
+                    <span class="schedule-day-name">Воскресенье</span>
+                </label>
+            </div>
+            <div class="schedule-time-inputs" data-day="sunday">
+                <div class="time-input-group">
+                    <label for="{{ wizard.form.sunday_from.id_for_label }}">С</label>
+                    {{ wizard.form.sunday_from }}
+                </div>
+                <div class="time-separator">—</div>
+                <div class="time-input-group">
+                    <label for="{{ wizard.form.sunday_to.id_for_label }}">До</label>
+                    {{ wizard.form.sunday_to }}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if wizard.form.non_field_errors %}
+    <div class="field-errors">
+        {% for error in wizard.form.non_field_errors %}
+        <p class="error-text">{{ error }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Получаем все чекбоксы дней
+    const dayCheckboxes = document.querySelectorAll('.schedule-day-card input[type="checkbox"]');
+    
+    dayCheckboxes.forEach(checkbox => {
+        const card = checkbox.closest('.schedule-day-card');
+        const timeInputs = card.querySelector('.schedule-time-inputs');
+        const timeFields = timeInputs.querySelectorAll('input[type="time"]');
+        
+        // Функция обновления состояния
+        function updateTimeInputsState() {
+            if (checkbox.checked) {
+                timeInputs.classList.add('active');
+                timeFields.forEach(field => field.disabled = false);
+                
+                // Устанавливаем значения по умолчанию если пустые
+                timeFields.forEach(field => {
+                    if (!field.value) {
+                        if (field.name.includes('_from')) {
+                            field.value = '09:00';
+                        } else {
+                            field.value = '18:00';
+                        }
+                    }
+                });
+            } else {
+                timeInputs.classList.remove('active');
+                timeFields.forEach(field => {
+                    field.disabled = true;
+                    field.value = '';
+                });
+            }
+        }
+        
+        // Инициализация при загрузке страницы
+        updateTimeInputsState();
+        
+        // Обработчик изменения чекбокса
+        checkbox.addEventListener('change', updateTimeInputsState);
+    });
+});
+</script>
+
+<style>
+.schedule-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.schedule-day-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.2s ease;
+}
+
+.schedule-day-card:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.schedule-day-header {
+    margin-bottom: 12px;
+}
+
+.schedule-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 15px;
+    color: #374151;
+}
+
+.schedule-checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #3b82f6;
+}
+
+.schedule-day-name {
+    user-select: none;
+}
+
+.schedule-time-inputs {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-left: 30px;
+    opacity: 0.4;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.schedule-time-inputs.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.time-input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.time-input-group label {
+    font-size: 14px;
+    color: #6b7280;
+    font-weight: 500;
+    min-width: 30px;
+}
+
+.time-input-group input[type="time"] {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #ffffff;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.time-input-group input[type="time"]:hover:not(:disabled) {
+    border-color: #9ca3af;
+}
+
+.time-input-group input[type="time"]:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.time-input-group input[type="time"]:disabled {
+    background: #f9fafb;
+    cursor: not-allowed;
+}
+
+.time-separator {
+    color: #9ca3af;
+    font-weight: 500;
+}
+</style>
+{% endblock %}

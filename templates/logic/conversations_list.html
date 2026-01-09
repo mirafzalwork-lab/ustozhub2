@@ -289,43 +289,77 @@
     /* Mobile (768px and below) */
     @media (max-width: 768px) {
         .messages-container {
-            padding: var(--spacing-md) var(--spacing-sm);
-            min-height: calc(100vh - 150px);
+            padding: 0;
+            min-height: calc(100vh - 56px);
         }
 
         .messages-header {
-            margin-bottom: var(--spacing-md);
-            padding-bottom: var(--spacing-sm);
+            margin-bottom: 0;
+            padding: var(--spacing-md) var(--spacing-md) var(--spacing-sm);
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            position: sticky;
+            top: 56px;
+            z-index: 10;
         }
 
         .messages-header h1 {
-            font-size: 24px;
+            font-size: 22px;
         }
 
         .messages-header h1::before {
-            font-size: 26px;
+            font-size: 24px;
+        }
+
+        .conversations-list {
+            border-radius: 0;
+            border: none;
+            box-shadow: none;
         }
 
         .conversation-item {
-            padding: var(--spacing-sm) var(--spacing-md);
-            min-height: 72px;
+            padding: 12px 16px;
+            min-height: 76px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .conversation-item:hover {
+            transform: none;
+            background: var(--bg-primary);
+        }
+
+        .conversation-item:active {
+            background: var(--bg-hover);
         }
 
         .conversation-avatar {
-            width: 48px;
-            height: 48px;
+            width: 50px;
+            height: 50px;
             font-size: 18px;
-            margin-right: var(--spacing-sm);
+            margin-right: 12px;
+        }
+
+        .conversation-info {
+            gap: 2px;
         }
 
         .conversation-name {
             font-size: 15px;
-            margin-bottom: 4px;
+            font-weight: 600;
+            margin-bottom: 3px;
         }
 
         .conversation-preview {
             font-size: 13px;
+            line-height: 1.3;
+            display: -webkit-box;
             -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .conversation-meta {
+            margin-left: 8px;
         }
 
         .conversation-time {
@@ -333,15 +367,19 @@
         }
 
         .unread-badge {
-            min-width: 20px;
-            height: 20px;
+            min-width: 22px;
+            height: 22px;
             font-size: 11px;
-            padding: 0 6px;
+            padding: 0 7px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .empty-state {
             padding: var(--spacing-xl) var(--spacing-md);
-            margin: var(--spacing-xl) auto;
+            margin: var(--spacing-xl) var(--spacing-md);
+            border-radius: var(--radius-md);
         }
 
         .empty-state-icon {
@@ -360,7 +398,11 @@
     /* Small Mobile (480px and below) */
     @media (max-width: 480px) {
         .messages-container {
-            padding: var(--spacing-sm);
+            padding: 0;
+        }
+
+        .messages-header {
+            padding: 12px;
         }
 
         .messages-header h1 {
@@ -373,33 +415,37 @@
 
         .conversation-item {
             padding: 10px 12px;
-            min-height: 68px;
+            min-height: 72px;
         }
 
         .conversation-avatar {
-            width: 44px;
-            height: 44px;
-            font-size: 16px;
+            width: 46px;
+            height: 46px;
+            font-size: 17px;
             margin-right: 10px;
         }
 
         .conversation-info {
             flex: 1;
             min-width: 0;
+            gap: 3px;
         }
 
         .conversation-name {
             font-size: 14px;
-            margin-bottom: 2px;
+            font-weight: 600;
         }
 
         .conversation-preview {
-            font-size: 12px;
+            font-size: 13px;
             -webkit-line-clamp: 1;
+            line-height: 1.4;
         }
 
         .conversation-meta {
             align-items: flex-end;
+            margin-left: 6px;
+            gap: 4px;
         }
 
         .conversation-time {
@@ -407,15 +453,15 @@
         }
 
         .unread-badge {
-            min-width: 18px;
-            height: 18px;
+            min-width: 20px;
+            height: 20px;
             font-size: 10px;
-            padding: 0 5px;
+            padding: 0 6px;
         }
 
         .empty-state {
-            padding: var(--spacing-lg) var(--spacing-sm);
-            margin: var(--spacing-lg) auto;
+            padding: var(--spacing-lg) 12px;
+            margin: var(--spacing-lg) 12px;
         }
 
         .empty-state-icon {
@@ -428,18 +474,52 @@
 
         .empty-state p {
             font-size: 13px;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .empty-state a {
+            padding: 10px 20px !important;
+            font-size: 14px !important;
         }
     }
 
-    /* Touch Optimizations */
+    /* Touch Optimizations - Telegram-like */
     @media (hover: none) and (pointer: coarse) {
         .conversation-item:hover {
             transform: none;
+            background: var(--bg-primary);
         }
 
         .conversation-item:active {
             background: var(--bg-hover);
-            transform: scale(0.98);
+            transform: scale(0.99);
+            transition: all 0.1s ease;
+        }
+
+        .conversation-item:hover .conversation-avatar {
+            transform: none;
+        }
+
+        /* Улучшенная читаемость на touch-устройствах */
+        .conversation-preview {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+    }
+
+    /* Дополнительные улучшения для мобильных */
+    @media (max-width: 768px) {
+        /* Плавная прокрутка */
+        .messages-container {
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Безопасные зоны для iPhone X и новее */
+        @supports (padding: max(0px)) {
+            .messages-container {
+                padding-left: max(0px, env(safe-area-inset-left));
+                padding-right: max(0px, env(safe-area-inset-right));
+            }
         }
     }
 </style>

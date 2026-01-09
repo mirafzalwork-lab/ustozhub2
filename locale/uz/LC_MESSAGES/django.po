@@ -1751,7 +1751,7 @@ msgid "Регистрация учителя - Шаг 3 из 3"
 msgstr "O'qituvchi ro'yxatdan o'tish - 3-qadam, 3 tadan"
 
 #: templates/logic/teacher_register_step3.html:588
-msgid "Добавьте сертификаты для повышения доверия (необязательно)"
+msgid "Добавьте сертификаты для повышения доверия (желательно)"
 msgstr "Ishonchni oshirish uchun sertifikatlar qo'shing (ixtiyoriy)"
 
 #: templates/logic/teacher_register_step3.html:621

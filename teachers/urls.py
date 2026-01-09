@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
-    home, detail, student_detail, teacher_register_step1, teacher_register_step2, 
-    teacher_register_step3, teacher_register_complete, profile_view, profile_edit, 
+    home, detail, student_detail, 
+    profile_view, profile_edit, 
     login_view, students_list, logout_view, register_choose, register_student,
     teacher_profile_edit, student_profile_edit, toggle_profile_status,
     toggle_favorite_teacher, toggle_favorite_student,
@@ -21,6 +21,7 @@ from .views import (
 from .telegram_views import (
     telegram_auth, link_telegram_account, telegram_status, toggle_notifications
 )
+from .registration_wizard import TeacherRegistrationWizard, teacher_register_complete
 
 urlpatterns = [
     path('', home, name='home'),
@@ -42,10 +43,10 @@ urlpatterns = [
     # Admin Messages management
     path('admin-dashboard/messages/', messages_management, name='admin_messages'),
 
-    path('register/', teacher_register_step1, name='teacher_register_step1'),
-    path('register/step2/', teacher_register_step2, name='teacher_register_step2'),
-    path('register/step3/', teacher_register_step3, name='teacher_register_step3'),
+    # New Multi-Step Teacher Registration Wizard
+    path('register/', TeacherRegistrationWizard.as_view(), name='teacher_register'),
     path('register/complete/', teacher_register_complete, name='teacher_register_complete'),
+    
     path('student/suggestions/', student_suggestions, name='student_suggestions'),
     path('teacher/<int:id>/', detail, name='teacher_detail'),
     path('profile/', profile_view, name='profile'),

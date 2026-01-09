@@ -1469,7 +1469,7 @@ msgid "Регистрация учителя - Шаг 3 из 3"
 msgstr "Teacher Registration - Step 3 of 3"
 
 #: templates/logic/teacher_register_step3.html:588
-msgid "Добавьте сертификаты для повышения доверия (необязательно)"
+msgid "Добавьте сертификаты для повышения доверия (желательно)"
 msgstr "Add certificates to increase trust (optional)"
 
 #: templates/logic/teacher_register_step3.html:621

@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Регистрация учителя - {{ step_title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/registration.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="registration-wrapper">
+    <div class="registration-container">
+        
+        <!-- Progress Header -->
+        <div class="registration-header">
+            <div class="progress-bar-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ progress_percentage }}%"></div>
+                </div>
+                <div class="progress-text">Шаг {{ current_step }} из {{ total_steps }}</div>
+            </div>
+        </div>
+
+        <!-- Step Indicators -->
+        <div class="step-indicators">
+            {% for step_name, step_form in wizard.form_list.items %}
+            <div class="step-indicator {% if wizard.steps.current == step_name %}active{% elif wizard.steps.step1 < forloop.counter0 %}pending{% else %}completed{% endif %}">
+                <div class="step-circle">
+                    {% if wizard.steps.step1 < forloop.counter0 %}
+                        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    {% else %}
+                        {{ forloop.counter }}
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Form Content -->
+        <div class="form-content">
+            <div class="form-header">
+                <h1 class="form-title">{{ step_title }}</h1>
+                <p class="form-description">{{ step_description }}</p>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+            <div class="messages-container">
+                {% for message in messages %}
+                <div class="message message-{{ message.tags }}">
+                    <svg class="message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        {% if message.tags == 'error' %}
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                        {% else %}
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        {% endif %}
+                    </svg>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Form Errors -->
+            {% if wizard.form.non_field_errors %}
+            <div class="form-errors">
+                {% for error in wizard.form.non_field_errors %}
+                <div class="error-message">{{ error }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Form -->
+            <form method="post" enctype="multipart/form-data" class="registration-form" novalidate>
+                {% csrf_token %}
+                {{ wizard.management_form }}
+
+                {% block step_content %}
+                <!-- Step-specific content will be inserted here -->
+                {% endblock %}
+
+                <!-- Navigation Buttons -->
+                <div class="form-navigation">
+                    {% if wizard.steps.prev %}
+                    <button type="submit" name="wizard_goto_step" value="{{ wizard.steps.prev }}" class="btn btn-secondary">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        Назад
+                    </button>
+                    {% else %}
+                    <a href="{% url 'home' %}" class="btn btn-secondary">Отмена</a>
+                    {% endif %}
+
+                    {% if is_last_step %}
+                    <button type="submit" class="btn btn-primary">
+                        Завершить регистрацию
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </button>
+                    {% else %}
+                    <button type="submit" class="btn btn-primary">
+                        Далее
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- Help Text Footer -->
+        <div class="registration-footer">
+            <p class="footer-text">
+                <svg class="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                Все поля обязательны для заполнения, если не указано иное.
+            </p>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/registration.js' %}"></script>
+{% endblock %}
