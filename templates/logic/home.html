@@ -9,7 +9,7 @@
        🎨 КРИТИЧЕСКИЕ CSS ПЕРЕМЕННЫЕ
        ============================================ */
     .home-page {
-        --navbar-height-desktop: 50x;
+        --navbar-height-desktop: 50px;
         --navbar-height-tablet: 56px;
         --navbar-height-mobile: 52px;
         --filter-sidebar-width: 280px;
@@ -45,7 +45,7 @@
 
     .tab-button {
         flex: 0 0 auto;
-        min-width: 180px;
+        min-width: clamp(120px, 30vw, 180px);
         padding: 12px 24px;
         background: white;
         border: 2px solid #e0e0e0;
@@ -77,6 +77,18 @@
 
     .tab-button i {
         font-size: 18px;
+    }
+
+    @media (max-width: 480px) {
+        .tabs-wrapper {
+            gap: 8px;
+            padding: 10px;
+        }
+        .tab-button {
+            min-width: auto;
+            padding: 10px 14px;
+            font-size: 14px;
+        }
     }
 
     /* ============================================

@@ -81,6 +81,29 @@
     overflow: hidden;
 }
 
+@media (max-width: 480px) {
+    .registration-wrapper {
+        padding: var(--spacing-lg) var(--spacing-sm);
+    }
+
+    .registration-container {
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+    }
+
+    .registration-header {
+        padding: var(--spacing-lg);
+    }
+
+    .form-content {
+        padding: var(--spacing-xl) var(--spacing-lg);
+    }
+
+    .form-title {
+        font-size: var(--font-size-xl);
+    }
+}
+
 /* ==========================
    PROGRESS BAR
    ========================== */
