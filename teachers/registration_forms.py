@@ -8,6 +8,10 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from .models import User, TeacherProfile, Subject, City, Certificate, TeacherSubject
 import re
+import logging
+import mimetypes
+
+logger = logging.getLogger(__name__)
 
 
 class Step1BasicProfileForm(forms.Form):
@@ -56,6 +60,30 @@ class Step1BasicProfileForm(forms.Form):
         help_text='Фамилия для профиля'
     )
     
+    def clean_first_name(self):
+        """✅ Валидация имени - очистка и проверка"""
+        first_name = self.cleaned_data.get('first_name')
+        if first_name:
+            first_name = first_name.strip()
+            # ✅ Проверяем на пустое значение после очистки
+            if not first_name:
+                raise ValidationError('Имя не может быть пустым')
+            # ✅ Проверяем на спецсимволы (разрешены буквы, пробелы, дефисы, апострофы)
+            if not re.match(r"^[\w\s\-'а-яё]+$", first_name, re.IGNORECASE | re.UNICODE):
+                raise ValidationError('Имя содержит недопустимые символы')
+        return first_name
+    
+    def clean_last_name(self):
+        """✅ Валидация фамилии - очистка и проверка"""
+        last_name = self.cleaned_data.get('last_name')
+        if last_name:
+            last_name = last_name.strip()
+            if not last_name:
+                raise ValidationError('Фамилия не может быть пустой')
+            if not re.match(r"^[\w\s\-'а-яё]+$", last_name, re.IGNORECASE | re.UNICODE):
+                raise ValidationError('Фамилия содержит недопустимые символы')
+        return last_name
+    
     gender = forms.ChoiceField(
         choices=GENDER_CHOICES,
         required=True,
@@ -88,28 +116,52 @@ class Step1BasicProfileForm(forms.Form):
     )
     
     def clean_avatar(self):
+        """✅ Валидация аватара с проверкой размера и типа"""
         avatar = self.cleaned_data.get('avatar')
         if avatar:
-            # Проверка размера файла (5 МБ максимум)
-            if avatar.size > 5 * 1024 * 1024:
-                raise ValidationError('Размер файла не должен превышать 5 МБ')
+            try:
+                # ✅ Проверка размера файла (5 МБ максимум)
+                if avatar.size > 5 * 1024 * 1024:
+                    raise ValidationError('Размер файла не должен превышать 5 МБ')
+                
+                # ✅ Проверка расширения файла
+                valid_extensions = ['.jpg', '.jpeg', '.png']
+                ext = avatar.name.lower().split('.')[-1]
+                if f'.{ext}' not in valid_extensions:
+                    raise ValidationError('Разрешены только JPG, JPEG и PNG форматы')
+                
+                # ✅ Проверка MIME type для безопасности
+                mime_type, _ = mimetypes.guess_type(avatar.name)
+                if mime_type not in ['image/jpeg', 'image/png']:
+                    logger.warning(f"Avatar upload: недопустимый MIME type - {mime_type}")
+                    raise ValidationError('Недопустимый тип изображения')
             
-            # Проверка типа файла
-            valid_extensions = ['.jpg', '.jpeg', '.png']
-            ext = avatar.name.lower().split('.')[-1]
-            if f'.{ext}' not in valid_extensions:
-                raise ValidationError('Разрешены только JPG, JPEG и PNG форматы')
+            except ValidationError:
+                raise
+            except Exception as e:
+                logger.error(f"Avatar validation error: {e}", exc_info=True)
+                raise ValidationError('Ошибка при проверке файла')
         
         return avatar
     
     def clean_phone(self):
+        """✅ Валидация номера телефона"""
         phone = self.cleaned_data.get('phone')
-        # Удаляем пробелы и дефисы для проверки
-        phone_digits = re.sub(r'[\s\-]', '', phone)
-        
-        # Проверяем формат узбекского номера
-        if not re.match(r'^\+998\d{9}$', phone_digits):
-            raise ValidationError('Введите корректный номер телефона в формате +998 XX XXX XX XX')
+        if phone:
+            try:
+                phone = phone.strip()
+                # ✅ Удаляем пробелы и дефисы для проверки
+                phone_digits = re.sub(r'[\s\-()]', '', phone)
+                
+                # ✅ Проверяем формат узбекского номера
+                if not re.match(r'^\+998\d{9}$', phone_digits):
+                    logger.warning(f"Invalid phone format: {phone}")
+                    raise ValidationError('Введите корректный номер телефона в формате +998 XX XXX XX XX')
+            except ValidationError:
+                raise
+            except Exception as e:
+                logger.error(f"Phone validation error: {e}")
+                raise ValidationError('Ошибка при проверке номера телефона')
         
         return phone
     
@@ -176,22 +228,42 @@ class Step2AccountSecurityForm(UserCreationForm):
         fields = ['username', 'email', 'password1', 'password2']
     
     def clean_username(self):
+        """✅ Валидация username с проверкой уникальности"""
         username = self.cleaned_data.get('username')
-        
-        # Проверяем, что username содержит только разрешенные символы
-        if not re.match(r'^[\w.-]+$', username):
-            raise ValidationError('Используйте только буквы, цифры и символы _ . -')
-        
-        # Проверяем уникальность
-        if User.objects.filter(username=username).exists():
-            raise ValidationError('Это имя пользователя уже занято')
+        if username:
+            try:
+                username = username.strip()
+                # ✅ Проверяем, что username содержит только разрешенные символы
+                if not re.match(r'^[\w.-]+$', username):
+                    raise ValidationError('Используйте только буквы, цифры и символы _ . -')
+                
+                # ✅ Проверяем уникальность
+                if User.objects.filter(username__iexact=username).exists():
+                    logger.warning(f"Registration: username уже используется - {username}")
+                    raise ValidationError('Это имя пользователя уже занято')
+            except ValidationError:
+                raise
+            except Exception as e:
+                logger.error(f"Username validation error: {e}", exc_info=True)
+                raise ValidationError('Ошибка при проверке имени пользователя')
         
         return username
     
     def clean_email(self):
+        """✅ Валидация email с проверкой уникальности"""
         email = self.cleaned_data.get('email')
-        if User.objects.filter(email=email).exists():
-            raise ValidationError('Этот email уже используется')
+        if email:
+            try:
+                email = email.strip().lower()
+                # ✅ Проверяем уникальность
+                if User.objects.filter(email__iexact=email).exists():
+                    logger.warning(f"Registration: email уже используется - {email}")
+                    raise ValidationError('Этот email уже используется')
+            except ValidationError:
+                raise
+            except Exception as e:
+                logger.error(f"Email validation error: {e}", exc_info=True)
+                raise ValidationError('Ошибка при проверке email')
         return email
 
 
@@ -261,13 +333,26 @@ class Step3EducationExperienceForm(forms.Form):
     )
     
     def clean_bio(self):
+        """✅ Валидация bio с проверкой длины"""
         bio = self.cleaned_data.get('bio')
         if bio:
-            bio = bio.strip()
-            if len(bio) < 100:
-                raise ValidationError(f'Описание слишком короткое. Минимум 100 символов (сейчас: {len(bio)})')
-            if len(bio) > 1000:
-                raise ValidationError(f'Описание слишком длинное. Максимум 1000 символов (сейчас: {len(bio)})')
+            try:
+                bio = bio.strip()
+                bio_len = len(bio)
+                
+                if bio_len < 100:
+                    raise ValidationError(
+                        f'Описание слишком короткое. Минимум 100 символов (сейчас: {bio_len})'
+                    )
+                if bio_len > 1000:
+                    raise ValidationError(
+                        f'Описание слишком длинное. Максимум 1000 символов (сейчас: {bio_len})'
+                    )
+            except ValidationError:
+                raise
+            except Exception as e:
+                logger.error(f"Bio validation error: {e}")
+                raise ValidationError('Ошибка при проверке описания')
         return bio
 
 
@@ -276,6 +361,17 @@ class Step4AvailabilityFormatForm(forms.Form):
     STEP 3: Availability & Format
     Fields: Telegram, Location, Teaching format, Working hours
     """
+    # ✅ Словарь дней недели для избежания дублирования
+    DAYS_OF_WEEK = {
+        'monday': 'Понедельник',
+        'tuesday': 'Вторник',
+        'wednesday': 'Среда',
+        'thursday': 'Четверг',
+        'friday': 'Пятница',
+        'saturday': 'Суббота',
+        'sunday': 'Воскресенье'
+    }
+    
     telegram = forms.CharField(
         max_length=100,
         required=True,
@@ -361,77 +457,83 @@ class Step4AvailabilityFormatForm(forms.Form):
     available_to = forms.TimeField(required=False, widget=forms.HiddenInput())
     
     def clean_telegram(self):
+        """✅ Валидация Telegram с проверкой формата"""
         telegram = self.cleaned_data.get('telegram')
         if telegram:
-            telegram = telegram.strip()
-            # Проверяем, что это либо @username, либо номер телефона
-            if not (telegram.startswith('@') or telegram.startswith('+')):
-                raise ValidationError('Введите Telegram в формате @username или +998...')
+            try:
+                telegram = telegram.strip()
+                # ✅ Проверяем, что это либо @username, либо номер телефона
+                if not (telegram.startswith('@') or telegram.startswith('+')):
+                    raise ValidationError('Введите Telegram в формате @username или +998...')
+                
+                # ✅ Дополнительная проверка на пустое значение после @
+                if telegram.startswith('@') and len(telegram) < 2:
+                    raise ValidationError('Укажите корректный Telegram username')
+            except ValidationError:
+                raise
+            except Exception as e:
+                logger.error(f"Telegram validation error: {e}")
+                raise ValidationError('Ошибка при проверке Telegram')
         return telegram
     
     def clean(self):
-        cleaned_data = super().clean()
-        
-        # Проверяем, что выбран хотя бы один день
-        days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-        has_any_day = False
-        
-        for day in days:
-            enabled = cleaned_data.get(f'{day}_enabled')
-            time_from = cleaned_data.get(f'{day}_from')
-            time_to = cleaned_data.get(f'{day}_to')
+        """✅ Валидация расписания с проверкой дней и времени"""
+        try:
+            cleaned_data = super().clean()
             
-            if enabled:
-                has_any_day = True
+            # ✅ Проверяем, что выбран хотя бы один день
+            days = list(self.DAYS_OF_WEEK.keys())
+            has_any_day = False
+            
+            for day in days:
+                enabled = cleaned_data.get(f'{day}_enabled')
+                time_from = cleaned_data.get(f'{day}_from')
+                time_to = cleaned_data.get(f'{day}_to')
                 
-                # Проверяем, что если день выбран, то указаны оба времени
-                if not time_from or not time_to:
-                    day_name_ru = {
-                        'monday': 'Понедельник',
-                        'tuesday': 'Вторник',
-                        'wednesday': 'Среда',
-                        'thursday': 'Четверг',
-                        'friday': 'Пятница',
-                        'saturday': 'Суббота',
-                        'sunday': 'Воскресенье'
-                    }[day]
-                    raise ValidationError(f'{day_name_ru}: укажите время начала и окончания')
-                
-                # Проверяем, что время начала раньше времени окончания
-                if time_from >= time_to:
-                    day_name_ru = {
-                        'monday': 'Понедельник',
-                        'tuesday': 'Вторник',
-                        'wednesday': 'Среда',
-                        'thursday': 'Четверг',
-                        'friday': 'Пятница',
-                        'saturday': 'Суббота',
-                        'sunday': 'Воскресенье'
-                    }[day]
-                    raise ValidationError(f'{day_name_ru}: время начала должно быть раньше времени окончания')
-        
-        if not has_any_day:
-            raise ValidationError('Выберите хотя бы один рабочий день')
-        
-        # Формируем данные для обратной совместимости
-        enabled_days = []
-        day_mapping = {
-            'monday': '1',
-            'tuesday': '2',
-            'wednesday': '3',
-            'thursday': '4',
-            'friday': '5',
-            'saturday': '6',
-            'sunday': '7'
-        }
-        
-        for day in days:
-            if cleaned_data.get(f'{day}_enabled'):
-                enabled_days.append(day_mapping[day])
-        
-        cleaned_data['available_weekdays'] = enabled_days
-        
-        return cleaned_data
+                if enabled:
+                    has_any_day = True
+                    day_name_ru = self.DAYS_OF_WEEK[day]
+                    
+                    # ✅ Проверяем, что если день выбран, то указаны оба времени
+                    if not time_from or not time_to:
+                        raise ValidationError(
+                            f'{day_name_ru}: укажите время начала и окончания'
+                        )
+                    
+                    # ✅ Проверяем, что время начала раньше времени окончания
+                    if time_from >= time_to:
+                        raise ValidationError(
+                            f'{day_name_ru}: время начала должно быть раньше времени окончания'
+                        )
+            
+            if not has_any_day:
+                raise ValidationError('Выберите хотя бы один рабочий день')
+            
+            # ✅ Формируем данные для обратной совместимости
+            enabled_days = []
+            day_mapping = {
+                'monday': '1',
+                'tuesday': '2',
+                'wednesday': '3',
+                'thursday': '4',
+                'friday': '5',
+                'saturday': '6',
+                'sunday': '7'
+            }
+            
+            for day in days:
+                if cleaned_data.get(f'{day}_enabled'):
+                    enabled_days.append(day_mapping[day])
+            
+            cleaned_data['available_weekdays'] = enabled_days
+            
+            return cleaned_data
+            
+        except ValidationError:
+            raise
+        except Exception as e:
+            logger.error(f"Schedule validation error: {e}", exc_info=True)
+            raise ValidationError('Ошибка при проверке расписания')
 
 
 class Step5SubjectsPricingForm(forms.Form):
@@ -492,35 +594,51 @@ class Step5SubjectsPricingForm(forms.Form):
             )
     
     def clean(self):
-        cleaned_data = super().clean()
-        subjects_added = 0
-        selected_subjects = []
-        
-        for i in range(1, 5):
-            subject = cleaned_data.get(f'subject_{i}')
-            hourly_rate = cleaned_data.get(f'hourly_rate_{i}')
+        """✅ Валидация предметов и цен"""
+        try:
+            cleaned_data = super().clean()
+            subjects_added = 0
+            selected_subjects = []
             
-            if subject:
-                # Проверяем, что не выбран дубликат
-                if subject in selected_subjects:
-                    raise ValidationError(f'Предмет "{subject}" выбран несколько раз. Выберите разные предметы.')
-                
-                # Проверяем, что указана цена
-                if not hourly_rate or hourly_rate <= 0:
-                    raise ValidationError(f'Укажите цену для предмета "{subject}"')
-                
-                selected_subjects.append(subject)
-                subjects_added += 1
-            elif hourly_rate and hourly_rate > 0:
-                # Указана цена, но не выбран предмет
-                raise ValidationError(f'Выберите предмет для строки {i}')
-        
-        # Проверяем, что добавлен хотя бы один предмет
-        if subjects_added == 0:
-            raise ValidationError('Добавьте хотя бы один предмет с ценой')
-        
-        cleaned_data['subjects_count'] = subjects_added
-        return cleaned_data
+            for i in range(1, 5):
+                try:
+                    subject = cleaned_data.get(f'subject_{i}')
+                    hourly_rate = cleaned_data.get(f'hourly_rate_{i}')
+                    
+                    if subject:
+                        # ✅ Проверяем, что не выбран дубликат
+                        if subject in selected_subjects:
+                            raise ValidationError(
+                                f'Предмет "{subject}" выбран несколько раз. Выберите разные предметы.'
+                            )
+                        
+                        # ✅ Проверяем, что указана цена
+                        if not hourly_rate or hourly_rate <= 0:
+                            raise ValidationError(f'Укажите цену для предмета "{subject}"')
+                        
+                        selected_subjects.append(subject)
+                        subjects_added += 1
+                    elif hourly_rate and hourly_rate > 0:
+                        # ✅ Указана цена, но не выбран предмет
+                        raise ValidationError(f'Выберите предмет для строки {i}')
+                except ValidationError:
+                    raise
+                except Exception as e:
+                    logger.error(f"Subject {i} validation error: {e}")
+                    raise ValidationError(f'Ошибка при проверке предмета {i}')
+            
+            # ✅ Проверяем, что добавлен хотя бы один предмет
+            if subjects_added == 0:
+                raise ValidationError('Добавьте хотя бы один предмет с ценой')
+            
+            cleaned_data['subjects_count'] = subjects_added
+            return cleaned_data
+            
+        except ValidationError:
+            raise
+        except Exception as e:
+            logger.error(f"Subjects validation error: {e}", exc_info=True)
+            raise ValidationError('Ошибка при проверке предметов')
 
 
 class Step6CertificatesForm(forms.ModelForm):
@@ -565,35 +683,64 @@ class Step6CertificatesForm(forms.ModelForm):
         fields = ['name', 'issuer', 'file']
     
     def clean(self):
-        cleaned_data = super().clean()
-        name = cleaned_data.get('name')
-        issuer = cleaned_data.get('issuer')
-        file = cleaned_data.get('file')
-        
-        # Если загружен файл, то name и issuer тоже обязательны
-        if file:
-            if not name:
-                raise ValidationError('Укажите название сертификата для загруженного файла')
-            if not issuer:
-                raise ValidationError('Укажите, кто выдал сертификат')
-        
-        # Если указаны name и issuer, то файл обязателен
-        if (name or issuer) and not file:
-            raise ValidationError('Загрузите файл сертификата')
-        
-        return cleaned_data
+        """✅ Валидация сертификата с проверкой файла"""
+        try:
+            cleaned_data = super().clean()
+            name = cleaned_data.get('name')
+            issuer = cleaned_data.get('issuer')
+            file = cleaned_data.get('file')
+            
+            # ✅ Очистка данных
+            if name:
+                name = name.strip()
+                cleaned_data['name'] = name
+            if issuer:
+                issuer = issuer.strip()
+                cleaned_data['issuer'] = issuer
+            
+            # ✅ Если загружен файл, то name и issuer тоже обязательны
+            if file:
+                if not name or not issuer:
+                    raise ValidationError('Для загруженного файла укажите название и издателя')
+            
+            # ✅ Если указаны name и issuer, то файл обязателен
+            if (name or issuer) and not file:
+                raise ValidationError('Загрузите файл сертификата')
+            
+            return cleaned_data
+            
+        except ValidationError:
+            raise
+        except Exception as e:
+            logger.error(f"Certificate validation error: {e}", exc_info=True)
+            raise ValidationError('Ошибка при проверке сертификата')
     
     def clean_file(self):
+        """✅ Валидация файла сертификата с проверкой типа"""
         file = self.cleaned_data.get('file')
         if file:
-            # Проверка размера файла (10 МБ максимум)
-            if file.size > 10 * 1024 * 1024:
-                raise ValidationError('Размер файла не должен превышать 10 МБ')
+            try:
+                # ✅ Проверка размера файла (10 МБ максимум)
+                if file.size > 10 * 1024 * 1024:
+                    raise ValidationError('Размер файла не должен превышать 10 МБ')
+                
+                # ✅ Проверка расширения файла
+                valid_extensions = ['.jpg', '.jpeg', '.png', '.pdf']
+                ext = file.name.lower().split('.')[-1]
+                if f'.{ext}' not in valid_extensions:
+                    raise ValidationError('Разрешены только JPG, PNG и PDF форматы')
+                
+                # ✅ Проверка MIME type для безопасности
+                mime_type, _ = mimetypes.guess_type(file.name)
+                allowed_mimes = ['image/jpeg', 'image/png', 'application/pdf']
+                if mime_type not in allowed_mimes:
+                    logger.warning(f"Certificate upload: недопустимый MIME type - {mime_type}")
+                    raise ValidationError('Недопустимый тип файла')
             
-            # Проверка типа файла
-            valid_extensions = ['.jpg', '.jpeg', '.png', '.pdf']
-            ext = file.name.lower().split('.')[-1]
-            if f'.{ext}' not in valid_extensions:
-                raise ValidationError('Разрешены только JPG, PNG и PDF форматы')
+            except ValidationError:
+                raise
+            except Exception as e:
+                logger.error(f"Certificate file validation error: {e}", exc_info=True)
+                raise ValidationError('Ошибка при проверке файла сертификата')
         
         return file

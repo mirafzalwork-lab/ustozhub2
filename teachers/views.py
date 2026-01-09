@@ -23,7 +23,8 @@ logger = logging.getLogger(__name__)
 from .models import (
     TeacherProfile, StudentProfile, Subject, City, ProfileView,
     TeacherSubject, Certificate, User, Favorite, FavoriteStudent,
-    Conversation, Message, Review, ViewCounter, TelegramUser
+    Conversation, Message, Review, ViewCounter, TelegramUser,
+    SubjectCategory, SubjectSearchLog
 )
 from .forms import (
     TeacherRegistrationForm, 
@@ -600,128 +601,140 @@ def students_list(request):
 
 def detail(request, id):
     """Детальная страница учителя с подсчетом просмотров"""
-    teacher = get_object_or_404(
-        TeacherProfile.objects.select_related('user', 'city')
-        .prefetch_related(
-            'teachersubject_set__subject',
-            'certificates',
-            'reviews__student',
-            'reviews__subject'
-        ),
-        id=id,
-        is_active=True
-    )
+    try:
+        teacher = get_object_or_404(
+            TeacherProfile.objects.select_related('user', 'city')
+            .prefetch_related(
+                'teachersubject_set__subject',
+                'certificates',
+                'reviews__student',
+                'reviews__subject'
+            ),
+            id=id,
+            is_active=True
+        )
+        
+        # ✅ НОВОЕ: Записываем просмотр профиля
+        record_profile_view(request, teacher, 'teacher')
+        
+        reviews = teacher.reviews.select_related('student', 'subject').order_by('-created_at')
+        
+        rating_stats = reviews.aggregate(
+            avg_knowledge=Avg('knowledge_rating'),
+            avg_communication=Avg('communication_rating'),
+            avg_punctuality=Avg('punctuality_rating')
+        )
+        
+        rating_distribution = {
+            5: reviews.filter(rating=5).count(),
+            4: reviews.filter(rating=4).count(),
+            3: reviews.filter(rating=3).count(),
+            2: reviews.filter(rating=2).count(),
+            1: reviews.filter(rating=1).count(),
+        }
+        
+        is_favorite = False
+        if request.user.is_authenticated:
+            is_favorite = teacher.favorited_by.filter(student=request.user).exists()
+        
+        similar_teachers = TeacherProfile.objects.filter(
+            subjects__in=teacher.subjects.all(),
+            is_active=True
+        ).exclude(id=teacher.id).select_related('user', 'city').distinct()[:3]
+        
+        # ✅ НОВОЕ: Проверка доступа к контактной информации
+        can_view_contacts = can_view_contact_info(request, teacher.user)
+        show_auth_prompt = not request.user.is_authenticated
+        
+        context = {
+            'teacher': teacher,
+            'reviews': reviews,
+            'rating_stats': rating_stats,
+            'rating_distribution': rating_distribution,
+            'is_favorite': is_favorite,
+            'similar_teachers': similar_teachers,
+            'can_view_contacts': can_view_contacts,
+            'show_auth_prompt': show_auth_prompt,
+        }
+        
+        return render(request, 'logic/teacher_detail.html', context)
     
-    # ✅ НОВОЕ: Записываем просмотр профиля
-    record_profile_view(request, teacher, 'teacher')
-    
-    reviews = teacher.reviews.select_related('student', 'subject').order_by('-created_at')
-    
-    rating_stats = reviews.aggregate(
-        avg_knowledge=Avg('knowledge_rating'),
-        avg_communication=Avg('communication_rating'),
-        avg_punctuality=Avg('punctuality_rating')
-    )
-    
-    rating_distribution = {
-        5: reviews.filter(rating=5).count(),
-        4: reviews.filter(rating=4).count(),
-        3: reviews.filter(rating=3).count(),
-        2: reviews.filter(rating=2).count(),
-        1: reviews.filter(rating=1).count(),
-    }
-    
-    is_favorite = False
-    if request.user.is_authenticated:
-        is_favorite = teacher.favorited_by.filter(student=request.user).exists()
-    
-    similar_teachers = TeacherProfile.objects.filter(
-        subjects__in=teacher.subjects.all(),
-        is_active=True
-    ).exclude(id=teacher.id).distinct()[:3]
-    
-    # ✅ НОВОЕ: Проверка доступа к контактной информации
-    can_view_contacts = can_view_contact_info(request, teacher.user)
-    show_auth_prompt = not request.user.is_authenticated
-    
-    context = {
-        'teacher': teacher,
-        'reviews': reviews,
-        'rating_stats': rating_stats,
-        'rating_distribution': rating_distribution,
-        'is_favorite': is_favorite,
-        'similar_teachers': similar_teachers,
-        'can_view_contacts': can_view_contacts,  # Флаг для отображения контактов
-        'show_auth_prompt': show_auth_prompt,    # Флаг для показа модального окна регистрации
-    }
-    
-    return render(request, 'logic/teacher_detail.html', context)
+    except Exception as e:
+        logger.error(f"Error in teacher detail view: {e}", exc_info=True)
+        messages.error(request, 'Ошибка при загрузке профиля учителя')
+        return redirect('home')
 
 
 def student_detail(request, id):
     """
     Детальная страница ученика с подсчетом просмотров
     """
-    student = get_object_or_404(
-        StudentProfile.objects.select_related('user', 'city')
-        .prefetch_related(
-            'desired_subjects',
-            'interests'
-        ),
-        id=id,
-        is_active=True
-    )
+    try:
+        student = get_object_or_404(
+            StudentProfile.objects.select_related('user', 'city')
+            .prefetch_related(
+                'desired_subjects',
+                'interests'
+            ),
+            id=id,
+            is_active=True
+        )
+        
+        # ✅ НОВОЕ: Записываем просмотр профиля
+        record_profile_view(request, student, 'student')
+        
+        # Получаем все желаемые предметы
+        desired_subjects = student.desired_subjects.all()
+        
+        # Получаем дополнительные интересы
+        other_interests = student.interests.exclude(
+            id__in=desired_subjects.values_list('id', flat=True)
+        )
+        
+        # Похожие ученики по предметам
+        similar_students = StudentProfile.objects.filter(
+            desired_subjects__in=desired_subjects,
+            is_active=True
+        ).exclude(id=student.id).select_related('user', 'city').distinct()[:3]
+        
+        # Получаем учителей, которые преподают нужные предметы
+        suggested_teachers = TeacherProfile.objects.filter(
+            subjects__in=desired_subjects,
+            is_active=True
+        ).select_related('user', 'city').distinct().order_by('-rating')[:6]
+        
+        # Проверяем, добавлен ли ученик в избранное учителем
+        is_favorited = False
+        if request.user.is_authenticated and request.user.user_type == 'teacher' and hasattr(request.user, 'teacher_profile'):
+            try:
+                is_favorited = FavoriteStudent.objects.filter(
+                    teacher=request.user.teacher_profile,
+                    student=student
+                ).exists()
+            except Exception:
+                is_favorited = False
+        
+        # ✅ НОВОЕ: Проверка доступа к контактной информации
+        can_view_contacts = can_view_contact_info(request, student.user)
+        show_auth_prompt = not request.user.is_authenticated
+        
+        context = {
+            'student': student,
+            'desired_subjects': desired_subjects,
+            'other_interests': other_interests,
+            'similar_students': similar_students,
+            'suggested_teachers': suggested_teachers,
+            'is_favorited': is_favorited,
+            'can_view_contacts': can_view_contacts,
+            'show_auth_prompt': show_auth_prompt,
+        }
+        
+        return render(request, 'logic/student_detail.html', context)
     
-    # ✅ НОВОЕ: Записываем просмотр профиля
-    record_profile_view(request, student, 'student')
-    
-    # Получаем все желаемые предметы
-    desired_subjects = student.desired_subjects.all()
-    
-    # Получаем дополнительные интересы
-    other_interests = student.interests.exclude(
-        id__in=desired_subjects.values_list('id', flat=True)
-    )
-    
-    # Похожие ученики по предметам
-    similar_students = StudentProfile.objects.filter(
-        desired_subjects__in=desired_subjects,
-        is_active=True
-    ).exclude(id=student.id).distinct()[:3]
-    
-    # Получаем учителей, которые преподают нужные предметы
-    suggested_teachers = TeacherProfile.objects.filter(
-        subjects__in=desired_subjects,
-        is_active=True
-    ).distinct().order_by('-rating')[:6]
-    
-    # Проверяем, добавлен ли ученик в избранное учителем
-    is_favorited = False
-    if request.user.is_authenticated and request.user.user_type == 'teacher' and hasattr(request.user, 'teacher_profile'):
-        try:
-            is_favorited = FavoriteStudent.objects.filter(
-                teacher=request.user.teacher_profile,
-                student=student
-            ).exists()
-        except Exception:
-            is_favorited = False
-    
-    # ✅ НОВОЕ: Проверка доступа к контактной информации
-    can_view_contacts = can_view_contact_info(request, student.user)
-    show_auth_prompt = not request.user.is_authenticated
-    
-    context = {
-        'student': student,
-        'desired_subjects': desired_subjects,
-        'other_interests': other_interests,
-        'similar_students': similar_students,
-        'suggested_teachers': suggested_teachers,
-        'is_favorited': is_favorited,
-        'can_view_contacts': can_view_contacts,  # Флаг для отображения контактов
-        'show_auth_prompt': show_auth_prompt,    # Флаг для показа модального окна регистрации
-    }
-    
-    return render(request, 'logic/student_detail.html', context)
+    except Exception as e:
+        logger.error(f"Error in student detail view: {e}", exc_info=True)
+        messages.error(request, 'Ошибка при загрузке профиля ученика')
+        return redirect('students_list')
 
 
 # Остальные функции БЕЗ ИЗМЕНЕНИЙ
@@ -1734,45 +1747,50 @@ def subjects_autocomplete(request):
     # Ограничиваем длину запроса для безопасности
     query = query[:100]
 
-    subjects = Subject.objects.filter(is_active=True).filter(
-        Q(name__icontains=query) | Q(description__icontains=query)
-    ).select_related('category').annotate(
-        relevance=Case(
-            When(name__iexact=query, then=Value(4)),
-            When(name__istartswith=query, then=Value(3)),
-            When(name__icontains=query, then=Value(2)),
-            When(description__icontains=query, then=Value(1)),
-            default=Value(0),
-            output_field=IntegerField()
-        )
-    ).order_by('-relevance', '-is_popular', 'name')[:30]
-
-    results = []
-    for subject in subjects:
-        teachers_count = subject.get_teachers_count()
-        results.append({
-            'id': subject.id,
-            'name': subject.name,
-            'description': subject.description[:100] if subject.description else '',
-            'category': subject.category.name if subject.category else 'Без категории',
-            'category_color': subject.category.color if subject.category else '#999999',
-            'icon': subject.icon or 'fas fa-book',
-            'is_popular': subject.is_popular,
-            'teachers_count': teachers_count
-        })
-
-    # Логируем поиск для аналитики
     try:
-        SubjectSearchLog.objects.create(
-            query=query[:200],  # Ограничиваем длину
-            user=request.user if request.user.is_authenticated else None,
-            ip_address=get_client_ip(request),
-            found_results_count=len(results)
-        )
-    except Exception as e:
-        logger.warning(f"Failed to log subject search: {e}")
+        subjects = Subject.objects.filter(is_active=True).filter(
+            Q(name__icontains=query) | Q(description__icontains=query)
+        ).select_related('category').annotate(
+            relevance=Case(
+                When(name__iexact=query, then=Value(4)),
+                When(name__istartswith=query, then=Value(3)),
+                When(name__icontains=query, then=Value(2)),
+                When(description__icontains=query, then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField()
+            )
+        ).order_by('-relevance', '-is_popular', 'name')[:30]
 
-    return JsonResponse({'results': results})
+        results = []
+        for subject in subjects:
+            teachers_count = subject.get_teachers_count()
+            results.append({
+                'id': subject.id,
+                'name': subject.name,
+                'description': subject.description[:100] if subject.description else '',
+                'category': subject.category.name if subject.category else 'Без категории',
+                'category_color': subject.category.color if subject.category else '#999999',
+                'icon': subject.icon or 'fas fa-book',
+                'is_popular': subject.is_popular,
+                'teachers_count': teachers_count
+            })
+
+        # Логируем поиск для аналитики
+        try:
+            SubjectSearchLog.objects.create(
+                query=query[:200],  # Ограничиваем длину
+                user=request.user if request.user.is_authenticated else None,
+                ip_address=get_client_ip(request),
+                found_results_count=len(results)
+            )
+        except Exception as e:
+            logger.warning(f"Failed to log subject search: {e}")
+
+        return JsonResponse({'results': results})
+    
+    except Exception as e:
+        logger.error(f"Error in subjects_autocomplete: {e}", exc_info=True)
+        return JsonResponse({'error': 'Ошибка поиска предметов'}, status=500)
 
 
 def subjects_popular(request):

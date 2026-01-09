@@ -43,29 +43,52 @@ def send_message_notification(sender, instance, created, **kwargs):
         conversation = message.conversation
         sender_user = message.sender
         
+        # ✅ Проверяем что conversation существует
+        if not conversation:
+            logger.error(f"Сообщение {message.pk or 'new'} не связано с диалогом")
+            return
+        
+        # Безопасно получаем sender_user
+        if not sender_user:
+            logger.error(f"Сообщение {message.pk or 'new'} не имеет отправителя")
+            return
+        
         # Проверяем доступ к related objects
         try:
+            # ✅ Используем .pk для безопасной проверки без дополнительного запроса
+            if not conversation.teacher or not conversation.teacher.user:
+                logger.error(f"Диалог {conversation.pk} не имеет учителя или профиля учителя")
+                return
+            
             teacher_user = conversation.teacher.user
             student_user = conversation.student
+            
+            if not student_user:
+                logger.error(f"Диалог {conversation.pk} не имеет ученика")
+                return
+                
         except AttributeError as e:
-            logger.error(f"Ошибка доступа к пользователям диалога {conversation.id}: {e}")
+            logger.error(
+                f"Ошибка доступа к пользователям диалога {conversation.pk}: {e}",
+                exc_info=True
+            )
             return
         
         # Получатель - это не отправитель
-        if sender_user.id == teacher_user.id:
+        if sender_user.pk == teacher_user.pk:
             recipient = student_user
-        elif sender_user.id == student_user.id:
+        elif sender_user.pk == student_user.pk:
             recipient = teacher_user
         else:
             logger.warning(
-                f"Отправитель {sender_user.id} ({sender_user.username}) "
-                f"не является участником диалога {conversation.id}"
+                f"Отправитель {sender_user.pk} ({sender_user.username}) "
+                f"не является участником диалога {conversation.pk}"
             )
             return
         
         # Проверяем что получатель существует
         if not recipient:
-            logger.error(f"Не удалось определить получателя для сообщения {message.id}")
+            logger.error(f"Не удалось определить получателя для сообщения {message.pk or 'new'}")
             return
         
         # Добавляем уведомление в очередь
@@ -77,16 +100,15 @@ def send_message_notification(sender, instance, created, **kwargs):
             recipient=recipient,
             sender_name=sender_name,
             message_preview=message_preview,
-            conversation_id=str(conversation.id)  # UUID -> str для JSON
+            conversation_id=str(conversation.pk)  # UUID -> str для JSON
         )
         
         if notification:
             logger.info(
-                f"✅ Уведомление о сообщении {message.id} добавлено в очередь "
-                f"для {recipient.username}"
+                f"✅ Уведомление о сообщении добавлено в очередь для {recipient.username}"
             )
         else:
-            logger.warning(
+            logger.debug(
                 f"❌ Уведомление не добавлено - пользователь {recipient.username} "
                 f"не подключил Telegram или отключил уведомления"
             )
@@ -94,7 +116,7 @@ def send_message_notification(sender, instance, created, **kwargs):
     except Exception as e:
         # Не прерываем создание сообщения даже если уведомление не добавлено
         logger.error(
-            f"Ошибка добавления уведомления о сообщении {instance.id}: {e}",
+            f"Ошибка добавления уведомления о сообщении: {e}",
             exc_info=True
         )
 
@@ -106,66 +128,81 @@ def send_message_notification(sender, instance, created, **kwargs):
 @receiver([post_save, post_delete], sender=Subject)
 def clear_subjects_cache(sender, instance=None, **kwargs):
     """Сбрасывает кэш предметов при их изменении"""
-    cache.delete('all_subjects')
-    
-    # ✅ Очищаем кэш категории если предмет связан с категорией
-    if instance and hasattr(instance, 'category') and instance.category:
-        cache.delete(f'category_subjects_count_{instance.category.id}')
-        logger.info(f"Кэш категории {instance.category.id} очищен")
-    
-    logger.info("Кэш предметов очищен")
+    try:
+        cache.delete('all_subjects')
+        
+        # ✅ Очищаем кэш категории если предмет связан с категорией
+        if instance and instance.category_id:
+            cache.delete(f'category_subjects_count_{instance.category_id}')
+            logger.debug(f"Кэш категории {instance.category_id} очищен")
+        
+        logger.debug("Кэш предметов очищен")
+    except Exception as e:
+        logger.error(f"Ошибка очистки кэша предметов: {e}", exc_info=True)
 
 
 @receiver([post_save, post_delete], sender=SubjectCategory)
 def clear_category_cache(sender, instance=None, **kwargs):
     """Сбрасывает кэш категории при её изменении"""
-    if instance:
-        cache.delete(f'category_subjects_count_{instance.id}')
-        logger.info(f"Кэш категории {instance.id} очищен")
-    
-    # Очищаем общий кэш предметов тоже
-    cache.delete('all_subjects')
+    try:
+        if instance and instance.pk:
+            cache.delete(f'category_subjects_count_{instance.pk}')
+            logger.debug(f"Кэш категории {instance.pk} очищен")
+        
+        # Очищаем общий кэш предметов тоже
+        cache.delete('all_subjects')
+    except Exception as e:
+        logger.error(f"Ошибка очистки кэша категории: {e}", exc_info=True)
 
 
 @receiver([post_save, post_delete], sender=City)
 def clear_cities_cache(sender, **kwargs):
     """Сбрасывает кэш городов при их изменении"""
-    cache.delete('all_cities')
-    logger.info("Кэш городов очищен")
+    try:
+        cache.delete('all_cities')
+        logger.debug("Кэш городов очищен")
+    except Exception as e:
+        logger.error(f"Ошибка очистки кэша городов: {e}", exc_info=True)
 
 
 @receiver([post_save, post_delete], sender=TeacherSubject)
 def clear_price_range_cache(sender, instance=None, **kwargs):
     """Сбрасывает кэш диапазона цен при изменении предметов учителей"""
-    cache.delete('price_range')
-    
-    # ✅ Очищаем кэш конкретного учителя и предмета
-    if instance:
-        if hasattr(instance, 'teacher') and instance.teacher:
-            cache.delete(f'teacher_min_price_{instance.teacher.id}')
-            logger.info(f"Кэш цен учителя {instance.teacher.id} очищен")
+    try:
+        cache.delete('price_range')
         
-        if hasattr(instance, 'subject') and instance.subject:
-            cache.delete(f'subject_teachers_count_{instance.subject.id}')
-            logger.info(f"Кэш учителей предмета {instance.subject.id} очищен")
-    
-    logger.info("Кэш диапазона цен очищен")
+        # ✅ Очищаем кэш конкретного учителя и предмета
+        if instance:
+            if instance.teacher_id:
+                cache.delete(f'teacher_min_price_{instance.teacher_id}')
+                logger.debug(f"Кэш цен учителя {instance.teacher_id} очищен")
+            
+            if instance.subject_id:
+                cache.delete(f'subject_teachers_count_{instance.subject_id}')
+                logger.debug(f"Кэш учителей предмета {instance.subject_id} очищен")
+        
+        logger.debug("Кэш диапазона цен очищен")
+    except Exception as e:
+        logger.error(f"Ошибка очистки кэша цен: {e}", exc_info=True)
 
 
 @receiver([post_save, post_delete], sender=StudentProfile)
 def clear_budget_range_cache(sender, instance=None, **kwargs):
     """Сбрасывает кэш диапазона бюджета при изменении профилей учеников"""
-    cache.delete('budget_range')
-    
-    # ✅ Очищаем кэш статистики конкретного ученика
-    if instance and hasattr(instance, 'clear_cache'):
-        try:
-            instance.clear_cache()
-            logger.info(f"Кэш профиля ученика {instance.id} очищен")
-        except Exception as e:
-            logger.warning(f"Не удалось очистить кэш ученика {instance.id}: {e}")
-    
-    logger.info("Кэш диапазона бюджета очищен")
+    try:
+        cache.delete('budget_range')
+        
+        # ✅ Очищаем кэш статистики конкретного ученика
+        if instance and instance.pk and hasattr(instance, 'clear_cache'):
+            try:
+                instance.clear_cache()
+                logger.debug(f"Кэш профиля ученика {instance.pk} очищен")
+            except Exception as e:
+                logger.warning(f"Не удалось очистить кэш ученика {instance.pk}: {e}")
+        
+        logger.debug("Кэш диапазона бюджета очищен")
+    except Exception as e:
+        logger.error(f"Ошибка очистки кэша бюджета: {e}", exc_info=True)
 
 
 # =============================================================================
@@ -175,22 +212,25 @@ def clear_budget_range_cache(sender, instance=None, **kwargs):
 @receiver([post_save, post_delete], sender=TeacherProfile)
 def clear_teacher_cache(sender, instance=None, **kwargs):
     """Сбрасывает кэш учителя при изменении его профиля"""
-    if instance and hasattr(instance, 'clear_cache'):
+    if instance and instance.pk and hasattr(instance, 'clear_cache'):
         try:
             instance.clear_cache()
-            logger.info(f"Кэш профиля учителя {instance.id} очищен")
+            logger.debug(f"Кэш профиля учителя {instance.pk} очищен")
         except Exception as e:
-            logger.warning(f"Не удалось очистить кэш учителя {instance.id}: {e}")
+            logger.warning(f"Не удалось очистить кэш учителя {instance.pk}: {e}")
 
 
 @receiver([post_save, post_delete], sender=Review)
 def clear_teacher_reviews_cache(sender, instance=None, **kwargs):
     """Сбрасывает кэш учителя при добавлении/удалении отзыва"""
-    if instance and hasattr(instance, 'teacher'):
-        # Очищаем кэш рейтинга и отзывов учителя
-        cache.delete(f'teacher_reviews_{instance.teacher.id}')
-        cache.delete(f'teacher_rating_{instance.teacher.id}')
-        logger.info(f"Кэш отзывов учителя {instance.teacher.id} очищен")
+    try:
+        if instance and instance.teacher_id:
+            # Очищаем кэш рейтинга и отзывов учителя
+            cache.delete(f'teacher_reviews_{instance.teacher_id}')
+            cache.delete(f'teacher_rating_{instance.teacher_id}')
+            logger.debug(f"Кэш отзывов учителя {instance.teacher_id} очищен")
+    except Exception as e:
+        logger.error(f"Ошибка очистки кэша отзывов: {e}", exc_info=True)
 
 
 @receiver(post_save, sender=ProfileView)
