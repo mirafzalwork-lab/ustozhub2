@@ -1,7 +1,8 @@
 # teachers/consumers.py
 """
-WebSocket Consumer для real-time чата
-Интегрируется с существующей системой Conversation и Message
+WebSocket Consumers:
+  - NotificationConsumer: per-user push-уведомления и badge-обновления
+  - ChatConsumer: real-time чат для Conversation
 """
 
 import json
@@ -10,6 +11,8 @@ import re
 from datetime import datetime, timedelta
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 from django.contrib.auth.models import AnonymousUser
 from django.utils import timezone
 from .models import Conversation, Message, User
@@ -23,6 +26,117 @@ MESSAGE_RATE_WINDOW = 60  # За 60 секунд
 MIN_MESSAGE_LENGTH = 1
 MAX_MESSAGE_LENGTH = 5000
 
+
+# =============================================================================
+# Хелпер: отправка push-уведомления пользователю через channel layer
+# =============================================================================
+
+def notify_user(user_id, event_type, payload=None):
+    """
+    Отправляет real-time событие конкретному пользователю через WebSocket.
+    Безопасно вызывать из любого sync-контекста (views, signals, management commands).
+
+    Args:
+        user_id: ID пользователя-получателя
+        event_type: тип события ('new_message', 'new_notification', 'badge_update')
+        payload: dict с дополнительными данными
+    """
+    try:
+        channel_layer = get_channel_layer()
+        if channel_layer is None:
+            return
+        group_name = f'notifications_{user_id}'
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {
+                'type': 'push_notification',
+                'event_type': event_type,
+                'payload': payload or {},
+            }
+        )
+    except Exception as e:
+        logger.warning(f"notify_user failed for user_id={user_id}: {e}")
+
+
+class NotificationConsumer(AsyncWebsocketConsumer):
+    """
+    Per-user WebSocket для push-уведомлений.
+    Каждый залогиненный пользователь подключается к своей группе notifications_{user_id}.
+    Получает события: new_message, new_notification, badge_update.
+    """
+
+    async def connect(self):
+        self.user = self.scope.get('user')
+        if not self.user or isinstance(self.user, AnonymousUser):
+            await self.close(code=4001)
+            return
+
+        self.group_name = f'notifications_{self.user.pk}'
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
+        # Сразу отправляем текущие badge-счётчики при подключении
+        counts = await self.get_badge_counts()
+        await self.send(text_data=json.dumps({
+            'type': 'badge_update',
+            'payload': counts,
+        }))
+
+    async def disconnect(self, close_code):
+        if hasattr(self, 'group_name'):
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def receive(self, text_data):
+        """Клиент может запросить актуальные badge"""
+        try:
+            data = json.loads(text_data)
+        except (json.JSONDecodeError, TypeError):
+            return
+        if data.get('type') == 'ping':
+            await self.send(text_data=json.dumps({'type': 'pong'}))
+        elif data.get('type') == 'get_badges':
+            counts = await self.get_badge_counts()
+            await self.send(text_data=json.dumps({
+                'type': 'badge_update',
+                'payload': counts,
+            }))
+
+    async def push_notification(self, event):
+        """Обработчик group_send событий — пересылает клиенту"""
+        await self.send(text_data=json.dumps({
+            'type': event.get('event_type', 'badge_update'),
+            'payload': event.get('payload', {}),
+        }))
+
+    @database_sync_to_async
+    def get_badge_counts(self):
+        """Получает актуальные badge-счётчики из БД"""
+        from .context_processors import _get_user_conversations
+        from .models import Notification
+
+        user = self.user
+        # Unread messages
+        conversations = _get_user_conversations(user)
+        conv_ids = list(conversations.values_list('id', flat=True))
+        unread_messages = 0
+        if conv_ids:
+            unread_messages = Message.objects.filter(
+                conversation_id__in=conv_ids,
+                is_read=False
+            ).exclude(sender=user).count()
+
+        # Unread notifications
+        unread_notifications = Notification.get_unread_count(user)
+
+        return {
+            'unread_messages': unread_messages,
+            'unread_notifications': unread_notifications,
+        }
+
+
+# =============================================================================
+# ChatConsumer: real-time чат для Conversation
+# =============================================================================
 
 class ChatConsumer(AsyncWebsocketConsumer):
     """
@@ -330,8 +444,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 is_read=False
             ).exclude(
                 sender=self.user
-            ).update(is_read=True)
-            
+            ).update(is_read=True, read_at=timezone.now())
+
+            # Сбрасываем кэш badge для текущего пользователя
+            if updated_count > 0:
+                from .context_processors import invalidate_message_cache
+                invalidate_message_cache(self.user.pk)
+
             logger.debug(
                 f"Marked {updated_count} messages as read for user_id={self.user.pk} "
                 f"in conversation {self.conversation_id}"

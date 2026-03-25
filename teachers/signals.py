@@ -6,8 +6,9 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.core.cache import cache
 from .models import (
-    Message, Subject, City, TeacherSubject, StudentProfile, 
-    SubjectCategory, TeacherProfile, Review, ProfileView
+    Message, Subject, City, TeacherSubject, StudentProfile,
+    SubjectCategory, TeacherProfile, Review, ProfileView,
+    Notification
 )
 import logging
 
@@ -85,12 +86,26 @@ def send_message_notification(sender, instance, created, **kwargs):
                 f"не является участником диалога {conversation.pk}"
             )
             return
-        
+
         # Проверяем что получатель существует
         if not recipient:
             logger.error(f"Не удалось определить получателя для сообщения {message.pk or 'new'}")
             return
-        
+
+        # Сбрасываем кэш badge и пушим real-time уведомление получателю
+        try:
+            from .context_processors import invalidate_message_cache
+            invalidate_message_cache(recipient.pk)
+            from .consumers import notify_user
+            sender_display = sender_user.get_full_name() or sender_user.username
+            notify_user(recipient.pk, 'new_message', {
+                'sender_name': sender_display,
+                'preview': (message.content[:80] if message.content else ''),
+                'conversation_id': str(conversation.pk),
+            })
+        except Exception as e:
+            logger.debug(f"Push notification failed: {e}")
+
         # Добавляем уведомление в очередь
         sender_name = sender_user.get_full_name() or sender_user.username
         # ⚡ ОПТИМИЗАЦИЯ: Ограничиваем длину preview
@@ -229,6 +244,15 @@ def clear_teacher_reviews_cache(sender, instance=None, **kwargs):
             cache.delete(f'teacher_reviews_{instance.teacher_id}')
             cache.delete(f'teacher_rating_{instance.teacher_id}')
             logger.debug(f"Кэш отзывов учителя {instance.teacher_id} очищен")
+
+            # Пересчитываем ранжирование учителя после нового отзыва
+            try:
+                teacher = instance.teacher
+                if teacher and teacher.is_active:
+                    teacher.update_ranking_score()
+                    logger.debug(f"Ранжирование учителя {teacher.pk} обновлено")
+            except Exception as e:
+                logger.warning(f"Не удалось обновить ранжирование: {e}")
     except Exception as e:
         logger.error(f"Ошибка очистки кэша отзывов: {e}", exc_info=True)
 
@@ -240,7 +264,6 @@ def update_view_stats_cache(sender, instance=None, created=False, **kwargs):
     Инвалидация происходит автоматически в ProfileView.save()
     """
     if created and instance:
-        # Дополнительное логирование если нужно
         try:
             if instance.profile_type == 'teacher' and instance.teacher_profile:
                 logger.debug(f"Зарегистрирован просмотр профиля учителя {instance.teacher_profile.id}")
@@ -248,4 +271,57 @@ def update_view_stats_cache(sender, instance=None, created=False, **kwargs):
                 logger.debug(f"Зарегистрирован просмотр профиля ученика {instance.student_profile.id}")
         except Exception:
             pass
+
+
+# =============================================================================
+# REAL-TIME PUSH: уведомления через WebSocket при создании Notification
+# =============================================================================
+
+@receiver(post_save, sender=Notification)
+def push_notification_realtime(sender, instance, created, **kwargs):
+    """
+    При создании нового Notification — пушим real-time событие целевым пользователям.
+    """
+    if not created or not instance.is_active:
+        return
+
+    try:
+        from .consumers import notify_user
+        from .context_processors import invalidate_notification_cache
+        from .models import User
+
+        payload = {
+            'id': instance.id,
+            'title': instance.title,
+            'short_text': instance.short_text,
+        }
+
+        if instance.target == 'specific_user' and instance.target_user_id:
+            # Персональное уведомление — пушим одному пользователю
+            invalidate_notification_cache(instance.target_user_id)
+            notify_user(instance.target_user_id, 'new_notification', payload)
+
+        elif instance.target == 'all':
+            # Всем пользователям — пушим каждому активному
+            for uid in User.objects.filter(is_active=True).values_list('id', flat=True):
+                invalidate_notification_cache(uid)
+                notify_user(uid, 'new_notification', payload)
+
+        elif instance.target in ('students', 'teachers'):
+            user_type = 'student' if instance.target == 'students' else 'teacher'
+            for uid in User.objects.filter(
+                is_active=True, user_type=user_type
+            ).values_list('id', flat=True):
+                invalidate_notification_cache(uid)
+                notify_user(uid, 'new_notification', payload)
+
+        elif instance.target == 'admins':
+            for uid in User.objects.filter(
+                is_active=True, is_staff=True
+            ).values_list('id', flat=True):
+                invalidate_notification_cache(uid)
+                notify_user(uid, 'new_notification', payload)
+
+    except Exception as e:
+        logger.error(f"Error pushing real-time notification id={instance.pk}: {e}", exc_info=True)
 

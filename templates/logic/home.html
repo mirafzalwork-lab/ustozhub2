@@ -495,6 +495,15 @@
         box-shadow: 0 6px 20px rgba(10, 37, 64, 0.12);
     }
 
+    .teacher-card.featured {
+        border-color: #10b981;
+        box-shadow: 0 2px 12px rgba(16, 185, 129, 0.12);
+    }
+
+    .teacher-card.featured:hover {
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.18);
+    }
+
     .teacher-card-head {
         display: flex;
         align-items: flex-start;
@@ -1424,6 +1433,7 @@
 
             <form method="GET" action="" id="filtersForm">
                 <input type="hidden" name="search" value="{{ search_query|default:'' }}">
+                <input type="hidden" name="sort" value="{{ sort_by|default:'recommended' }}">
 
                 <!-- ПРЕДМЕТ -->
                 <div class="filter-group">
@@ -1536,17 +1546,24 @@
 
         <!-- СПИСОК УЧИТЕЛЕЙ -->
         <section class="teachers-section">
-            <div class="results-header">
+            <div class="results-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <span class="results-count">
-                    {% trans 'Найдено:' %} <strong>{{ total_teachers }}</strong> 
+                    {% trans 'Найдено:' %} <strong>{{ total_teachers }}</strong>
                     {% if total_teachers == 1 %}{% trans 'учитель' %}{% elif total_teachers < 5 %}{% trans 'учителя' %}{% else %}{% trans 'учителей' %}{% endif %}
                 </span>
+                <div class="sort-dropdown">
+                    <select id="sortSelect" onchange="applySort(this.value)" style="padding: 8px 12px; border: 1px solid rgba(10,37,64,0.14); border-radius: 8px; font-size: 13px; background: white; color: #333; cursor: pointer;">
+                        {% for value, label in sort_options %}
+                            <option value="{{ value }}" {% if sort_by == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
 
             {% if teachers %}
                 <div class="teachers-grid">
                     {% for teacher in teachers %}
-                        <div class="teacher-card" onclick="window.location.href='{% url 'teacher_detail' teacher.id %}'">
+                        <div class="teacher-card{% if teacher.is_featured %} featured{% endif %}" onclick="window.location.href='{% url 'teacher_detail' teacher.id %}'">
                             <div class="teacher-card-head">
                                 <div class="teacher-avatar">
                                     {% if teacher.user.avatar %}
@@ -1709,6 +1726,13 @@
 
     function resetFilters() {
         window.location.href = window.location.pathname;
+    }
+
+    function applySort(value) {
+        var url = new URL(window.location.href);
+        url.searchParams.set('sort', value);
+        url.searchParams.delete('page');
+        window.location.href = url.toString();
     }
 
     // Auto-submit при изменении select

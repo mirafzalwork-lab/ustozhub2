@@ -2,17 +2,31 @@
 Django settings for core project.
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-TEMPLATES_DIRS = BASE_DIR / 'templates' 
+TEMPLATES_DIRS = BASE_DIR / 'templates'
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-rx4raz1u)-1$v=)b66qio%2hn_pxu(!*g38dfkgfr0kg#+p*br'
+# Load .env file if it exists
+_env_path = BASE_DIR / '.env'
+if _env_path.is_file():
+    with open(_env_path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, _, value = line.partition('=')
+                os.environ.setdefault(key.strip(), value.strip())
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# SECURITY: Secret key from environment variable
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY',
+    'django-insecure-rx4raz1u)-1$v=)b66qio%2hn_pxu(!*g38dfkgfr0kg#+p*br'
+)
+
+# SECURITY: Debug mode from environment variable (default False in production)
+DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = [
     "ustozhubedu.uz",
@@ -175,11 +189,10 @@ default_app_config = 'teachers.apps.TeachersConfig'
 # =============================================================================
 
 # Токен вашего Telegram бота (получите от @BotFather)
-TELEGRAM_BOT_TOKEN = '8321896' \
-'487:AAGg0KJHw4p3k07_e9gI5eXRgr46OPs3sFM'  # ЗАМЕНИТЕ НА ВАШ ТОКЕН!
+TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 
 # URL вашего сайта (для кнопок и WebApp)
-SITE_URL = 'https://ustozhubedu.uz'
+SITE_URL = os.environ.get('SITE_URL', 'https://ustozhubedu.uz')
 
 # URL для Telegram WebApp (будет открываться при нажатии на кнопку в боте)
 TELEGRAM_WEBAPP_URL = f'{SITE_URL}'

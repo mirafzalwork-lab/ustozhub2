@@ -15,8 +15,10 @@ from .views import (
     # Telegram & admin messages
     telegram_management, send_broadcast_message, send_individual_message, export_telegram_users, messages_management,
     # Notifications / Уведомления
-    notifications_list, notification_detail, mark_notification_read, 
-    mark_all_notifications_read, notifications_dropdown
+    notifications_list, notification_detail, mark_notification_read,
+    mark_all_notifications_read, notifications_dropdown,
+    # Badge counts API
+    badge_counts
 )
 from .telegram_views import (
     telegram_auth, link_telegram_account, telegram_status, toggle_notifications
@@ -88,4 +90,7 @@ urlpatterns = [
     path('notifications/<int:notification_id>/mark-read/', mark_notification_read, name='mark_notification_read'),
     path('notifications/mark-all-read/', mark_all_notifications_read, name='mark_all_notifications_read'),
     path('api/notifications/dropdown/', notifications_dropdown, name='notifications_dropdown'),
+
+    # Badge counts API (для real-time обновления badge)
+    path('api/badge-counts/', badge_counts, name='badge_counts'),
 ]

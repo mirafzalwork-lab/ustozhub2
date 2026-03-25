@@ -219,10 +219,11 @@ class TeacherSubjectInline(admin.TabularInline):
 class TeacherProfileAdmin(admin.ModelAdmin):
     inlines = [TeacherSubjectInline]
     list_display = ("user", "education_level", "teaching_languages", "experience_years", "city", "teaching_format",
-                    "rating", "total_reviews", "total_students", "moderation_status", "is_featured", "is_active")
+                    "rating", "total_reviews", "total_students", "moderation_status", "is_featured", "ranking_score", "is_active")
     list_filter = ("education_level", "teaching_format", "moderation_status", "is_featured", "is_active", "city")
     search_fields = ("user__username", "user__first_name", "user__last_name", "specialization", "university")
-    actions = ['approve_teachers', 'reject_teachers']
+    list_editable = ("is_featured",)
+    actions = ['approve_teachers', 'reject_teachers', 'recalculate_rankings']
     
     def save_model(self, request, obj, form, change):
         """Переопределяем сохранение для установки модератора"""
@@ -293,6 +294,26 @@ class TeacherProfileAdmin(admin.ModelAdmin):
                 messages.SUCCESS
             )
     reject_teachers.short_description = '❌ Отклонить выбранные профили'
+
+    def recalculate_rankings(self, request, queryset):
+        """Пересчитать ранжирование для выбранных учителей"""
+        count = 0
+        for profile in queryset:
+            try:
+                profile.update_ranking_score()
+                count += 1
+            except Exception as e:
+                self.message_user(
+                    request,
+                    f"Ошибка пересчёта для {profile.user.username}: {str(e)}",
+                    messages.ERROR
+                )
+        self.message_user(
+            request,
+            f"Ранжирование пересчитано для {count} учителей.",
+            messages.SUCCESS
+        )
+    recalculate_rankings.short_description = '📊 Пересчитать ранжирование'
 
 
 # Импорт для ProfileView

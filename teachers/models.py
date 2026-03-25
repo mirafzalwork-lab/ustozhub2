@@ -223,6 +223,12 @@ class TeacherProfile(models.Model):
     total_students = models.PositiveIntegerField(default=0)
     is_featured = models.BooleanField(default=False, help_text="Рекомендуемый учитель")
     is_active = models.BooleanField(default=True)
+
+    # Ранжирование: приоритет в выдаче (0-100, больше = выше)
+    ranking_score = models.PositiveIntegerField(
+        default=0,
+        help_text="Приоритет в выдаче (0-100). Рассчитывается автоматически."
+    )
     
     # Сертификаты
     certificates = models.ManyToManyField(Certificate, blank=True)
@@ -267,9 +273,9 @@ class TeacherProfile(models.Model):
     class Meta:
         verbose_name = 'Профиль учителя'
         verbose_name_plural = 'Профили учителей'
-        ordering = ['-created_at']
-        # ⚡ ОПТИМИЗАЦИЯ: Индексы для ускорения поиска и фильтрации
+        ordering = ['-ranking_score', '-rating', '-created_at']
         indexes = [
+            models.Index(fields=['-ranking_score', '-rating', '-created_at']),  # Основная сортировка
             models.Index(fields=['-rating', '-created_at']),  # Для сортировки на главной
             models.Index(fields=['is_active', 'moderation_status']),  # Для фильтров
             models.Index(fields=['city', 'is_active']),  # Для фильтра по городу
@@ -277,6 +283,46 @@ class TeacherProfile(models.Model):
             models.Index(fields=['experience_years']),  # Для фильтра опыта
         ]
     
+    def update_ranking_score(self):
+        """
+        Рассчитывает и обновляет приоритет учителя в выдаче.
+        Формула: featured_bonus + rating_score + reviews_score + completeness_score
+        Диапазон: 0-100
+        """
+        score = 0
+
+        # Featured-бонус: +40 баллов (гарантирует топ выдачи)
+        if self.is_featured:
+            score += 40
+
+        # Рейтинг: до 25 баллов (rating 5.0 = 25)
+        score += int(float(self.rating) * 5)
+
+        # Отзывы: до 15 баллов (логарифмическая шкала)
+        import math
+        if self.total_reviews > 0:
+            score += min(15, int(math.log2(self.total_reviews + 1) * 5))
+
+        # Полнота профиля: до 20 баллов
+        completeness = 0
+        if self.bio and len(self.bio) > 50:
+            completeness += 5
+        if self.university:
+            completeness += 3
+        if self.city:
+            completeness += 3
+        if self.user.avatar:
+            completeness += 4
+        if self.subjects.exists():
+            completeness += 3
+        if self.certificates.exists():
+            completeness += 2
+        score += min(20, completeness)
+
+        self.ranking_score = min(100, score)
+        self.save(update_fields=['ranking_score'])
+        return self.ranking_score
+
     def approve(self, moderator, comment=''):
         """Одобрить профиль учителя"""
         print(f"🔍 DEBUG: approve() вызван для {self.user.username}")
@@ -973,17 +1019,30 @@ class Message(models.Model):
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='messages')
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
     content = models.TextField(max_length=2000)
-    
+
     is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-created_at']
         verbose_name = 'Сообщение'
         verbose_name_plural = 'Сообщения'
+        indexes = [
+            models.Index(fields=['conversation', '-created_at']),
+            models.Index(fields=['sender', '-created_at']),
+            models.Index(fields=['is_read']),
+        ]
 
     def __str__(self):
         return f"{self.sender.get_full_name()}: {self.content[:50]}..."
+
+    def mark_as_read(self):
+        """Пометить сообщение как прочитанное"""
+        if not self.is_read:
+            self.is_read = True
+            self.read_at = timezone.now()
+            self.save(update_fields=['is_read', 'read_at'])
 
 class Review(models.Model):
     """Отзывы о учителях"""
@@ -1473,138 +1532,6 @@ class ViewCounter(models.Model):
         return cls.objects.filter(month=current_month).count()
 
 
-# =============================================================================
-# 💬 CHAT MODELS - REAL-TIME MESSAGING SYSTEM
-# =============================================================================
-
-class ChatRoom(models.Model):
-    """
-    Комната чата между двумя пользователями
-    Уникальная комната для каждой пары участников
-    """
-    participants = models.ManyToManyField(
-        User, 
-        related_name='chat_rooms',
-        verbose_name='Участники'
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    # Поле для быстрого поиска комнаты по участникам
-    room_identifier = models.CharField(
-        max_length=200, 
-        unique=True, 
-        help_text="Уникальный идентификатор комнаты (user1_id-user2_id)"
-    )
-
-    class Meta:
-        verbose_name = 'Комната чата'
-        verbose_name_plural = 'Комнаты чата'
-        indexes = [
-            models.Index(fields=['room_identifier']),
-            models.Index(fields=['updated_at']),
-        ]
-
-    def __str__(self):
-        participants_names = [user.get_full_name() or user.username for user in self.participants.all()]
-        return f"Чат: {' ↔ '.join(participants_names)}"
-
-    @classmethod
-    def get_or_create_room(cls, user1, user2):
-        """
-        Получить или создать комнату для двух пользователей
-        Гарантирует уникальность комнаты независимо от порядка пользователей
-        """
-        # Сортируем ID пользователей для создания уникального идентификатора
-        user_ids = sorted([user1.id, user2.id])
-        room_identifier = f"{user_ids[0]}-{user_ids[1]}"
-        
-        room, created = cls.objects.get_or_create(
-            room_identifier=room_identifier
-        )
-        
-        # Добавляем участников, если комната только что создана
-        if created:
-            room.participants.add(user1, user2)
-        
-        return room
-
-    def get_other_participant(self, current_user):
-        """Получить собеседника (другого участника чата)"""
-        # Если participants уже загружены (prefetch), используем Python фильтрацию
-        if self.participants.all()._result_cache is not None:
-            for participant in self.participants.all():
-                if participant.id != current_user.id:
-                    return participant
-            return None
-        # Иначе делаем запрос к БД
-        return self.participants.exclude(id=current_user.id).first()
-
-    def get_last_message(self):
-        """Получить последнее сообщение в комнате"""
-        return self.messages.order_by('-created_at').first()
-
-
-class ChatMessage(models.Model):
-    """
-    Сообщение в чате
-    Связано с комнатой и отправителем
-    """
-    room = models.ForeignKey(
-        ChatRoom, 
-        on_delete=models.CASCADE, 
-        related_name='messages',
-        verbose_name='Комната'
-    )
-    sender = models.ForeignKey(
-        User, 
-        on_delete=models.CASCADE, 
-        related_name='chat_messages_sent',
-        verbose_name='Отправитель'
-    )
-    message = models.TextField(verbose_name='Сообщение')
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    # Статус прочтения сообщения
-    is_read = models.BooleanField(default=False, verbose_name='Прочитано')
-    read_at = models.DateTimeField(null=True, blank=True, verbose_name='Время прочтения')
-
-    class Meta:
-        verbose_name = 'Сообщение чата'
-        verbose_name_plural = 'Сообщения чата'
-        ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['room', '-created_at']),
-            models.Index(fields=['sender', '-created_at']),
-            models.Index(fields=['is_read']),
-        ]
-
-    def __str__(self):
-        return f"{self.sender.username}: {self.message[:50]}..."
-
-    def mark_as_read(self):
-        """Пометить сообщение как прочитанное"""
-        if not self.is_read:
-            self.is_read = True
-            self.read_at = timezone.now()
-            self.save(update_fields=['is_read', 'read_at'])
-
-    def to_dict(self):
-        """Конвертировать сообщение в словарь для JSON"""
-        try:
-            sender_name = self.sender.get_full_name() or self.sender.username
-        except AttributeError:
-            sender_name = "Unknown"
-        
-        return {
-            'id': self.id,
-            'message': self.message,
-            'sender_id': self.sender.id,
-            'sender_name': sender_name,
-            'created_at': self.created_at.isoformat(),
-            'is_read': self.is_read,
-        }
-
 
 # ============================================
 # СИСТЕМА УВЕДОМЛЕНИЙ
@@ -1824,10 +1751,10 @@ class Notification(models.Model):
             notification=self,
             user=user
         )
-        
+
         # Инвалидируем кэш непрочитанных уведомлений
-        cache_key = f'unread_notifications_count_{user.id}'
-        cache.delete(cache_key)
+        from .context_processors import invalidate_notification_cache
+        invalidate_notification_cache(user.pk)
     
     def is_read_by(self, user):
         """

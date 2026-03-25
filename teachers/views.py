@@ -125,15 +125,36 @@ def record_profile_view(request, profile, profile_type):
         logger.error(f"Error recording profile view: {e}", exc_info=True)
 
 
+def _apply_sort(queryset, sort_by):
+    """Применяет сортировку к queryset учителей"""
+    if sort_by == 'price_low':
+        return queryset.annotate(
+            min_price=Min('teachersubject__hourly_rate')
+        ).order_by('min_price', '-ranking_score')
+    elif sort_by == 'price_high':
+        return queryset.annotate(
+            min_price=Min('teachersubject__hourly_rate')
+        ).order_by('-min_price', '-ranking_score')
+    elif sort_by == 'rating':
+        return queryset.order_by('-rating', '-total_reviews', '-ranking_score')
+    elif sort_by == 'experience':
+        return queryset.order_by('-experience_years', '-rating')
+    elif sort_by == 'newest':
+        return queryset.order_by('-created_at')
+    else:  # recommended (default)
+        return queryset.order_by('-ranking_score', '-rating', '-created_at')
+
+
 def home(request):
     """
     Главная страница с учителями
-    БЕЗ ИЗМЕНЕНИЙ - оставлена оригинальная логика
     """
 
     track_view(request, 'home')
-    # Базовый queryset
-    teachers = TeacherProfile.objects.filter(is_active=True).select_related(
+    # Базовый queryset: только активные и одобренные учителя
+    teachers = TeacherProfile.objects.filter(
+        is_active=True, moderation_status='approved'
+    ).select_related(
         'user', 'city'
     ).prefetch_related(
         'subjects', 'teachersubject_set__subject', 'reviews'
@@ -149,6 +170,7 @@ def home(request):
     min_experience = request.GET.get('min_experience')
     search_query = request.GET.get('search') or request.GET.get('q')
     suggest = request.GET.get('suggest')
+    sort_by = request.GET.get('sort', 'recommended')
     
     # Применяем фильтры
     if subject_id:
@@ -237,13 +259,31 @@ def home(request):
                 Q(user__first_name__icontains=q) |
                 Q(user__last_name__icontains=q) |
                 Q(bio__icontains=q)
-            ).distinct().order_by('-relevance', '-rating', '-total_reviews', '-created_at')
+            ).distinct()
+
+            # При поиске: релевантность всегда первична
+            if sort_by == 'price_low':
+                teachers = teachers.annotate(
+                    min_price=Min('teachersubject__hourly_rate')
+                ).order_by('-relevance', 'min_price', '-ranking_score')
+            elif sort_by == 'price_high':
+                teachers = teachers.annotate(
+                    min_price=Min('teachersubject__hourly_rate')
+                ).order_by('-relevance', '-min_price', '-ranking_score')
+            elif sort_by == 'rating':
+                teachers = teachers.order_by('-relevance', '-rating', '-total_reviews')
+            elif sort_by == 'experience':
+                teachers = teachers.order_by('-relevance', '-experience_years', '-rating')
+            elif sort_by == 'newest':
+                teachers = teachers.order_by('-relevance', '-created_at')
+            else:  # recommended (default)
+                teachers = teachers.order_by('-relevance', '-ranking_score', '-rating', '-total_reviews', '-created_at')
         else:
-            # No search query - just normal sorting
-            teachers = teachers.distinct().order_by('-rating', '-created_at')
+            teachers = teachers.distinct()
+            teachers = _apply_sort(teachers, sort_by)
     else:
-        # Убираем дубликаты и сортируем
-        teachers = teachers.distinct().order_by('-rating', '-created_at')
+        teachers = teachers.distinct()
+        teachers = _apply_sort(teachers, sort_by)
     
     # ========== ПАГИНАЦИЯ ==========
     # Создаем объект пагинатора (12 учителей на страницу)
@@ -279,9 +319,18 @@ def home(request):
         )
         cache.set('price_range', price_range, getattr(settings, 'CACHE_TTL', 900))
     
+    sort_options = [
+        ('recommended', 'Рекомендуемые'),
+        ('rating', 'По рейтингу'),
+        ('price_low', 'Цена: по возрастанию'),
+        ('price_high', 'Цена: по убыванию'),
+        ('experience', 'По опыту'),
+        ('newest', 'Новые'),
+    ]
+
     context = {
-        'teachers': teachers_page,  # Изменено: теперь используем объект Page
-        'total_teachers': paginator.count,  # Общее количество учителей
+        'teachers': teachers_page,
+        'total_teachers': paginator.count,
         'subjects': all_subjects,
         'cities': all_cities,
         'teaching_formats': TeacherProfile.TEACHING_FORMATS,
@@ -295,6 +344,8 @@ def home(request):
         'selected_min_experience': min_experience,
         'search_query': search_query,
         'suggest': suggest,
+        'sort_by': sort_by,
+        'sort_options': sort_options,
     }
     
     return render(request, 'logic/home.html', context)
@@ -1488,12 +1539,18 @@ def conversation_detail(request, conversation_id):
         messages_list = conversation.messages.select_related('sender').order_by('created_at')
         
         # Отмечаем сообщения как прочитанные (которые не от текущего пользователя)
-        conversation.messages.filter(
+        from django.utils import timezone as tz
+        marked = conversation.messages.filter(
             is_read=False
         ).exclude(
             sender=user
-        ).update(is_read=True)
-        
+        ).update(is_read=True, read_at=tz.now())
+
+        # Сбрасываем кэш badge если что-то было отмечено
+        if marked > 0:
+            from .context_processors import invalidate_message_cache
+            invalidate_message_cache(user.pk)
+
         # Форма для отправки нового сообщения
         if request.method == 'POST':
             form = MessageForm(request.POST)
@@ -1669,12 +1726,18 @@ def mark_messages_read(request, conversation_id):
             )
         
         # Отмечаем все непрочитанные сообщения (не от текущего пользователя) как прочитанные
+        from django.utils import timezone as tz
         updated = conversation.messages.filter(
             is_read=False
         ).exclude(
             sender=user
-        ).update(is_read=True)
-        
+        ).update(is_read=True, read_at=tz.now())
+
+        # Сбрасываем кэш badge
+        if updated > 0:
+            from .context_processors import invalidate_message_cache
+            invalidate_message_cache(user.pk)
+
         return JsonResponse({
             'success': True,
             'updated_count': updated
@@ -2087,121 +2150,6 @@ def export_telegram_users(request):
     return response
 
 
-# =============================================================================
-# 💬 REAL-TIME CHAT VIEWS - Изолированная система чата
-# =============================================================================
-
-@login_required
-def chat_list(request):
-    """
-    Список всех чатов пользователя
-    Показывает активные комнаты с последними сообщениями
-    """
-    from .models import ChatRoom
-    
-    # Получаем все комнаты пользователя с последними сообщениями
-    user_rooms = ChatRoom.objects.filter(
-        participants=request.user
-    ).prefetch_related('participants', 'messages').order_by('-updated_at')
-    
-    # Подготавливаем данные для шаблона
-    chat_rooms_data = []
-    for room in user_rooms:
-        other_participant = room.get_other_participant(request.user)
-        last_message = room.get_last_message()
-        
-        if other_participant:  # Проверяем, что есть собеседник
-            chat_rooms_data.append({
-                'room': room,
-                'other_participant': other_participant,
-                'last_message': last_message,
-            })
-    
-    return render(request, 'logic/chat_list.html', {
-        'chat_rooms': chat_rooms_data,
-        'page_title': 'Мои чаты'
-    })
-
-
-@login_required
-def chat_room(request, user_id):
-    """
-    Комната чата с конкретным пользователем
-    WebSocket подключение для real-time общения
-    """
-    from .models import ChatRoom
-    
-    # Получаем собеседника
-    other_user = get_object_or_404(User, id=user_id)
-    
-    # Проверяем, что пользователь не пытается открыть чат с собой
-    if other_user == request.user:
-        messages.error(request, 'Нельзя открыть чат с самим собой')
-        return redirect('chat_list')
-    
-    # Получаем или создаём комнату чата
-    room = ChatRoom.get_or_create_room(request.user, other_user)
-    
-    # Получаем историю сообщений (последние 50)
-    chat_messages = room.messages.select_related('sender').order_by('-created_at')[:50]
-    chat_messages = list(reversed(chat_messages))  # Сортируем от старых к новым
-    
-    # Помечаем сообщения как прочитанные
-    room.messages.filter(
-        is_read=False
-    ).exclude(sender=request.user).update(is_read=True)
-    
-    # WebSocket URL для подключения
-    ws_protocol = 'wss' if request.is_secure() else 'ws'
-    websocket_url = f"{ws_protocol}://{request.get_host()}/ws/chat/{room.room_identifier}/"
-    
-    return render(request, 'logic/chat_room.html', {
-        'room': room,
-        'other_user': other_user,
-        'messages': chat_messages,
-        'websocket_url': websocket_url,
-        'page_title': f'Чат с {other_user.get_full_name() or other_user.username}'
-    })
-
-
-@login_required
-def get_user_chat_rooms(request):
-    """
-    API: Получить список чатов пользователя в JSON формате
-    Для динамического обновления списка чатов
-    """
-    from .models import ChatRoom
-    
-    user_rooms = ChatRoom.objects.filter(
-        participants=request.user
-    ).prefetch_related('participants', 'messages').order_by('-updated_at')
-    
-    rooms_data = []
-    for room in user_rooms:
-        other_participant = room.get_other_participant(request.user)
-        last_message = room.get_last_message()
-        
-        if other_participant:
-            rooms_data.append({
-                'room_id': room.room_identifier,
-                'other_user': {
-                    'id': other_participant.id,
-                    'name': other_participant.get_full_name() or other_participant.username,
-                    'avatar': other_participant.avatar.url if other_participant.avatar else None,
-                },
-                'last_message': {
-                    'text': last_message.message if last_message else 'Нет сообщений',
-                    'created_at': last_message.created_at.isoformat() if last_message else None,
-                    'sender_name': last_message.sender.get_full_name() if last_message else None,
-                    'is_read': last_message.is_read if last_message else True,
-                } if last_message else None,
-                'updated_at': room.updated_at.isoformat(),
-            })
-    
-    return JsonResponse({
-        'success': True,
-        'rooms': rooms_data
-    })
 
 
 # ============================================
@@ -2387,6 +2335,23 @@ def notifications_dropdown(request):
             'success': False,
             'error': str(e)
         }, status=500)
+
+
+@login_required
+def badge_counts(request):
+    """
+    Lightweight API endpoint для получения актуальных badge-счётчиков.
+    Вызывается фронтендом по таймеру для обновления badge без перезагрузки.
+    """
+    from .context_processors import (
+        unread_messages_count, unread_notifications_count
+    )
+    msgs = unread_messages_count(request)
+    notifs = unread_notifications_count(request)
+    return JsonResponse({
+        'unread_messages': msgs['unread_messages_count'],
+        'unread_notifications': notifs['unread_notifications_count'],
+    })
 
 
 

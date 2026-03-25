@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="UstozHub - платформа для поиска квалифицированных преподавателей">
     <title>{% block title %}UstozHub{% endblock %}</title>
-    <link rel="icon" type="image/png" href="{% static 'logo/logo.png' %}">
+    <link rel="icon" type="image/png" href="{% static 'logo/new_logo.png' %}">
 
     <!-- Preconnect для ускорения загрузки внешних ресурсов -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -169,33 +169,14 @@
         .logo {
             display: flex;
             align-items: center;
-            gap: -2px;
             text-decoration: none;
+            flex-shrink: 0;
         }
 
         .logo img {
-            width: 40px;
-            height: 40px;
+            height:  60px;
+            width: auto;
             object-fit: contain;
-        }
-
-        .logo-text {
-            display: flex-start;
-            align-items: start;
-            font-size: 26px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            line-height: 1;
-            white-space: nowrap;
-        }
-
-        .logo-ustoz {
-            color: var(--text-primary);
-        }
-
-        .logo-hub {
-            color: var(--primary-color);
-            font-weight: 800;
         }
 
         .nav-search {
@@ -1043,12 +1024,8 @@
             }
 
             .logo img {
-                width: 36px;
-                height: 36px;
-            }
-
-            .logo-text {
-                font-size: 20px;
+                height:50px;
+                width: auto;
             }
 
             .nav-search {
@@ -1140,12 +1117,8 @@
             }
 
             .logo img {
-                width: 32px;
-                height: 32px;
-            }
-
-            .logo-text {
-                font-size: 18px;
+                height: 26px;
+                width: auto;
             }
 
             .nav-btn-primary {
@@ -1228,10 +1201,7 @@
         <div class="nav-container">
             <!-- Logo -->
             <a href="{% url 'home' %}" class="logo">
-                <img src="{% static 'logo/logo2.png' %}" alt="UstozHub">
-                <span class="logo-text">
-                    <span class="logo-ustoz">Ustoz</span><span class="logo-hub">Hub</span>
-                </span>
+                <img src="{% static 'logo/new_logo.png' %}" alt="UstozHub">
             </a>
 
             <!-- Search Bar (Desktop) -->
@@ -1448,11 +1418,11 @@
                     <i class="fas fa-user"></i>
                     <span>{% trans 'Мой профиль' %}</span>
                 </a>
-                <a href="{% url 'conversations_list' %}" class="mobile-menu-item" style="position: relative;">
+                <a href="{% url 'conversations_list' %}" class="mobile-menu-item messages-icon-btn" style="position: relative;">
                     <i class="fas fa-comments"></i>
                     <span>{% trans 'Сообщения' %}</span>
                     {% if unread_messages_count > 0 %}
-                        <span style="position: absolute; right: 16px; background: #dc3545; color: white; border-radius: 12px; padding: 2px 8px; font-size: 11px; font-weight: 700; min-width: 20px; text-align: center;">
+                        <span class="messages-badge" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: #dc3545; color: white; border-radius: 12px; padding: 2px 8px; font-size: 11px; font-weight: 700; min-width: 20px; text-align: center;">
                             {{ unread_messages_count }}
                         </span>
                     {% endif %}
@@ -1709,6 +1679,251 @@
         });
 
     </script>
+
+    {% if user.is_authenticated %}
+    <style>
+        /* Toast notification popup */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .toast {
+            pointer-events: auto;
+            background: white;
+            border-radius: 12px;
+            padding: 14px 18px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            border-left: 4px solid var(--primary-color, #0A2540);
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            max-width: 360px;
+            animation: toastIn 0.35s ease-out;
+            cursor: pointer;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        .toast.hiding {
+            opacity: 0;
+            transform: translateX(40px);
+        }
+        .toast-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary-color, #0A2540);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 14px;
+        }
+        .toast-icon.msg { background: #3B82F6; }
+        .toast-icon.notif { background: #F59E0B; }
+        .toast-body { flex: 1; min-width: 0; }
+        .toast-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1F2937;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .toast-text {
+            font-size: 12px;
+            color: #6B7280;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @media (max-width: 480px) {
+            .toast-container { right: 8px; left: 8px; top: 60px; }
+            .toast { max-width: 100%; }
+        }
+    </style>
+    <div class="toast-container" id="toastContainer"></div>
+    <script>
+    (function() {
+        /* ========================================
+           BADGE UPDATE LOGIC (shared)
+           ======================================== */
+        function setBadge(selector, btnSelector, count) {
+            var badges = document.querySelectorAll(selector);
+            var btns = document.querySelectorAll(btnSelector);
+            if (count > 0) {
+                if (badges.length > 0) {
+                    badges.forEach(function(b) { b.textContent = count; b.style.display = ''; });
+                } else {
+                    btns.forEach(function(btn) {
+                        var b = document.createElement('span');
+                        b.className = selector.replace('.', '');
+                        b.textContent = count;
+                        btn.appendChild(b);
+                    });
+                }
+            } else {
+                badges.forEach(function(b) { b.remove(); });
+            }
+        }
+
+        function applyBadges(data) {
+            if (!data) return;
+            setBadge('.messages-badge', '.messages-icon-btn', data.unread_messages || 0);
+            setBadge('.notifications-badge', '.notifications-icon-btn', data.unread_notifications || 0);
+        }
+
+        /* ========================================
+           TOAST NOTIFICATIONS
+           ======================================== */
+        function showToast(type, title, text, url) {
+            var container = document.getElementById('toastContainer');
+            if (!container) return;
+            var toast = document.createElement('div');
+            toast.className = 'toast';
+            var iconClass = type === 'new_message' ? 'msg' : 'notif';
+            var iconChar = type === 'new_message' ? '<i class="fas fa-comment"></i>' : '<i class="fas fa-bell"></i>';
+            toast.innerHTML =
+                '<div class="toast-icon ' + iconClass + '">' + iconChar + '</div>' +
+                '<div class="toast-body">' +
+                    '<div class="toast-title">' + escapeHtml(title) + '</div>' +
+                    '<div class="toast-text">' + escapeHtml(text) + '</div>' +
+                '</div>';
+            if (url) {
+                toast.onclick = function() { window.location.href = url; };
+            }
+            container.appendChild(toast);
+            // Auto-dismiss after 6s
+            setTimeout(function() {
+                toast.classList.add('hiding');
+                setTimeout(function() { toast.remove(); }, 350);
+            }, 6000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            var div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        /* ========================================
+           WEBSOCKET CONNECTION (primary)
+           ======================================== */
+        var ws = null;
+        var wsRetries = 0;
+        var maxRetries = 10;
+        var wsConnected = false;
+
+        function connectWS() {
+            var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            var url = proto + '//' + location.host + '/ws/notifications/';
+            try {
+                ws = new WebSocket(url);
+            } catch(e) {
+                wsConnected = false;
+                return;
+            }
+
+            ws.onopen = function() {
+                wsConnected = true;
+                wsRetries = 0;
+            };
+
+            ws.onmessage = function(e) {
+                try {
+                    var data = JSON.parse(e.data);
+                } catch(err) { return; }
+
+                if (data.type === 'badge_update') {
+                    applyBadges(data.payload);
+                }
+                else if (data.type === 'new_message') {
+                    var p = data.payload || {};
+                    showToast('new_message', p.sender_name || 'Новое сообщение', p.preview || '', p.conversation_id ? '/messages/' + p.conversation_id + '/' : null);
+                    // Fetch fresh badge counts
+                    fetchBadges();
+                }
+                else if (data.type === 'new_notification') {
+                    var p = data.payload || {};
+                    showToast('new_notification', p.title || 'Уведомление', p.short_text || '', p.id ? '/notifications/' + p.id + '/' : null);
+                    fetchBadges();
+                }
+            };
+
+            ws.onclose = function(e) {
+                wsConnected = false;
+                ws = null;
+                if (e.code !== 4001 && wsRetries < maxRetries) {
+                    wsRetries++;
+                    var delay = Math.min(3000 * wsRetries, 30000);
+                    setTimeout(connectWS, delay);
+                }
+            };
+
+            ws.onerror = function() {
+                wsConnected = false;
+            };
+        }
+
+        // Keep-alive ping every 25s
+        setInterval(function() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({type: 'ping'}));
+            }
+        }, 25000);
+
+        /* ========================================
+           POLLING FALLBACK (when WS is down)
+           ======================================== */
+        function fetchBadges() {
+            fetch('{% url "badge_counts" %}', {
+                credentials: 'same-origin',
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            })
+            .then(function(r) { return r.ok ? r.json() : null; })
+            .then(applyBadges)
+            .catch(function() {});
+        }
+
+        // Poll every 30s ONLY when WebSocket is not connected
+        setInterval(function() {
+            if (!wsConnected) {
+                fetchBadges();
+            }
+        }, 30000);
+
+        // Refresh on tab focus
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                fetchBadges();
+                // Reconnect WS if it died
+                if (!wsConnected && (!ws || ws.readyState > WebSocket.OPEN)) {
+                    wsRetries = 0;
+                    connectWS();
+                }
+            }
+        });
+
+        /* ========================================
+           INIT
+           ======================================== */
+        connectWS();
+    })();
+    </script>
+    {% endif %}
 
     {% block extra_js %}{% endblock %}
 </body>

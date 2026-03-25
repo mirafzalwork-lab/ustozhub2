@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="{% static 'logo/logo.png' %}" type="image/x-icon">
+    <link rel="icon" href="{% static 'logo/new_logo.png' %}" type="image/x-icon">
     <title>Admin Dashboard - UstozHub</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'teachers/admin.css' %}">
@@ -13,11 +13,8 @@
     <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="sidebar-logo">
-            <img src="{% static 'logo/logo.png' %}" alt="UstozHub">
-            <div class="sidebar-logo-text">
-                <h2>UstozHub</h2>
-            </div>
-            </div>
+            <img src="{% static 'logo/new_logo.png' %}" alt="UstozHub" style="height: 32px; width: auto;">
+        </div>
             
         <ul class="sidebar-menu">
             <li><a href="{% url 'admin_dashboard' %}" class="active"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
