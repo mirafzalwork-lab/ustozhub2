@@ -126,23 +126,23 @@ def record_profile_view(request, profile, profile_type):
 
 
 def _apply_sort(queryset, sort_by):
-    """Применяет сортировку к queryset учителей"""
+    """Применяет сортировку к queryset учителей. is_featured всегда первый ключ."""
     if sort_by == 'price_low':
         return queryset.annotate(
             min_price=Min('teachersubject__hourly_rate')
-        ).order_by('min_price', '-ranking_score')
+        ).order_by('-is_featured', 'min_price', '-ranking_score')
     elif sort_by == 'price_high':
         return queryset.annotate(
             min_price=Min('teachersubject__hourly_rate')
-        ).order_by('-min_price', '-ranking_score')
+        ).order_by('-is_featured', '-min_price', '-ranking_score')
     elif sort_by == 'rating':
-        return queryset.order_by('-rating', '-total_reviews', '-ranking_score')
+        return queryset.order_by('-is_featured', '-rating', '-total_reviews', '-ranking_score')
     elif sort_by == 'experience':
-        return queryset.order_by('-experience_years', '-rating')
+        return queryset.order_by('-is_featured', '-experience_years', '-rating')
     elif sort_by == 'newest':
-        return queryset.order_by('-created_at')
+        return queryset.order_by('-is_featured', '-created_at')
     else:  # recommended (default)
-        return queryset.order_by('-ranking_score', '-rating', '-created_at')
+        return queryset.order_by('-is_featured', '-ranking_score', '-rating', '-created_at')
 
 
 def home(request):
@@ -261,23 +261,23 @@ def home(request):
                 Q(bio__icontains=q)
             ).distinct()
 
-            # При поиске: релевантность всегда первична
+            # При поиске: featured всегда первый, потом релевантность
             if sort_by == 'price_low':
                 teachers = teachers.annotate(
                     min_price=Min('teachersubject__hourly_rate')
-                ).order_by('-relevance', 'min_price', '-ranking_score')
+                ).order_by('-is_featured', '-relevance', 'min_price')
             elif sort_by == 'price_high':
                 teachers = teachers.annotate(
                     min_price=Min('teachersubject__hourly_rate')
-                ).order_by('-relevance', '-min_price', '-ranking_score')
+                ).order_by('-is_featured', '-relevance', '-min_price')
             elif sort_by == 'rating':
-                teachers = teachers.order_by('-relevance', '-rating', '-total_reviews')
+                teachers = teachers.order_by('-is_featured', '-relevance', '-rating', '-total_reviews')
             elif sort_by == 'experience':
-                teachers = teachers.order_by('-relevance', '-experience_years', '-rating')
+                teachers = teachers.order_by('-is_featured', '-relevance', '-experience_years', '-rating')
             elif sort_by == 'newest':
-                teachers = teachers.order_by('-relevance', '-created_at')
+                teachers = teachers.order_by('-is_featured', '-relevance', '-created_at')
             else:  # recommended (default)
-                teachers = teachers.order_by('-relevance', '-ranking_score', '-rating', '-total_reviews', '-created_at')
+                teachers = teachers.order_by('-is_featured', '-relevance', '-ranking_score', '-rating', '-total_reviews')
         else:
             teachers = teachers.distinct()
             teachers = _apply_sort(teachers, sort_by)
@@ -752,7 +752,7 @@ def student_detail(request, id):
         suggested_teachers = TeacherProfile.objects.filter(
             subjects__in=desired_subjects,
             is_active=True
-        ).select_related('user', 'city').distinct().order_by('-rating')[:6]
+        ).select_related('user', 'city').distinct().order_by('-is_featured', '-rating')[:6]
         
         # Проверяем, добавлен ли ученик в избранное учителем
         is_favorited = False
@@ -1416,11 +1416,11 @@ def student_suggestions(request):
     teachers = TeacherProfile.objects.filter(
         is_active=True,
         subjects__in=desired_subjects
-    ).select_related('user', 'city').prefetch_related('teachersubject_set__subject').distinct().order_by('-rating', '-created_at')[:24]
+    ).select_related('user', 'city').prefetch_related('teachersubject_set__subject').distinct().order_by('-is_featured', '-rating', '-created_at')[:24]
 
     # fallback: если нет указанных предметов, показать топ-учителей
     if not teachers:
-        teachers = TeacherProfile.objects.filter(is_active=True).select_related('user', 'city').prefetch_related('teachersubject_set__subject').order_by('-rating', '-created_at')[:12]
+        teachers = TeacherProfile.objects.filter(is_active=True).select_related('user', 'city').prefetch_related('teachersubject_set__subject').order_by('-is_featured', '-rating', '-created_at')[:12]
 
     return render(request, 'logic/student_suggestions.html', {
         'student': student,

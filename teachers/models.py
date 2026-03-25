@@ -273,9 +273,9 @@ class TeacherProfile(models.Model):
     class Meta:
         verbose_name = 'Профиль учителя'
         verbose_name_plural = 'Профили учителей'
-        ordering = ['-ranking_score', '-rating', '-created_at']
+        ordering = ['-is_featured', '-ranking_score', '-rating', '-created_at']
         indexes = [
-            models.Index(fields=['-ranking_score', '-rating', '-created_at']),  # Основная сортировка
+            models.Index(fields=['-is_featured', '-ranking_score', '-rating']),  # Основная сортировка
             models.Index(fields=['-rating', '-created_at']),  # Для сортировки на главной
             models.Index(fields=['is_active', 'moderation_status']),  # Для фильтров
             models.Index(fields=['city', 'is_active']),  # Для фильтра по городу
