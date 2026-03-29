@@ -293,15 +293,15 @@
     <div class="notifications-list">
         {% for item in notifications %}
         <div class="notification-card {% if not item.is_read %}unread{% endif %}" 
-             onclick="window.location.href='{% url 'notification_detail' item.notification.id %}'">
+             onclick="window.location.href='{% url 'notification_detail' item.id %}'">
             <div class="notification-header">
-                <h3 class="notification-title">{{ item.notification.title }}</h3>
+                <h3 class="notification-title">{{ item.title }}</h3>
                 <span class="notification-date">
-                    {{ item.notification.created_at|date:"d.m.Y H:i" }}
+                    {{ item.created_at|date:"d.m.Y H:i" }}
                 </span>
             </div>
-            
-            <p class="notification-text">{{ item.notification.short_text }}</p>
+
+            <p class="notification-text">{{ item.short_text }}</p>
             
             <div class="notification-footer">
                 <span class="read-status {% if item.is_read %}read{% else %}unread{% endif %}">
@@ -314,7 +314,7 @@
                     {% endif %}
                 </span>
                 
-                <button class="view-details-btn" onclick="event.stopPropagation(); window.location.href='{% url 'notification_detail' item.notification.id %}'">
+                <button class="view-details-btn" onclick="event.stopPropagation(); window.location.href='{% url 'notification_detail' item.id %}'">
                     Подробнее <i class="fas fa-arrow-right"></i>
                 </button>
             </div>
