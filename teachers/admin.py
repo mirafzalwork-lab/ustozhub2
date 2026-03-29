@@ -1,12 +1,23 @@
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.db.models import Q
 from django.utils.html import format_html
 from django.utils import timezone
+import logging
+
+from django.shortcuts import render, redirect
+from django.urls import path
+
 from .models import (
     User, Subject, SubjectCategory, City, Certificate,
     TeacherProfile, TeacherSubject, StudentProfile,
-    Conversation, Message, Review, Favorite, SubjectSearchLog
+    Conversation, Message, Review, Favorite, SubjectSearchLog,
+    ProfileView, TelegramUser, NotificationQueue, NotificationLog,
+    Notification, NotificationRead,
 )
+from .admin_telegram_service import admin_telegram_service
+
+logger = logging.getLogger(__name__)
 
 
 # --- Пользователь ---
@@ -180,8 +191,7 @@ class SubjectSearchLogAdmin(admin.ModelAdmin):
     # Добавляем действие для анализа популярных запросов
     def changelist_view(self, request, extra_context=None):
         """Добавляем статистику популярных запросов"""
-        from django.db.models import Count
-        
+        from django.db.models import Count  # Используется только здесь
         # Топ-20 популярных запросов
         popular_queries = SubjectSearchLog.objects.values('query').annotate(
             count=Count('id')
@@ -227,29 +237,20 @@ class TeacherProfileAdmin(admin.ModelAdmin):
     
     def save_model(self, request, obj, form, change):
         """Переопределяем сохранение для установки модератора"""
-        print(f"🔍 DEBUG: save_model вызван, change={change}")
-        
-        if change:  # Если редактируется существующий объект
-            # Получаем старое значение из БД
+        if change:
             try:
                 old_obj = TeacherProfile.objects.get(pk=obj.pk)
                 old_status = old_obj.moderation_status
                 new_status = obj.moderation_status
-                
-                print(f"🔍 DEBUG: Статусы - old={old_status}, new={new_status}")
-                
-                # Если статус изменился на approved или rejected
+
                 if old_status != new_status and new_status in ['approved', 'rejected']:
-                    print(f"🔍 DEBUG: Устанавливаем moderated_by={request.user.username}")
                     obj.moderated_by = request.user
                     obj.moderation_date = timezone.now()
-            
+
             except TeacherProfile.DoesNotExist:
                 pass
-        
-        # Сохраняем (метод save() модели сработает автоматически)
+
         super().save_model(request, obj, form, change)
-        print(f"🔍 DEBUG: save_model завершён")
     
     def approve_teachers(self, request, queryset):
         """Одобрить выбранные профили учителей"""
@@ -315,9 +316,6 @@ class TeacherProfileAdmin(admin.ModelAdmin):
         )
     recalculate_rankings.short_description = '📊 Пересчитать ранжирование'
 
-
-# Импорт для ProfileView
-from .models import ProfileView
 
 # Регистрация модели просмотров профилей
 @admin.register(ProfileView)
@@ -398,60 +396,6 @@ class TeacherProfileAdminInline(admin.StackedInline):
         return False
 
 
-# Дополнительные методы для админки TeacherProfile (добавить к существующей)
-class TeacherProfileAdminMixin:
-    """Миксин для добавления статистики просмотров в админку"""
-    
-    def get_total_views(self, obj):
-        """Получить общее количество просмотров"""
-        return obj.profile_views.count()
-    get_total_views.short_description = 'Всего просмотров'
-    
-    def get_week_views(self, obj):
-        """Получить просмотры за неделю"""
-        return obj.get_views_count('week')
-    get_week_views.short_description = 'Просмотров за неделю'
-    
-    def get_unique_viewers(self, obj):
-        """Получить количество уникальных просмотров"""
-        return obj.get_unique_viewers_count('all')
-    get_unique_viewers.short_description = 'Уникальных посетителей'
-
-
-# Аналогично для StudentProfile
-class StudentProfileAdminMixin:
-    """Миксин для добавления статистики просмотров в админку"""
-    
-    def get_total_views(self, obj):
-        """Получить общее количество просмотров"""
-        return obj.profile_views.count()
-    get_total_views.short_description = 'Всего просмотров'
-    
-    def get_week_views(self, obj):
-        """Получить просмотры за неделю"""
-        return obj.get_views_count('week')
-    get_week_views.short_description = 'Просмотров за неделю'
-    
-    def get_unique_viewers(self, obj):
-        """Получить количество уникальных просмотров"""
-        return obj.get_unique_viewers_count('all')
-    get_unique_viewers.short_description = 'Уникальных посетителей'
-
-
-# Пример использования в существующей админке:
-"""
-@admin.register(TeacherProfile)
-class TeacherProfileAdmin(TeacherProfileAdminMixin, admin.ModelAdmin):
-    list_display = [
-        'user', 
-        'city', 
-        'rating', 
-        'get_total_views',  # НОВОЕ
-        'get_week_views',   # НОВОЕ
-        'is_active'
-    ]
-    # ... остальные настройки ...
-"""
 # --- TeacherSubject ---
 @admin.register(TeacherSubject)
 class TeacherSubjectAdmin(admin.ModelAdmin):
@@ -507,13 +451,6 @@ class FavoriteAdmin(admin.ModelAdmin):
 
 
 # --- TelegramUser (Telegram integration) ---
-from .models import TelegramUser, NotificationQueue, NotificationLog
-from django.shortcuts import render, redirect
-from django.urls import path
-from django.contrib import messages
-from .admin_telegram_service import admin_telegram_service
-from django.utils import timezone
-
 @admin.register(TelegramUser)
 class TelegramUserAdmin(admin.ModelAdmin):
     list_display = ("user", "telegram_id", "telegram_username", "first_name", 
@@ -587,10 +524,7 @@ class TelegramUserAdmin(admin.ModelAdmin):
                         messages.SUCCESS
                     )
             except Exception as e:
-                # Логируем ошибку
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"Ошибка отправки сообщений: {e}")
+                logger.error(f"Ошибка отправки сообщений: {e}", exc_info=True)
                 self.message_user(
                     request,
                     f"❌ Произошла ошибка при отправке сообщений: {str(e)}",
@@ -769,7 +703,7 @@ class TelegramUserAdmin(admin.ModelAdmin):
                             user_type=user_type if user_type != 'all' else None
                         )
                     except Exception as e:
-                        print(f"❌ Ошибка в фоновой отправке: {e}")
+                        logger.error(f"Background broadcast send failed: {e}", exc_info=True)
                 
                 # Запускаем в отдельном потоке
                 thread = Thread(target=background_send)
@@ -790,7 +724,7 @@ class TelegramUserAdmin(admin.ModelAdmin):
                 return redirect('..')
                 
             except Exception as e:
-                print(f"❌ ADMIN DEBUG: Ошибка запуска фоновой задачи: {e}")
+                logger.error(f"Failed to start broadcast task: {e}", exc_info=True)
                 self.message_user(
                     request,
                     f"❌ Ошибка при запуске отправки: {str(e)}",
@@ -941,9 +875,6 @@ class NotificationLogAdmin(admin.ModelAdmin):
 # АДМИНКА СИСТЕМЫ УВЕДОМЛЕНИЙ
 # ============================================
 
-from .models import Notification, NotificationRead
-
-
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
     """
@@ -1072,7 +1003,6 @@ class NotificationAdmin(admin.ModelAdmin):
         total_reads = obj.read_by_users.count()
         
         # Подсчет по типам пользователей
-        from django.db.models import Q
         students_read = obj.read_by_users.filter(user__user_type='student').count()
         teachers_read = obj.read_by_users.filter(user__user_type='teacher').count()
         admins_read = obj.read_by_users.filter(

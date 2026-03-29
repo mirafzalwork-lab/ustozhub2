@@ -4,6 +4,7 @@ Django settings for core project.
 
 import os
 from pathlib import Path
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,11 +20,13 @@ if _env_path.is_file():
                 key, _, value = line.partition('=')
                 os.environ.setdefault(key.strip(), value.strip())
 
-# SECURITY: Secret key from environment variable
-SECRET_KEY = os.environ.get(
-    'SECRET_KEY',
-    'django-insecure-rx4raz1u)-1$v=)b66qio%2hn_pxu(!*g38dfkgfr0kg#+p*br'
-)
+# SECURITY: Secret key from environment variable (no fallback in production)
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    raise ImproperlyConfigured(
+        "SECRET_KEY environment variable is not set. "
+        "Add it to your .env file or set it as an environment variable."
+    )
 
 # SECURITY: Debug mode from environment variable (default False in production)
 DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 'yes')
@@ -127,15 +130,37 @@ DATABASES = {
 }
 
 # Password validation
-# Упрощенная валидация паролей - только минимальная длина 4 символа
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
         'OPTIONS': {
-            'min_length': 4,
+            'min_length': 10,
         }
     },
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
 ]
+
+# Security settings for production
+if not DEBUG:
+    # HTTPS and security headers (only in production)
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_HSTS_SECONDS = 63072000  # 2 years
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+else:
+    # Development settings
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
 
 # Internationalization
 LANGUAGE_CODE = 'ru'  # Язык по умолчанию
@@ -166,7 +191,11 @@ STATICFILES_DIRS = [
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # WhiteNoise configuration for serving static files
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 AUTH_USER_MODEL = 'teachers.User'
 
@@ -182,8 +211,6 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-default_app_config = 'teachers.apps.TeachersConfig'
-
 # =============================================================================
 # TELEGRAM BOT SETTINGS
 # =============================================================================
@@ -195,7 +222,7 @@ TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 SITE_URL = os.environ.get('SITE_URL', 'https://ustozhubedu.uz')
 
 # URL для Telegram WebApp (будет открываться при нажатии на кнопку в боте)
-TELEGRAM_WEBAPP_URL = f'{SITE_URL}'
+TELEGRAM_WEBAPP_URL = SITE_URL
 
 # Webhook URL для Telegram (если будете использовать webhook вместо polling)
 # TELEGRAM_WEBHOOK_URL = f'{SITE_URL}/api/telegram/webhook/'
@@ -215,4 +242,46 @@ CACHES = {
 }
 
 # Время кэширования (в секундах)
-CACHE_TTL = 60 * 15  # 15 минут для фильтровf
+CACHE_TTL = 60 * 15  # 15 минут
+
+# =============================================================================
+# LOGGING
+# =============================================================================
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'teachers': {
+            'handlers': ['console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+        'telegram_bot': {
+            'handlers': ['console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+    },
+}

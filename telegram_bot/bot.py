@@ -9,8 +9,9 @@ import logging
 import asyncio
 from telegram import Update, WebAppInfo, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
-    Application, 
-    CommandHandler, 
+    Application,
+    CallbackQueryHandler,
+    CommandHandler,
     ContextTypes,
     MessageHandler,
     filters
@@ -262,7 +263,6 @@ def main():
     application.add_handler(CommandHandler("notifications", notifications_command))
     
     # Обработчик callback-кнопок
-    from telegram.ext import CallbackQueryHandler
     application.add_handler(CallbackQueryHandler(handle_callback))
     
     # Обработчик ошибок
@@ -296,9 +296,7 @@ def main():
     except KeyboardInterrupt:
         logger.info("Остановка бота...")
     except Exception as e:
-        logger.error(f"Ошибка при запуске бота: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
+        logger.error(f"Error starting bot: {e}", exc_info=True)
         raise
 
 

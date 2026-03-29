@@ -1,13 +1,15 @@
 # models.py
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models import Q
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.urls import reverse
 from django.utils import timezone
 from django.core.cache import cache
 from PIL import Image
+import math
 import uuid
-import datetime
+from datetime import timedelta, time as dt_time
 import os
 import logging
 
@@ -18,6 +20,23 @@ logger = logging.getLogger(__name__)
 CACHE_TTL = 300  # 5 минут по умолчанию
 CACHE_TTL_SHORT = 60  # 1 минута для часто меняющихся данных
 CACHE_TTL_LONG = 3600  # 1 час для редко меняющихся данных
+
+# Константа для дней недели (используется в TeacherProfile и StudentProfile)
+WEEKDAYS_MAP = {
+    '1': 'Пн', '2': 'Вт', '3': 'Ср', '4': 'Чт',
+    '5': 'Пт', '6': 'Сб', '7': 'Вс'
+}
+
+
+def _filter_views_by_period(views_qs, period):
+    """Фильтрует queryset просмотров по периоду."""
+    if period == 'day':
+        return views_qs.filter(viewed_at__gte=timezone.now() - timedelta(days=1))
+    elif period == 'week':
+        return views_qs.filter(viewed_at__gte=timezone.now() - timedelta(weeks=1))
+    elif period == 'month':
+        return views_qs.filter(viewed_at__gte=timezone.now() - timedelta(days=30))
+    return views_qs
 
 class User(AbstractUser):
     """Расширенная модель пользователя"""
@@ -203,8 +222,8 @@ class TeacherProfile(models.Model):
         help_text="Коды языков через запятую (uz,ru,en)"
     )
     # Время работы
-    available_from = models.TimeField(default=datetime.time(9, 0))
-    available_to = models.TimeField(default=datetime.time(21, 0))
+    available_from = models.TimeField(default=dt_time(9, 0))
+    available_to = models.TimeField(default=dt_time(21, 0))
     available_weekdays = models.CharField(max_length=20, default='1,2,3,4,5,6,7', 
                                         help_text="Дни недели через запятую (1-7)")
     
@@ -299,7 +318,6 @@ class TeacherProfile(models.Model):
         score += int(float(self.rating) * 5)
 
         # Отзывы: до 15 баллов (логарифмическая шкала)
-        import math
         if self.total_reviews > 0:
             score += min(15, int(math.log2(self.total_reviews + 1) * 5))
 
@@ -325,69 +343,12 @@ class TeacherProfile(models.Model):
 
     def approve(self, moderator, comment=''):
         """Одобрить профиль учителя"""
-        print(f"🔍 DEBUG: approve() вызван для {self.user.username}")
-        
         self.moderation_status = 'approved'
         self.moderation_comment = comment
         self.moderation_date = timezone.now()
         self.moderated_by = moderator
         self.save()
-        
-        print(f"🔍 DEBUG: Статус изменён на approved")
-        
-        # Создаем персонализированное уведомление для учителя об одобрении
-        try:
-            print(f"🔍 DEBUG: Начинаем создание уведомления...")
-            
-            teacher_name = self.user.get_full_name() or self.user.username
-            
-            # Формируем текст уведомления
-            short_text = "Поздравляем! Ваш профиль учителя успешно одобрен администратором."
-            
-            full_text = f"""Здравствуйте, {teacher_name}!
-
-Рады сообщить вам, что ваш профиль учителя успешно прошёл модерацию и был одобрен администратором {moderator.get_full_name() or moderator.username}.
-
-Теперь ваш профиль виден всем пользователям платформы, и ученики смогут находить вас и связываться с вами!
-
-🎉 Желаем вам успехов в преподавании и много благодарных учеников!
-
-Рекомендации для успешного старта:
-• Регулярно проверяйте сообщения от учеников
-• Отвечайте оперативно на запросы
-• Поддерживайте актуальность информации в профиле
-• Будьте пунктуальны и профессиональны
-
-С уважением,
-Команда UstozHub"""
-
-            if comment:
-                full_text += f"\n\nКомментарий модератора: {comment}"
-            
-            print(f"🔍 DEBUG: Попытка создать Notification для user_id={self.user.id}")
-            
-            # Создаем персональное уведомление только для этого учителя
-            notif = Notification.objects.create(
-                title="✅ Ваш профиль одобрен!",
-                short_text=short_text,
-                full_text=full_text,
-                target='specific_user',
-                target_user=self.user,  # Персонализированное уведомление
-                is_active=True,
-                priority=10,  # Высокий приоритет
-                created_by=moderator
-            )
-            
-            print(f"✅ DEBUG: Уведомление создано! ID={notif.id}, target_user={notif.target_user.username}")
-            logger.info(f"Approval notification created for teacher: {self.user.username}")
-            
-        except Exception as e:
-            # Логируем ошибку, но не прерываем процесс одобрения
-            print(f"❌ DEBUG: ОШИБКА при создании уведомления: {e}")
-            print(f"❌ DEBUG: Тип ошибки: {type(e).__name__}")
-            import traceback
-            traceback.print_exc()
-            logger.error(f"Failed to create approval notification for teacher {self.user.username}: {e}", exc_info=True)
+        # Notification is created automatically in save() via _create_approval_notification()
 
     def reject(self, moderator, comment=''):
         """Отклонить профиль учителя"""
@@ -396,63 +357,14 @@ class TeacherProfile(models.Model):
         self.moderation_date = timezone.now()
         self.moderated_by = moderator
         self.save()
-        
-        # Создаем персонализированное уведомление для учителя об отклонении
-        try:
-            teacher_name = self.user.get_full_name() or self.user.username
-            
-            # Формируем текст уведомления
-            short_text = "К сожалению, ваш профиль учителя не был одобрен администратором."
-            
-            full_text = f"""Здравствуйте, {teacher_name}!
-
-К сожалению, ваш профиль учителя не прошёл модерацию.
-
-"""
-            
-            if comment:
-                full_text += f"""Причина отклонения:
-{comment}
-
-"""
-            
-            full_text += """Что делать дальше?
-• Внимательно изучите комментарий модератора
-• Исправьте указанные недостатки в профиле
-• Обновите информацию и отправьте профиль на повторную проверку
-• При необходимости обратитесь в службу поддержки
-
-Мы всегда рады видеть качественных преподавателей на нашей платформе!
-
-С уважением,
-Команда UstozHub"""
-            
-            # Создаем персональное уведомление только для этого учителя
-            Notification.objects.create(
-                title="❌ Профиль не одобрен",
-                short_text=short_text,
-                full_text=full_text,
-                target='specific_user',
-                target_user=self.user,  # Персонализированное уведомление
-                is_active=True,
-                priority=10,  # Высокий приоритет
-                created_by=moderator
-            )
-            
-            logger.info(f"Rejection notification created for teacher: {self.user.username}")
-            
-        except Exception as e:
-            # Логируем ошибку, но не прерываем процесс отклонения
-            logger.error(f"Failed to create rejection notification for teacher {self.user.username}: {e}", exc_info=True)
+        # Notification is created automatically in save() via _create_rejection_notification()
     
     def _create_approval_notification(self, moderator, comment=''):
         """Вспомогательный метод для создания уведомления об одобрении"""
         try:
-            print(f"🔍 DEBUG: _create_approval_notification вызван для {self.user.username}")
-            
             teacher_name = self.user.get_full_name() or self.user.username
             short_text = "Поздравляем! Ваш профиль учителя успешно одобрен администратором."
-            
+
             full_text = f"""Здравствуйте, {teacher_name}!
 
 Рады сообщить вам, что ваш профиль учителя успешно прошёл модерацию и был одобрен администратором {moderator.get_full_name() or moderator.username}.
@@ -472,8 +384,8 @@ class TeacherProfile(models.Model):
 
             if comment:
                 full_text += f"\n\nКомментарий модератора: {comment}"
-            
-            notif = Notification.objects.create(
+
+            Notification.objects.create(
                 title="✅ Ваш профиль одобрен!",
                 short_text=short_text,
                 full_text=full_text,
@@ -483,36 +395,30 @@ class TeacherProfile(models.Model):
                 priority=10,
                 created_by=moderator
             )
-            
-            print(f"✅ DEBUG: Уведомление создано! ID={notif.id}, для {notif.target_user.username}")
+
             logger.info(f"Approval notification created for teacher: {self.user.username}")
-            
+
         except Exception as e:
-            print(f"❌ DEBUG: Ошибка создания уведомления: {e}")
-            import traceback
-            traceback.print_exc()
             logger.error(f"Failed to create approval notification: {e}", exc_info=True)
     
     def _create_rejection_notification(self, moderator, comment=''):
         """Вспомогательный метод для создания уведомления об отклонении"""
         try:
-            print(f"🔍 DEBUG: _create_rejection_notification вызван для {self.user.username}")
-            
             teacher_name = self.user.get_full_name() or self.user.username
             short_text = "К сожалению, ваш профиль учителя не был одобрен администратором."
-            
+
             full_text = f"""Здравствуйте, {teacher_name}!
 
 К сожалению, ваш профиль учителя не прошёл модерацию.
 
 """
-            
+
             if comment:
                 full_text += f"""Причина отклонения:
 {comment}
 
 """
-            
+
             full_text += """Что делать дальше?
 • Внимательно изучите комментарий модератора
 • Исправьте указанные недостатки в профиле
@@ -523,8 +429,8 @@ class TeacherProfile(models.Model):
 
 С уважением,
 Команда UstozHub"""
-            
-            notif = Notification.objects.create(
+
+            Notification.objects.create(
                 title="❌ Профиль не одобрен",
                 short_text=short_text,
                 full_text=full_text,
@@ -534,79 +440,39 @@ class TeacherProfile(models.Model):
                 priority=10,
                 created_by=moderator
             )
-            
-            print(f"✅ DEBUG: Уведомление создано! ID={notif.id}, для {notif.target_user.username}")
+
             logger.info(f"Rejection notification created for teacher: {self.user.username}")
-            
+
         except Exception as e:
-            print(f"❌ DEBUG: Ошибка создания уведомления: {e}")
-            import traceback
-            traceback.print_exc()
             logger.error(f"Failed to create rejection notification: {e}", exc_info=True)
     
-    def get_teaching_languages_display(self):
-        """Получить названия языков преподавания"""
-        languages_dict = dict(self.TEACHING_LANGUAGES)
-        codes = self.teaching_languages.split(',')
-        return ', '.join([languages_dict.get(code.strip(), code) for code in codes if code.strip()])
-
     def get_teaching_languages_list(self):
-        """Получить список языков для отображения"""
+        """Получить список названий языков преподавания"""
         languages_dict = dict(self.TEACHING_LANGUAGES)
         codes = self.teaching_languages.split(',')
         return [languages_dict.get(code.strip(), code) for code in codes if code.strip()]
 
+    def get_teaching_languages_display(self):
+        """Получить названия языков преподавания через запятую"""
+        return ', '.join(self.get_teaching_languages_list())
+
     def get_views_count(self, period='all'):
-        """
-        Получить количество просмотров профиля (с кэшированием)
-        period: 'day', 'week', 'month', 'all'
-        """
-        from datetime import timedelta
-        
+        """Получить количество просмотров профиля (с кэшированием)"""
         cache_key = f'teacher_views_{self.id}_{period}'
         count = cache.get(cache_key)
         if count is not None:
             return count
-        
-        views = self.profile_views.all()
-        
-        if period == 'day':
-            start_date = timezone.now() - timedelta(days=1)
-            views = views.filter(viewed_at__gte=start_date)
-        elif period == 'week':
-            start_date = timezone.now() - timedelta(weeks=1)
-            views = views.filter(viewed_at__gte=start_date)
-        elif period == 'month':
-            start_date = timezone.now() - timedelta(days=30)
-            views = views.filter(viewed_at__gte=start_date)
-        
-        count = views.count()
-        # Короткий TTL для статистики просмотров
+        count = _filter_views_by_period(self.profile_views.all(), period).count()
         cache.set(cache_key, count, CACHE_TTL_SHORT)
         return count
 
     def get_unique_viewers_count(self, period='all'):
         """Получить количество уникальных просмотров (по IP, с кэшированием)"""
-        from datetime import timedelta
-        
         cache_key = f'teacher_unique_views_{self.id}_{period}'
         count = cache.get(cache_key)
         if count is not None:
             return count
-        
-        views = self.profile_views.all()
-        
-        if period == 'day':
-            start_date = timezone.now() - timedelta(days=1)
-            views = views.filter(viewed_at__gte=start_date)
-        elif period == 'week':
-            start_date = timezone.now() - timedelta(weeks=1)
-            views = views.filter(viewed_at__gte=start_date)
-        elif period == 'month':
-            start_date = timezone.now() - timedelta(days=30)
-            views = views.filter(viewed_at__gte=start_date)
-        
-        count = views.values('viewer_ip').distinct().count()
+        count = _filter_views_by_period(self.profile_views.all(), period).values('viewer_ip').distinct().count()
         cache.set(cache_key, count, CACHE_TTL_SHORT)
         return count
 
@@ -634,82 +500,45 @@ class TeacherProfile(models.Model):
         return result
 
     def get_available_weekdays_display(self):
-        days_map = {
-            '1': 'Пн', '2': 'Вт', '3': 'Ср', '4': 'Чт', 
-            '5': 'Пт', '6': 'Сб', '7': 'Вс'
-        }
         days = self.available_weekdays.split(',')
-        return ', '.join([days_map.get(day, day) for day in days])
+        return ', '.join([WEEKDAYS_MAP.get(day.strip(), day) for day in days])
 
     def get_absolute_url(self):
         return reverse('teacher_detail', kwargs={'pk': self.pk})
     
     def save(self, *args, **kwargs):
         """Переопределяем save для автоматического создания уведомлений и инвалидации кэша"""
-        print(f"🔍 DEBUG save(): Вызван для TeacherProfile pk={self.pk}, user={self.user.username}")
-        
         # Проверяем, меняется ли статус модерации
-        if self.pk:  # Если объект уже существует в БД
+        if self.pk:
             try:
                 old_instance = TeacherProfile.objects.get(pk=self.pk)
                 old_status = old_instance.moderation_status
                 new_status = self.moderation_status
-                
-                print(f"🔍 DEBUG save(): old_status={old_status}, new_status={new_status}")
-                
-                # Если статус изменился
+
                 if old_status != new_status:
-                    print(f"🔍 DEBUG save(): ✓ Статус изменился с {old_status} на {new_status}")
-                    print(f"🔍 DEBUG save(): moderated_by={self.moderated_by}")
-                    
-                    # Сохраняем изменения
                     super().save(*args, **kwargs)
-                    print(f"🔍 DEBUG save(): ✓ Сохранено в БД")
-                    
-                    # Инвалидируем кэш
                     self.clear_cache()
-                    
+
                     # Создаём уведомление ПОСЛЕ сохранения
-                    if new_status == 'approved' and old_status != 'approved':
-                        print(f"🔍 DEBUG save(): Попытка создать approval notification")
-                        moderator = self.moderated_by or User.objects.filter(is_staff=True).first()
-                        print(f"🔍 DEBUG save(): Модератор для уведомления: {moderator}")
-                        if moderator:
+                    moderator = self.moderated_by or User.objects.filter(is_staff=True).first()
+                    if moderator:
+                        if new_status == 'approved' and old_status != 'approved':
                             self._create_approval_notification(moderator, self.moderation_comment or '')
-                        else:
-                            print(f"❌ DEBUG save(): Модератор не найден!")
-                    
-                    elif new_status == 'rejected' and old_status != 'rejected':
-                        print(f"🔍 DEBUG save(): Попытка создать rejection notification")
-                        moderator = self.moderated_by or User.objects.filter(is_staff=True).first()
-                        if moderator:
+                        elif new_status == 'rejected' and old_status != 'rejected':
                             self._create_rejection_notification(moderator, self.moderation_comment or '')
-                        else:
-                            print(f"❌ DEBUG save(): Модератор не найден!")
-                    
-                    print(f"🔍 DEBUG save(): Завершено с изменением статуса")
-                    return  # Выходим, так как уже сохранили
-                else:
-                    print(f"🔍 DEBUG save(): Статус НЕ изменился, обычное сохранение")
-            
+                    else:
+                        logger.warning(f"No moderator found for notification (teacher: {self.user.username})")
+
+                    return
+
             except TeacherProfile.DoesNotExist:
-                print(f"🔍 DEBUG save(): TeacherProfile.DoesNotExist для pk={self.pk}")
-        
-        # Обычное сохранение
-        print(f"🔍 DEBUG save(): Обычное сохранение через super().save()")
+                pass
+
         super().save(*args, **kwargs)
-        # Инвалидируем кэш при обновлении профиля
         self.clear_cache()
-        print(f"🔍 DEBUG save(): Завершено")
     
     def clear_cache(self):
         """Очистить весь кэш связанный с этим профилем учителя"""
-        cache_patterns = [
-            f'teacher_views_{self.id}_*',
-            f'teacher_unique_views_{self.id}_*',
-            f'teacher_min_price_{self.id}',
-        ]
-        # Удаляем конкретные ключи
         for period in ['all', 'day', 'week', 'month']:
             cache.delete(f'teacher_views_{self.id}_{period}')
             cache.delete(f'teacher_unique_views_{self.id}_{period}')
@@ -897,65 +726,28 @@ class StudentProfile(models.Model):
     
     def get_available_weekdays_display(self):
         """Возвращает строку с днями недели"""
-        days_map = {
-            '1': 'Пн', '2': 'Вт', '3': 'Ср', '4': 'Чт',
-            '5': 'Пт', '6': 'Сб', '7': 'Вс'
-        }
         if self.available_weekdays:
             days = self.available_weekdays.split(',')
-            return ', '.join([days_map.get(day.strip(), day) for day in days])
+            return ', '.join([WEEKDAYS_MAP.get(day.strip(), day) for day in days])
         return "Не указано"
 
     def get_views_count(self, period='all'):
-        """
-        Получить количество просмотров профиля (с кэшированием)
-        period: 'day', 'week', 'month', 'all'
-        """
-        from datetime import timedelta
-        
+        """Получить количество просмотров профиля (с кэшированием)"""
         cache_key = f'student_views_{self.id}_{period}'
         count = cache.get(cache_key)
         if count is not None:
             return count
-        
-        views = self.profile_views.all()
-        
-        if period == 'day':
-            start_date = timezone.now() - timedelta(days=1)
-            views = views.filter(viewed_at__gte=start_date)
-        elif period == 'week':
-            start_date = timezone.now() - timedelta(weeks=1)
-            views = views.filter(viewed_at__gte=start_date)
-        elif period == 'month':
-            start_date = timezone.now() - timedelta(days=30)
-            views = views.filter(viewed_at__gte=start_date)
-        
-        count = views.count()
+        count = _filter_views_by_period(self.profile_views.all(), period).count()
         cache.set(cache_key, count, CACHE_TTL_SHORT)
         return count
 
     def get_unique_viewers_count(self, period='all'):
         """Получить количество уникальных просмотров (по IP, с кэшированием)"""
-        from datetime import timedelta
-        
         cache_key = f'student_unique_views_{self.id}_{period}'
         count = cache.get(cache_key)
         if count is not None:
             return count
-        
-        views = self.profile_views.all()
-        
-        if period == 'day':
-            start_date = timezone.now() - timedelta(days=1)
-            views = views.filter(viewed_at__gte=start_date)
-        elif period == 'week':
-            start_date = timezone.now() - timedelta(weeks=1)
-            views = views.filter(viewed_at__gte=start_date)
-        elif period == 'month':
-            start_date = timezone.now() - timedelta(days=30)
-            views = views.filter(viewed_at__gte=start_date)
-        
-        count = views.values('viewer_ip').distinct().count()
+        count = _filter_views_by_period(self.profile_views.all(), period).values('viewer_ip').distinct().count()
         cache.set(cache_key, count, CACHE_TTL_SHORT)
         return count
 
@@ -965,21 +757,8 @@ class StudentProfile(models.Model):
     def save(self, *args, **kwargs):
         """Переопределяем save для инвалидации кэша"""
         super().save(*args, **kwargs)
-        # Инвалидируем кэш при обновлении профиля
         self.clear_cache()
-    
-    def clear_cache(self):
-        """Очистить весь кэш связанный с этим профилем ученика"""
-        for period in ['all', 'day', 'week', 'month']:
-            cache.delete(f'student_views_{self.id}_{period}')
-            cache.delete(f'student_unique_views_{self.id}_{period}')
-    
-    def save(self, *args, **kwargs):
-        """Переопределяем save для инвалидации кэша"""
-        super().save(*args, **kwargs)
-        # Инвалидируем кэш при обновлении профиля
-        self.clear_cache()
-    
+
     def clear_cache(self):
         """Очистить весь кэш связанный с этим профилем ученика"""
         for period in ['all', 'day', 'week', 'month']:
@@ -1399,7 +1178,7 @@ class NotificationQueue(models.Model):
         """
         # Экспоненциальная задержка: 2^retry_count минут
         delay_minutes = 2 ** self.retry_count
-        return datetime.timedelta(minutes=min(delay_minutes, 60))  # Макс 1 час
+        return timedelta(minutes=min(delay_minutes, 60))  # Макс 1 час
 
 
 class NotificationLog(models.Model):
@@ -1688,59 +1467,63 @@ class Notification(models.Model):
     @classmethod
     def get_unread_count(cls, user):
         """
-        Возвращает общее количество непрочитанных уведомлений для пользователя
+        Возвращает общее количество непрочитанных уведомлений для пользователя.
+        Использует один SQL-запрос с Exists-подзапросом.
         """
+        from django.db.models import OuterRef, Exists
+
         if not user.is_authenticated:
             return 0
-        
-        # Получаем все активные уведомления для данного пользователя
-        all_notifications = cls.objects.filter(is_active=True)
-        
-        # Фильтруем по целевой аудитории
-        visible_notifications = []
-        for notification in all_notifications:
-            if notification.is_visible_for_user(user):
-                visible_notifications.append(notification.id)
-        
-        if not visible_notifications:
-            return 0
-        
-        # Получаем прочитанные уведомления
-        read_notification_ids = NotificationRead.objects.filter(
+
+        read_subquery = NotificationRead.objects.filter(
             user=user,
-            notification_id__in=visible_notifications
-        ).values_list('notification_id', flat=True)
-        
-        # Считаем непрочитанные
-        unread_count = len(visible_notifications) - len(read_notification_ids)
-        return max(0, unread_count)
+            notification_id=OuterRef('id')
+        )
+
+        return cls.objects.filter(
+            is_active=True
+        ).filter(
+            cls._build_visibility_filter(user)
+        ).exclude(
+            Exists(read_subquery)
+        ).count()
     
+    @classmethod
+    def _build_visibility_filter(cls, user):
+        """Строит Q-фильтр видимости уведомлений для пользователя."""
+        visibility_filters = [
+            Q(target_user=user),
+            Q(target='all', target_user__isnull=True),
+        ]
+        if getattr(user, 'user_type', None) == 'student':
+            visibility_filters.append(Q(target='students', target_user__isnull=True))
+        if getattr(user, 'user_type', None) == 'teacher':
+            visibility_filters.append(Q(target='teachers', target_user__isnull=True))
+        if user.is_staff or user.is_superuser:
+            visibility_filters.append(Q(target='admins', target_user__isnull=True))
+        return Q(*visibility_filters, _connector=Q.OR)
+
     @classmethod
     def get_user_notifications(cls, user, include_read=False):
         """
-        Возвращает список уведомлений для пользователя
+        Возвращает queryset уведомлений для пользователя.
+        Фильтрация на уровне БД вместо Python-итерации.
         """
         if not user.is_authenticated:
             return cls.objects.none()
-        
-        # Получаем все активные уведомления
-        all_notifications = cls.objects.filter(is_active=True)
-        
-        # Фильтруем по целевой аудитории
-        visible_notifications = []
-        for notification in all_notifications:
-            if notification.is_visible_for_user(user):
-                visible_notifications.append(notification.id)
-        
-        notifications = cls.objects.filter(id__in=visible_notifications)
-        
+
+        notifications = cls.objects.filter(
+            is_active=True
+        ).filter(
+            cls._build_visibility_filter(user)
+        )
+
         if not include_read:
-            # Исключаем прочитанные
-            read_notification_ids = NotificationRead.objects.filter(
+            read_ids = NotificationRead.objects.filter(
                 user=user
             ).values_list('notification_id', flat=True)
-            notifications = notifications.exclude(id__in=read_notification_ids)
-        
+            notifications = notifications.exclude(id__in=read_ids)
+
         return notifications
     
     def mark_as_read(self, user):

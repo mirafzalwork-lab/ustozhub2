@@ -7,8 +7,7 @@ WebSocket Consumers:
 
 import json
 import logging
-import re
-from datetime import datetime, timedelta
+from datetime import timedelta
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from channels.layers import get_channel_layer
@@ -17,10 +16,9 @@ from django.contrib.auth.models import AnonymousUser
 from django.utils import timezone
 from .models import Conversation, Message, User
 
-# ✅ Логирование для отладки
 logger = logging.getLogger(__name__)
 
-# ✅ Константы для rate limiting
+# Rate limiting
 MESSAGE_RATE_LIMIT = 5  # Максимум сообщений
 MESSAGE_RATE_WINDOW = 60  # За 60 секунд
 MIN_MESSAGE_LENGTH = 1

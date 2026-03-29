@@ -29,19 +29,15 @@ class AdminTelegramService:
     def __init__(self):
         self.bot_token = settings.TELEGRAM_BOT_TOKEN
         self.bot = None
-        
-        print(f"🔑 TELEGRAM DEBUG: Инициализация сервиса с токеном: {self.bot_token[:20] if self.bot_token else 'НЕТ ТОКЕНА'}...")
-        
+
         if self.bot_token:
             try:
                 self.bot = Bot(token=self.bot_token)
-                print("✅ TELEGRAM DEBUG: Bot объект создан успешно")
+                logger.info("Telegram Bot initialized successfully")
             except Exception as e:
-                print(f"❌ TELEGRAM DEBUG: Ошибка создания Bot: {e}")
-                logger.error(f"Ошибка создания Telegram Bot: {e}")
+                logger.error(f"Failed to create Telegram Bot: {e}")
         else:
-            print("❌ TELEGRAM DEBUG: TELEGRAM_BOT_TOKEN не установлен!")
-            logger.error("TELEGRAM_BOT_TOKEN не установлен!")
+            logger.error("TELEGRAM_BOT_TOKEN not set")
     
     def send_message_sync(self, telegram_id: int, text: str, reply_markup=None, parse_mode=None) -> bool:
         """Синхронная отправка сообщения"""
@@ -131,11 +127,6 @@ class AdminTelegramService:
             if len(text) > 4096:
                 text = text[:4093] + "..."
                 logger.warning(f"⚠️ Сообщение для пользователя {telegram_id} обрезано до 4096 символов")
-            
-            # Убираем потенциально проблемные символы для Markdown
-            if parse_mode == 'Markdown':
-                # Экранируем специальные символы Markdown если они не используются правильно
-                text = text.replace('_', r'\_').replace('*', r'\*').replace('[', r'\[').replace('`', r'\`')
             
             payload = {
                 'chat_id': str(telegram_id),  # Убеждаемся что это строка
@@ -254,8 +245,7 @@ class AdminTelegramService:
             batch_start = batch_num + 1
             batch_end = min(batch_num + BATCH_SIZE, len(telegram_users))
             
-            print(f"📦 Обрабатываем батч {batch_start}-{batch_end} из {len(telegram_users)}")
-            logger.info(f"📦 Обрабатываем батч {batch_start}-{batch_end} из {len(telegram_users)}")
+            logger.info(f"Processing batch {batch_start}-{batch_end} of {len(telegram_users)}")
             
             batch_success = 0
             batch_failed = 0
@@ -299,22 +289,13 @@ class AdminTelegramService:
                             'reason': 'Отправлено успешно'
                         })
                     else:
+                        stats['failed'] += 1
                         batch_failed += 1
-                        # Проверяем, был ли пользователь автоматически деактивирован
-                        updated_user = TelegramUser.objects.filter(telegram_id=tg_user.telegram_id).first()
-                        if updated_user and not updated_user.started_bot:
-                            stats['details'].append({
-                                'user': f"{tg_user.first_name} (@{tg_user.telegram_username or 'нет'})",
-                                'status': 'blocked',
-                                'reason': 'Заблокировал бота (автоматически отключен)'
-                            })
-                        else:
-                            stats['failed'] += 1
-                            stats['details'].append({
-                                'user': f"{tg_user.first_name} (@{tg_user.telegram_username or 'нет'})",
-                                'status': 'failed',
-                                'reason': 'Ошибка отправки'
-                            })
+                        stats['details'].append({
+                            'user': f"{tg_user.first_name} (@{tg_user.telegram_username or 'нет'})",
+                            'status': 'failed',
+                            'reason': 'Ошибка отправки или пользователь заблокировал бота'
+                        })
                         logger.warning(f"❌ Не удалось отправить пользователю {tg_user.telegram_id}")
                 except Exception as e:
                     logger.error(f"❌ Исключение при отправке пользователю {tg_user.telegram_id}: {e}")
@@ -330,18 +311,14 @@ class AdminTelegramService:
                 time.sleep(DELAY_BETWEEN_MESSAGES)
             
             # Логирование результатов батча
-            print(f"📊 Батч {batch_start}-{batch_end} завершен: ✅ {batch_success} успешно, ❌ {batch_failed} ошибок")
-            logger.info(f"📊 Батч {batch_start}-{batch_end} завершен: ✅ {batch_success} успешно, ❌ {batch_failed} ошибок")
+            logger.info(f"Batch {batch_start}-{batch_end} done: {batch_success} sent, {batch_failed} failed")
             
             # Пауза между батчами
             if batch_end < len(telegram_users):
-                print(f"⏳ Пауза {DELAY_BETWEEN_BATCHES} сек перед следующим батчем...")
-                logger.info(f"⏳ Пауза {DELAY_BETWEEN_BATCHES} сек перед следующим батчем...")
+                logger.info(f"Pausing {DELAY_BETWEEN_BATCHES}s before next batch")
                 time.sleep(DELAY_BETWEEN_BATCHES)
         
-        print(f"🏁 МАССОВАЯ РАССЫЛКА ЗАВЕРШЕНА!")
-        print(f"📊 Итоговые результаты: ✅ {stats['success']} успешно, ❌ {stats['failed']} ошибок, 📊 {stats['total']} всего")
-        logger.info(f"📊 Результаты отправки: ✅ {stats['success']}, ❌ {stats['failed']}, 📊 {stats['total']}")
+        logger.info(f"Broadcast complete: {stats['success']} sent, {stats['failed']} failed, {stats['total']} total")
         return stats
     
     def send_to_all_started_users(self, message: str, user_type: Optional[str] = None) -> Dict[str, int]:

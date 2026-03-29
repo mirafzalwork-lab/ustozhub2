@@ -8,7 +8,10 @@ from django.contrib import messages
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from formtools.wizard.views import SessionWizardView
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 
 from .registration_forms import (
     Step1BasicProfileForm,
@@ -260,7 +263,7 @@ class TeacherRegistrationWizard(SessionWizardView):
                     teacher_profile.certificates.add(certificate)
                 except Exception as e:
                     # Логируем ошибку, но не прерываем регистрацию
-                    print(f"Ошибка при добавлении сертификата: {str(e)}")
+                    logger.error(f"Error adding certificate: {e}", exc_info=True)
 
 
 def teacher_register_complete(request):
@@ -285,13 +288,3 @@ def teacher_register_complete(request):
     }
     
     return render(request, 'registration/complete.html', context)
-
-
-def skip_certificates(request):
-    """
-    Skip certificates step (it's optional)
-    This is called when user clicks "Skip" on step 6
-    """
-    # This functionality is built into the wizard's "done" method
-    # The skip button will just submit the form with empty data
-    return redirect('teacher_register_complete')

@@ -14,13 +14,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# ⚡ ОПТИМИЗАЦИЯ: Импортируем функцию один раз на уровне модуля
 try:
     from telegram_bot.notification_service import queue_new_message_notification
     TELEGRAM_BOT_AVAILABLE = True
 except ImportError:
     TELEGRAM_BOT_AVAILABLE = False
-    logger.warning("⚠️ Telegram bot не доступен - уведомления отключены")
+    logger.warning("Telegram bot не доступен - уведомления отключены")
 
 
 @receiver(post_save, sender=Message)

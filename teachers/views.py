@@ -7,12 +7,13 @@ from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.core.cache import cache  # ⚡ ОПТИМИЗАЦИЯ: Кэширование
-from django.conf import settings  # ⚡ ОПТИМИЗАЦИЯ: Для CACHE_TTL
+from django.core.cache import cache
+from django.conf import settings
 from django.contrib.auth import login, logout, authenticate
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 import csv
 import logging
 from datetime import datetime, timedelta
@@ -24,7 +25,7 @@ from .models import (
     TeacherProfile, StudentProfile, Subject, City, ProfileView,
     TeacherSubject, Certificate, User, Favorite, FavoriteStudent,
     Conversation, Message, Review, ViewCounter, TelegramUser,
-    SubjectCategory, SubjectSearchLog
+    SubjectCategory, SubjectSearchLog, Notification, NotificationRead,
 )
 from .forms import (
     TeacherRegistrationForm, 
@@ -39,8 +40,59 @@ from .forms import (
     TeacherSubjectEditForm
 )
 
+def _safe_int(value, default=None):
+    """Safely convert a query parameter to int, returning default on failure."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _safe_float(value, default=None):
+    """Safely convert a query parameter to float, returning default on failure."""
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def track_view(request, page_name):
     ViewCounter.add_view(request, page_name)
+
+
+def _get_cached_subjects():
+    """Return cached list of active subjects for filter dropdowns."""
+    result = cache.get('all_subjects')
+    if result is None:
+        result = list(Subject.objects.filter(is_active=True).only('id', 'name').order_by('name'))
+        cache.set('all_subjects', result, getattr(settings, 'CACHE_TTL', 900))
+    return result
+
+
+def _get_cached_cities():
+    """Return cached list of active cities for filter dropdowns."""
+    result = cache.get('all_cities')
+    if result is None:
+        result = list(City.objects.filter(is_active=True).only('id', 'name').order_by('name'))
+        cache.set('all_cities', result, getattr(settings, 'CACHE_TTL', 900))
+    return result
+
+
+def _get_user_conversation(user, conversation_id, require_active=True):
+    """
+    Get a conversation with access check based on user type.
+    Returns the Conversation or raises Http404.
+    """
+    filters = {'id': conversation_id}
+    if require_active:
+        filters['is_active'] = True
+
+    if user.user_type == 'teacher':
+        filters['teacher'] = user.teacher_profile
+    else:
+        filters['student'] = user
+
+    return get_object_or_404(Conversation, **filters)
 
 
 def can_view_contact_info(request, profile_owner):
@@ -191,17 +243,25 @@ def home(request):
         teachers = teachers.filter(teaching_format=teaching_format)
     
     if min_rating:
-        teachers = teachers.filter(rating__gte=float(min_rating))
-    
+        val = _safe_float(min_rating)
+        if val is not None:
+            teachers = teachers.filter(rating__gte=val)
+
     if min_experience:
-        teachers = teachers.filter(experience_years__gte=int(min_experience))
-    
-    # Фильтр по цене (через связанную модель TeacherSubject)
+        val = _safe_int(min_experience)
+        if val is not None:
+            teachers = teachers.filter(experience_years__gte=val)
+
+    # Фильтр по цене (через свя��анную модель TeacherSubject)
     if min_price:
-        teachers = teachers.filter(teachersubject__hourly_rate__gte=float(min_price))
-    
+        val = _safe_float(min_price)
+        if val is not None:
+            teachers = teachers.filter(teachersubject__hourly_rate__gte=val)
+
     if max_price:
-        teachers = teachers.filter(teachersubject__hourly_rate__lte=float(max_price))
+        val = _safe_float(max_price)
+        if val is not None:
+            teachers = teachers.filter(teachersubject__hourly_rate__lte=val)
     
     # ========== ENHANCED GLOBAL SEARCH WITH RELEVANCE RANKING ==========
     # Search scope: Teacher names (first/last), Subject names, Bio/Description
@@ -299,18 +359,10 @@ def home(request):
         # Если page выходит за пределы диапазона, показываем последнюю страницу
         teachers_page = paginator.page(paginator.num_pages)
     
-    # ⚡ ОПТИМИЗАЦИЯ: Кэширование данных для фильтров
-    all_subjects = cache.get('all_subjects')
-    if all_subjects is None:
-        all_subjects = list(Subject.objects.filter(is_active=True).only('id', 'name').order_by('name'))
-        cache.set('all_subjects', all_subjects, getattr(settings, 'CACHE_TTL', 900))
-    
-    all_cities = cache.get('all_cities')
-    if all_cities is None:
-        all_cities = list(City.objects.filter(is_active=True).only('id', 'name').order_by('name'))
-        cache.set('all_cities', all_cities, getattr(settings, 'CACHE_TTL', 900))
-    
-    # ⚡ ОПТИМИЗАЦИЯ: Кэширование диапазона цен
+    all_subjects = _get_cached_subjects()
+    all_cities = _get_cached_cities()
+
+    # Кэширование диапазона цен
     price_range = cache.get('price_range')
     if price_range is None:
         price_range = TeacherProfile.objects.filter(is_active=True).aggregate(
@@ -353,8 +405,6 @@ def home(request):
 @login_required(login_url='login')
 def admin_dashboard(request):
     """Dashboard для администратора с полной статистикой платформы"""
-    from datetime import timedelta
-    
     # Проверка прав доступа
     if not request.user.is_staff:
         messages.error(request, 'У вас нет доступа к админ панели')
@@ -496,35 +546,50 @@ def messages_management(request):
     """
     Админская страница управления переписками между пользователями и быстрый доступ к рассылкам Telegram
     """
+    from django.db.models import Count, Case, When, IntegerField, Q
+
     # Статистика переписок
     total_conversations = Conversation.objects.count()
     active_conversations = Conversation.objects.filter(is_active=True).count()
     conversations_with_messages = Conversation.objects.filter(messages__isnull=False).distinct().count()
-    
-    # Получаем активные переписки с информацией об участниках
+
+    # Получаем активные переписки с информацией об участниках и аннотациями для избежания N+1
+    from django.db.models import Prefetch, Subquery, OuterRef
+    latest_msg_ids = Message.objects.filter(
+        conversation=OuterRef('pk')
+    ).order_by('-created_at').values('id')[:1]
+
     recent_conversations = Conversation.objects.filter(
         is_active=True,
-        messages__isnull=False  # Только переписки с сообщениями
+        messages__isnull=False,
     ).select_related(
         'teacher__user',
         'student',
         'subject'
     ).prefetch_related(
-        'messages'
+        Prefetch(
+            'messages',
+            queryset=Message.objects.select_related('sender').order_by('-created_at'),
+            to_attr='prefetched_messages'
+        )
+    ).annotate(
+        messages_count=Count('messages', distinct=True),
+        unread_count=Count(
+            Case(
+                When(messages__is_read=False, then=1),
+                output_field=IntegerField()
+            )
+        )
     ).distinct().order_by('-updated_at')[:50]
-    
-    # Добавляем информацию о последнем сообщении и количестве сообщений для каждой переписки
+
     conversations_info = []
     for conv in recent_conversations:
-        last_message = conv.messages.order_by('-created_at').first()
-        messages_count = conv.messages.count()
-        unread_count = conv.messages.filter(is_read=False).count()
-        
+        last_message = conv.prefetched_messages[0] if conv.prefetched_messages else None
         conversations_info.append({
             'conversation': conv,
             'last_message': last_message,
-            'messages_count': messages_count,
-            'unread_count': unread_count,
+            'messages_count': conv.messages_count,
+            'unread_count': conv.unread_count,
         })
 
     # Список Telegram пользователей для персональных отправок
@@ -576,10 +641,14 @@ def students_list(request):
     
     # Фильтр по бюджету
     if min_budget:
-        students = students.filter(budget_max__gte=float(min_budget))
-    
+        val = _safe_float(min_budget)
+        if val is not None:
+            students = students.filter(budget_max__gte=val)
+
     if max_budget:
-        students = students.filter(budget_min__lte=float(max_budget))
+        val = _safe_float(max_budget)
+        if val is not None:
+            students = students.filter(budget_min__lte=val)
     
     # Поиск по имени или описанию
     if search_query:
@@ -607,18 +676,10 @@ def students_list(request):
         # Если page выходит за пределы диапазона, показываем последнюю страницу
         students_page = paginator.page(paginator.num_pages)
     
-    # ⚡ ОПТИМИЗАЦИЯ: Кэширование данных для фильтров (используем те же кэшированные данные)
-    all_subjects = cache.get('all_subjects')
-    if all_subjects is None:
-        all_subjects = list(Subject.objects.filter(is_active=True).only('id', 'name').order_by('name'))
-        cache.set('all_subjects', all_subjects, getattr(settings, 'CACHE_TTL', 900))
-    
-    all_cities = cache.get('all_cities')
-    if all_cities is None:
-        all_cities = list(City.objects.filter(is_active=True).only('id', 'name').order_by('name'))
-        cache.set('all_cities', all_cities, getattr(settings, 'CACHE_TTL', 900))
-    
-    # ⚡ ОПТИМИЗАЦИЯ: Кэширование диапазона бюджета
+    all_subjects = _get_cached_subjects()
+    all_cities = _get_cached_cities()
+
+    # Кэширование диапазона бюджета
     budget_range = cache.get('budget_range')
     if budget_range is None:
         budget_range = StudentProfile.objects.filter(
@@ -652,329 +713,119 @@ def students_list(request):
 
 def detail(request, id):
     """Детальная страница учителя с подсчетом просмотров"""
-    try:
-        teacher = get_object_or_404(
-            TeacherProfile.objects.select_related('user', 'city')
-            .prefetch_related(
-                'teachersubject_set__subject',
-                'certificates',
-                'reviews__student',
-                'reviews__subject'
-            ),
-            id=id,
-            is_active=True
-        )
-        
-        # ✅ НОВОЕ: Записываем просмотр профиля
-        record_profile_view(request, teacher, 'teacher')
-        
-        reviews = teacher.reviews.select_related('student', 'subject').order_by('-created_at')
-        
-        rating_stats = reviews.aggregate(
-            avg_knowledge=Avg('knowledge_rating'),
-            avg_communication=Avg('communication_rating'),
-            avg_punctuality=Avg('punctuality_rating')
-        )
-        
-        rating_distribution = {
-            5: reviews.filter(rating=5).count(),
-            4: reviews.filter(rating=4).count(),
-            3: reviews.filter(rating=3).count(),
-            2: reviews.filter(rating=2).count(),
-            1: reviews.filter(rating=1).count(),
-        }
-        
-        is_favorite = False
-        if request.user.is_authenticated:
-            is_favorite = teacher.favorited_by.filter(student=request.user).exists()
-        
-        similar_teachers = TeacherProfile.objects.filter(
-            subjects__in=teacher.subjects.all(),
-            is_active=True
-        ).exclude(id=teacher.id).select_related('user', 'city').distinct()[:3]
-        
-        # ✅ НОВОЕ: Проверка доступа к контактной информации
-        can_view_contacts = can_view_contact_info(request, teacher.user)
-        show_auth_prompt = not request.user.is_authenticated
-        
-        context = {
-            'teacher': teacher,
-            'reviews': reviews,
-            'rating_stats': rating_stats,
-            'rating_distribution': rating_distribution,
-            'is_favorite': is_favorite,
-            'similar_teachers': similar_teachers,
-            'can_view_contacts': can_view_contacts,
-            'show_auth_prompt': show_auth_prompt,
-        }
-        
-        return render(request, 'logic/teacher_detail.html', context)
-    
-    except Exception as e:
-        logger.error(f"Error in teacher detail view: {e}", exc_info=True)
-        messages.error(request, 'Ошибка при загрузке профиля учителя')
-        return redirect('home')
+    teacher = get_object_or_404(
+        TeacherProfile.objects.select_related('user', 'city')
+        .prefetch_related(
+            'teachersubject_set__subject',
+            'certificates',
+            'reviews__student',
+            'reviews__subject'
+        ),
+        id=id,
+        is_active=True
+    )
+
+    record_profile_view(request, teacher, 'teacher')
+
+    reviews = teacher.reviews.select_related('student', 'subject').order_by('-created_at')
+
+    rating_stats = reviews.aggregate(
+        avg_knowledge=Avg('knowledge_rating'),
+        avg_communication=Avg('communication_rating'),
+        avg_punctuality=Avg('punctuality_rating')
+    )
+
+    rating_distribution = {
+        5: reviews.filter(rating=5).count(),
+        4: reviews.filter(rating=4).count(),
+        3: reviews.filter(rating=3).count(),
+        2: reviews.filter(rating=2).count(),
+        1: reviews.filter(rating=1).count(),
+    }
+
+    is_favorite = False
+    if request.user.is_authenticated:
+        is_favorite = teacher.favorited_by.filter(student=request.user).exists()
+
+    similar_teachers = TeacherProfile.objects.filter(
+        subjects__in=teacher.subjects.all(),
+        is_active=True,
+        moderation_status='approved'
+    ).exclude(id=teacher.id).select_related('user', 'city').distinct()[:3]
+
+    can_view_contacts = can_view_contact_info(request, teacher.user)
+    show_auth_prompt = not request.user.is_authenticated
+
+    context = {
+        'teacher': teacher,
+        'reviews': reviews,
+        'rating_stats': rating_stats,
+        'rating_distribution': rating_distribution,
+        'is_favorite': is_favorite,
+        'similar_teachers': similar_teachers,
+        'can_view_contacts': can_view_contacts,
+        'show_auth_prompt': show_auth_prompt,
+    }
+
+    return render(request, 'logic/teacher_detail.html', context)
 
 
 def student_detail(request, id):
-    """
-    Детальная страница ученика с подсчетом просмотров
-    """
-    try:
-        student = get_object_or_404(
-            StudentProfile.objects.select_related('user', 'city')
-            .prefetch_related(
-                'desired_subjects',
-                'interests'
-            ),
-            id=id,
-            is_active=True
-        )
-        
-        # ✅ НОВОЕ: Записываем просмотр профиля
-        record_profile_view(request, student, 'student')
-        
-        # Получаем все желаемые предметы
-        desired_subjects = student.desired_subjects.all()
-        
-        # Получаем дополнительные интересы
-        other_interests = student.interests.exclude(
-            id__in=desired_subjects.values_list('id', flat=True)
-        )
-        
-        # Похожие ученики по предметам
-        similar_students = StudentProfile.objects.filter(
-            desired_subjects__in=desired_subjects,
-            is_active=True
-        ).exclude(id=student.id).select_related('user', 'city').distinct()[:3]
-        
-        # Получаем учителей, которые преподают нужные предметы
-        suggested_teachers = TeacherProfile.objects.filter(
-            subjects__in=desired_subjects,
-            is_active=True
-        ).select_related('user', 'city').distinct().order_by('-is_featured', '-rating')[:6]
-        
-        # Проверяем, добавлен ли ученик в избранное учителем
-        is_favorited = False
-        if request.user.is_authenticated and request.user.user_type == 'teacher' and hasattr(request.user, 'teacher_profile'):
-            try:
-                is_favorited = FavoriteStudent.objects.filter(
-                    teacher=request.user.teacher_profile,
-                    student=student
-                ).exists()
-            except Exception:
-                is_favorited = False
-        
-        # ✅ НОВОЕ: Проверка доступа к контактной информации
-        can_view_contacts = can_view_contact_info(request, student.user)
-        show_auth_prompt = not request.user.is_authenticated
-        
-        context = {
-            'student': student,
-            'desired_subjects': desired_subjects,
-            'other_interests': other_interests,
-            'similar_students': similar_students,
-            'suggested_teachers': suggested_teachers,
-            'is_favorited': is_favorited,
-            'can_view_contacts': can_view_contacts,
-            'show_auth_prompt': show_auth_prompt,
-        }
-        
-        return render(request, 'logic/student_detail.html', context)
-    
-    except Exception as e:
-        logger.error(f"Error in student detail view: {e}", exc_info=True)
-        messages.error(request, 'Ошибка при загрузке профиля ученика')
-        return redirect('students_list')
+    """Детальная страница ученика с подсчетом просмотров"""
+    student = get_object_or_404(
+        StudentProfile.objects.select_related('user', 'city')
+        .prefetch_related(
+            'desired_subjects',
+            'interests'
+        ),
+        id=id,
+        is_active=True
+    )
 
+    record_profile_view(request, student, 'student')
 
-# Остальные функции БЕЗ ИЗМЕНЕНИЙ
-def teacher_register_step1(request):
-    """Шаг 1: Основная информация"""
-    if request.method == 'POST':
-        form = TeacherRegistrationForm(request.POST, request.FILES)
-        if form.is_valid():
-            user = form.save()
-            # Автоматический вход в систему после регистрации
-            login(request, user)
-            request.session['teacher_registration_user_id'] = user.id
-            messages.success(
-                request, 
-                'Основная информация сохранена! Теперь добавьте предметы и цены.'
-            )
-            return redirect('teacher_register_step2')
-    else:
-        form = TeacherRegistrationForm()
-    
+    desired_subjects = student.desired_subjects.all()
+
+    other_interests = student.interests.exclude(
+        id__in=desired_subjects.values_list('id', flat=True)
+    )
+
+    similar_students = StudentProfile.objects.filter(
+        desired_subjects__in=desired_subjects,
+        is_active=True
+    ).exclude(id=student.id).select_related('user', 'city').distinct()[:3]
+
+    suggested_teachers = TeacherProfile.objects.filter(
+        subjects__in=desired_subjects,
+        is_active=True,
+        moderation_status='approved'
+    ).select_related('user', 'city').distinct().order_by('-is_featured', '-rating')[:6]
+
+    is_favorited = False
+    if request.user.is_authenticated and request.user.user_type == 'teacher':
+        try:
+            is_favorited = FavoriteStudent.objects.filter(
+                teacher=request.user.teacher_profile,
+                student=student
+            ).exists()
+        except TeacherProfile.DoesNotExist:
+            pass
+        
+    can_view_contacts = can_view_contact_info(request, student.user)
+    show_auth_prompt = not request.user.is_authenticated
+
     context = {
-        'form': form,
-        'step': 1,
-        'total_steps': 3
+        'student': student,
+        'desired_subjects': desired_subjects,
+        'other_interests': other_interests,
+        'similar_students': similar_students,
+        'suggested_teachers': suggested_teachers,
+        'is_favorited': is_favorited,
+        'can_view_contacts': can_view_contacts,
+        'show_auth_prompt': show_auth_prompt,
     }
-    return render(request, 'logic/teacher_register_step1.html', context)
- 
 
-
-def teacher_register_step2(request):
-    """Шаг 2: Предметы и цены"""
-    user_id = request.session.get('teacher_registration_user_id')
-    
-    if not user_id:
-        messages.error(request, 'Пожалуйста, начните регистрацию с первого шага')
-        return redirect('teacher_register_step1')
-    
-    try:
-        teacher_profile = TeacherProfile.objects.get(user_id=user_id)
-    except TeacherProfile.DoesNotExist:
-        messages.error(request, 'Профиль учителя не найден')
-        return redirect('teacher_register_step1')
-    
-    if request.method == 'POST':
-        form = TeacherSubjectsForm(request.POST, teacher=teacher_profile)
-        
-        if form.is_valid():
-            # Удаляем старые предметы
-            TeacherSubject.objects.filter(teacher=teacher_profile).delete()
-            
-            subjects_added = 0
-            added_subjects = set()  # Отслеживаем уже добавленные предметы
-            
-            # Проходим по всем 5 возможным предметам
-            for i in range(1, 6):
-                subject = form.cleaned_data.get(f'subject_{i}')
-                hourly_rate = form.cleaned_data.get(f'hourly_rate_{i}')
-                
-                # Сохраняем только если указаны И предмет И цена И предмет еще не был добавлен
-                if subject and hourly_rate and hourly_rate > 0 and subject.id not in added_subjects:
-                    TeacherSubject.objects.create(
-                        teacher=teacher_profile,
-                        subject=subject,
-                        hourly_rate=hourly_rate,
-                        is_free_trial=form.cleaned_data.get(f'is_free_trial_{i}', False),
-                        description=form.cleaned_data.get(f'description_{i}', '')
-                    )
-                    added_subjects.add(subject.id)
-                    subjects_added += 1
-            
-            # Проверка что добавлен хотя бы один предмет
-            if subjects_added == 0:
-                messages.error(request, 'Необходимо добавить хотя бы один предмет с указанием цены')
-                context = {
-                    'form': form,
-                    'step': 2,
-                    'total_steps': 3
-                }
-                return render(request, 'logic/teacher_register_step2.html', context)
-            
-            messages.success(
-                request, 
-                f'Добавлено {subjects_added} предмет(ов). Теперь загрузите сертификаты.'
-            )
-            return redirect('teacher_register_step3')
-        else:
-            # Показываем ошибки формы
-            messages.error(request, 'Пожалуйста, исправьте ошибки в форме')
-            context = {
-                'form': form,
-                'step': 2,
-                'total_steps': 3
-            }
-            return render(request, 'logic/teacher_register_step2.html', context)    
-        
-    else:
-        form = TeacherSubjectsForm(teacher=teacher_profile)
-        context = {
-            'form': form,
-            'step': 2,
-            'total_steps': 3
-        }
-        return render(request, 'logic/teacher_register_step2.html', context)
-
-
-def teacher_register_step3(request):
-    """Шаг 3: Сертификаты (опционально)"""
-    user_id = request.session.get('teacher_registration_user_id')
-    
-    if not user_id:
-        messages.error(request, 'Пожалуйста, начните регистрацию с первого шага')
-        return redirect('teacher_register_step1')
-    
-    try:
-        teacher_profile = TeacherProfile.objects.get(user_id=user_id)
-    except TeacherProfile.DoesNotExist:
-        messages.error(request, 'Профиль учителя не найден')
-        return redirect('teacher_register_step1')
-    
-    if request.method == 'POST':
-        if 'skip' in request.POST:
-            return redirect('teacher_register_complete')
-        
-        form = CertificateUploadForm(request.POST, request.FILES)
-        
-        if form.is_valid():
-            certificate = form.save()
-            teacher_profile.certificates.add(certificate)
-            
-            messages.success(request, 'Сертификат добавлен!')
-            
-            if 'add_more' in request.POST:
-                return redirect('teacher_register_step3')
-            else:
-                return redirect('teacher_register_complete')
-    else:
-        form = CertificateUploadForm()
-    
-    certificates = teacher_profile.certificates.all()
-    
-    context = {
-        'form': form,
-        'certificates': certificates,
-        'step': 3,
-        'total_steps': 3
-    }
-    return render(request, 'logic/teacher_register_step3.html', context)
-
-
-def teacher_register_complete(request):
-    """Завершение регистрации"""
-    user_id = request.session.get('teacher_registration_user_id')
-    
-    if not user_id:
-        return redirect('teacher_register_step1')
-    
-    try:
-        teacher_profile = TeacherProfile.objects.get(user_id=user_id)
-    except TeacherProfile.DoesNotExist:
-        messages.error(request, 'Профиль учителя не найден')
-        return redirect('teacher_register_step1')
-    
-    # Очищаем сессию
-    if 'teacher_registration_user_id' in request.session:
-        del request.session['teacher_registration_user_id']
-    
-    # Показываем страницу завершения на 3 секунды, затем автоматически перенаправляем в профиль
-    messages.success(request, 'Регистрация успешно завершена! Добро пожаловать в UstozHub!')
-    
-    context = {
-        'teacher': teacher_profile,
-        'redirect_to_profile': True  # Флаг для автоматического редиректа
-    }
-    return render(request, 'logic/teacher_register_complete.html', context)
-
-
-def remove_certificate(request, certificate_id):
-    """Удаление сертификата во время регистрации"""
-    user_id = request.session.get('teacher_registration_user_id')
-    
-    if not user_id:
-        messages.error(request, 'Сессия истекла')
-        return redirect('teacher_register_step1')
-    
-    certificate = get_object_or_404(Certificate, id=certificate_id)
-    certificate.delete()
-    
-    messages.success(request, 'Сертификат удален')
-    return redirect('teacher_register_step3')
+    return render(request, 'logic/student_detail.html', context)
 
 
 def login_view(request):
@@ -992,12 +843,11 @@ def login_view(request):
             user = authenticate(username=username, password=password)
             
             if user is None:
+                # Fallback: try to authenticate by email
                 try:
-                    from django.contrib.auth import get_user_model
-                    User = get_user_model()
                     user_obj = User.objects.get(email=username)
                     user = authenticate(username=user_obj.username, password=password)
-                except:
+                except (User.DoesNotExist, User.MultipleObjectsReturned):
                     pass
             
             if user is not None:
@@ -1009,7 +859,7 @@ def login_view(request):
                 messages.success(request, f'Добро пожаловать, {user.get_full_name()}!')
                 
                 next_url = request.GET.get('next')
-                if next_url:
+                if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
                     return redirect(next_url)
                 
                 return redirect('profile')
@@ -1113,7 +963,7 @@ def profile_view(request):
             })
         except TeacherProfile.DoesNotExist:
             messages.warning(request, 'Завершите регистрацию учителя')
-            return redirect('teacher_register_step1')
+            return redirect('teacher_register')
     else:
         try:
             student_profile = request.user.student_profile
@@ -1292,45 +1142,29 @@ def student_profile_edit(request):
 
 @login_required
 def toggle_profile_status(request):
-    """
-    AJAX-функция для быстрого переключения статуса активности профиля
-    """
-    if request.method == 'POST':
+    """AJAX-функция для быстрого переключения статуса активности профиля"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Неверный запрос'})
+
+    try:
         if request.user.user_type == 'teacher':
-            try:
-                profile = request.user.teacher_profile
-                profile.is_active = not profile.is_active
-                profile.save()
-                
-                status_text = 'активен' if profile.is_active else 'деактивирован'
-                messages.success(request, f'Ваш профиль {status_text} в поиске')
-                
-                return JsonResponse({
-                    'success': True,
-                    'is_active': profile.is_active,
-                    'message': f'Профиль {status_text}'
-                })
-            except TeacherProfile.DoesNotExist:
-                return JsonResponse({'success': False, 'error': 'Профиль не найден'})
-        
-        elif request.user.user_type == 'student':
-            try:
-                profile = request.user.student_profile
-                profile.is_active = not profile.is_active
-                profile.save()
-                
-                status_text = 'активен' if profile.is_active else 'деактивирован'
-                messages.success(request, f'Ваш профиль {status_text} в поиске')
-                
-                return JsonResponse({
-                    'success': True,
-                    'is_active': profile.is_active,
-                    'message': f'Профиль {status_text}'
-                })
-            except StudentProfile.DoesNotExist:
-                return JsonResponse({'success': False, 'error': 'Профиль не найден'})
-    
-    return JsonResponse({'success': False, 'error': 'Неверный запрос'})
+            profile = request.user.teacher_profile
+        else:
+            profile = request.user.student_profile
+
+        profile.is_active = not profile.is_active
+        profile.save()
+
+        status_text = 'активен' if profile.is_active else 'деактивирован'
+        messages.success(request, f'Ваш профиль {status_text} в поиске')
+
+        return JsonResponse({
+            'success': True,
+            'is_active': profile.is_active,
+            'message': f'Профиль {status_text}'
+        })
+    except (TeacherProfile.DoesNotExist, StudentProfile.DoesNotExist):
+        return JsonResponse({'success': False, 'error': 'Профиль не найден'})
 
 
 @login_required
@@ -1415,12 +1249,15 @@ def student_suggestions(request):
 
     teachers = TeacherProfile.objects.filter(
         is_active=True,
+        moderation_status='approved',
         subjects__in=desired_subjects
     ).select_related('user', 'city').prefetch_related('teachersubject_set__subject').distinct().order_by('-is_featured', '-rating', '-created_at')[:24]
 
     # fallback: если нет указанных предметов, показать топ-учителей
     if not teachers:
-        teachers = TeacherProfile.objects.filter(is_active=True).select_related('user', 'city').prefetch_related('teachersubject_set__subject').order_by('-is_featured', '-rating', '-created_at')[:12]
+        teachers = TeacherProfile.objects.filter(
+            is_active=True, moderation_status='approved'
+        ).select_related('user', 'city').prefetch_related('teachersubject_set__subject').order_by('-is_featured', '-rating', '-created_at')[:12]
 
     return render(request, 'logic/student_suggestions.html', {
         'student': student,
@@ -1440,61 +1277,66 @@ def conversations_list(request):
     Для учителя: переписки с учениками
     Для ученика: переписки с учителями
     """
+    from django.db.models import Prefetch
+
     user = request.user
-    
+
+    # Общая аннотация непрочитанных сообщений
+    unread_annotation = Count(
+        Case(
+            When(Q(messages__is_read=False) & ~Q(messages__sender=user), then=1),
+            output_field=IntegerField()
+        )
+    )
+    # Prefetch для загрузки последнего сообщения без N+1
+    messages_prefetch = Prefetch(
+        'messages',
+        queryset=Message.objects.select_related('sender').order_by('-created_at'),
+        to_attr='prefetched_messages'
+    )
+
     if user.user_type == 'teacher':
         try:
             teacher_profile = user.teacher_profile
-            # Получаем все переписки учителя с учениками, где есть хотя бы одно сообщение
-            conversations = Conversation.objects.filter(
-                teacher=teacher_profile,
-                is_active=True,
-                messages__isnull=False  # Только переписки с сообщениями
-            ).select_related(
-                'student',
-                'subject'
-            ).prefetch_related(
-                'messages__sender'
-            ).distinct().order_by('-updated_at')
         except TeacherProfile.DoesNotExist:
             messages.warning(request, 'Завершите регистрацию учителя')
-            return redirect('teacher_register_step1')
+            return redirect('teacher_register')
+
+        conversations = Conversation.objects.filter(
+            teacher=teacher_profile,
+            is_active=True,
+            messages__isnull=False,
+        ).select_related(
+            'student', 'subject'
+        ).prefetch_related(messages_prefetch).annotate(
+            unread_count=unread_annotation
+        ).distinct().order_by('-updated_at')
     else:
-        # Для ученика
         try:
-            student_profile = user.student_profile
+            user.student_profile
         except StudentProfile.DoesNotExist:
             messages.warning(request, 'Заполните профиль ученика')
             return redirect('student_profile_edit')
-        
-        # Получаем все переписки ученика с учителями, где есть хотя бы одно сообщение
+
         conversations = Conversation.objects.filter(
             student=user,
             is_active=True,
-            messages__isnull=False  # Только переписки с сообщениями
+            messages__isnull=False,
         ).select_related(
-            'teacher__user',
-            'teacher__city',
-            'subject'
-        ).prefetch_related(
-            'messages__sender'
+            'teacher__user', 'teacher__city', 'subject'
+        ).prefetch_related(messages_prefetch).annotate(
+            unread_count=unread_annotation
         ).distinct().order_by('-updated_at')
-    
-    # Получаем последнее сообщение и количество непрочитанных для каждой переписки
+
     conversations_with_info = []
     for conv in conversations:
-        last_message = conv.messages.first()
-        if user.user_type == 'teacher':
-            unread_count = conv.messages.filter(is_read=False).exclude(sender=user).count()
-        else:
-            unread_count = conv.messages.filter(is_read=False).exclude(sender=user).count()
-        
+        last_message = conv.prefetched_messages[0] if conv.prefetched_messages else None
         conversations_with_info.append({
             'conversation': conv,
             'last_message': last_message,
-            'unread_count': unread_count
+            'unread_count': conv.unread_count
         })
-    
+
     return render(request, 'logic/conversations_list.html', {
         'conversations': conversations_with_info,
         'user_type': user.user_type
@@ -1539,12 +1381,11 @@ def conversation_detail(request, conversation_id):
         messages_list = conversation.messages.select_related('sender').order_by('created_at')
         
         # Отмечаем сообщения как прочитанные (которые не от текущего пользователя)
-        from django.utils import timezone as tz
         marked = conversation.messages.filter(
             is_read=False
         ).exclude(
             sender=user
-        ).update(is_read=True, read_at=tz.now())
+        ).update(is_read=True, read_at=timezone.now())
 
         # Сбрасываем кэш badge если что-то было отмечено
         if marked > 0:
@@ -1649,22 +1490,8 @@ def send_message_ajax(request, conversation_id):
     user = request.user
     
     try:
-        # Проверяем доступ к переписке
-        if user.user_type == 'teacher':
-            conversation = get_object_or_404(
-                Conversation,
-                id=conversation_id,
-                teacher=user.teacher_profile,
-                is_active=True
-            )
-        else:
-            conversation = get_object_or_404(
-                Conversation,
-                id=conversation_id,
-                student=user,
-                is_active=True
-            )
-        
+        conversation = _get_user_conversation(user, conversation_id)
+
         # Проверяем форму
         form = MessageForm(request.POST)
         if form.is_valid():
@@ -1711,27 +1538,14 @@ def mark_messages_read(request, conversation_id):
     user = request.user
     
     try:
-        # Проверяем доступ к переписке
-        if user.user_type == 'teacher':
-            conversation = get_object_or_404(
-                Conversation,
-                id=conversation_id,
-                teacher=user.teacher_profile
-            )
-        else:
-            conversation = get_object_or_404(
-                Conversation,
-                id=conversation_id,
-                student=user
-            )
-        
+        conversation = _get_user_conversation(user, conversation_id, require_active=False)
+
         # Отмечаем все непрочитанные сообщения (не от текущего пользователя) как прочитанные
-        from django.utils import timezone as tz
         updated = conversation.messages.filter(
             is_read=False
         ).exclude(
             sender=user
-        ).update(is_read=True, read_at=tz.now())
+        ).update(is_read=True, read_at=timezone.now())
 
         # Сбрасываем кэш badge
         if updated > 0:
@@ -1763,20 +1577,8 @@ def delete_conversation(request, conversation_id):
     user = request.user
     
     try:
-        # Проверяем доступ к переписке
-        if user.user_type == 'teacher':
-            conversation = get_object_or_404(
-                Conversation,
-                id=conversation_id,
-                teacher=user.teacher_profile
-            )
-        else:
-            conversation = get_object_or_404(
-                Conversation,
-                id=conversation_id,
-                student=user
-            )
-        
+        conversation = _get_user_conversation(user, conversation_id, require_active=False)
+
         # Деактивируем переписку вместо удаления
         conversation.is_active = False
         conversation.save()
@@ -1793,9 +1595,6 @@ def delete_conversation(request, conversation_id):
 # =============================================================================
 # API ДЛЯ ПОИСКА И ВЫБОРА ПРЕДМЕТОВ
 # =============================================================================
-
-from .models import SubjectCategory, SubjectSearchLog
-
 
 def subjects_autocomplete(request):
     """
@@ -1948,8 +1747,6 @@ def telegram_management(request):
     """
     Страница управления Telegram пользователями для админа
     """
-
-    
     # Получаем всех Telegram пользователей с профилями
     telegram_users = TelegramUser.objects.select_related(
         'user', 
@@ -1964,7 +1761,7 @@ def telegram_management(request):
     linked_users = telegram_users.filter(user__isnull=False).count()
     
     # Новые пользователи за неделю
-    week_ago = datetime.now() - timedelta(days=7)
+    week_ago = timezone.now() - timedelta(days=7)
     new_users_week = telegram_users.filter(created_at__gte=week_ago).count()
     
     # Связанные учителя и ученики
@@ -2037,15 +1834,17 @@ def send_broadcast_message(request):
         # Отправляем сообщения (используем AdminTelegramService)
         try:
             from .admin_telegram_service import admin_telegram_service
-            
+
             formatted_message = f"📢 *Сообщение от администрации UstozHub*\n\n{message_text}"
-            
+
             # Отправляем через admin сервис
-            success_count, error_count = admin_telegram_service.send_to_selected_users(
-                users=users,
-                text=formatted_message,
+            stats = admin_telegram_service.send_to_selected_users(
+                telegram_users=list(users),
+                message=formatted_message,
                 parse_mode='Markdown'
             )
+            success_count = stats['success']
+            error_count = stats['failed']
         except Exception as e:
             success_count, error_count = 0, users_count
             messages.error(request, f'Ошибка сервиса отправки: {str(e)}')
@@ -2106,11 +1905,7 @@ def send_individual_message(request):
 
 @staff_member_required
 def export_telegram_users(request):
-    """
-    Экспорт списка Telegram пользователей в CSV
-    """
-
-    
+    """Экспорт списка Telegram пользователей в CSV"""
     response = HttpResponse(content_type='text/csv; charset=utf-8')
     response['Content-Disposition'] = f'attachment; filename="telegram_users_{datetime.now().strftime("%Y%m%d_%H%M")}.csv"'
     
@@ -2144,7 +1939,7 @@ def export_telegram_users(request):
             'Да' if user.started_bot else 'Нет',
             'Да' if user.notifications_enabled else 'Нет',
             user.created_at.strftime('%d.%m.%Y %H:%M'),
-            user.updated_at.strftime('%d.%m.%Y %H:%M')
+            user.last_interaction.strftime('%d.%m.%Y %H:%M')
         ])
     
     return response
@@ -2156,48 +1951,41 @@ def export_telegram_users(request):
 # СИСТЕМА УВЕДОМЛЕНИЙ
 # ============================================
 
-from .models import Notification, NotificationRead
-
 
 @login_required
 def notifications_list(request):
-    """
-    Список уведомлений для текущего пользователя
-    Показывает как прочитанные, так и непрочитанные
-    """
-    # Получаем уведомления с информацией о прочтении
-    all_notifications = Notification.get_user_notifications(
-        request.user, 
-        include_read=True
+    """Список уведомлений для текущего пользователя"""
+    from django.db.models import Exists, OuterRef
+
+    # Annotate is_read в один запрос вместо N+1
+    read_subquery = NotificationRead.objects.filter(
+        user=request.user,
+        notification_id=OuterRef('id')
     )
-    
-    # Добавляем флаг прочитанности для каждого уведомления
-    notifications_with_status = []
-    for notification in all_notifications:
-        notifications_with_status.append({
-            'notification': notification,
-            'is_read': notification.is_read_by(request.user)
-        })
-    
-    # Пагинация
-    paginator = Paginator(notifications_with_status, 15)
+    all_notifications = Notification.get_user_notifications(
+        request.user,
+        include_read=True
+    ).annotate(
+        is_read=Exists(read_subquery)
+    )
+
+    paginator = Paginator(all_notifications, 15)
     page = request.GET.get('page', 1)
-    
+
     try:
         notifications_page = paginator.page(page)
     except PageNotAnInteger:
         notifications_page = paginator.page(1)
     except EmptyPage:
         notifications_page = paginator.page(paginator.num_pages)
-    
-    # Количество непрочитанных
+
     unread_count = Notification.get_unread_count(request.user)
-    
+
     context = {
         'notifications': notifications_page,
         'unread_count': unread_count,
     }
-    
+
     return render(request, 'notifications/list.html', context)
 
 
@@ -2214,17 +2002,13 @@ def notification_detail(request, notification_id):
         messages.error(request, 'У вас нет доступа к этому уведомлению.')
         return redirect('notifications_list')
     
-    # Помечаем как прочитанное
     notification.mark_as_read(request.user)
-    
-    # Проверяем, было ли уведомление прочитано ранее
-    is_read = notification.is_read_by(request.user)
-    
+
     context = {
         'notification': notification,
-        'is_read': is_read,
+        'is_read': True,
     }
-    
+
     return render(request, 'notifications/detail.html', context)
 
 
@@ -2266,26 +2050,37 @@ def mark_notification_read(request, notification_id):
 @login_required
 @require_POST
 def mark_all_notifications_read(request):
-    """
-    AJAX endpoint для пометки всех уведомлений как прочитанных
-    """
+    """AJAX endpoint для пометки всех уведомлений как прочитанных"""
     try:
-        # Получаем все непрочитанные уведомления пользователя
         unread_notifications = Notification.get_user_notifications(
-            request.user, 
+            request.user,
             include_read=False
         )
-        
-        # Помечаем все как прочитанные
-        for notification in unread_notifications:
-            notification.mark_as_read(request.user)
-        
+        unread_ids = list(unread_notifications.values_list('id', flat=True))
+
+        # Bulk create — один INSERT вместо N
+        existing_read_ids = set(
+            NotificationRead.objects.filter(
+                user=request.user, notification_id__in=unread_ids
+            ).values_list('notification_id', flat=True)
+        )
+        new_reads = [
+            NotificationRead(user=request.user, notification_id=nid)
+            for nid in unread_ids if nid not in existing_read_ids
+        ]
+        if new_reads:
+            NotificationRead.objects.bulk_create(new_reads, ignore_conflicts=True)
+
+        # Инвалидируем кэш
+        from .context_processors import invalidate_notification_cache
+        invalidate_notification_cache(request.user.pk)
+
         return JsonResponse({
             'success': True,
-            'marked_count': unread_notifications.count(),
+            'marked_count': len(unread_ids),
             'unread_count': 0
         })
-    
+
     except Exception as e:
         logger.error(f"Error marking all notifications as read: {e}", exc_info=True)
         return JsonResponse({
@@ -2296,39 +2091,43 @@ def mark_all_notifications_read(request):
 
 @login_required
 def notifications_dropdown(request):
-    """
-    AJAX endpoint для получения списка уведомлений для dropdown
-    Возвращает последние 5 уведомлений
-    """
+    """AJAX endpoint для dropdown — последние 5 уведомлений"""
     try:
-        # Получаем последние уведомления
-        notifications = Notification.get_user_notifications(
-            request.user, 
+        from django.db.models import Exists, OuterRef
+
+        read_subquery = NotificationRead.objects.filter(
+            user=request.user,
+            notification_id=OuterRef('id')
+        )
+        all_qs = Notification.get_user_notifications(
+            request.user,
             include_read=True
-        )[:5]
-        
-        # Формируем данные для JSON
-        notifications_data = []
-        for notification in notifications:
-            notifications_data.append({
-                'id': notification.id,
-                'title': notification.title,
-                'short_text': notification.short_text,
-                'is_read': notification.is_read_by(request.user),
-                'created_at': notification.created_at.strftime('%d.%m.%Y %H:%M'),
-                'url': reverse('notification_detail', args=[notification.id])
-            })
-        
-        # Количество непрочитанных
+        ).annotate(
+            is_read=Exists(read_subquery)
+        )
+        notifications = all_qs[:5]
+
+        notifications_data = [
+            {
+                'id': n.id,
+                'title': n.title,
+                'short_text': n.short_text,
+                'is_read': n.is_read,
+                'created_at': n.created_at.strftime('%d.%m.%Y %H:%M'),
+                'url': reverse('notification_detail', args=[n.id])
+            }
+            for n in notifications
+        ]
+
         unread_count = Notification.get_unread_count(request.user)
-        
+
         return JsonResponse({
             'success': True,
             'notifications': notifications_data,
             'unread_count': unread_count,
-            'has_more': Notification.get_user_notifications(request.user, include_read=True).count() > 5
+            'has_more': all_qs.count() > 5
         })
-    
+
     except Exception as e:
         logger.error(f"Error fetching notifications dropdown: {e}", exc_info=True)
         return JsonResponse({
