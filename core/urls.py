@@ -10,6 +10,7 @@ from django.views.i18n import set_language  # Добавлен импорт!
 
 urlpatterns = [
     path('i18n/setlang/', set_language, name='set_language'),
+    path('accounts/', include('allauth.urls')),  # Google OAuth2 (вне i18n, чтобы callback URL был без /en/)
 ]
 
 urlpatterns += i18n_patterns(

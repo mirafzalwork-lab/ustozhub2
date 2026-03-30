@@ -1,0 +1,300 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Завершите регистрацию" %} - UstozHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .onboarding-container {
+        min-height: calc(100vh - 200px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 16px;
+    }
+
+    .onboarding-card {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-xl);
+        width: 100%;
+        max-width: 640px;
+        padding: 48px 40px;
+    }
+
+    .onboarding-header {
+        text-align: center;
+        margin-bottom: 32px;
+    }
+
+    .onboarding-header .icon {
+        width: 64px;
+        height: 64px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        font-size: 28px;
+        color: white;
+    }
+
+    .onboarding-header h1 {
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 8px;
+    }
+
+    .onboarding-header p {
+        font-size: 15px;
+        color: var(--text-secondary);
+    }
+
+    .form-group {
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--spacing-md);
+    }
+
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: var(--spacing-xs);
+    }
+
+    .form-input {
+        width: 100%;
+        padding: var(--spacing-sm) var(--spacing-md);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        font-size: 15px;
+        transition: all var(--transition-base);
+        background: var(--bg-primary);
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+
+    .error-message {
+        color: var(--danger-color);
+        font-size: 13px;
+        margin-top: 6px;
+    }
+
+    .help-text {
+        font-size: 13px;
+        color: var(--text-tertiary);
+        margin-top: 4px;
+    }
+
+    /* Subject checkboxes grid */
+    .subject-checkbox {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 8px;
+        max-height: 320px;
+        overflow-y: auto;
+        padding: 4px;
+    }
+
+    .subject-checkbox li {
+        list-style: none;
+        margin: 0;
+    }
+
+    .subject-checkbox label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 14px;
+    }
+
+    .subject-checkbox label:hover {
+        border-color: #10b981;
+        background: #f0fdf4;
+    }
+
+    .subject-checkbox input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: #10b981;
+    }
+
+    .subject-checkbox input[type="checkbox"]:checked + label,
+    .subject-checkbox label:has(input[type="checkbox"]:checked) {
+        border-color: #10b981;
+        background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+        color: #059669;
+        font-weight: 600;
+    }
+
+    .submit-btn {
+        width: 100%;
+        padding: 14px;
+        background: #10b981;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all var(--transition-base);
+        margin-top: var(--spacing-md);
+    }
+
+    .submit-btn:hover {
+        background: #059669;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .submit-btn:disabled {
+        background: var(--text-tertiary);
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .back-link {
+        text-align: center;
+        margin-top: var(--spacing-lg);
+        font-size: 14px;
+    }
+
+    .back-link a {
+        color: var(--text-secondary);
+        text-decoration: none;
+    }
+
+    .back-link a:hover {
+        color: var(--primary-color);
+        text-decoration: underline;
+    }
+
+    /* Alert */
+    .alert {
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 14px;
+    }
+
+    .alert-error {
+        background: #fee;
+        color: #c33;
+        border: 1px solid #fcc;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+        .onboarding-card {
+            padding: 32px 20px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .subject-checkbox {
+            grid-template-columns: 1fr;
+        }
+
+        .onboarding-header h1 {
+            font-size: 22px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="onboarding-container">
+    <div class="onboarding-card">
+        <div class="onboarding-header">
+            <div class="icon">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+            <h1>{% trans "Almost done!" %}</h1>
+            <p>{% trans "Tell us a bit about yourself to find the best teachers" %}</p>
+        </div>
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-error">
+                {% for error in form.non_field_errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="post" id="onboardingForm">
+            {% csrf_token %}
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="id_first_name">
+                        {{ form.first_name.label }} <span style="color: red;">*</span>
+                    </label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}
+                        <div class="error-message">{{ form.first_name.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="id_last_name">
+                        {{ form.last_name.label }}
+                    </label>
+                    {{ form.last_name }}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">
+                    {{ form.interests.label }} <span style="color: red;">*</span>
+                </label>
+                {{ form.interests }}
+                {% if form.interests.errors %}
+                    <div class="error-message">{{ form.interests.errors.0 }}</div>
+                {% endif %}
+                <div class="help-text">{{ form.interests.help_text }}</div>
+            </div>
+
+            <button type="submit" class="submit-btn">
+                <i class="fas fa-arrow-right"></i> {% trans "Start learning" %}
+            </button>
+        </form>
+
+        <div class="back-link">
+            <a href="{% url 'register_choose' %}">
+                <i class="fas fa-arrow-left"></i> {% trans "Back to role selection" %}
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('onboardingForm').addEventListener('submit', function(e) {
+        var btn = this.querySelector('.submit-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% trans "Saving..." %}';
+    });
+</script>
+{% endblock %}

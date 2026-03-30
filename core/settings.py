@@ -53,11 +53,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+    'django.contrib.sites',  # Требуется для django-allauth
+
     # Third-party apps
     'channels',  # Django Channels для WebSocket support
     'formtools',  # Django Form Tools для multi-step forms
-    
+
+    # django-allauth
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+
     # Local apps
     'teachers',
 ]
@@ -73,6 +80,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',  # Требуется для django-allauth
+    'teachers.middleware.OnboardingMiddleware',  # Форсит onboarding для пользователей без профиля
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -207,6 +216,50 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
 
+# =============================================================================
+# DJANGO-ALLAUTH & GOOGLE OAUTH2
+# =============================================================================
+
+SITE_ID = 1
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',  # Стандартная аутентификация (login/password)
+    'allauth.account.auth_backends.AuthenticationBackend',  # allauth (Google и др.)
+]
+
+# Настройки allauth
+ACCOUNT_LOGIN_BY_CODE_ENABLED = False
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # Не требуем верификацию email через allauth (Google уже верифицирует)
+ACCOUNT_LOGIN_METHODS = {'email', 'username'}  # Вход по email или username
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*']  # email обязателен, пароль обязателен
+ACCOUNT_UNIQUE_EMAIL = True
+
+# Social account settings
+SOCIALACCOUNT_AUTO_SIGNUP = True  # Автоматически создавать аккаунт при первом входе через Google
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True  # Привязывать Google к существующему аккаунту по email
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+SOCIALACCOUNT_LOGIN_ON_GET = True  # Не показывать промежуточную страницу подтверждения
+SOCIALACCOUNT_ADAPTER = 'teachers.adapters.SocialAccountAdapter'
+
+# Google OAuth2 провайдер
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+        'OAUTH_PKCE_ENABLED': True,
+        'FETCH_USERINFO': True,
+        'APP': {
+            'client_id': os.environ.get('GOOGLE_CLIENT_ID', ''),
+            'secret': os.environ.get('GOOGLE_CLIENT_SECRET', ''),
+        },
+    }
+}
+
 # Media files (user uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -284,6 +337,11 @@ LOGGING = {
         'telegram_bot': {
             'handlers': ['console'],
             'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+        'allauth': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
             'propagate': False,
         },
     },
