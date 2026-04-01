@@ -27,6 +27,7 @@ from .telegram_views import (
     telegram_auth, link_telegram_account, telegram_status, toggle_notifications
 )
 from .registration_wizard import TeacherRegistrationWizard, teacher_register_complete
+from .video_views import video_presigned_url, video_presigned_url_register, video_save, video_delete
 
 urlpatterns = [
     path('', home, name='home'),
@@ -96,6 +97,12 @@ urlpatterns = [
 
     # Badge counts API (для real-time обновления badge)
     path('api/badge-counts/', badge_counts, name='badge_counts'),
+
+    # Video API / Видео-визитка учителя
+    path('api/video/presigned-url/', video_presigned_url, name='video_presigned_url'),
+    path('api/video/presigned-url/register/', video_presigned_url_register, name='video_presigned_url_register'),
+    path('api/video/save/', video_save, name='video_save'),
+    path('api/video/delete/', video_delete, name='video_delete'),
 
     # Google OAuth2
     path('auth/google/', google_login_view, name='google_login'),

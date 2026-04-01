@@ -27,6 +27,11 @@ from .models import (
     Conversation, Message, Review, ViewCounter, TelegramUser,
     SubjectCategory, SubjectSearchLog, Notification, NotificationRead,
 )
+from .search import (
+    normalize_query, build_teacher_search_q,
+    build_teacher_relevance_annotations, build_subject_search_q,
+    build_subject_relevance_annotation, build_student_search_q,
+)
 from .forms import (
     TeacherRegistrationForm,
     TeacherSubjectsForm,
@@ -264,49 +269,14 @@ def home(request):
         if val is not None:
             teachers = teachers.filter(teachersubject__hourly_rate__lte=val)
     
-    # ========== ENHANCED GLOBAL SEARCH WITH RELEVANCE RANKING ==========
-    # Search scope: Teacher names (first/last), Subject names, Bio/Description
-    # Exclusions: teaching_languages, price, city, availability
-    # Priority: 1) Subject match, 2) Name match, 3) Bio match
+    # ========== SMART SEARCH WITH SYNONYMS & RELEVANCE RANKING ==========
+    # Умный поиск с поддержкой синонимов (RU/EN/UZ), сокращений и ранжированием
     if search_query:
-        q = search_query.strip()
+        q = normalize_query(search_query)
         if q:
-            # Relevance scoring with weighted priorities
-            subject_rank = Coalesce(
-                Max(
-                    Case(
-                        When(subjects__name__iexact=q, then=Value(100)),
-                        When(subjects__name__istartswith=q, then=Value(90)),
-                        When(subjects__name__icontains=q, then=Value(80)),
-                        default=Value(0),
-                        output_field=IntegerField(),
-                    )
-                ),
-                Value(0),
-            )
-            
-            name_rank = Coalesce(
-                Max(
-                    Case(
-                        When(user__first_name__iexact=q, then=Value(70)),
-                        When(user__last_name__iexact=q, then=Value(70)),
-                        When(user__first_name__istartswith=q, then=Value(60)),
-                        When(user__last_name__istartswith=q, then=Value(60)),
-                        When(user__first_name__icontains=q, then=Value(50)),
-                        When(user__last_name__icontains=q, then=Value(50)),
-                        default=Value(0),
-                        output_field=IntegerField(),
-                    )
-                ),
-                Value(0),
-            )
-            
-            bio_rank = Case(
-                When(bio__icontains=q, then=Value(40)),
-                default=Value(0),
-                output_field=IntegerField(),
-            )
-            
+            # Получаем аннотации релевантности (с учётом синонимов)
+            subject_rank, name_rank, bio_rank = build_teacher_relevance_annotations(search_query)
+
             # Annotate with relevance scores and filter
             teachers = teachers.annotate(
                 subject_rank=subject_rank,
@@ -316,10 +286,7 @@ def home(request):
                 # Weighted relevance: subjects (3x), names (2x), bio (1x)
                 relevance=F('subject_rank') * 3 + F('name_rank') * 2 + F('bio_rank')
             ).filter(
-                Q(subjects__name__icontains=q) |
-                Q(user__first_name__icontains=q) |
-                Q(user__last_name__icontains=q) |
-                Q(bio__icontains=q)
+                build_teacher_search_q(search_query)
             ).distinct()
 
             # При поиске: featured всегда первый, потом релевантность
@@ -651,14 +618,9 @@ def students_list(request):
         if val is not None:
             students = students.filter(budget_min__lte=val)
     
-    # Поиск по имени или описанию
+    # Умный поиск по имени, описанию, bio (с синонимами)
     if search_query:
-        students = students.filter(
-            Q(user__first_name__icontains=search_query) |
-            Q(user__last_name__icontains=search_query) |
-            Q(description__icontains=search_query) |
-            Q(bio__icontains=search_query)
-        )
+        students = students.filter(build_student_search_q(search_query))
     
     # Убираем дубликаты и сортируем по дате создания (новые сначала)
     students = students.distinct().order_by('-created_at')
@@ -1634,16 +1596,9 @@ def subjects_autocomplete(request):
 
     try:
         subjects = Subject.objects.filter(is_active=True).filter(
-            Q(name__icontains=query) | Q(description__icontains=query)
+            build_subject_search_q(query)
         ).select_related('category').annotate(
-            relevance=Case(
-                When(name__iexact=query, then=Value(4)),
-                When(name__istartswith=query, then=Value(3)),
-                When(name__icontains=query, then=Value(2)),
-                When(description__icontains=query, then=Value(1)),
-                default=Value(0),
-                output_field=IntegerField()
-            )
+            relevance=build_subject_relevance_annotation(query)
         ).order_by('-relevance', '-is_popular', 'name')[:30]
 
         results = []
@@ -2260,7 +2215,7 @@ def google_complete_student(request):
 def google_complete_teacher(request):
     """
     Подготавливает Google-пользователя к регистрации как учитель.
-    Удаляет заглушку и перенаправляет на wizard.
+    Сохраняет данные Google в сессию и перенаправляет на wizard.
     """
     user = request.user
 
@@ -2268,16 +2223,24 @@ def google_complete_teacher(request):
         messages.info(request, 'У вас уже есть профиль')
         return redirect('home')
 
-    # Сохраняем данные Google-пользователя в сессию перед удалением
-    google_email = user.email
-    google_first_name = user.first_name
-    google_last_name = user.last_name
+    # Сохраняем данные Google-пользователя в сессию для предзаполнения wizard
+    google_data = {
+        'google_first_name': user.first_name,
+        'google_last_name': user.last_name,
+        'google_email': user.email,
+        'google_user_id': user.pk,
+        'is_google_teacher': True,
+    }
 
     # Выход и удаление заглушки — wizard создаст полноценного учителя
     logout(request)
+    # Сессия пересоздаётся после logout, сохраняем данные в новую
+    for key, value in google_data.items():
+        request.session[key] = value
+
     try:
         user.delete()
-        logger.info(f"Google stub user deleted before teacher wizard: {google_email}")
+        logger.info(f"Google stub user deleted before teacher wizard: {google_data['google_email']}")
     except Exception as e:
         logger.error(f"Error deleting Google stub user: {e}")
 

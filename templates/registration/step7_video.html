@@ -1,0 +1,203 @@
+{% extends 'registration/base_wizard.html' %}
+{% load static %}
+
+{% block step_content %}
+<div class="form-section">
+    <h3 class="section-title">Видео-визитка</h3>
+    <p class="section-description">
+        Короткое видео поможет ученикам познакомиться с вами. Расскажите о своём подходе, опыте или покажите фрагмент урока.
+    </p>
+
+    <div class="optional-notice">
+        <svg class="notice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <p>Этот шаг необязательный. Учителя с видео получают на 40% больше откликов от учеников.</p>
+    </div>
+</div>
+
+<div class="form-section">
+    <!-- Скрытое поле для URL (заполняется JS после загрузки) -->
+    {{ wizard.form.video_url }}
+
+    <!-- Зона загрузки -->
+    <div id="video-upload-area">
+        <div id="video-dropzone" class="file-upload-area" style="cursor: pointer; padding: 40px 20px; text-align: center;">
+            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 48px; height: 48px; margin: 0 auto 12px;">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <p class="upload-text" style="font-size: 16px; font-weight: 600; margin: 0 0 4px;">Нажмите или перетащите видео</p>
+            <p class="upload-hint" style="font-size: 13px; color: #9ca3af; margin: 0;">MP4 (H.264), до 50 МБ, до 90 секунд</p>
+            <input type="file" id="video-file-input" accept="video/mp4" style="display: none;">
+        </div>
+
+        <!-- Превью -->
+        <div id="video-preview-container" style="display: none; margin-top: 16px;">
+            <video id="video-preview" controls playsinline
+                   style="width:100%; max-width:560px; border-radius:12px; background:#000;">
+            </video>
+            <div id="video-meta" style="margin-top: 8px; font-size: 13px; color: #6b7280;"></div>
+        </div>
+
+        <!-- Progress -->
+        <div id="video-progress" style="display: none; margin-top: 16px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span id="video-progress-label" style="font-size: 13px; font-weight: 600;">Загрузка...</span>
+                <span id="video-progress-pct" style="font-size: 13px; font-weight: 600; color: #3B82F6;">0%</span>
+            </div>
+            <div style="width:100%; background:#e5e7eb; border-radius:8px; height:8px; overflow:hidden;">
+                <div id="video-progress-bar" style="width:0%; height:100%; background:linear-gradient(90deg, #3B82F6, #2563EB); border-radius:8px; transition: width 0.3s;"></div>
+            </div>
+        </div>
+
+        <!-- Кнопки -->
+        <div style="margin-top: 12px; display: flex; gap: 12px;">
+            <button type="button" id="video-upload-btn" class="btn btn-primary" style="display:none;" onclick="videoDoUpload()">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                Загрузить
+            </button>
+            <button type="button" id="video-cancel-btn" style="display:none;" class="btn btn-secondary" onclick="videoClearSelect()">
+                Отмена
+            </button>
+            <button type="button" id="video-remove-btn" style="display:none;" class="btn btn-secondary" onclick="videoRemove()">
+                Удалить видео
+            </button>
+        </div>
+
+        <!-- Ошибка -->
+        <div id="video-error" style="display:none; margin-top:12px; padding:12px; background:#fee2e2; color:#991b1b; border-radius:8px; font-size:14px;"></div>
+        <!-- Успех -->
+        <div id="video-success" style="display:none; margin-top:12px; padding:12px; background:#d1fae5; color:#065f46; border-radius:8px; font-size:14px;">
+            Видео успешно загружено! Нажмите «Завершить регистрацию» для продолжения.
+        </div>
+    </div>
+</div>
+
+<div class="skip-notice">
+    <p>Вы можете пропустить этот шаг и добавить видео позже в настройках профиля.</p>
+</div>
+
+<script>
+(function() {
+    const MAX_SIZE = 50 * 1024 * 1024;
+    const MAX_DURATION = 90;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    let selectedFile = null;
+
+    const dropzone = document.getElementById('video-dropzone');
+    const fileInput = document.getElementById('video-file-input');
+    const previewContainer = document.getElementById('video-preview-container');
+    const previewVideo = document.getElementById('video-preview');
+    const metaEl = document.getElementById('video-meta');
+    const uploadBtn = document.getElementById('video-upload-btn');
+    const cancelBtn = document.getElementById('video-cancel-btn');
+    const removeBtn = document.getElementById('video-remove-btn');
+    const progressWrap = document.getElementById('video-progress');
+    const progressBar = document.getElementById('video-progress-bar');
+    const progressPct = document.getElementById('video-progress-pct');
+    const progressLabel = document.getElementById('video-progress-label');
+    const errorEl = document.getElementById('video-error');
+    const successEl = document.getElementById('video-success');
+    const hiddenInput = document.getElementById('id_video_url');
+
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.style.borderColor = '#3B82F6'; });
+    dropzone.addEventListener('dragleave', () => { dropzone.style.borderColor = ''; });
+    dropzone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropzone.style.borderColor = '';
+        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', () => { if (fileInput.files.length) handleFile(fileInput.files[0]); });
+
+    function showError(msg) { errorEl.textContent = msg; errorEl.style.display = 'block'; successEl.style.display = 'none'; }
+    function hideMessages() { errorEl.style.display = 'none'; successEl.style.display = 'none'; }
+    function fmtSize(b) { return b < 1048576 ? (b/1024).toFixed(1)+' КБ' : (b/1048576).toFixed(1)+' МБ'; }
+
+    function handleFile(file) {
+        hideMessages();
+        if (file.type !== 'video/mp4') { showError('Допустимый формат: MP4'); return; }
+        if (file.size > MAX_SIZE) { showError('Макс. размер: 50 МБ. Ваш файл: ' + fmtSize(file.size)); return; }
+        selectedFile = file;
+        previewVideo.src = URL.createObjectURL(file);
+        previewContainer.style.display = 'block';
+        dropzone.style.display = 'none';
+        previewVideo.onloadedmetadata = function() {
+            const dur = Math.round(previewVideo.duration);
+            metaEl.textContent = 'Размер: ' + fmtSize(file.size) + ' | Длительность: ' + dur + ' сек';
+            if (dur > MAX_DURATION) { showError('Видео слишком длинное: ' + dur + ' сек. Макс: ' + MAX_DURATION); uploadBtn.style.display = 'none'; }
+            else { uploadBtn.style.display = 'inline-flex'; }
+        };
+        cancelBtn.style.display = 'inline-flex';
+    }
+
+    window.videoClearSelect = function() {
+        selectedFile = null; fileInput.value = ''; previewVideo.src = '';
+        previewContainer.style.display = 'none'; dropzone.style.display = 'block';
+        uploadBtn.style.display = 'none'; cancelBtn.style.display = 'none';
+        progressWrap.style.display = 'none'; hideMessages();
+    };
+
+    window.videoRemove = function() {
+        hiddenInput.value = '';
+        videoClearSelect();
+        removeBtn.style.display = 'none';
+    };
+
+    window.videoDoUpload = async function() {
+        if (!selectedFile) return;
+        hideMessages();
+        progressWrap.style.display = 'block';
+        progressLabel.textContent = 'Подготовка...';
+        progressBar.style.width = '0%'; progressPct.textContent = '0%';
+        uploadBtn.style.display = 'none'; cancelBtn.style.display = 'none';
+
+        let presignData;
+        try {
+            const r = await fetch("{% url 'video_presigned_url_register' %}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({ content_type: selectedFile.type, file_size: selectedFile.size })
+            });
+            presignData = await r.json();
+            if (!r.ok) { showError(presignData.error || 'Ошибка'); resetUI(); return; }
+        } catch(e) { showError('Ошибка сети'); resetUI(); return; }
+
+        progressLabel.textContent = 'Загрузка видео...';
+        try {
+            await new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('PUT', presignData.upload_url, true);
+                xhr.setRequestHeader('Content-Type', selectedFile.type);
+                xhr.upload.onprogress = e => {
+                    if (e.lengthComputable) {
+                        const p = Math.round(e.loaded / e.total * 100);
+                        progressBar.style.width = p + '%'; progressPct.textContent = p + '%';
+                    }
+                };
+                xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve() : reject();
+                xhr.onerror = reject;
+                xhr.send(selectedFile);
+            });
+        } catch(e) { showError('Ошибка загрузки. Попробуйте снова.'); resetUI(); return; }
+
+        // Сохраняем URL в скрытое поле — wizard сохранит при завершении
+        hiddenInput.value = presignData.file_url;
+        progressWrap.style.display = 'none';
+        successEl.style.display = 'block';
+        removeBtn.style.display = 'inline-flex';
+        selectedFile = null;
+    };
+
+    function resetUI() { progressWrap.style.display = 'none'; uploadBtn.style.display = 'inline-flex'; cancelBtn.style.display = 'inline-flex'; }
+})();
+</script>
+{% endblock %}

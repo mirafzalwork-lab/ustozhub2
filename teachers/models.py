@@ -249,6 +249,14 @@ class TeacherProfile(models.Model):
         help_text="Приоритет в выдаче (0-100). Рассчитывается автоматически."
     )
     
+    # Видео-визитка (хранится в облачном хранилище, только URL)
+    video_url = models.URLField(
+        max_length=500,
+        null=True,
+        blank=True,
+        help_text="URL видео-визитки в облачном хранилище"
+    )
+
     # Сертификаты
     certificates = models.ManyToManyField(Certificate, blank=True)
     

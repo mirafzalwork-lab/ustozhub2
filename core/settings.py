@@ -268,6 +268,24 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # =============================================================================
+# S3-COMPATIBLE STORAGE (Cloudflare R2 / Amazon S3)
+# Используется для прямой загрузки видео через presigned URL
+# =============================================================================
+
+S3_ACCESS_KEY_ID = os.environ.get('S3_ACCESS_KEY_ID', '')
+S3_SECRET_ACCESS_KEY = os.environ.get('S3_SECRET_ACCESS_KEY', '')
+S3_BUCKET_NAME = os.environ.get('S3_BUCKET_NAME', '')
+S3_ENDPOINT_URL = os.environ.get('S3_ENDPOINT_URL', '')  # Для R2: https://<account_id>.r2.cloudflarestorage.com
+S3_REGION = os.environ.get('S3_REGION', 'auto')
+S3_PUBLIC_URL = os.environ.get('S3_PUBLIC_URL', '')  # Публичный URL бакета (CDN или R2 public domain)
+
+# Ограничения для видео-визитки
+VIDEO_MAX_SIZE_MB = 50
+VIDEO_MAX_DURATION_SECONDS = 90
+VIDEO_ALLOWED_CONTENT_TYPES = ['video/mp4']
+VIDEO_PRESIGNED_URL_EXPIRY = 600  # 10 минут на загрузку
+
+# =============================================================================
 # TELEGRAM BOT SETTINGS
 # =============================================================================
 

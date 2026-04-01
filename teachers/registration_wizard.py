@@ -19,7 +19,8 @@ from .registration_forms import (
     Step3EducationExperienceForm,
     Step4AvailabilityFormatForm,
     Step5SubjectsPricingForm,
-    Step6CertificatesForm
+    Step6CertificatesForm,
+    Step7VideoForm,
 )
 from .models import User, TeacherProfile, TeacherSubject, Certificate
 
@@ -45,8 +46,9 @@ class TeacherRegistrationWizard(SessionWizardView):
         ('availability', Step4AvailabilityFormatForm),
         ('subjects', Step5SubjectsPricingForm),
         ('certificates', Step6CertificatesForm),
+        ('video', Step7VideoForm),
     ]
-    
+
     # Templates for each step
     templates = {
         'basic_profile': 'registration/step1_basic_profile.html',
@@ -55,15 +57,52 @@ class TeacherRegistrationWizard(SessionWizardView):
         'availability': 'registration/step4_availability.html',
         'subjects': 'registration/step5_subjects.html',
         'certificates': 'registration/step6_certificates.html',
+        'video': 'registration/step7_video.html',
     }
     
     # File storage for uploaded files during the wizard
     file_storage = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'temp_uploads'))
     
+    def _is_google_registration(self):
+        """Check if this wizard is being used by a Google OAuth user."""
+        return self.request.session.get('is_google_teacher', False)
+
+    def get_form_initial(self, step):
+        """Pre-fill form data from Google session for Google users."""
+        initial = super().get_form_initial(step)
+        session = self.request.session
+
+        if not self._is_google_registration():
+            return initial
+
+        if step == 'basic_profile':
+            if session.get('google_first_name'):
+                initial['first_name'] = session['google_first_name']
+            if session.get('google_last_name'):
+                initial['last_name'] = session['google_last_name']
+
+        elif step == 'account_security':
+            if session.get('google_email'):
+                initial['email'] = session['google_email']
+
+        return initial
+
+    def get_form(self, step=None, data=None, files=None):
+        """Customize form for Google users (make password optional)."""
+        form = super().get_form(step, data, files)
+
+        if self._is_google_registration() and (step or self.steps.current) == 'account_security':
+            form.fields['password1'].required = False
+            form.fields['password2'].required = False
+            form.fields['password1'].help_text = 'Необязательно для Google-аккаунта. Оставьте пустым, если хотите входить только через Google.'
+            form.fields['email'].widget.attrs['readonly'] = True
+
+        return form
+
     def get_template_names(self):
         """Return template for current step"""
         return [self.templates[self.steps.current]]
-    
+
     def get_context_data(self, form, **kwargs):
         """Add context data for templates"""
         context = super().get_context_data(form=form, **kwargs)
@@ -81,8 +120,9 @@ class TeacherRegistrationWizard(SessionWizardView):
             'availability': 'Доступность и формат',
             'subjects': 'Предметы и цены',
             'certificates': 'Сертификаты',
+            'video': 'Видео-визитка',
         }
-        
+
         step_descriptions = {
             'basic_profile': 'Расскажите о себе. Эта информация будет видна ученикам.',
             'account_security': 'Создайте учетные данные для входа в систему.',
@@ -90,6 +130,7 @@ class TeacherRegistrationWizard(SessionWizardView):
             'availability': 'Когда и как ученики могут с вами связаться?',
             'subjects': 'Какие предметы вы преподаете и по какой цене?',
             'certificates': 'Загрузите ваши сертификаты и дипломы (желательно).',
+            'video': 'Загрузите короткое видео о себе (необязательно).',
         }
         
         context.update({
@@ -99,6 +140,7 @@ class TeacherRegistrationWizard(SessionWizardView):
             'step_title': step_titles.get(self.steps.current, ''),
             'step_description': step_descriptions.get(self.steps.current, ''),
             'is_last_step': current_step == total_steps,
+            'is_google': self._is_google_registration(),
         })
         
         return context
@@ -125,10 +167,21 @@ class TeacherRegistrationWizard(SessionWizardView):
             
             # Add Certificates (if any were uploaded during the wizard)
             self._add_certificates(teacher_profile, form_data)
+
+            # Save video URL (if uploaded via presigned URL)
+            video_url = form_data.get('video_url', '').strip()
+            if video_url and video_url.startswith(settings.S3_PUBLIC_URL.rstrip('/')):
+                teacher_profile.video_url = video_url
+                teacher_profile.save(update_fields=['video_url'])
             
             # Log the user in
             login(self.request, user, backend='django.contrib.auth.backends.ModelBackend')
-            
+
+            # Clean up Google session data
+            for key in ['google_first_name', 'google_last_name', 'google_email',
+                        'google_user_id', 'is_google_teacher']:
+                self.request.session.pop(key, None)
+
             # Success message
             messages.success(
                 self.request,
@@ -147,23 +200,31 @@ class TeacherRegistrationWizard(SessionWizardView):
     
     def _create_user(self, form_data):
         """Create User object"""
+        is_google = self._is_google_registration()
+        password = form_data.get('password1') or None
+
         user = User.objects.create_user(
             username=form_data['username'],
             email=form_data['email'],
-            password=form_data['password1'],
+            password=password,
             first_name=form_data['first_name'],
             last_name=form_data['last_name'],
             phone=form_data['phone'],
             gender=form_data.get('gender'),
             user_type='teacher',
-            is_verified=False
+            is_verified=is_google,  # Google email already verified
         )
-        
+
+        # Google user without password — set unusable password
+        if is_google and not password:
+            user.set_unusable_password()
+            user.save(update_fields=['password'])
+
         # Set avatar if uploaded
         if form_data.get('avatar'):
             user.avatar = form_data['avatar']
             user.save()
-        
+
         return user
     
     def _create_teacher_profile(self, user, form_data):

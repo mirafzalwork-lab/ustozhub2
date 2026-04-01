@@ -1038,6 +1038,21 @@
     </div>
     {% endif %}
 
+    {% if teacher.video_url %}
+    <!-- Видео-визитка -->
+    <div class="profile-section">
+        <h2 class="section-title">
+            <i class="fas fa-video"></i>
+            {% trans 'Моя видео-визитка' %}
+        </h2>
+        <video controls playsinline preload="metadata"
+               style="width: 100%; border-radius: 12px; background: #000; max-height: 480px;"
+               src="{{ teacher.video_url }}">
+            {% trans 'Ваш браузер не поддерживает воспроизведение видео.' %}
+        </video>
+    </div>
+    {% endif %}
+
     <!-- Предметы и цены -->
     {% if teacher.teachersubject_set.exists %}
     <div class="profile-section">
