@@ -17,6 +17,7 @@ ONBOARDING_ALLOWED_URL_NAMES = {
     'teacher_register',
     'teacher_register_complete',
     'register_student',
+    'video_presigned_url_register',
     # Auth
     'login',
     'logout',

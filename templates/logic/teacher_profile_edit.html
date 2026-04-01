@@ -858,6 +858,86 @@
             </div>
         </div>
 
+        <!-- Видео-визитка -->
+        <div class="form-card">
+            <h2 class="section-title">
+                <i class="fas fa-video"></i>
+                Видео-визитка
+            </h2>
+            <p class="help-text" style="margin-bottom: 16px; font-size: 14px;">
+                Короткое видео (до 90 сек) расскажет о вас лучше любого текста. Формат: MP4, до 50 МБ.
+            </p>
+
+            <div id="video-section">
+                <!-- Текущее видео (если есть) -->
+                <div id="video-current" style="{% if not teacher.video_url %}display:none{% endif %}">
+                    <video id="video-preview-current" controls playsinline
+                           style="width:100%; max-width:640px; border-radius:12px; background:#000;"
+                           {% if teacher.video_url %}src="{{ teacher.video_url }}"{% endif %}>
+                    </video>
+                    <div style="margin-top: 12px; display: flex; gap: 12px;">
+                        <button type="button" class="btn btn-secondary" onclick="videoStartReplace()">
+                            <i class="fas fa-sync-alt"></i> Заменить видео
+                        </button>
+                        <button type="button" class="btn-delete" onclick="videoDelete()">
+                            <i class="fas fa-trash"></i> Удалить видео
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Зона загрузки -->
+                <div id="video-upload-area" style="{% if teacher.video_url %}display:none{% endif %}">
+                    <div id="video-dropzone" style="border: 2px dashed #d1d5db; border-radius: 12px; padding: 40px 20px; text-align: center; cursor: pointer; transition: all 0.3s; background: #f9fafb;">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 48px; color: #9ca3af; margin-bottom: 12px;"></i>
+                        <p style="font-size: 16px; font-weight: 600; color: #374151; margin: 0 0 4px;">
+                            Нажмите или перетащите видео
+                        </p>
+                        <p style="font-size: 13px; color: #9ca3af; margin: 0;">
+                            MP4 (H.264), до 50 МБ, до 90 секунд
+                        </p>
+                        <input type="file" id="video-file-input" accept="video/mp4" style="display: none;">
+                    </div>
+
+                    <!-- Превью перед загрузкой -->
+                    <div id="video-preview-container" style="display: none; margin-top: 16px;">
+                        <video id="video-preview-new" controls playsinline
+                               style="width:100%; max-width:640px; border-radius:12px; background:#000;">
+                        </video>
+                        <div id="video-meta" style="margin-top: 8px; font-size: 13px; color: #6b7280;"></div>
+                    </div>
+
+                    <!-- Progress bar -->
+                    <div id="video-progress" style="display: none; margin-top: 16px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                            <span id="video-progress-label" style="font-size: 13px; font-weight: 600; color: #374151;">Загрузка...</span>
+                            <span id="video-progress-pct" style="font-size: 13px; font-weight: 600; color: #3B82F6;">0%</span>
+                        </div>
+                        <div style="width: 100%; background: #e5e7eb; border-radius: 8px; height: 8px; overflow: hidden;">
+                            <div id="video-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #3B82F6, #2563EB); border-radius: 8px; transition: width 0.3s;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Кнопки действий -->
+                    <div id="video-actions" style="display: none; margin-top: 12px; display: flex; gap: 12px;">
+                        <button type="button" id="video-upload-btn" class="btn btn-primary" onclick="videoUpload()" style="display: none;">
+                            <i class="fas fa-upload"></i> Загрузить
+                        </button>
+                        <button type="button" id="video-cancel-btn" class="btn btn-secondary" onclick="videoCancelSelect()" style="display: none;">
+                            <i class="fas fa-times"></i> Отмена
+                        </button>
+                    </div>
+
+                    <!-- Сообщение об ошибке -->
+                    <div id="video-error" style="display: none; margin-top: 12px; padding: 12px; background: #fee2e2; color: #991b1b; border-radius: 8px; font-size: 14px;"></div>
+
+                    <!-- Сообщение об успехе -->
+                    <div id="video-success" style="display: none; margin-top: 12px; padding: 12px; background: #d1fae5; color: #065f46; border-radius: 8px; font-size: 14px;">
+                        Видео успешно загружено!
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Предметы и цены -->
         <div class="form-card">
             <div class="section-header-with-button">
@@ -1062,10 +1142,271 @@
     document.addEventListener('DOMContentLoaded', function() {
         const newSubjectForm = document.getElementById('new-subject-form');
         const hasErrors = newSubjectForm.querySelector('.error-message');
-        
+
         if (hasErrors) {
             toggleNewSubjectForm();
         }
     });
+
+    // ============================================================
+    // Видео-визитка: прямая загрузка в S3/R2 через presigned URL
+    // ============================================================
+    (function() {
+        const MAX_SIZE = 50 * 1024 * 1024; // 50 MB
+        const MAX_DURATION = 90; // секунд
+        const CSRF = '{{ csrf_token }}';
+        let selectedFile = null;
+
+        const dropzone = document.getElementById('video-dropzone');
+        const fileInput = document.getElementById('video-file-input');
+        const previewContainer = document.getElementById('video-preview-container');
+        const previewVideo = document.getElementById('video-preview-new');
+        const metaEl = document.getElementById('video-meta');
+        const uploadBtn = document.getElementById('video-upload-btn');
+        const cancelBtn = document.getElementById('video-cancel-btn');
+        const progressWrap = document.getElementById('video-progress');
+        const progressBar = document.getElementById('video-progress-bar');
+        const progressPct = document.getElementById('video-progress-pct');
+        const progressLabel = document.getElementById('video-progress-label');
+        const errorEl = document.getElementById('video-error');
+        const successEl = document.getElementById('video-success');
+        const currentSection = document.getElementById('video-current');
+        const uploadArea = document.getElementById('video-upload-area');
+        const currentVideo = document.getElementById('video-preview-current');
+
+        // Drag & drop
+        if (dropzone) {
+            dropzone.addEventListener('click', () => fileInput.click());
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.style.borderColor = '#3B82F6';
+                dropzone.style.background = '#eff6ff';
+            });
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.style.borderColor = '#d1d5db';
+                dropzone.style.background = '#f9fafb';
+            });
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.style.borderColor = '#d1d5db';
+                dropzone.style.background = '#f9fafb';
+                if (e.dataTransfer.files.length) {
+                    handleFileSelect(e.dataTransfer.files[0]);
+                }
+            });
+        }
+
+        if (fileInput) {
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length) {
+                    handleFileSelect(fileInput.files[0]);
+                }
+            });
+        }
+
+        function showError(msg) {
+            errorEl.textContent = msg;
+            errorEl.style.display = 'block';
+            successEl.style.display = 'none';
+        }
+
+        function hideMessages() {
+            errorEl.style.display = 'none';
+            successEl.style.display = 'none';
+        }
+
+        function handleFileSelect(file) {
+            hideMessages();
+
+            // Проверка типа
+            if (file.type !== 'video/mp4') {
+                showError('Допустимый формат: MP4. Выбранный файл: ' + file.type);
+                return;
+            }
+
+            // Проверка размера
+            if (file.size > MAX_SIZE) {
+                showError('Файл слишком большой: ' + formatSize(file.size) + '. Максимум: 50 МБ.');
+                return;
+            }
+
+            selectedFile = file;
+
+            // Показать превью
+            const url = URL.createObjectURL(file);
+            previewVideo.src = url;
+            previewContainer.style.display = 'block';
+            dropzone.style.display = 'none';
+
+            // Проверка длительности после загрузки метаданных
+            previewVideo.onloadedmetadata = function() {
+                const duration = Math.round(previewVideo.duration);
+                metaEl.textContent = 'Размер: ' + formatSize(file.size) + ' | Длительность: ' + duration + ' сек';
+
+                if (duration > MAX_DURATION) {
+                    showError('Видео слишком длинное: ' + duration + ' сек. Максимум: ' + MAX_DURATION + ' сек.');
+                    uploadBtn.style.display = 'none';
+                } else {
+                    uploadBtn.style.display = 'inline-flex';
+                }
+            };
+
+            cancelBtn.style.display = 'inline-flex';
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' КБ';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' МБ';
+        }
+
+        // Отмена выбора файла
+        window.videoCancelSelect = function() {
+            selectedFile = null;
+            fileInput.value = '';
+            previewVideo.src = '';
+            previewContainer.style.display = 'none';
+            dropzone.style.display = 'block';
+            uploadBtn.style.display = 'none';
+            cancelBtn.style.display = 'none';
+            progressWrap.style.display = 'none';
+            hideMessages();
+        };
+
+        // Загрузить видео
+        window.videoUpload = async function() {
+            if (!selectedFile) return;
+            hideMessages();
+
+            // 1. Получить presigned URL
+            progressWrap.style.display = 'block';
+            progressLabel.textContent = 'Подготовка...';
+            progressBar.style.width = '0%';
+            progressPct.textContent = '0%';
+            uploadBtn.style.display = 'none';
+            cancelBtn.style.display = 'none';
+
+            let presignData;
+            try {
+                const resp = await fetch("{% url 'video_presigned_url' %}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+                    body: JSON.stringify({
+                        content_type: selectedFile.type,
+                        file_size: selectedFile.size
+                    })
+                });
+                presignData = await resp.json();
+                if (!resp.ok) {
+                    showError(presignData.error || 'Ошибка при получении ссылки');
+                    resetUploadUI();
+                    return;
+                }
+            } catch (e) {
+                showError('Ошибка сети. Проверьте соединение.');
+                resetUploadUI();
+                return;
+            }
+
+            // 2. Загрузка в S3/R2 через PUT с XMLHttpRequest (для прогресса)
+            progressLabel.textContent = 'Загрузка видео...';
+            try {
+                await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('PUT', presignData.upload_url, true);
+                    xhr.setRequestHeader('Content-Type', selectedFile.type);
+
+                    xhr.upload.onprogress = function(e) {
+                        if (e.lengthComputable) {
+                            const pct = Math.round((e.loaded / e.total) * 100);
+                            progressBar.style.width = pct + '%';
+                            progressPct.textContent = pct + '%';
+                        }
+                    };
+
+                    xhr.onload = function() {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            resolve();
+                        } else {
+                            reject(new Error('Upload failed: ' + xhr.status));
+                        }
+                    };
+                    xhr.onerror = () => reject(new Error('Network error'));
+                    xhr.send(selectedFile);
+                });
+            } catch (e) {
+                showError('Ошибка при загрузке видео. Попробуйте снова.');
+                resetUploadUI();
+                return;
+            }
+
+            // 3. Сохранить URL в Django
+            progressLabel.textContent = 'Сохранение...';
+            progressBar.style.width = '100%';
+            progressPct.textContent = '100%';
+
+            try {
+                const saveResp = await fetch("{% url 'video_save' %}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+                    body: JSON.stringify({ file_url: presignData.file_url })
+                });
+                const saveData = await saveResp.json();
+                if (!saveResp.ok) {
+                    showError(saveData.error || 'Ошибка сохранения');
+                    resetUploadUI();
+                    return;
+                }
+            } catch (e) {
+                showError('Ошибка сети при сохранении.');
+                resetUploadUI();
+                return;
+            }
+
+            // Успех — показать текущее видео
+            progressWrap.style.display = 'none';
+            successEl.style.display = 'block';
+            currentVideo.src = presignData.file_url;
+            currentSection.style.display = 'block';
+            uploadArea.style.display = 'none';
+            selectedFile = null;
+            fileInput.value = '';
+        };
+
+        function resetUploadUI() {
+            progressWrap.style.display = 'none';
+            uploadBtn.style.display = 'inline-flex';
+            cancelBtn.style.display = 'inline-flex';
+        }
+
+        // Заменить видео
+        window.videoStartReplace = function() {
+            currentSection.style.display = 'none';
+            uploadArea.style.display = 'block';
+            videoCancelSelect();
+        };
+
+        // Удалить видео
+        window.videoDelete = async function() {
+            if (!confirm('Вы уверены, что хотите удалить видео-визитку?')) return;
+
+            try {
+                const resp = await fetch("{% url 'video_delete' %}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF }
+                });
+                const data = await resp.json();
+                if (resp.ok) {
+                    currentVideo.src = '';
+                    currentSection.style.display = 'none';
+                    uploadArea.style.display = 'block';
+                    videoCancelSelect();
+                } else {
+                    alert(data.error || 'Ошибка удаления');
+                }
+            } catch (e) {
+                alert('Ошибка сети');
+            }
+        };
+    })();
 </script>
 {% endblock %}

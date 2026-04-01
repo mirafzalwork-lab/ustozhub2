@@ -1797,7 +1797,22 @@
                 </h2>
                 <p class="bio-text">{{ teacher.bio }}</p>
             </div>
-            
+
+            {% if teacher.video_url %}
+            <!-- Видео-визитка -->
+            <div class="content-card">
+                <h2 class="card-title">
+                    <i class="fas fa-video"></i>
+                    {% trans 'Видео-визитка' %}
+                </h2>
+                <video controls playsinline preload="metadata"
+                       style="width: 100%; border-radius: 12px; background: #000; max-height: 480px;"
+                       src="{{ teacher.video_url }}">
+                    {% trans 'Ваш браузер не поддерживает воспроизведение видео.' %}
+                </video>
+            </div>
+            {% endif %}
+
             <!-- Subjects & Prices -->
             <div class="content-card">
                 <h2 class="card-title">

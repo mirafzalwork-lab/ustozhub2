@@ -38,3 +38,4 @@ whitenoise==6.5.0
 zope.interface==8.1.1
 django-allauth>=65.0,<66.0
 PyJWT[crypto]>=2.0
+boto3>=1.35.0

@@ -266,6 +266,22 @@ class Step2AccountSecurityForm(UserCreationForm):
                 raise ValidationError('Ошибка при проверке email')
         return email
 
+    def clean_password1(self):
+        """Allow empty password for Google users."""
+        password1 = self.cleaned_data.get('password1')
+        if not self.fields['password1'].required and not password1:
+            return password1
+        return super().clean_password1() if hasattr(super(), 'clean_password1') else password1
+
+    def clean_password2(self):
+        """Allow empty password for Google users."""
+        password1 = self.cleaned_data.get('password1')
+        password2 = self.cleaned_data.get('password2')
+        # If password is optional (Google user) and both are empty — skip validation
+        if not self.fields['password1'].required and not password1 and not password2:
+            return password2
+        return super().clean_password2()
+
 
 class Step3EducationExperienceForm(forms.Form):
     """
@@ -744,3 +760,16 @@ class Step6CertificatesForm(forms.ModelForm):
                 raise ValidationError('Ошибка при проверке файла сертификата')
         
         return file
+
+
+class Step7VideoForm(forms.Form):
+    """
+    STEP 7: Video Business Card (Optional)
+    Video is uploaded directly to S3/R2 via presigned URL from the frontend.
+    This form only captures the resulting public URL.
+    """
+    video_url = forms.URLField(
+        max_length=500,
+        required=False,
+        widget=forms.HiddenInput(attrs={'id': 'id_video_url'}),
+    )
