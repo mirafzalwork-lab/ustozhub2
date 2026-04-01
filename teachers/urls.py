@@ -1,7 +1,8 @@
 from django.urls import path
+from allauth.socialaccount.providers.google.views import oauth2_login as google_login_view
 from .views import (
-    home, detail, student_detail, 
-    profile_view, profile_edit, 
+    home, detail, student_detail,
+    profile_view, profile_edit,
     login_view, students_list, logout_view, register_choose, register_student,
     teacher_profile_edit, student_profile_edit, toggle_profile_status,
     toggle_favorite_teacher, toggle_favorite_student,
@@ -18,7 +19,9 @@ from .views import (
     notifications_list, notification_detail, mark_notification_read,
     mark_all_notifications_read, notifications_dropdown,
     # Badge counts API
-    badge_counts
+    badge_counts,
+    # Google OAuth2 role completion
+    google_complete_student, google_complete_teacher, google_student_onboarding,
 )
 from .telegram_views import (
     telegram_auth, link_telegram_account, telegram_status, toggle_notifications
@@ -93,4 +96,10 @@ urlpatterns = [
 
     # Badge counts API (для real-time обновления badge)
     path('api/badge-counts/', badge_counts, name='badge_counts'),
+
+    # Google OAuth2
+    path('auth/google/', google_login_view, name='google_login'),
+    path('google/complete/student/', google_complete_student, name='google_complete_student'),
+    path('google/complete/teacher/', google_complete_teacher, name='google_complete_teacher'),
+    path('google/onboarding/student/', google_student_onboarding, name='google_student_onboarding'),
 ]

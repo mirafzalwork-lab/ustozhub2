@@ -28,8 +28,8 @@ from .models import (
     SubjectCategory, SubjectSearchLog, Notification, NotificationRead,
 )
 from .forms import (
-    TeacherRegistrationForm, 
-    TeacherSubjectsForm, 
+    TeacherRegistrationForm,
+    TeacherSubjectsForm,
     CertificateUploadForm,
     MessageForm,
     LoginForm,
@@ -37,7 +37,8 @@ from .forms import (
     TeacherProfileEditForm,
     StudentProfileEditForm,
     UserProfileEditForm,
-    TeacherSubjectEditForm
+    TeacherSubjectEditForm,
+    GoogleStudentOnboardingForm,
 )
 
 def _safe_int(value, default=None):
@@ -889,15 +890,37 @@ def logout_view(request):
 def register_choose(request):
     """Выбор типа регистрации"""
     if request.user.is_authenticated:
-        return redirect('home')
-    
+        # Разрешаем доступ пользователям без профиля (после Google login)
+        has_profile = False
+        try:
+            _ = request.user.teacher_profile.pk
+            has_profile = True
+        except Exception:
+            pass
+        try:
+            _ = request.user.student_profile.pk
+            has_profile = True
+        except Exception:
+            pass
+
+        if has_profile:
+            return redirect('home')
+
     return render(request, 'logic/register_choose.html')
 
 
 def register_student(request):
     """Регистрация ученика"""
     if request.user.is_authenticated:
-        return redirect('home')
+        # Разрешаем доступ Google-пользователям без профиля студента
+        has_student = False
+        try:
+            _ = request.user.student_profile.pk
+            has_student = True
+        except Exception:
+            pass
+        if has_student:
+            return redirect('home')
     
     if request.method == 'POST':
         form = StudentRegistrationForm(request.POST)
@@ -2153,5 +2176,111 @@ def badge_counts(request):
     })
 
 
+# =============================================================================
+# GOOGLE OAUTH2: Onboarding после Google Login
+# =============================================================================
+
+def _has_any_profile(user):
+    """Проверяет, есть ли у пользователя хотя бы один профиль."""
+    try:
+        _ = user.teacher_profile.pk
+        return True
+    except Exception:
+        pass
+    try:
+        _ = user.student_profile.pk
+        return True
+    except Exception:
+        pass
+    return False
+
+
+@login_required
+def google_student_onboarding(request):
+    """
+    Минимальная форма onboarding для студента после Google login.
+    Поля: имя, интересующие предметы.
+    Создаёт StudentProfile для уже существующего User.
+    """
+    user = request.user
+
+    if _has_any_profile(user):
+        return redirect('home')
+
+    if request.method == 'POST':
+        form = GoogleStudentOnboardingForm(request.POST)
+        if form.is_valid():
+            # Обновляем имя пользователя
+            user.first_name = form.cleaned_data['first_name']
+            user.last_name = form.cleaned_data.get('last_name', '')
+            user.user_type = 'student'
+            user.save(update_fields=['first_name', 'last_name', 'user_type'])
+
+            # Создаём профиль студента
+            student_profile = StudentProfile.objects.create(
+                user=user,
+                is_active=True,
+            )
+
+            # Устанавливаем интересы
+            interests = form.cleaned_data['interests']
+            student_profile.interests.set(interests)
+            student_profile.desired_subjects.set(interests)
+
+            messages.success(
+                request,
+                'Добро пожаловать! Мы подберём для вас подходящих учителей.'
+            )
+
+            # Редирект на home с поиском по первому предмету
+            first_subject = interests.first()
+            if first_subject:
+                return redirect(f'{reverse("home")}?search={first_subject.name}')
+            return redirect('home')
+    else:
+        form = GoogleStudentOnboardingForm(initial={
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+        })
+
+    return render(request, 'logic/google_student_onboarding.html', {'form': form})
+
+
+@login_required
+@require_POST
+def google_complete_student(request):
+    """POST-shortcut: выбор роли student → редирект на onboarding форму."""
+    if _has_any_profile(request.user):
+        return redirect('home')
+    return redirect('google_student_onboarding')
+
+
+@login_required
+@require_POST
+def google_complete_teacher(request):
+    """
+    Подготавливает Google-пользователя к регистрации как учитель.
+    Удаляет заглушку и перенаправляет на wizard.
+    """
+    user = request.user
+
+    if _has_any_profile(user):
+        messages.info(request, 'У вас уже есть профиль')
+        return redirect('home')
+
+    # Сохраняем данные Google-пользователя в сессию перед удалением
+    google_email = user.email
+    google_first_name = user.first_name
+    google_last_name = user.last_name
+
+    # Выход и удаление заглушки — wizard создаст полноценного учителя
+    logout(request)
+    try:
+        user.delete()
+        logger.info(f"Google stub user deleted before teacher wizard: {google_email}")
+    except Exception as e:
+        logger.error(f"Error deleting Google stub user: {e}")
+
+    return redirect('teacher_register')
 
 

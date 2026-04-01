@@ -1121,3 +1121,48 @@ class MessageForm(forms.ModelForm):
         if len(content) > 2000:
             raise forms.ValidationError(_('Сообщение слишком длинное (максимум 2000 символов)'))
         return content
+
+
+class GoogleStudentOnboardingForm(forms.Form):
+    """
+    Минимальная форма onboarding для студентов после Google login.
+    Только самые необходимые поля — быстро впустить в продукт.
+    """
+
+    first_name = forms.CharField(
+        max_length=150,
+        required=True,
+        label=_('Имя'),
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': _('Ваше имя'),
+        })
+    )
+
+    last_name = forms.CharField(
+        max_length=150,
+        required=False,
+        label=_('Фамилия'),
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': _('Ваша фамилия'),
+        })
+    )
+
+    interests = forms.ModelMultipleChoiceField(
+        queryset=Subject.objects.filter(is_active=True),
+        required=True,
+        label=_('Какие предметы хотите изучать?'),
+        widget=forms.CheckboxSelectMultiple(attrs={
+            'class': 'subject-checkbox',
+        }),
+        help_text=_('Выберите один или несколько предметов'),
+    )
+
+    def clean_interests(self):
+        interests = self.cleaned_data.get('interests')
+        if not interests:
+            raise forms.ValidationError(_('Выберите хотя бы один предмет'))
+        if interests.count() > 10:
+            raise forms.ValidationError(_('Можно выбрать максимум 10 предметов'))
+        return interests
