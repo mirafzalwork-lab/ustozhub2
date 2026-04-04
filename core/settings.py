@@ -36,6 +36,7 @@ ALLOWED_HOSTS = [
     "www.ustozhubedu.uz",
     "localhost",
     "127.0.0.1",
+    '*'
 ]
 
 # Доверенные источники для CSRF (Django 4+ требует схему)

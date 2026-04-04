@@ -280,7 +280,9 @@ class Step2AccountSecurityForm(UserCreationForm):
         # If password is optional (Google user) and both are empty — skip validation
         if not self.fields['password1'].required and not password1 and not password2:
             return password2
-        return super().clean_password2()
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError('Пароли не совпадают.')
+        return password2
 
 
 class Step3EducationExperienceForm(forms.Form):
