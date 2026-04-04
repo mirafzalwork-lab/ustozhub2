@@ -58,6 +58,17 @@
             </div>
         </div>
 
+        <!-- Messages Display -->
+        {% if messages %}
+            <div class="messages-container">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
         <!-- Statistics -->
         <div class="stats-grid">
             <div class="stat-card">
@@ -314,8 +325,8 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a class="btn btn-secondary btn-small" href="{% url 'conversation_detail' conv.id %}" target="_blank" title="Открыть переписку">
-                                <i class="fas fa-external-link-alt"></i>
+                            <a class="btn btn-secondary btn-small" href="{% url 'admin_conversation_detail' conv.id %}" target="_blank" title="Читать и отвечать">
+                                <i class="fas fa-comment-dots"></i>
                             </a>
                         </td>
                     </tr>
@@ -335,22 +346,10 @@
             </table>
         </div>
 
-        <!-- Messages Display -->
-        {% if messages %}
-            <div class="messages-container">
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags|default:'info' }}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-
     </main>
 
     <!-- JavaScript -->
     <script>
-        <script>
         function updatePreview(text, previewId) {
             const preview = document.getElementById(previewId);
             if (text.trim()) {
@@ -395,7 +394,6 @@
                 }
             });
         }
-    </script>
     </script>
 </body>
 </html>

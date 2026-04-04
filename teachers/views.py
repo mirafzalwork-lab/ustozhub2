@@ -441,7 +441,8 @@ def admin_dashboard(request):
     recent_messages = Message.objects.select_related(
         'sender',
         'conversation__teacher__user',
-        'conversation__student'
+        'conversation__student',
+        'conversation',
     ).order_by('-created_at')[:15]
     
     # ========== ПОСЛЕДНИЕ РЕГИСТРАЦИИ ==========
@@ -1879,6 +1880,59 @@ def send_individual_message(request):
         messages.error(request, f'Ошибка: {str(e)}')
     
     return redirect('telegram_management')
+
+
+@staff_member_required
+@require_POST
+def admin_toggle_telegram_notifications(request, user_id):
+    """Переключение уведомлений Telegram-пользователя из админки"""
+    tg_user = get_object_or_404(TelegramUser, id=user_id)
+    try:
+        tg_user.notifications_enabled = not tg_user.notifications_enabled
+        tg_user.save(update_fields=['notifications_enabled'])
+        return JsonResponse({
+            'success': True,
+            'notifications_enabled': tg_user.notifications_enabled,
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@staff_member_required
+def admin_conversation_detail(request, conversation_id):
+    """Admin view: read full conversation + send messages."""
+    conversation = get_object_or_404(
+        Conversation.objects.select_related('teacher__user', 'student', 'subject'),
+        id=conversation_id
+    )
+    messages_qs = conversation.messages.select_related('sender').order_by('created_at')
+
+    if request.method == 'POST':
+        content = request.POST.get('content', '').strip()
+        send_as = request.POST.get('send_as', '')  # user id to send as
+        if content:
+            if send_as:
+                from .models import User
+                sender = get_object_or_404(User, pk=send_as)
+            else:
+                sender = request.user
+            Message.objects.create(
+                conversation=conversation,
+                sender=sender,
+                content=content,
+            )
+            conversation.save(update_fields=['updated_at'])
+            from django.contrib import messages as django_messages
+            django_messages.success(request, f'Сообщение отправлено от имени {sender.get_full_name() or sender.username}')
+            return redirect('admin_conversation_detail', conversation_id=conversation.id)
+
+    context = {
+        'conversation': conversation,
+        'messages_list': messages_qs,
+        'teacher_user': conversation.teacher.user,
+        'student_user': conversation.student,
+    }
+    return render(request, 'admin/admin_conversation_detail.html', context)
 
 
 @staff_member_required

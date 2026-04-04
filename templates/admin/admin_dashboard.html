@@ -8,6 +8,27 @@
     <title>Admin Dashboard - UstozHub</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'teachers/admin.css' %}">
+    <style>
+        .quick-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:30px}
+        .qa-btn{display:flex;align-items:center;gap:10px;padding:14px 18px;background:#fff;border:2px solid #e0e0e0;border-radius:10px;text-decoration:none;color:#1a1a1a;font-size:14px;font-weight:600;transition:all .2s}
+        .qa-btn:hover{border-color:#FC7702;background:#FFF7ED;transform:translateY(-2px)}
+        .qa-btn i{font-size:18px;width:22px;text-align:center}
+        .qa-btn .qa-count{margin-left:auto;background:#f0f1f3;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:700}
+        .qa-btn.danger{border-color:#FCA5A5;background:#FEF2F2}
+        .qa-btn.danger:hover{border-color:#EF4444;background:#FEE2E2}
+        .tg-quick{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:30px}
+        .tg-quick-title{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+        .tg-quick-form{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+        .tg-quick-form textarea{flex:1;min-width:300px;border:2px solid #e0e0e0;border-radius:8px;padding:10px 14px;font-size:14px;font-family:inherit;resize:vertical;min-height:50px}
+        .tg-quick-form textarea:focus{outline:none;border-color:#0088cc}
+        .tg-quick-form select{border:2px solid #e0e0e0;border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit}
+        .tg-quick-form button{background:#0088cc;color:#fff;border:none;border-radius:8px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px}
+        .tg-quick-form button:hover{background:#006fa3}
+        .conv-link{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#f0f1f3;border-radius:6px;font-size:12px;text-decoration:none;color:#1a1a1a;font-weight:500;transition:all .2s}
+        .conv-link:hover{background:#FC7702;color:#fff}
+        .profile-link{color:#1a1a1a;text-decoration:none;font-weight:600;transition:color .2s}
+        .profile-link:hover{color:#FC7702}
+    </style>
 </head>
 <body>
     <!-- SIDEBAR -->
@@ -15,31 +36,29 @@
         <div class="sidebar-logo">
             <img src="{% static 'logo/new_logo.png' %}" alt="UstozHub" style="height: 32px; width: auto;">
         </div>
-            
         <ul class="sidebar-menu">
             <li><a href="{% url 'admin_dashboard' %}" class="active"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
-            <li><a href="#teachers"><i class="fas fa-chalkboard-teacher"></i> <span>Учителя</span></a></li>
-            <li><a href="#students"><i class="fas fa-user-graduate"></i> <span>Ученики</span></a></li>
             <li><a href="{% url 'admin_messages' %}"><i class="fas fa-comments"></i> <span>Сообщения</span></a></li>
-            <li><a href="{% url 'telegram_management' %}"><i class="fab fa-telegram"></i> <span>Telegram пользователи</span></a></li>
-            <li><a href="#moderation"><i class="fas fa-check-circle"></i> <span>Модерация</span></a></li>
-            <li><a href="#stats"><i class="fas fa-chart-line"></i> <span>Статистика</span></a></li>
+            <li><a href="{% url 'telegram_management' %}"><i class="fab fa-telegram"></i> <span>Telegram</span></a></li>
+            <li><a href="/admin/teachers/teacherprofile/?moderation_status__exact=pending"><i class="fas fa-check-circle"></i> <span>Модерация</span></a></li>
             <li><a href="{% url 'home' %}"><i class="fas fa-globe"></i> <span>На сайт</span></a></li>
             <li><a href="/admin/"><i class="fas fa-cog"></i> <span>Django Admin</span></a></li>
             <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> <span>Выход</span></a></li>
         </ul>
     </aside>
-    
+
     <!-- TOP NAVBAR -->
     <header class="topbar">
         <div class="topbar-left">
-            <h1>📊 Admin Dashboard</h1>
-                </div>
+            <h1>Admin Dashboard</h1>
+        </div>
         <div class="topbar-right">
-            <div class="notification-icon">
+            {% if pending_teachers > 0 %}
+            <div class="notification-icon" onclick="document.getElementById('moderation').scrollIntoView({behavior:'smooth'})">
                 <i class="fas fa-bell"></i>
                 <span class="notification-badge">{{ pending_teachers }}</span>
             </div>
+            {% endif %}
             <div class="user-profile">
                 <div class="user-avatar">{{ request.user.first_name.0|upper }}</div>
                 <div class="user-info">
@@ -49,131 +68,137 @@
             </div>
         </div>
     </header>
-    
+
     <!-- MAIN CONTENT -->
     <main class="main-content">
+
+        {% if messages %}
+        {% for message in messages %}
+        <div style="padding:12px 16px;border-radius:8px;margin-bottom:12px;font-size:14px;{% if message.tags == 'success' %}background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7{% elif message.tags == 'error' %}background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5{% else %}background:#DBEAFE;color:#1E40AF;border:1px solid #93C5FD{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <!-- QUICK ACTIONS -->
+        <div class="quick-actions">
+            <a href="{% url 'admin_messages' %}" class="qa-btn">
+                <i class="fas fa-comments"></i> Переписки
+                <span class="qa-count">{{ active_conversations }}</span>
+            </a>
+            <a href="{% url 'telegram_management' %}" class="qa-btn">
+                <i class="fab fa-telegram"></i> TG Рассылка
+                <span class="qa-count">{{ telegram_active }}</span>
+            </a>
+            <a href="/admin/teachers/teacherprofile/?moderation_status__exact=pending" class="qa-btn {% if pending_teachers > 0 %}danger{% endif %}">
+                <i class="fas fa-user-check"></i> Модерация
+                <span class="qa-count">{{ pending_teachers }}</span>
+            </a>
+            <a href="{% url 'students_list' %}" class="qa-btn">
+                <i class="fas fa-user-graduate"></i> Ученики
+                <span class="qa-count">{{ total_students }}</span>
+            </a>
+            <a href="{% url 'home' %}" class="qa-btn">
+                <i class="fas fa-chalkboard-teacher"></i> Учителя
+                <span class="qa-count">{{ total_teachers }}</span>
+            </a>
+            <a href="/admin/" class="qa-btn">
+                <i class="fas fa-cog"></i> Django Admin
+            </a>
+        </div>
+
+        <!-- QUICK TELEGRAM BROADCAST -->
+        <div class="tg-quick">
+            <div class="tg-quick-title"><i class="fab fa-telegram" style="color:#0088cc"></i> Быстрая рассылка Telegram</div>
+            <form class="tg-quick-form" method="POST" action="{% url 'send_broadcast_message' %}" onsubmit="return confirm('Отправить сообщение выбранной группе?')">
+                {% csrf_token %}
+                <textarea name="message" placeholder="Введите сообщение для рассылки..." required></textarea>
+                <select name="recipients">
+                    <option value="all">Всем ({{ telegram_active }})</option>
+                    <option value="teachers">Учителям</option>
+                    <option value="students">Ученикам</option>
+                </select>
+                <button type="submit"><i class="fab fa-telegram"></i> Отправить</button>
+            </form>
+        </div>
+
         <!-- OVERVIEW METRICS -->
         <div class="metrics-grid">
-            <!-- Учителя -->
             <div class="metric-card">
                 <div class="metric-header">
                     <div class="metric-title">Учителя</div>
-                    <div class="metric-icon primary">
-                        <i class="fas fa-chalkboard-teacher"></i>
-                    </div>
+                    <div class="metric-icon primary"><i class="fas fa-chalkboard-teacher"></i></div>
                 </div>
                 <div class="metric-value">{{ total_teachers }}</div>
-                <div class="metric-label">всего • {{ active_teachers }} активных</div>
-                <div class="metric-trend">
-                    <i class="fas fa-arrow-up"></i> +{{ new_teachers_week }} за неделю
-                </div>
+                <div class="metric-label">всего | {{ active_teachers }} активных</div>
+                <div class="metric-trend"><i class="fas fa-arrow-up"></i> +{{ new_teachers_week }} за неделю</div>
             </div>
-            
-            <!-- Ученики -->
             <div class="metric-card">
                 <div class="metric-header">
                     <div class="metric-title">Ученики</div>
-                    <div class="metric-icon accent">
-                        <i class="fas fa-user-graduate"></i>
-                    </div>
+                    <div class="metric-icon accent"><i class="fas fa-user-graduate"></i></div>
                 </div>
                 <div class="metric-value">{{ total_students }}</div>
-                <div class="metric-label">всего • {{ active_students }} активных</div>
-                <div class="metric-trend">
-                    <i class="fas fa-arrow-up"></i> +{{ new_students_week }} за неделю
-                </div>
+                <div class="metric-label">всего | {{ active_students }} активных</div>
+                <div class="metric-trend"><i class="fas fa-arrow-up"></i> +{{ new_students_week }} за неделю</div>
             </div>
-            
-            <!-- Сообщения -->
             <div class="metric-card">
                 <div class="metric-header">
                     <div class="metric-title">Сообщения</div>
-                    <div class="metric-icon primary">
-                        <i class="fas fa-comments"></i>
-                    </div>
+                    <div class="metric-icon primary"><i class="fas fa-comments"></i></div>
                 </div>
                 <div class="metric-value">{{ total_messages }}</div>
-                <div class="metric-label">всего сообщений</div>
-                <div class="metric-trend">
-                    <i class="fas fa-clock"></i> {{ messages_today }} сегодня
-                </div>
+                <div class="metric-label">всего | {{ unread_messages }} непрочитанных</div>
+                <div class="metric-trend"><i class="fas fa-clock"></i> {{ messages_today }} сегодня</div>
             </div>
-            
-            <!-- Активные переписки -->
-            <div class="metric-card">
-                <div class="metric-header">
-                    <div class="metric-title">Переписки</div>
-                    <div class="metric-icon accent">
-                        <i class="fas fa-comment-dots"></i>
-                    </div>
-                </div>
-                <div class="metric-value">{{ active_conversations }}</div>
-                <div class="metric-label">активных за неделю</div>
-                <div class="metric-trend">
-                    <i class="fas fa-envelope"></i> {{ unread_messages }} непрочитанных
-                </div>
-            </div>
-            
-            <!-- Просмотры профилей -->
             <div class="metric-card">
                 <div class="metric-header">
                     <div class="metric-title">Просмотры</div>
-                    <div class="metric-icon primary">
-                        <i class="fas fa-eye"></i>
-                    </div>
+                    <div class="metric-icon accent"><i class="fas fa-eye"></i></div>
                 </div>
                 <div class="metric-value" id="viewsCount">{{ profile_views_month }}</div>
                 <div class="metric-label" id="viewsLabel">за месяц</div>
-                <div style="display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap;">
-                    <button class="filter-btn active" style="padding: 4px 10px; font-size: 11px;" onclick="updateViews({{ profile_views_month }}, 'за месяц', this)">Месяц</button>
-                    <button class="filter-btn" style="padding: 4px 10px; font-size: 11px;" onclick="updateViews({{ profile_views_week }}, 'за неделю', this)">Неделя</button>
-                    <button class="filter-btn" style="padding: 4px 10px; font-size: 11px;" onclick="updateViews({{ profile_views_today }}, 'сегодня', this)">Сегодня</button>
+                <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">
+                    <button class="filter-btn active" style="padding:4px 10px;font-size:11px" onclick="updateViews({{ profile_views_month }},'за месяц',this)">Месяц</button>
+                    <button class="filter-btn" style="padding:4px 10px;font-size:11px" onclick="updateViews({{ profile_views_week }},'за неделю',this)">Неделя</button>
+                    <button class="filter-btn" style="padding:4px 10px;font-size:11px" onclick="updateViews({{ profile_views_today }},'сегодня',this)">Сегодня</button>
                 </div>
             </div>
-            
-            <!-- Модерация -->
             <div class="metric-card">
                 <div class="metric-header">
                     <div class="metric-title">Модерация</div>
-                    <div class="metric-icon accent">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
+                    <div class="metric-icon accent"><i class="fas fa-check-circle"></i></div>
                 </div>
                 <div class="metric-value">{{ pending_teachers }}</div>
                 <div class="metric-label">на модерации</div>
-                <div class="metric-trend">
-                    <i class="fas fa-check"></i> {{ approved_teachers }} одобрено
-                </div>
+                <div class="metric-trend"><i class="fas fa-check"></i> {{ approved_teachers }} одобрено</div>
             </div>
-            
-            <!-- Отзывы -->
             <div class="metric-card">
                 <div class="metric-header">
                     <div class="metric-title">Отзывы</div>
-                    <div class="metric-icon primary">
-                        <i class="fas fa-star"></i>
-                    </div>
+                    <div class="metric-icon primary"><i class="fas fa-star"></i></div>
                 </div>
                 <div class="metric-value">{{ total_reviews }}</div>
                 <div class="metric-label">всего отзывов</div>
-                <div class="metric-trend">
-                    <i class="fas fa-plus"></i> {{ reviews_week }} за неделю
-                </div>
+                <div class="metric-trend"><i class="fas fa-plus"></i> {{ reviews_week }} за неделю</div>
             </div>
-            
-            <!-- Telegram -->
             <div class="metric-card">
                 <div class="metric-header">
                     <div class="metric-title">Telegram бот</div>
-                    <div class="metric-icon accent">
-                        <i class="fab fa-telegram"></i>
-                    </div>
+                    <div class="metric-icon accent"><i class="fab fa-telegram"></i></div>
                 </div>
                 <div class="metric-value">{{ telegram_users }}</div>
                 <div class="metric-label">пользователей бота</div>
-                <div class="metric-trend">
-                    <i class="fas fa-bell"></i> {{ telegram_active }} с уведомлениями
+                <div class="metric-trend"><i class="fas fa-bell"></i> {{ telegram_active }} с уведомлениями</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-title">Переписки</div>
+                    <div class="metric-icon primary"><i class="fas fa-comment-dots"></i></div>
                 </div>
+                <div class="metric-value">{{ active_conversations }}</div>
+                <div class="metric-label">активных за неделю</div>
+                <div class="metric-trend"><i class="fas fa-envelope"></i> {{ messages_week }} сообщений</div>
             </div>
         </div>
 
@@ -181,7 +206,7 @@
         {% if pending_teachers_list %}
         <div class="section-card" id="moderation">
             <div class="section-header">
-                <h3>⏳ Учителя на модерации</h3>
+                <h3>Учителя на модерации</h3>
                 <span class="section-badge">{{ pending_teachers }}</span>
             </div>
             <div class="items-list">
@@ -190,23 +215,30 @@
                     <div class="item-left">
                         <div class="item-icon">
                             {% if teacher.user.avatar %}
-                                <img src="{{ teacher.user.avatar.url }}" alt="{{ teacher.user.get_full_name }}" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover;">
+                                <img src="{{ teacher.user.avatar.url }}" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:cover">
                             {% else %}
                                 <i class="fas fa-user-circle"></i>
                             {% endif %}
                         </div>
                         <div class="item-info">
-                            <div class="item-name">{{ teacher.user.get_full_name|default:teacher.user.username }}</div>
+                            <div class="item-name">
+                                <a href="{% url 'teacher_detail' teacher.id %}" class="profile-link" target="_blank">
+                                    {{ teacher.user.get_full_name|default:teacher.user.username }}
+                                </a>
+                            </div>
                             <div class="item-date">
-                                {{ teacher.get_subjects_display|default:"Без предметов" }} • 
-                                {{ teacher.experience_years }} лет опыта • 
+                                {{ teacher.get_subjects_display|default:"Без предметов" }} |
+                                {{ teacher.experience_years }} лет опыта |
                                 {{ teacher.created_at|date:"d.m.Y H:i" }}
                             </div>
                         </div>
                     </div>
                     <div class="item-actions">
+                        <a href="{% url 'teacher_detail' teacher.id %}" class="action-btn" target="_blank">
+                            <i class="fas fa-eye"></i> Профиль
+                        </a>
                         <a href="/admin/teachers/teacherprofile/{{ teacher.id }}/change/" class="action-btn primary" target="_blank">
-                            <i class="fas fa-eye"></i> Просмотр
+                            <i class="fas fa-edit"></i> Модерация
                         </a>
                     </div>
                 </div>
@@ -216,10 +248,12 @@
         {% endif %}
 
         <!-- ПОСЛЕДНИЕ СООБЩЕНИЯ -->
-        <div class="section-card" id="messages">
+        <div class="section-card" id="messages-section">
             <div class="section-header">
-                <h3>💬 Последние сообщения</h3>
-                <span class="section-badge">{{ messages_week }} за неделю</span>
+                <h3>Последние сообщения</h3>
+                <a href="{% url 'admin_messages' %}" class="action-btn" style="font-size:13px">
+                    <i class="fas fa-external-link-alt"></i> Все переписки
+                </a>
             </div>
             <div class="items-list">
                 {% for message in recent_messages %}
@@ -232,18 +266,23 @@
                             <div class="item-name">
                                 <strong>{{ message.sender.get_full_name|default:message.sender.username }}</strong>
                                 {% if message.sender.user_type == 'teacher' %}
-                                    <span style="color: #FC7702; font-size: 12px;">→</span>
+                                    <span style="color:#FC7702;font-size:12px">-></span>
                                     {{ message.conversation.student.get_full_name }}
                                 {% else %}
-                                    <span style="color: #FC7702; font-size: 12px;">→</span>
+                                    <span style="color:#3B82F6;font-size:12px">-></span>
                                     {{ message.conversation.teacher.user.get_full_name }}
                                 {% endif %}
                             </div>
                             <div class="item-date">
-                                {{ message.content|truncatewords:15 }} • {{ message.created_at|date:"d.m.Y H:i" }}
-                                {% if not message.is_read %}<span style="color: #FC7702; font-weight: 600;">• NEW</span>{% endif %}
+                                {{ message.content|truncatewords:15 }} | {{ message.created_at|date:"d.m.Y H:i" }}
+                                {% if not message.is_read %}<span style="color:#FC7702;font-weight:600"> NEW</span>{% endif %}
                             </div>
                         </div>
+                    </div>
+                    <div class="item-actions">
+                        <a href="{% url 'admin_conversation_detail' message.conversation.id %}" class="conv-link" title="Открыть переписку">
+                            <i class="fas fa-comment-dots"></i> Читать
+                        </a>
                     </div>
                 </div>
                 {% empty %}
@@ -253,37 +292,39 @@
         </div>
 
         <!-- ПОСЛЕДНИЕ РЕГИСТРАЦИИ -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px">
             <!-- Учителя -->
             <div class="section-card" id="teachers">
                 <div class="section-header">
-                    <h3>👨‍🏫 Новые учителя</h3>
-                    <span class="section-badge">{{ new_teachers_week }} за неделю</span>
+                    <h3>Новые учителя</h3>
+                    <span class="section-badge">+{{ new_teachers_week }} за неделю</span>
                 </div>
-                <div class="items-list" style="max-height: 400px;">
+                <div class="items-list" style="max-height:400px">
                     {% for teacher in recent_teachers %}
                     <div class="item-row">
                         <div class="item-left">
                             <div class="item-icon">
                                 {% if teacher.user.avatar %}
-                                    <img src="{{ teacher.user.avatar.url }}" alt="{{ teacher.user.get_full_name }}" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover;">
+                                    <img src="{{ teacher.user.avatar.url }}" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:cover">
                                 {% else %}
                                     <i class="fas fa-user-tie"></i>
                                 {% endif %}
                             </div>
                             <div class="item-info">
-                                <div class="item-name">{{ teacher.user.get_full_name|default:teacher.user.username }}</div>
+                                <div class="item-name">
+                                    <a href="{% url 'teacher_detail' teacher.id %}" class="profile-link" target="_blank">
+                                        {{ teacher.user.get_full_name|default:teacher.user.username }}
+                                    </a>
+                                </div>
                                 <div class="item-date">
-                                    {{ teacher.get_subjects_display|truncatewords:3 }} • 
-                                    {% if teacher.city %}{{ teacher.city.name }}{% endif %} • 
+                                    {{ teacher.get_subjects_display|truncatewords:3 }} |
+                                    {% if teacher.city %}{{ teacher.city.name }}{% endif %} |
                                     {{ teacher.created_at|date:"d.m.Y" }}
                                 </div>
                             </div>
                         </div>
                         <div class="item-actions">
-                            <a href="{% url 'teacher_detail' teacher.id %}" class="action-btn" target="_blank">
-                                <i class="fas fa-eye"></i>
-                            </a>
+                            <a href="{% url 'teacher_detail' teacher.id %}" class="action-btn" target="_blank"><i class="fas fa-eye"></i></a>
                         </div>
                     </div>
                     {% empty %}
@@ -291,37 +332,39 @@
                     {% endfor %}
                 </div>
             </div>
-            
+
             <!-- Ученики -->
             <div class="section-card" id="students">
                 <div class="section-header">
-                    <h3>👨‍🎓 Новые ученики</h3>
-                    <span class="section-badge">{{ new_students_week }} за неделю</span>
+                    <h3>Новые ученики</h3>
+                    <span class="section-badge">+{{ new_students_week }} за неделю</span>
                 </div>
-                <div class="items-list" style="max-height: 400px;">
+                <div class="items-list" style="max-height:400px">
                     {% for student in recent_students %}
                     <div class="item-row">
                         <div class="item-left">
                             <div class="item-icon">
                                 {% if student.user.avatar %}
-                                    <img src="{{ student.user.avatar.url }}" alt="{{ student.user.get_full_name }}" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover;">
+                                    <img src="{{ student.user.avatar.url }}" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:cover">
                                 {% else %}
                                     <i class="fas fa-user"></i>
                                 {% endif %}
                             </div>
                             <div class="item-info">
-                                <div class="item-name">{{ student.user.get_full_name|default:student.user.username }}</div>
+                                <div class="item-name">
+                                    <a href="{% url 'student_detail' student.id %}" class="profile-link" target="_blank">
+                                        {{ student.user.get_full_name|default:student.user.username }}
+                                    </a>
+                                </div>
                                 <div class="item-date">
-                                    {{ student.get_desired_subjects_display|truncatewords:3 }} • 
-                                    {% if student.city %}{{ student.city.name }}{% endif %} • 
+                                    {{ student.get_desired_subjects_display|truncatewords:3 }} |
+                                    {% if student.city %}{{ student.city.name }}{% endif %} |
                                     {{ student.created_at|date:"d.m.Y" }}
                                 </div>
                             </div>
                         </div>
                         <div class="item-actions">
-                            <a href="{% url 'student_detail' student.id %}" class="action-btn" target="_blank">
-                                <i class="fas fa-eye"></i>
-                            </a>
+                            <a href="{% url 'student_detail' student.id %}" class="action-btn" target="_blank"><i class="fas fa-eye"></i></a>
                         </div>
                     </div>
                     {% empty %}
@@ -332,20 +375,17 @@
         </div>
 
         <!-- СТАТИСТИКА -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;" id="stats">
-            <!-- Популярные страницы -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px" id="stats">
             <div class="section-card">
                 <div class="section-header">
-                    <h3>📄 Популярные страницы</h3>
+                    <h3>Популярные страницы</h3>
                     <span class="section-badge">{{ current_month }}</span>
                 </div>
-                <div class="items-list" style="max-height: 400px;">
+                <div class="items-list" style="max-height:400px">
                     {% for stat in page_stats %}
                     <div class="item-row">
                         <div class="item-left">
-                            <div class="item-icon">
-                                <i class="fas fa-file-alt"></i>
-                            </div>
+                            <div class="item-icon"><i class="fas fa-file-alt"></i></div>
                             <div class="item-info">
                                 <div class="item-name">{{ stat.page }}</div>
                                 <div class="item-date">{{ stat.view_count }} просмотров</div>
@@ -357,59 +397,37 @@
                     {% endfor %}
                 </div>
             </div>
-            
-            <!-- Топ предметов -->
             <div class="section-card">
                 <div class="section-header">
-                    <h3>📚 Топ предметов</h3>
+                    <h3>Топ предметов</h3>
                     <span class="section-badge">{{ top_subjects|length }}</span>
                 </div>
-                <div class="items-list" style="max-height: 400px;">
+                <div class="items-list" style="max-height:400px">
                     {% for subject in top_subjects %}
                     <div class="item-row">
                         <div class="item-left">
-                            <div class="item-icon">
-                                <i class="fas fa-book"></i>
-                            </div>
+                            <div class="item-icon"><i class="fas fa-book"></i></div>
                             <div class="item-info">
                                 <div class="item-name">{{ subject.name }}</div>
-                                <div class="item-date">
-                                    {{ subject.teacher_count }} учителей • 
-                                    {{ subject.student_interest_count }} заинтересованных учеников
-                                </div>
+                                <div class="item-date">{{ subject.teacher_count }} учителей | {{ subject.student_interest_count }} заинтересованных</div>
                             </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="no-items">Нет данных</div>
+                    {% endfor %}
                 </div>
             </div>
-            {% empty %}
-                    <div class="no-items">Нет данных</div>
-            {% endfor %}
-                </div>
-        </div>
         </div>
     </main>
 
     <script>
-        // Update views stats
-        function updateViews(count, label, btn) {
-            document.getElementById('viewsCount').textContent = count;
-            document.getElementById('viewsLabel').textContent = label;
-        
-            // Update active button
-            const buttons = btn.parentElement.querySelectorAll('.filter-btn');
-            buttons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        }
-        
-        // Smooth scroll to sections
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                });
-        });
-</script>
+    function updateViews(count, label, btn) {
+        document.getElementById('viewsCount').textContent = count;
+        document.getElementById('viewsLabel').textContent = label;
+        btn.parentElement.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+    </script>
 </body>
 </html>

@@ -541,6 +541,15 @@
             </div>
         </div>
 
+        <!-- Flash Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %}" style="margin: 0 0 20px 0;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
         <!-- Statistics -->
         <div class="stats-grid">
             <div class="stat-card">
@@ -847,13 +856,6 @@
             </div>
         </div>
 
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %}">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
     </main>
 
     <script>
@@ -885,18 +887,57 @@
             });
         }
 
-        // Send personal message
+        // Send personal message via quick modal prompt
         function sendPersonalMessage(userId) {
-            // TODO: Implement modal for quick message sending
-            console.log('Send message to user:', userId);
+            const message = prompt('Введите сообщение для пользователя:');
+            if (!message || !message.trim()) return;
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{% url "send_individual_message" %}';
+            form.style.display = 'none';
+
+            const csrfInput = document.createElement('input');
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = '{{ csrf_token }}';
+            form.appendChild(csrfInput);
+
+            const userInput = document.createElement('input');
+            userInput.name = 'user_id';
+            userInput.value = userId;
+            form.appendChild(userInput);
+
+            const msgInput = document.createElement('input');
+            msgInput.name = 'message';
+            msgInput.value = message.trim();
+            form.appendChild(msgInput);
+
+            document.body.appendChild(form);
+            form.submit();
         }
 
-        // Toggle notifications
+        // Toggle notifications via AJAX
         function toggleNotifications(userId) {
-            if (confirm('Изменить настройки уведомлений для этого пользователя?')) {
-                // TODO: Implement AJAX call to toggle notifications
-                console.log('Toggle notifications for user:', userId);
-            }
+            if (!confirm('Изменить настройки уведомлений для этого пользователя?')) return;
+
+            fetch(`/api/admin/telegram/toggle-notifications/${userId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Ошибка: ' + (data.error || 'неизвестная ошибка'));
+                }
+            })
+            .catch(err => {
+                alert('Ошибка сети: ' + err);
+            });
         }
 
         // Export users

@@ -1,0 +1,128 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{% static 'logo/new_logo.png' %}" type="image/x-icon">
+    <title>Переписка - UstozHub Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'teachers/admin.css' %}">
+    <style>
+        .conv-header{display:flex;align-items:center;gap:20px;padding:24px;background:#fff;border-radius:12px;margin-bottom:24px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+        .conv-participant{display:flex;align-items:center;gap:10px}
+        .conv-participant .avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:15px}
+        .avatar-teacher{background:linear-gradient(135deg,#FC7702,#d66502)}
+        .avatar-student{background:linear-gradient(135deg,#3B82F6,#2563EB)}
+        .conv-arrow{font-size:20px;color:#ccc}
+        .conv-subject{margin-left:auto;background:#f0f1f3;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500}
+        .chat-area{background:#f8f9fa;border-radius:12px;padding:24px;max-height:600px;overflow-y:auto;margin-bottom:24px;display:flex;flex-direction:column;gap:12px}
+        .msg{max-width:70%;padding:12px 16px;border-radius:12px;position:relative}
+        .msg-teacher{align-self:flex-start;background:#fff;border:1px solid #e0e0e0}
+        .msg-student{align-self:flex-end;background:#EBF5FF;border:1px solid #BFDBFE}
+        .msg-admin{align-self:center;background:#FFF7ED;border:1px solid #FED7AA;max-width:80%}
+        .msg-sender{font-size:12px;font-weight:600;margin-bottom:4px}
+        .msg-content{font-size:14px;line-height:1.5;word-break:break-word}
+        .msg-time{font-size:11px;color:#999;margin-top:6px;text-align:right}
+        .send-form{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.08);display:flex;gap:12px;align-items:flex-end}
+        .send-form textarea{flex:1;border:2px solid #e0e0e0;border-radius:8px;padding:12px;font-size:14px;font-family:inherit;resize:vertical;min-height:60px}
+        .send-form textarea:focus{outline:none;border-color:#FC7702}
+        .send-form select{border:2px solid #e0e0e0;border-radius:8px;padding:10px;font-size:13px;font-family:inherit}
+        .send-form button{background:#1a1a1a;color:#fff;border:none;border-radius:8px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+        .send-form button:hover{background:#333}
+        .msg-unread{opacity:.6;font-style:italic}
+        .alert{padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:14px}
+        .alert-success{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7}
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'logo/new_logo.png' %}" alt="UstozHub" style="height:32px;width:auto;">
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="{% url 'admin_dashboard' %}"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+            <li><a href="{% url 'admin_messages' %}" class="active"><i class="fas fa-comments"></i> <span>Сообщения</span></a></li>
+            <li><a href="{% url 'telegram_management' %}"><i class="fab fa-telegram"></i> <span>Telegram</span></a></li>
+            <li><a href="{% url 'home' %}"><i class="fas fa-globe"></i> <span>На сайт</span></a></li>
+            <li><a href="/admin/"><i class="fas fa-cog"></i> <span>Django Admin</span></a></li>
+            <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> <span>Выход</span></a></li>
+        </ul>
+    </aside>
+
+    <header class="topbar">
+        <div class="topbar-left">
+            <h1><i class="fas fa-comment-dots"></i> Переписка</h1>
+        </div>
+        <div class="topbar-right">
+            <a href="{% url 'admin_messages' %}" style="text-decoration:none;color:#666;font-size:14px;">
+                <i class="fas fa-arrow-left"></i> Назад к списку
+            </a>
+        </div>
+    </header>
+
+    <main class="main-content">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'success' }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+
+        <div class="conv-header">
+            <div class="conv-participant">
+                <div class="avatar avatar-teacher">{{ teacher_user.first_name.0|upper }}</div>
+                <div>
+                    <div style="font-weight:600">{{ teacher_user.get_full_name|default:teacher_user.username }}</div>
+                    <div style="font-size:12px;color:#999">Учитель</div>
+                </div>
+            </div>
+            <div class="conv-arrow"><i class="fas fa-arrows-alt-h"></i></div>
+            <div class="conv-participant">
+                <div class="avatar avatar-student">{{ student_user.first_name.0|upper }}</div>
+                <div>
+                    <div style="font-weight:600">{{ student_user.get_full_name|default:student_user.username }}</div>
+                    <div style="font-size:12px;color:#999">Ученик</div>
+                </div>
+            </div>
+            {% if conversation.subject %}
+            <div class="conv-subject"><i class="fas fa-book"></i> {{ conversation.subject.name }}</div>
+            {% endif %}
+        </div>
+
+        <div class="chat-area" id="chatArea">
+            {% for msg in messages_list %}
+            <div class="msg {% if msg.sender_id == teacher_user.id %}msg-teacher{% elif msg.sender_id == student_user.id %}msg-student{% else %}msg-admin{% endif %}">
+                <div class="msg-sender" style="color:{% if msg.sender_id == teacher_user.id %}#FC7702{% elif msg.sender_id == student_user.id %}#3B82F6{% else %}#666{% endif %}">
+                    {{ msg.sender.get_full_name|default:msg.sender.username }}
+                    {% if msg.sender.is_staff and msg.sender_id != teacher_user.id and msg.sender_id != student_user.id %}(админ){% endif %}
+                </div>
+                <div class="msg-content">{{ msg.content }}</div>
+                <div class="msg-time">
+                    {{ msg.created_at|date:"d.m.Y H:i" }}
+                    {% if msg.is_read %}<i class="fas fa-check-double" style="color:#3B82F6;margin-left:4px"></i>{% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div style="text-align:center;color:#999;padding:40px">Нет сообщений</div>
+            {% endfor %}
+        </div>
+
+        <form class="send-form" method="POST">
+            {% csrf_token %}
+            <select name="send_as" title="От чьего имени отправить">
+                <option value="">Как {{ request.user.get_full_name|default:request.user.username }} (админ)</option>
+                <option value="{{ teacher_user.id }}">Как {{ teacher_user.get_full_name }} (учитель)</option>
+                <option value="{{ student_user.id }}">Как {{ student_user.get_full_name }} (ученик)</option>
+            </select>
+            <textarea name="content" placeholder="Написать сообщение..." required></textarea>
+            <button type="submit"><i class="fas fa-paper-plane"></i> Отправить</button>
+        </form>
+    </main>
+
+    <script>
+        // Scroll chat to bottom on load
+        const chatArea = document.getElementById('chatArea');
+        if (chatArea) chatArea.scrollTop = chatArea.scrollHeight;
+    </script>
+</body>
+</html>

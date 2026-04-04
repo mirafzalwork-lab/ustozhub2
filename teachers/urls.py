@@ -15,6 +15,7 @@ from .views import (
     subjects_autocomplete, subjects_popular, subjects_categories, subjects_by_category,
     # Telegram & admin messages
     telegram_management, send_broadcast_message, send_individual_message, export_telegram_users, messages_management,
+    admin_toggle_telegram_notifications, admin_conversation_detail,
     # Notifications / Уведомления
     notifications_list, notification_detail, mark_notification_read,
     mark_all_notifications_read, notifications_dropdown,
@@ -45,9 +46,11 @@ urlpatterns = [
     path('admin-dashboard/telegram/broadcast/', send_broadcast_message, name='send_broadcast_message'),
     path('admin-dashboard/telegram/individual/', send_individual_message, name='send_individual_message'),
     path('admin-dashboard/telegram/export/', export_telegram_users, name='export_telegram_users'),
+    path('api/admin/telegram/toggle-notifications/<int:user_id>/', admin_toggle_telegram_notifications, name='admin_toggle_telegram_notifications'),
 
     # Admin Messages management
     path('admin-dashboard/messages/', messages_management, name='admin_messages'),
+    path('admin-dashboard/conversation/<uuid:conversation_id>/', admin_conversation_detail, name='admin_conversation_detail'),
 
     # New Multi-Step Teacher Registration Wizard
     path('register/', TeacherRegistrationWizard.as_view(), name='teacher_register'),

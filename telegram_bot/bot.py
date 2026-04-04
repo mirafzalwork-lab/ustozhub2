@@ -232,11 +232,42 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         await query.edit_message_text(about_text, parse_mode='Markdown')
         
-    elif query.data == "settings":
-        await notifications_command(update, context)
-        
-    elif query.data == "toggle_notifications":
-        await notifications_command(update, context)
+    elif query.data in ("settings", "toggle_notifications"):
+        user = query.from_user
+
+        try:
+            telegram_user = await sync_to_async(TelegramUser.objects.get)(telegram_id=user.id)
+
+            # Переключаем статус уведомлений
+            telegram_user.notifications_enabled = not telegram_user.notifications_enabled
+            await sync_to_async(telegram_user.save)()
+
+            status = "включены ✅" if telegram_user.notifications_enabled else "выключены ❌"
+
+            keyboard = [[InlineKeyboardButton(
+                f"{'🔕 Выключить' if telegram_user.notifications_enabled else '🔔 Включить'} уведомления",
+                callback_data="toggle_notifications"
+            )]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            await query.edit_message_text(
+                f"Уведомления {status}\n\n"
+                f"Вы {'будете' if telegram_user.notifications_enabled else 'не будете'} получать:"
+                f"\n• Уведомления о новых сообщениях"
+                f"\n• Важные обновления платформы"
+                f"\n• Новости и акции",
+                reply_markup=reply_markup
+            )
+
+        except TelegramUser.DoesNotExist:
+            await query.edit_message_text(
+                "Пожалуйста, сначала используйте команду /start"
+            )
+        except Exception as e:
+            logger.error(f"Ошибка в handle_callback (settings): {e}")
+            await query.edit_message_text(
+                "Произошла ошибка. Пожалуйста, попробуйте позже."
+            )
 
 
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):

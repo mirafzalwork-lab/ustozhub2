@@ -399,7 +399,7 @@ class TelegramNotificationService:
         message = f"От: *{sender_name}*\n\n_{message_preview[:150]}{'...' if len(message_preview) > 150 else ''}_"
         
         # URL для перехода в диалог
-        conversation_url = f"{settings.SITE_URL}/conversations/{conversation_id}/"
+        conversation_url = f"{settings.SITE_URL}/messages/{conversation_id}/"
         
         data = {
             'sender_name': sender_name,
