@@ -1728,62 +1728,15 @@
                         </div>
                     {% endif %}
 
-                    {% if student.user.phone %}
-                        <div class="info-row">
-                            <div class="info-label">
-                                <i class="fas fa-phone"></i>
-                                {% trans "Телефон" %}
-                            </div>
-                            <div class="info-value">
-                                <a href="tel:{{ student.user.phone }}">{{ student.user.phone }}</a>
-                            </div>
-                        </div>
-                    {% endif %}
-
-                    {% if student.user.email %}
-                        <div class="info-row">
-                            <div class="info-label">
-                                <i class="fas fa-envelope"></i>
-                                {% trans "Email" %}
-                            </div>
-                            <div class="info-value">
-                                <a href="mailto:{{ student.user.email }}">{{ student.user.email }}</a>
-                            </div>
-                        </div>
-                    {% endif %}
-
-                    {% if student.telegram %}
-                        <div class="info-row">
-                            <div class="info-label">
-                                <i class="fab fa-telegram"></i>
-                                {% trans "Telegram" %}
-                            </div>
-                            <div class="info-value">
-                                <a href="https://t.me/{{ student.telegram|cut:'@' }}" 
-                                   target="_blank" 
-                                   rel="noopener noreferrer"
-                                   style="color: #0088cc;">
-                                    @{{ student.telegram|cut:'@' }}
-                                </a>
-                            </div>
-                        </div>
-                    {% endif %}
-
-                    {% if student.whatsapp %}
-                        <div class="info-row">
-                            <div class="info-label">
-                                <i class="fab fa-whatsapp"></i>
-                                {% trans "WhatsApp" %}
-                            </div>
-                            <div class="info-value">
-                                <a href="https://wa.me/{{ student.whatsapp|cut:' '|cut:'+'|cut:'-' }}" 
-                                   target="_blank" 
-                                   rel="noopener noreferrer"
-                                   style="color: #25D366;">
-                                    {{ student.whatsapp }}
-                                </a>
-                            </div>
-                        </div>
+                    <!-- Контакты скрыты — общение только через платформу -->
+                    {% if request.user.is_authenticated and request.user != student.user %}
+                    <div class="info-row">
+                        <a href="{% url 'start_conversation' user_id=student.user.id %}"
+                           style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: linear-gradient(135deg, #10B981, #059669); color: white; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 14px; width: 100%; justify-content: center;">
+                            <i class="fas fa-paper-plane"></i>
+                            {% trans "Написать сообщение" %}
+                        </a>
+                    </div>
                     {% endif %}
                 </div>
 

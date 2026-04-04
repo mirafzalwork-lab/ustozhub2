@@ -299,6 +299,33 @@
         min-width: 0; /* Важно */
     }
 
+    /* Видео-визитка */
+    .video-card {
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .video-card .card-title {
+        padding: 24px 28px 16px;
+        margin-bottom: 0;
+    }
+
+    .video-wrapper {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: #000;
+        border-radius: 0 0 16px 16px;
+        overflow: hidden;
+    }
+
+    .video-player {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+    }
+
     .card-title {
         font-size: 20px;
         font-weight: 700;
@@ -963,6 +990,74 @@
         flex-shrink: 0;
     }
 
+    /* Platform Messaging Promo */
+    .platform-message-promo {
+        text-align: center;
+    }
+
+    .promo-icon {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, #10B981, #059669);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 14px;
+        font-size: 24px;
+        color: white;
+    }
+
+    .promo-text {
+        font-size: 13px;
+        color: #64748B;
+        line-height: 1.5;
+        margin-bottom: 16px;
+    }
+
+    .btn-platform-chat {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, #10B981, #059669);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-platform-chat:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+    }
+
+    .promo-features {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 14px;
+        font-size: 12px;
+        color: #64748B;
+    }
+
+    .promo-features span {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .promo-features i {
+        color: #10B981;
+        font-size: 11px;
+    }
+
     /* Availability Card */
     .availability-card {
         background: white;
@@ -1269,6 +1364,10 @@
             justify-content: center;
         }
 
+        .video-card .card-title {
+            padding: 18px 14px 12px;
+        }
+
         .content-card {
             padding: 18px 14px;
         }
@@ -1429,6 +1528,15 @@
 
         .content-card {
             padding: 16px 12px;
+        }
+
+        .video-card .card-title {
+            padding: 16px 12px 10px;
+            font-size: 15px;
+        }
+
+        .video-wrapper {
+            border-radius: 0 0 12px 12px;
         }
 
         .teacher-name-large {
@@ -1789,6 +1897,22 @@
                 </div>
             </div>
 
+            {% if teacher.video_url %}
+            <!-- Видео-визитка -->
+            <div class="content-card video-card">
+                <h2 class="card-title">
+                    <i class="fas fa-play-circle"></i>
+                    {% trans 'Видео-визитка' %}
+                </h2>
+                <div class="video-wrapper">
+                    <video class="video-player" controls playsinline preload="metadata"
+                           src="{{ teacher.video_url }}">
+                        {% trans 'Ваш браузер не поддерживает воспроизведение видео.' %}
+                    </video>
+                </div>
+            </div>
+            {% endif %}
+
             <!-- About -->
             <div class="content-card">
                 <h2 class="card-title">
@@ -1797,21 +1921,6 @@
                 </h2>
                 <p class="bio-text">{{ teacher.bio }}</p>
             </div>
-
-            {% if teacher.video_url %}
-            <!-- Видео-визитка -->
-            <div class="content-card">
-                <h2 class="card-title">
-                    <i class="fas fa-video"></i>
-                    {% trans 'Видео-визитка' %}
-                </h2>
-                <video controls playsinline preload="metadata"
-                       style="width: 100%; border-radius: 12px; background: #000; max-height: 480px;"
-                       src="{{ teacher.video_url }}">
-                    {% trans 'Ваш браузер не поддерживает воспроизведение видео.' %}
-                </video>
-            </div>
-            {% endif %}
 
             <!-- Subjects & Prices -->
             <div class="content-card">
@@ -2198,20 +2307,6 @@
                         </a>
                         {% endif %}
 
-                        {% if teacher.telegram and teacher.telegram|length > 0 %}
-                            {% if user.is_authenticated %}
-                                <a href="https://t.me/{{ teacher.telegram|cut:'@'|cut:' ' }}" target="_blank" class="btn-telegram" rel="noopener noreferrer">
-                                    <i class="fab fa-telegram"></i>
-                                    {% trans 'Написать в Telegram' %}
-                                </a>
-                            {% else %}
-                                <button class="btn-telegram" onclick="window.location.href='/login/?next={{ request.path }}'">
-                                    <i class="fab fa-telegram"></i>
-                                    {% trans 'Написать в Telegram' %}
-                        </button>
-                            {% endif %}
-                        {% endif %}
-
                         {% if user.is_authenticated and user.user_type == 'student' %}
                         <button class="btn-favorite {% if is_favorite %}active{% endif %}" onclick="toggleFavorite({{ teacher.id }})">
                             <i class="{% if is_favorite %}fas{% else %}far{% endif %} fa-heart"></i>
@@ -2226,58 +2321,30 @@
                     </div>
                 </div>
 
-                <!-- Contact Info -->
-                <div class="contact-card contact-blur-wrapper {% if not can_view_contacts %}blurred{% endif %}">
-                    <h3 class="contact-title">{% trans 'Контактная информация' %}</h3>
-                    
-                    {% if not can_view_contacts %}
-                    <div class="contact-login-overlay">
-                        <i class="fas fa-lock"></i>
-                        <h3>{% trans 'Войдите, чтобы видеть контакты' %}</h3>
-                        <div class="contact-login-buttons">
-                            <a href="{% url 'login' %}?next={{ request.path }}" class="contact-login-btn primary">
-                                <i class="fas fa-sign-in-alt"></i> {% trans 'Войти' %}
-                            </a>
-                            <a href="{% url 'register_choose' %}" class="contact-login-btn secondary">
-                                <i class="fas fa-user-plus"></i> {% trans 'Регистрация' %}
-                            </a>
+                <!-- Platform Messaging -->
+                <div class="contact-card">
+                    <h3 class="contact-title">{% trans 'Связаться с преподавателем' %}</h3>
+                    <div class="platform-message-promo">
+                        <div class="promo-icon">
+                            <i class="fas fa-comments"></i>
                         </div>
-                    </div>
-                    {% endif %}
-                    
-                    <div class="contact-list">
-                        {% if teacher.user.phone %}
-                            <div class="contact-item">
-                                <div class="contact-icon">
-                                    <i class="fas fa-phone"></i>
-                                </div>
-                                <span>{{ teacher.user.phone }}</span>
-                            </div>
+                        <p class="promo-text">{% trans 'Общайтесь с преподавателем напрямую через встроенный чат UstozHub — быстро, удобно и безопасно.' %}</p>
+                        {% if user.is_authenticated and user != teacher.user %}
+                        <a href="{% url 'start_conversation' user_id=teacher.user.id %}" class="btn-platform-chat">
+                            <i class="fas fa-paper-plane"></i>
+                            {% trans 'Написать сообщение' %}
+                        </a>
+                        {% elif not user.is_authenticated %}
+                        <a href="{% url 'login' %}?next={{ request.path }}" class="btn-platform-chat">
+                            <i class="fas fa-sign-in-alt"></i>
+                            {% trans 'Войдите, чтобы написать' %}
+                        </a>
                         {% endif %}
-                        {% if teacher.telegram %}
-                            <div class="contact-item">
-                                <div class="contact-icon">
-                                    <i class="fab fa-telegram"></i>
-                                </div>
-                                <span>{{ teacher.telegram }}</span>
-                            </div>
-                        {% endif %}
-                        {% if teacher.whatsapp %}
-                            <div class="contact-item">
-                                <div class="contact-icon">
-                                    <i class="fab fa-whatsapp"></i>
-                                </div>
-                                <span>{{ teacher.whatsapp }}</span>
-                            </div>
-                        {% endif %}
-                        {% if teacher.user.email %}
-                            <div class="contact-item">
-                                <div class="contact-icon">
-                                    <i class="fas fa-envelope"></i>
-                                </div>
-                                <span>{{ teacher.user.email }}</span>
-                            </div>
-                        {% endif %}
+                        <div class="promo-features">
+                            <span><i class="fas fa-check-circle"></i> {% trans 'Мгновенные сообщения' %}</span>
+                            <span><i class="fas fa-check-circle"></i> {% trans 'История переписки' %}</span>
+                            <span><i class="fas fa-check-circle"></i> {% trans 'Безопасная сделка' %}</span>
+                        </div>
                     </div>
                 </div>
 

@@ -124,8 +124,8 @@ def can_view_contact_info(request, profile_owner):
     if request.user.is_staff or request.user.is_superuser:
         return True
     
-    # Зарегистрированный пользователь может видеть контакты других
-    return True
+    # Обычные пользователи НЕ могут видеть контакты — общение только через платформу
+    return False
 
 
 def get_client_ip(request):
