@@ -815,8 +815,8 @@ def login_view(request):
                     pass
             
             if user is not None:
-                login(request, user)
-                
+                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+
                 if not remember_me:
                     request.session.set_expiry(0)
                 
@@ -889,8 +889,8 @@ def register_student(request):
         form = StudentRegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user)
-            
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+
             messages.success(
                 request,
                 'Регистрация прошла успешно! Сейчас мы подберем для вас подходящих учителей.'
