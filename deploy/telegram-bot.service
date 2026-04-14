@@ -1,0 +1,16 @@
+[Unit]
+Description=Telegram bot for ustozhubedu
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/ustozhubuz
+EnvironmentFile=/var/www/ustozhubuz/.env
+ExecStart=/var/www/ustozhubuz/venv/bin/python manage.py process_notifications
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

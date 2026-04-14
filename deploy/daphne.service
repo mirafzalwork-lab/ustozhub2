@@ -1,0 +1,21 @@
+[Unit]
+Description=Daphne ASGI server for ustozhubedu (WebSockets)
+After=network.target redis.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/ustozhubuz
+EnvironmentFile=/var/www/ustozhubuz/.env
+ExecStart=/var/www/ustozhubuz/venv/bin/daphne \
+    -u /run/daphne.sock \
+    --access-log /var/log/daphne/access.log \
+    core.asgi:application
+Restart=on-failure
+RestartSec=5
+KillMode=mixed
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
