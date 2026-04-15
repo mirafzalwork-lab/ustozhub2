@@ -16,6 +16,7 @@ from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 import csv
 import logging
+import random
 from datetime import datetime, timedelta
 
 # Глобальный logger для всего модуля
@@ -209,9 +210,10 @@ def home(request):
     """
 
     track_view(request, 'home')
-    # Базовый queryset: только активные и одобренные учителя
+    # Базовый queryset: только активные и одобренные учителя.
+    # Рекомендуемые показываются отдельно в слайдере сверху — исключаем из основной сетки.
     teachers = TeacherProfile.objects.filter(
-        is_active=True, moderation_status='approved'
+        is_active=True, moderation_status='approved', is_featured=False
     ).select_related(
         'user', 'city'
     ).prefetch_related(
@@ -312,7 +314,43 @@ def home(request):
     else:
         teachers = teachers.distinct()
         teachers = _apply_sort(teachers, sort_by)
-    
+
+    # ========== УМНЫЙ SHUFFLE ДЛЯ СЕТКИ (без повторов между визитами) ==========
+    # При дефолтной сортировке и отсутствии фильтров — перемешиваем порядок,
+    # чтобы разные юзеры/сессии видели разных учителей первыми.
+    # Seed живёт в session и ротируется раз в час → пагинация стабильна
+    # внутри сессии, но через час порядок обновляется автоматически.
+    _has_filters = any([
+        subject_id, city_id, teaching_format, min_price, max_price,
+        min_rating, min_experience, search_query, suggest
+    ])
+    if sort_by == 'recommended' and not _has_filters:
+        now_ts = int(timezone.now().timestamp())
+        seed = request.session.get('teacher_shuffle_seed')
+        seed_ts = request.session.get('teacher_shuffle_ts', 0)
+        if not seed or (now_ts - seed_ts) > 3600:
+            seed = random.randint(1, 10 ** 9)
+            request.session['teacher_shuffle_seed'] = seed
+            request.session['teacher_shuffle_ts'] = now_ts
+
+        cache_key = f'teacher_shuffle_ids_{seed}'
+        shuffled_ids = cache.get(cache_key)
+        if shuffled_ids is None:
+            shuffled_ids = list(teachers.values_list('id', flat=True))
+            random.Random(seed).shuffle(shuffled_ids)
+            cache.set(cache_key, shuffled_ids, 3600)
+
+        if shuffled_ids:
+            preserved_order = Case(
+                *[When(pk=pk, then=pos) for pos, pk in enumerate(shuffled_ids)],
+                output_field=IntegerField()
+            )
+            teachers = TeacherProfile.objects.filter(
+                id__in=shuffled_ids
+            ).select_related('user', 'city').prefetch_related(
+                'subjects', 'teachersubject_set__subject', 'reviews'
+            ).order_by(preserved_order)
+
     # ========== ПАГИНАЦИЯ ==========
     # Создаем объект пагинатора (12 учителей на страницу)
     paginator = Paginator(teachers, 12)
@@ -348,11 +386,39 @@ def home(request):
         ('newest', 'Новые'),
     ]
 
-    featured_teachers = TeacherProfile.objects.filter(
+    # Рекомендуемые учителя — тоже в рандомном порядке на сессию (ротация раз в час).
+    featured_qs = TeacherProfile.objects.filter(
         is_active=True, moderation_status='approved', is_featured=True
     ).select_related('user', 'city').prefetch_related(
         'subjects', 'teachersubject_set__subject'
-    ).order_by('-ranking_score', '-rating')[:12]
+    )
+
+    _now_ts = int(timezone.now().timestamp())
+    _featured_seed = request.session.get('featured_shuffle_seed')
+    _featured_ts = request.session.get('featured_shuffle_ts', 0)
+    if not _featured_seed or (_now_ts - _featured_ts) > 3600:
+        _featured_seed = random.randint(1, 10 ** 9)
+        request.session['featured_shuffle_seed'] = _featured_seed
+        request.session['featured_shuffle_ts'] = _now_ts
+
+    _featured_cache_key = f'featured_shuffle_ids_{_featured_seed}'
+    _featured_ids = cache.get(_featured_cache_key)
+    if _featured_ids is None:
+        _featured_ids = list(featured_qs.values_list('id', flat=True))
+        random.Random(_featured_seed).shuffle(_featured_ids)
+        _featured_ids = _featured_ids[:12]
+        cache.set(_featured_cache_key, _featured_ids, 3600)
+
+    if _featured_ids:
+        _featured_order = Case(
+            *[When(pk=pk, then=pos) for pos, pk in enumerate(_featured_ids)],
+            output_field=IntegerField()
+        )
+        featured_teachers = list(
+            featured_qs.filter(id__in=_featured_ids).order_by(_featured_order)
+        )
+    else:
+        featured_teachers = []
 
     context = {
         'teachers': teachers_page,
