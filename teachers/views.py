@@ -348,8 +348,15 @@ def home(request):
         ('newest', 'Новые'),
     ]
 
+    featured_teachers = TeacherProfile.objects.filter(
+        is_active=True, moderation_status='approved', is_featured=True
+    ).select_related('user', 'city').prefetch_related(
+        'subjects', 'teachersubject_set__subject'
+    ).order_by('-ranking_score', '-rating')[:12]
+
     context = {
         'teachers': teachers_page,
+        'featured_teachers': featured_teachers,
         'total_teachers': paginator.count,
         'subjects': all_subjects,
         'cities': all_cities,
@@ -367,7 +374,7 @@ def home(request):
         'sort_by': sort_by,
         'sort_options': sort_options,
     }
-    
+
     return render(request, 'logic/home.html', context)
 
 @login_required(login_url='login')
