@@ -137,12 +137,12 @@
     .global-search {
         display: flex;
         justify-content: center;
-        margin: 18px auto 22px;
+        margin: 8px auto 10px;
         width: 100%;
     }
 
     .global-search-form {
-        width: min(720px, 100%);
+        width: min(620px, 100%);
         display: flex;
         justify-content: center;
         padding: 0 10px;
@@ -159,38 +159,38 @@
 
     .global-search-icon {
         position: absolute;
-        left: 14px;
+        left: 13px;
         top: 50%;
         transform: translateY(-50%);
         color: var(--primary-color);
-        opacity: 0.7;
+        opacity: 0.6;
         pointer-events: none;
-        font-size: 14px;
+        font-size: 13px;
     }
 
     .global-search-input {
         width: 100%;
-        height: 46px;
-        border: 1px solid rgba(10, 37, 64, 0.14);
+        height: 40px;
+        border: 1px solid rgba(10, 37, 64, 0.12);
         border-radius: 999px;
-        padding: 0 14px 0 42px;
-        font-size: 14px;
+        padding: 0 14px 0 38px;
+        font-size: 13px;
         background: white;
-        box-shadow: 0 6px 18px rgba(10, 37, 64, 0.08);
+        box-shadow: 0 4px 14px rgba(10, 37, 64, 0.06);
         transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
     }
 
     .global-search-btn {
-        height: 46px;
-        padding: 0 18px;
+        height: 40px;
+        padding: 0 16px;
         border: none;
         border-radius: 999px;
         background: var(--primary-color);
         color: white;
-        font-weight: 700;
-        font-size: 14px;
+        font-weight: 600;
+        font-size: 13px;
         cursor: pointer;
-        box-shadow: 0 6px 18px rgba(10, 37, 64, 0.10);
+        box-shadow: 0 4px 14px rgba(10, 37, 64, 0.10);
         transition: transform var(--transition-speed), background var(--transition-speed);
         white-space: nowrap;
         flex: 0 0 auto;
@@ -204,21 +204,21 @@
     .quick-search {
         display: flex;
         justify-content: center;
-        gap: 8px;
+        gap: 6px;
         flex-wrap: wrap;
-        margin: -10px auto 22px;
+        margin: 0 auto 12px;
         padding: 0 10px;
         box-sizing: border-box;
     }
 
     .quick-search-btn {
-        border: 1px solid rgba(10, 37, 64, 0.14);
+        border: 1px solid rgba(10, 37, 64, 0.12);
         background: white;
         color: var(--primary-color);
         border-radius: 999px;
-        padding: 8px 12px;
-        font-size: 12px;
-        font-weight: 700;
+        padding: 5px 11px;
+        font-size: 11px;
+        font-weight: 600;
         cursor: pointer;
         transition: background var(--transition-speed), transform var(--transition-speed), border-color var(--transition-speed);
     }
@@ -241,7 +241,7 @@
         }
 
         .global-search-icon {
-            top: 23px;
+            top: 20px;
         }
     }
 
@@ -1376,12 +1376,6 @@
 <!-- ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК - UPDATED v2.0 -->
 
 <div class="page-container home-page">
-    <!-- ЗАГОЛОВОК СТРАНИЦЫ -->
-    <div class="page-header">
-        <h1 class="page-title">{% trans 'Найдите квалифицированного учителя онлайн' %}</h1>
-        <p class="page-description">{% trans 'Используйте фильтры поиска, чтобы найти учителей в соответствии с вашим бюджетом и потребностями. Развивайтесь быстрее с индивидуальным подходом!' %}</p>
-    </div>
-
     <!-- GLOBAL SEARCH (TOP CENTER) -->
     <div class="global-search" aria-label="Teacher search">
         <form class="global-search-form" method="GET" action="">
@@ -1421,6 +1415,474 @@
 
 
     </div>
+
+    {% if featured_teachers %}
+    <!-- FEATURED TEACHERS HERO SLIDER (Ozon / Yandex Market style) -->
+    <style>
+        .hero-slider {
+            position: relative;
+            margin: 24px 0 36px;
+            border-radius: 20px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f8fafc 0%, #eef2f8 100%);
+            border: 1px solid rgba(10, 37, 64, 0.06);
+        }
+        .hero-slider-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 28px 4px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .hero-slider-title {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: #0A2540;
+            letter-spacing: -0.2px;
+        }
+        .hero-slider-title .badge-crown {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 9px;
+            background: linear-gradient(135deg, #F59E0B, #EF4444);
+            color: #fff;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+        }
+        .hero-slider-counter {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .hero-slider-counter b { color: #0A2540; font-weight: 700; }
+
+        .hero-viewport {
+            position: relative;
+            overflow: hidden;
+            padding: 16px 28px 20px;
+        }
+        .hero-track {
+            display: flex;
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .hero-slide {
+            flex: 0 0 100%;
+            padding: 0 4px;
+            box-sizing: border-box;
+        }
+        .hero-card {
+            display: grid;
+            grid-template-columns: 220px 1fr auto;
+            gap: 28px;
+            align-items: center;
+            padding: 26px 28px;
+            border-radius: 18px;
+            background: linear-gradient(120deg, #0A2540 0%, #153b66 55%, #1e4a72 100%);
+            color: #fff;
+            min-height: 200px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .hero-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 85% 15%, rgba(59, 130, 246, 0.35), transparent 45%),
+                radial-gradient(circle at 15% 90%, rgba(245, 158, 11, 0.18), transparent 50%);
+            pointer-events: none;
+        }
+        .hero-card::after {
+            content: "";
+            position: absolute;
+            right: -40px;
+            top: -40px;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .hero-card:hover { transform: translateY(-2px); }
+        .hero-card > * { position: relative; z-index: 1; }
+
+        .hero-avatar-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .hero-avatar {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #3B82F6, #1e4a72);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            font-weight: 700;
+            color: #fff;
+            border: 4px solid rgba(255,255,255,0.15);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+        }
+        .hero-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .hero-rating-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(245, 158, 11, 0.18);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            padding: 5px 12px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .hero-rating-pill .reviews { color: rgba(255,255,255,0.65); font-weight: 500; font-size: 11px; }
+
+        .hero-info { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+        .hero-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+        .hero-badge-top {
+            background: linear-gradient(135deg, #F59E0B, #EF4444);
+            color: #fff;
+            padding: 4px 11px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .hero-badge-exp {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.85);
+            padding: 4px 11px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .hero-name {
+            font-size: 24px;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: -0.4px;
+            line-height: 1.2;
+        }
+        .hero-subjects { display: flex; flex-wrap: wrap; gap: 6px; }
+        .hero-subject-tag {
+            background: rgba(59, 130, 246, 0.22);
+            border: 1px solid rgba(59, 130, 246, 0.35);
+            color: #93c5fd;
+            padding: 4px 11px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .hero-bio {
+            color: rgba(255,255,255,0.78);
+            font-size: 14px;
+            line-height: 1.55;
+            margin: 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            max-width: 560px;
+        }
+
+        .hero-side {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
+            min-width: 180px;
+            text-align: right;
+        }
+        .hero-price { color: #fff; font-size: 13px; font-weight: 500; opacity: 0.8; }
+        .hero-price-value {
+            display: block;
+            font-size: 26px;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-top: 2px;
+            color: #fff;
+        }
+        .hero-price-value small { font-size: 12px; font-weight: 500; opacity: 0.7; }
+        .hero-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #fff;
+            color: #0A2540;
+            padding: 12px 22px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 14px;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+            white-space: nowrap;
+        }
+        .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,0.28); }
+
+        .hero-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #fff;
+            color: #0A2540;
+            border: 1px solid rgba(10,37,64,0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 5;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+            transition: transform 0.2s, background 0.2s, color 0.2s;
+        }
+        .hero-arrow:hover { background: #0A2540; color: #fff; transform: translateY(-50%) scale(1.08); }
+        .hero-arrow-prev { left: 8px; }
+        .hero-arrow-next { right: 8px; }
+
+        .hero-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 0 0 18px;
+        }
+        .hero-dot {
+            width: 24px;
+            height: 5px;
+            border-radius: 999px;
+            background: rgba(10,37,64,0.15);
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s, width 0.3s;
+        }
+        .hero-dot.active {
+            background: linear-gradient(90deg, #3B82F6, #0A2540);
+            width: 36px;
+        }
+        .hero-progress {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            height: 3px;
+            width: 0;
+            background: linear-gradient(90deg, #3B82F6, #F59E0B);
+            transition: width 0.1s linear;
+        }
+
+        @media (max-width: 860px) {
+            .hero-card {
+                grid-template-columns: 1fr;
+                text-align: center;
+                padding: 22px 20px;
+            }
+            .hero-avatar { width: 100px; height: 100px; font-size: 36px; }
+            .hero-avatar-wrap { flex-direction: row; justify-content: center; }
+            .hero-badges { justify-content: center; }
+            .hero-subjects { justify-content: center; }
+            .hero-side {
+                align-items: center;
+                flex-direction: row;
+                justify-content: space-between;
+                width: 100%;
+                text-align: left;
+            }
+            .hero-name { font-size: 20px; }
+            .hero-bio { text-align: center; max-width: 100%; }
+            .hero-viewport { padding: 12px 14px 16px; }
+            .hero-slider-header { padding: 16px 18px 0; }
+            .hero-arrow { width: 36px; height: 36px; }
+        }
+        @media (max-width: 480px) {
+            .hero-price-value { font-size: 20px; }
+            .hero-cta { padding: 10px 16px; font-size: 13px; }
+            .hero-avatar { width: 80px; height: 80px; font-size: 28px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .hero-track { transition: none; }
+        }
+    </style>
+
+    <section class="hero-slider" id="heroSlider" aria-label="{% trans 'Рекомендуемые учителя' %}">
+        <div class="hero-slider-header">
+            <h2 class="hero-slider-title">
+                <span class="badge-crown"><i class="fas fa-crown"></i></span>
+                {% trans 'Рекомендуемые учителя' %}
+            </h2>
+            <span class="hero-slider-counter"><b id="heroCurrent">1</b> / {{ featured_teachers|length }}</span>
+        </div>
+
+        <div class="hero-viewport">
+            <button class="hero-arrow hero-arrow-prev" id="heroPrev" aria-label="prev"><i class="fas fa-chevron-left"></i></button>
+            <div class="hero-track" id="heroTrack">
+                {% for teacher in featured_teachers %}
+                    {% with ts_list=teacher.teachersubject_set.all %}
+                    <div class="hero-slide">
+                        <div class="hero-card" onclick="window.location.href='{% url 'teacher_detail' teacher.id %}'">
+                            <div class="hero-avatar-wrap">
+                                <div class="hero-avatar">
+                                    {% if teacher.user.avatar %}
+                                        <img src="{{ teacher.user.avatar.url }}" alt="{{ teacher.user.get_full_name }}">
+                                    {% else %}
+                                        {{ teacher.user.first_name.0|default:"У" }}{{ teacher.user.last_name.0|default:"" }}
+                                    {% endif %}
+                                </div>
+                                <span class="hero-rating-pill">
+                                    <i class="fas fa-star"></i> {{ teacher.rating|default:"5.0"|floatformat:1 }}
+                                    <span class="reviews">({{ teacher.reviews.count }})</span>
+                                </span>
+                            </div>
+
+                            <div class="hero-info">
+                                <div class="hero-badges">
+                                    <span class="hero-badge-top"><i class="fas fa-crown"></i> {% trans 'ТОП' %}</span>
+                                    {% if teacher.experience_years %}
+                                        <span class="hero-badge-exp"><i class="fas fa-briefcase"></i> {{ teacher.experience_years }} {% trans 'лет опыта' %}</span>
+                                    {% endif %}
+                                    {% if teacher.city %}
+                                        <span class="hero-badge-exp"><i class="fas fa-map-marker-alt"></i> {{ teacher.city.name }}</span>
+                                    {% endif %}
+                                </div>
+                                <h3 class="hero-name">{{ teacher.user.get_full_name|default:teacher.user.username }}</h3>
+                                <div class="hero-subjects">
+                                    {% for ts in ts_list|slice:":3" %}
+                                        <span class="hero-subject-tag">{{ ts.subject.name }}</span>
+                                    {% endfor %}
+                                </div>
+                                {% if teacher.bio %}
+                                    <p class="hero-bio">{{ teacher.bio|truncatechars:180 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="hero-side">
+                                <div class="hero-price">
+                                    {% trans 'от' %}
+                                    <span class="hero-price-value">
+                                        {% with first_ts=ts_list.0 %}
+                                            {% if first_ts %}{{ first_ts.hourly_rate|floatformat:0 }}{% else %}—{% endif %}
+                                        {% endwith %}
+                                        <small>{% trans 'сум/ч' %}</small>
+                                    </span>
+                                </div>
+                                <a class="hero-cta" href="{% url 'teacher_detail' teacher.id %}" onclick="event.stopPropagation();">
+                                    {% trans 'Смотреть профиль' %} <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endwith %}
+                {% endfor %}
+            </div>
+            <button class="hero-arrow hero-arrow-next" id="heroNext" aria-label="next"><i class="fas fa-chevron-right"></i></button>
+        </div>
+
+        <div class="hero-dots" id="heroDots">
+            {% for teacher in featured_teachers %}
+                <button class="hero-dot{% if forloop.first %} active{% endif %}" data-idx="{{ forloop.counter0 }}" aria-label="{{ forloop.counter }}"></button>
+            {% endfor %}
+        </div>
+        <div class="hero-progress" id="heroProgress"></div>
+    </section>
+
+    <script>
+    (function(){
+        const slider = document.getElementById('heroSlider');
+        if (!slider) return;
+        const track = document.getElementById('heroTrack');
+        const dots = slider.querySelectorAll('.hero-dot');
+        const prev = document.getElementById('heroPrev');
+        const next = document.getElementById('heroNext');
+        const counter = document.getElementById('heroCurrent');
+        const progress = document.getElementById('heroProgress');
+        const total = dots.length;
+        if (!total) return;
+
+        let idx = 0;
+        let timer = null;
+        let progressTimer = null;
+        let progressStart = 0;
+        const DURATION = 5000;
+
+        function goTo(i) {
+            idx = (i + total) % total;
+            track.style.transform = 'translateX(-' + (idx * 100) + '%)';
+            dots.forEach((d, n) => d.classList.toggle('active', n === idx));
+            if (counter) counter.textContent = idx + 1;
+            resetProgress();
+        }
+        function nextSlide() { goTo(idx + 1); }
+        function prevSlide() { goTo(idx - 1); }
+
+        function resetProgress() {
+            if (progressTimer) clearInterval(progressTimer);
+            progress.style.width = '0%';
+            progressStart = Date.now();
+            progressTimer = setInterval(() => {
+                const elapsed = Date.now() - progressStart;
+                const pct = Math.min(100, (elapsed / DURATION) * 100);
+                progress.style.width = pct + '%';
+                if (pct >= 100) clearInterval(progressTimer);
+            }, 50);
+        }
+        function startAuto() {
+            stopAuto();
+            timer = setInterval(nextSlide, DURATION);
+            resetProgress();
+        }
+        function stopAuto() {
+            if (timer) clearInterval(timer);
+            if (progressTimer) clearInterval(progressTimer);
+        }
+
+        dots.forEach(d => d.addEventListener('click', () => { goTo(parseInt(d.dataset.idx)); startAuto(); }));
+        next.addEventListener('click', () => { nextSlide(); startAuto(); });
+        prev.addEventListener('click', () => { prevSlide(); startAuto(); });
+        slider.addEventListener('mouseenter', stopAuto);
+        slider.addEventListener('mouseleave', startAuto);
+
+        let touchX = null;
+        track.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; stopAuto(); }, {passive: true});
+        track.addEventListener('touchend', e => {
+            if (touchX === null) return;
+            const dx = e.changedTouches[0].clientX - touchX;
+            if (Math.abs(dx) > 40) (dx < 0 ? nextSlide() : prevSlide());
+            touchX = null;
+            startAuto();
+        });
+
+        if ('IntersectionObserver' in window) {
+            new IntersectionObserver(entries => {
+                entries.forEach(e => e.isIntersecting ? startAuto() : stopAuto());
+            }, { threshold: 0.2 }).observe(slider);
+        } else {
+            startAuto();
+        }
+    })();
+    </script>
+    {% endif %}
 
     <!-- КНОПКА ФИЛЬТРОВ ДЛЯ МОБИЛЬНЫХ -->
     <button class="mobile-filters-toggle" onclick="toggleFilters()">
