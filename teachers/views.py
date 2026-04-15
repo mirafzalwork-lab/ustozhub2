@@ -185,23 +185,24 @@ def record_profile_view(request, profile, profile_type):
 
 
 def _apply_sort(queryset, sort_by):
-    """Применяет сортировку к queryset учителей. is_featured всегда первый ключ."""
+    """Применяет сортировку к queryset учителей. Рекомендуемые НЕ выносятся наверх —
+    они смешаны с остальными в обычном порядке (отдельно показываются в слайдере)."""
     if sort_by == 'price_low':
         return queryset.annotate(
             min_price=Min('teachersubject__hourly_rate')
-        ).order_by('-is_featured', 'min_price', '-ranking_score')
+        ).order_by('min_price', '-ranking_score')
     elif sort_by == 'price_high':
         return queryset.annotate(
             min_price=Min('teachersubject__hourly_rate')
-        ).order_by('-is_featured', '-min_price', '-ranking_score')
+        ).order_by('-min_price', '-ranking_score')
     elif sort_by == 'rating':
-        return queryset.order_by('-is_featured', '-rating', '-total_reviews', '-ranking_score')
+        return queryset.order_by('-rating', '-total_reviews', '-ranking_score')
     elif sort_by == 'experience':
-        return queryset.order_by('-is_featured', '-experience_years', '-rating')
+        return queryset.order_by('-experience_years', '-rating')
     elif sort_by == 'newest':
-        return queryset.order_by('-is_featured', '-created_at')
+        return queryset.order_by('-created_at')
     else:  # recommended (default)
-        return queryset.order_by('-is_featured', '-ranking_score', '-rating', '-created_at')
+        return queryset.order_by('-ranking_score', '-rating', '-created_at')
 
 
 def home(request):
@@ -210,10 +211,11 @@ def home(request):
     """
 
     track_view(request, 'home')
-    # Базовый queryset: только активные и одобренные учителя.
-    # Рекомендуемые показываются отдельно в слайдере сверху — исключаем из основной сетки.
+    # Базовый queryset: все активные и одобренные учителя (включая рекомендуемых).
+    # Рекомендуемые показываются дополнительно в слайдере сверху, но также присутствуют
+    # в общей сетке — в обычном порядке, без приоритета наверху.
     teachers = TeacherProfile.objects.filter(
-        is_active=True, moderation_status='approved', is_featured=False
+        is_active=True, moderation_status='approved'
     ).select_related(
         'user', 'city'
     ).prefetch_related(
@@ -291,23 +293,23 @@ def home(request):
                 build_teacher_search_q(search_query)
             ).distinct()
 
-            # При поиске: featured всегда первый, потом релевантность
+            # При поиске: сортировка по релевантности (featured не выносятся наверх)
             if sort_by == 'price_low':
                 teachers = teachers.annotate(
                     min_price=Min('teachersubject__hourly_rate')
-                ).order_by('-is_featured', '-relevance', 'min_price')
+                ).order_by('-relevance', 'min_price')
             elif sort_by == 'price_high':
                 teachers = teachers.annotate(
                     min_price=Min('teachersubject__hourly_rate')
-                ).order_by('-is_featured', '-relevance', '-min_price')
+                ).order_by('-relevance', '-min_price')
             elif sort_by == 'rating':
-                teachers = teachers.order_by('-is_featured', '-relevance', '-rating', '-total_reviews')
+                teachers = teachers.order_by('-relevance', '-rating', '-total_reviews')
             elif sort_by == 'experience':
-                teachers = teachers.order_by('-is_featured', '-relevance', '-experience_years', '-rating')
+                teachers = teachers.order_by('-relevance', '-experience_years', '-rating')
             elif sort_by == 'newest':
-                teachers = teachers.order_by('-is_featured', '-relevance', '-created_at')
+                teachers = teachers.order_by('-relevance', '-created_at')
             else:  # recommended (default)
-                teachers = teachers.order_by('-is_featured', '-relevance', '-ranking_score', '-rating', '-total_reviews')
+                teachers = teachers.order_by('-relevance', '-ranking_score', '-rating', '-total_reviews')
         else:
             teachers = teachers.distinct()
             teachers = _apply_sort(teachers, sort_by)
