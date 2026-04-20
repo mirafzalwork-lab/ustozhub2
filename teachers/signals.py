@@ -34,46 +34,46 @@ def send_message_notification(sender, instance, created, **kwargs):
         created: True если сообщение только что создано
     """
     # Отправляем уведомление только для новых сообщений
-    if not created or not TELEGRAM_BOT_AVAILABLE:
+    if not created:
         return
-    
+
     try:
         # Получаем данные
         message = instance
         conversation = message.conversation
         sender_user = message.sender
-        
+
         # ✅ Проверяем что conversation существует
         if not conversation:
             logger.error(f"Сообщение {message.pk or 'new'} не связано с диалогом")
             return
-        
+
         # Безопасно получаем sender_user
         if not sender_user:
             logger.error(f"Сообщение {message.pk or 'new'} не имеет отправителя")
             return
-        
+
         # Проверяем доступ к related objects
         try:
             # ✅ Используем .pk для безопасной проверки без дополнительного запроса
             if not conversation.teacher or not conversation.teacher.user:
                 logger.error(f"Диалог {conversation.pk} не имеет учителя или профиля учителя")
                 return
-            
+
             teacher_user = conversation.teacher.user
             student_user = conversation.student
-            
+
             if not student_user:
                 logger.error(f"Диалог {conversation.pk} не имеет ученика")
                 return
-                
+
         except AttributeError as e:
             logger.error(
                 f"Ошибка доступа к пользователям диалога {conversation.pk}: {e}",
                 exc_info=True
             )
             return
-        
+
         # Получатель - это не отправитель
         if sender_user.pk == teacher_user.pk:
             recipient = student_user
@@ -91,7 +91,9 @@ def send_message_notification(sender, instance, created, **kwargs):
             logger.error(f"Не удалось определить получателя для сообщения {message.pk or 'new'}")
             return
 
-        # Сбрасываем кэш badge и пушим real-time уведомление получателю
+        # Сбрасываем кэш badge и пушим real-time уведомление получателю.
+        # Это критично для обновления badge-счётчиков и должно работать
+        # независимо от доступности Telegram-бота.
         try:
             from .context_processors import invalidate_message_cache
             invalidate_message_cache(recipient.pk)
@@ -104,6 +106,10 @@ def send_message_notification(sender, instance, created, **kwargs):
             })
         except Exception as e:
             logger.debug(f"Push notification failed: {e}")
+
+        # Telegram-уведомление в очередь — только если бот доступен
+        if not TELEGRAM_BOT_AVAILABLE:
+            return
 
         # Добавляем уведомление в очередь
         sender_name = sender_user.get_full_name() or sender_user.username

@@ -1560,10 +1560,33 @@ def send_message_ajax(request, conversation_id):
             message.conversation = conversation
             message.sender = user
             message.save()
-            
+
             # Обновляем время последнего обновления переписки
             conversation.save()
-            
+
+            # Ретрансляция в real-time: отправляем сообщение в ту же группу,
+            # что и ChatConsumer, чтобы второй участник получил его без перезагрузки,
+            # если AJAX-путь сработал вместо WebSocket.
+            try:
+                from channels.layers import get_channel_layer
+                from asgiref.sync import async_to_sync
+                channel_layer = get_channel_layer()
+                if channel_layer is not None:
+                    message_data = {
+                        'id': str(message.id),
+                        'message': message.content,
+                        'sender_id': message.sender.id,
+                        'sender_name': user.get_full_name() or user.username,
+                        'created_at': message.created_at.isoformat(),
+                        'is_read': message.is_read,
+                    }
+                    async_to_sync(channel_layer.group_send)(
+                        f'chat_{conversation.id}',
+                        {'type': 'chat_message', 'message_data': message_data},
+                    )
+            except Exception as ws_err:
+                logger.warning(f"WS-ретрансляция в send_message_ajax не удалась: {ws_err}")
+
             return JsonResponse({
                 'success': True,
                 'message': {
