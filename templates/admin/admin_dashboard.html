@@ -40,6 +40,7 @@
             <li><a href="{% url 'admin_dashboard' %}" class="active"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
             <li><a href="{% url 'admin_messages' %}"><i class="fas fa-comments"></i> <span>Сообщения</span></a></li>
             <li><a href="{% url 'telegram_management' %}"><i class="fab fa-telegram"></i> <span>Telegram</span></a></li>
+            <li><a href="{% url 'daily_reminders_list' %}"><i class="fas fa-clock"></i> <span>Напоминания</span></a></li>
             <li><a href="/admin/teachers/teacherprofile/?moderation_status__exact=pending"><i class="fas fa-check-circle"></i> <span>Модерация</span></a></li>
             <li><a href="{% url 'home' %}"><i class="fas fa-globe"></i> <span>На сайт</span></a></li>
             <li><a href="/admin/"><i class="fas fa-cog"></i> <span>Django Admin</span></a></li>
@@ -89,6 +90,9 @@
             <a href="{% url 'telegram_management' %}" class="qa-btn">
                 <i class="fab fa-telegram"></i> TG Рассылка
                 <span class="qa-count">{{ telegram_active }}</span>
+            </a>
+            <a href="{% url 'daily_reminders_list' %}" class="qa-btn">
+                <i class="fas fa-clock"></i> Напоминания
             </a>
             <a href="/admin/teachers/teacherprofile/?moderation_status__exact=pending" class="qa-btn {% if pending_teachers > 0 %}danger{% endif %}">
                 <i class="fas fa-user-check"></i> Модерация

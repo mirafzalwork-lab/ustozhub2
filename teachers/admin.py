@@ -13,7 +13,7 @@ from .models import (
     TeacherProfile, TeacherSubject, StudentProfile,
     Conversation, Message, Review, Favorite, SubjectSearchLog,
     ProfileView, TelegramUser, NotificationQueue, NotificationLog,
-    Notification, NotificationRead,
+    Notification, NotificationRead, DailyReminderTemplate,
 )
 from .admin_telegram_service import admin_telegram_service
 
@@ -1071,3 +1071,31 @@ class NotificationReadAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         """Запретить редактирование"""
         return False
+
+
+@admin.register(DailyReminderTemplate)
+class DailyReminderTemplateAdmin(admin.ModelAdmin):
+    """Шаблоны ежедневной авто-рассылки (утро/вечер) через Telegram-бот."""
+    list_display = ('period', 'language', 'short_text', 'is_active', 'updated_at')
+    list_filter = ('period', 'language', 'is_active')
+    search_fields = ('text', 'note')
+    list_editable = ('is_active',)
+    readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        (None, {
+            'fields': ('period', 'language', 'is_active', 'note'),
+        }),
+        ('Текст сообщения', {
+            'fields': ('text',),
+            'description': 'Markdown: *жирный*, _курсив_. Эмодзи и переводы строк поддерживаются.',
+        }),
+        ('Метаданные', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',),
+        }),
+    )
+
+    def short_text(self, obj):
+        first_line = obj.text.splitlines()[0] if obj.text else ''
+        return first_line[:60] + ('…' if len(first_line) > 60 else '')
+    short_text.short_description = 'Превью'

@@ -1557,6 +1557,67 @@ class Notification(models.Model):
         ).exists()
 
 
+class DailyReminderTemplate(models.Model):
+    """
+    Шаблон текста для ежедневной автоматической рассылки (утренней/вечерней).
+    Администратор может добавлять, редактировать и отключать варианты из
+    admin-dashboard. При отправке выбирается случайный активный шаблон
+    соответствующего периода и языка.
+    """
+    PERIOD_CHOICES = [
+        ('morning', 'Утро'),
+        ('evening', 'Вечер'),
+    ]
+    LANGUAGE_CHOICES = [
+        ('ru', 'Русский'),
+        ('uz', "O‘zbek"),
+        ('en', 'English'),
+    ]
+
+    period = models.CharField(
+        max_length=10,
+        choices=PERIOD_CHOICES,
+        verbose_name='Период',
+    )
+    language = models.CharField(
+        max_length=2,
+        choices=LANGUAGE_CHOICES,
+        verbose_name='Язык',
+    )
+    text = models.TextField(
+        verbose_name='Текст сообщения',
+        help_text=(
+            'Поддерживается Markdown: *жирный*, _курсив_. '
+            'Можно использовать эмодзи и переводы строк.'
+        ),
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name='Активен',
+        help_text='Если выключено — шаблон не попадает в рассылку.',
+    )
+    note = models.CharField(
+        max_length=200,
+        blank=True,
+        default='',
+        verbose_name='Заметка для админа',
+        help_text='Необязательное описание — только для вас.',
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создан')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Обновлён')
+
+    class Meta:
+        verbose_name = 'Шаблон ежедневного напоминания'
+        verbose_name_plural = 'Шаблоны ежедневных напоминаний'
+        ordering = ['period', 'language', '-is_active', '-updated_at']
+        indexes = [
+            models.Index(fields=['period', 'language', 'is_active']),
+        ]
+
+    def __str__(self):
+        return f"{self.get_period_display()} · {self.get_language_display()}: {self.text[:40]}…"
+
+
 class NotificationRead(models.Model):
     """
     Модель для отслеживания прочитанных уведомлений

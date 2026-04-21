@@ -16,6 +16,9 @@ from .views import (
     # Telegram & admin messages
     telegram_management, send_broadcast_message, send_individual_message, export_telegram_users, messages_management,
     admin_toggle_telegram_notifications, admin_conversation_detail,
+    # Daily reminders (admin-dashboard)
+    daily_reminders_list, daily_reminder_edit, daily_reminder_delete,
+    daily_reminder_toggle, daily_reminder_test,
     # Notifications / Уведомления
     notifications_list, notification_detail, mark_notification_read,
     mark_all_notifications_read, notifications_dropdown,
@@ -51,6 +54,14 @@ urlpatterns = [
     # Admin Messages management
     path('admin-dashboard/messages/', messages_management, name='admin_messages'),
     path('admin-dashboard/conversation/<uuid:conversation_id>/', admin_conversation_detail, name='admin_conversation_detail'),
+
+    # Daily reminder templates (ежедневная авто-рассылка)
+    path('admin-dashboard/reminders/', daily_reminders_list, name='daily_reminders_list'),
+    path('admin-dashboard/reminders/new/', daily_reminder_edit, name='daily_reminder_create'),
+    path('admin-dashboard/reminders/<int:template_id>/edit/', daily_reminder_edit, name='daily_reminder_edit'),
+    path('admin-dashboard/reminders/<int:template_id>/delete/', daily_reminder_delete, name='daily_reminder_delete'),
+    path('admin-dashboard/reminders/<int:template_id>/toggle/', daily_reminder_toggle, name='daily_reminder_toggle'),
+    path('admin-dashboard/reminders/<int:template_id>/test/', daily_reminder_test, name='daily_reminder_test'),
 
     # New Multi-Step Teacher Registration Wizard
     path('register/', TeacherRegistrationWizard.as_view(), name='teacher_register'),

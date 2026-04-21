@@ -27,6 +27,7 @@ from .models import (
     TeacherSubject, Certificate, User, Favorite, FavoriteStudent,
     Conversation, Message, Review, ViewCounter, TelegramUser,
     SubjectCategory, SubjectSearchLog, Notification, NotificationRead,
+    DailyReminderTemplate,
 )
 from .search import (
     normalize_query, build_teacher_search_q,
@@ -2397,5 +2398,157 @@ def google_complete_teacher(request):
         logger.error(f"Error deleting Google stub user: {e}")
 
     return redirect('teacher_register')
+
+
+# ============================================
+# DAILY REMINDER TEMPLATES (admin-dashboard)
+# ============================================
+
+@staff_member_required
+def daily_reminders_list(request):
+    """
+    Список всех шаблонов ежедневной авто-рассылки (утро/вечер × ru/uz/en).
+    """
+    templates = DailyReminderTemplate.objects.order_by(
+        'period', 'language', '-is_active', '-updated_at',
+    )
+
+    # Группируем для удобного вывода: { (period, lang): [templates...] }
+    grouped = {}
+    for tpl in templates:
+        grouped.setdefault((tpl.period, tpl.language), []).append(tpl)
+
+    # Счётчики активных шаблонов по каждой паре — чтобы было видно пустые слоты
+    summary = []
+    for period_code, period_label in DailyReminderTemplate.PERIOD_CHOICES:
+        for lang_code, lang_label in DailyReminderTemplate.LANGUAGE_CHOICES:
+            items = grouped.get((period_code, lang_code), [])
+            summary.append({
+                'period': period_code,
+                'period_label': period_label,
+                'language': lang_code,
+                'language_label': lang_label,
+                'items': items,
+                'active_count': sum(1 for i in items if i.is_active),
+                'total_count': len(items),
+            })
+
+    context = {
+        'summary': summary,
+        'total_templates': templates.count(),
+        'total_active': templates.filter(is_active=True).count(),
+    }
+    return render(request, 'admin/daily_reminders.html', context)
+
+
+@staff_member_required
+def daily_reminder_edit(request, template_id=None):
+    """
+    Создание / редактирование одного шаблона.
+    template_id=None → создание, иначе — правка существующего.
+    """
+    instance = None
+    if template_id:
+        instance = get_object_or_404(DailyReminderTemplate, id=template_id)
+
+    if request.method == 'POST':
+        period = request.POST.get('period', '').strip()
+        language = request.POST.get('language', '').strip()
+        text = request.POST.get('text', '').strip()
+        note = request.POST.get('note', '').strip()
+        is_active = request.POST.get('is_active') == 'on'
+
+        valid_periods = {p for p, _ in DailyReminderTemplate.PERIOD_CHOICES}
+        valid_langs = {l for l, _ in DailyReminderTemplate.LANGUAGE_CHOICES}
+
+        if period not in valid_periods:
+            messages.error(request, 'Выберите корректный период (утро/вечер).')
+        elif language not in valid_langs:
+            messages.error(request, 'Выберите корректный язык.')
+        elif not text:
+            messages.error(request, 'Текст сообщения не может быть пустым.')
+        elif len(text) > 4000:
+            messages.error(request, 'Текст слишком длинный (максимум 4000 символов).')
+        else:
+            if instance is None:
+                instance = DailyReminderTemplate()
+            instance.period = period
+            instance.language = language
+            instance.text = text
+            instance.note = note[:200]
+            instance.is_active = is_active
+            instance.save()
+            messages.success(
+                request,
+                'Шаблон обновлён.' if template_id else 'Шаблон создан.',
+            )
+            return redirect('daily_reminders_list')
+
+    context = {
+        'instance': instance,
+        'period_choices': DailyReminderTemplate.PERIOD_CHOICES,
+        'language_choices': DailyReminderTemplate.LANGUAGE_CHOICES,
+        'prefill_period': request.GET.get('period', ''),
+        'prefill_language': request.GET.get('language', ''),
+    }
+    return render(request, 'admin/daily_reminder_edit.html', context)
+
+
+@staff_member_required
+@require_POST
+def daily_reminder_delete(request, template_id):
+    """Удалить шаблон."""
+    tpl = get_object_or_404(DailyReminderTemplate, id=template_id)
+    tpl.delete()
+    messages.success(request, 'Шаблон удалён.')
+    return redirect('daily_reminders_list')
+
+
+@staff_member_required
+@require_POST
+def daily_reminder_toggle(request, template_id):
+    """Переключить статус активности одним кликом."""
+    tpl = get_object_or_404(DailyReminderTemplate, id=template_id)
+    tpl.is_active = not tpl.is_active
+    tpl.save(update_fields=['is_active', 'updated_at'])
+    messages.success(
+        request,
+        f"Шаблон {'включён' if tpl.is_active else 'выключен'}.",
+    )
+    return redirect('daily_reminders_list')
+
+
+@staff_member_required
+@require_POST
+def daily_reminder_test(request, template_id):
+    """
+    Отправить данный шаблон текущему администратору в Telegram как тест.
+    """
+    tpl = get_object_or_404(DailyReminderTemplate, id=template_id)
+
+    tg = TelegramUser.objects.filter(
+        user=request.user, started_bot=True,
+    ).first()
+
+    if not tg:
+        messages.warning(
+            request,
+            'Ваш аккаунт не привязан к Telegram-боту — привяжите его, '
+            'чтобы получать тестовые сообщения.',
+        )
+        return redirect('daily_reminders_list')
+
+    from .admin_telegram_service import admin_telegram_service
+    test_text = f"🧪 *Тест рассылки*\n\n{tpl.text}"
+    ok = admin_telegram_service.send_message_simple(
+        telegram_id=tg.telegram_id,
+        text=test_text,
+        parse_mode='Markdown',
+    )
+    if ok:
+        messages.success(request, 'Тестовое сообщение отправлено вам в Telegram.')
+    else:
+        messages.error(request, 'Не удалось отправить тестовое сообщение.')
+    return redirect('daily_reminders_list')
 
 

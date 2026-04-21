@@ -1,0 +1,267 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{% static 'logo/new_logo.png' %}" type="image/x-icon">
+    <title>Ежедневные напоминания — UstozHub Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'teachers/admin.css' %}">
+    <style>
+        .reminders-page { background:#f8fafc; min-height:100vh; padding:24px; font-family:'Inter',sans-serif; }
+
+        .page-head {
+            background:linear-gradient(135deg,#0088cc,#0099dd);
+            color:#fff; padding:24px 28px; border-radius:14px; margin-bottom:24px;
+            display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;
+        }
+        .page-head h1 { font-size:22px; margin:0 0 4px; display:flex; align-items:center; gap:10px; }
+        .page-head p  { margin:0; opacity:.9; font-size:14px; max-width:720px; line-height:1.55; }
+        .page-head .head-actions { display:flex; gap:10px; flex-wrap:wrap; }
+
+        .btn {
+            padding:10px 16px; border:none; border-radius:8px; font-size:13.5px; font-weight:600;
+            cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px;
+            transition:all .2s ease;
+        }
+        .btn-primary   { background:#0088cc; color:#fff; }
+        .btn-primary:hover { background:#0077b3; transform:translateY(-1px); }
+        .btn-light     { background:#fff; color:#0088cc; }
+        .btn-light:hover { background:#f1f9fe; }
+        .btn-ghost     { background:transparent; color:#334155; border:1px solid #cbd5e1; }
+        .btn-ghost:hover { background:#f1f5f9; }
+        .btn-danger    { background:#ef4444; color:#fff; }
+        .btn-danger:hover { background:#dc2626; }
+        .btn-success   { background:#10b981; color:#fff; }
+        .btn-success:hover { background:#059669; }
+        .btn-sm        { padding:6px 10px; font-size:12.5px; }
+
+        .summary-row {
+            display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+            gap:14px; margin-bottom:20px;
+        }
+        .summary-card {
+            background:#fff; border-radius:12px; padding:16px 18px;
+            box-shadow:0 2px 8px rgba(0,0,0,.05);
+            border-left:4px solid #0088cc;
+        }
+        .summary-card .num  { font-size:26px; font-weight:700; color:#0A2540; }
+        .summary-card .lbl  { font-size:12.5px; color:#64748b; margin-top:4px; }
+
+        .info-box {
+            background:#eff6ff; border:1px solid #bfdbfe; color:#1e3a8a;
+            padding:14px 18px; border-radius:10px; margin-bottom:22px;
+            font-size:13.5px; line-height:1.6;
+        }
+        .info-box code {
+            background:#dbeafe; padding:1px 6px; border-radius:4px;
+            font-size:12.5px; color:#1e40af;
+        }
+
+        .groups-grid {
+            display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:18px;
+        }
+
+        .group-card {
+            background:#fff; border-radius:14px; padding:20px;
+            box-shadow:0 2px 10px rgba(0,0,0,.05);
+        }
+        .group-head {
+            display:flex; justify-content:space-between; align-items:center;
+            padding-bottom:12px; margin-bottom:14px; border-bottom:1px solid #eef2f7;
+            gap:10px; flex-wrap:wrap;
+        }
+        .group-title { font-size:15.5px; font-weight:700; color:#0A2540; display:flex; align-items:center; gap:8px; }
+        .group-title .chip { font-size:11px; padding:3px 8px; border-radius:999px; font-weight:700; letter-spacing:.02em; }
+        .chip.morning { background:#fef3c7; color:#92400e; }
+        .chip.evening { background:#e0e7ff; color:#3730a3; }
+        .chip.lang    { background:#f1f5f9; color:#334155; }
+
+        .badge-count { font-size:12px; color:#64748b; }
+        .badge-count strong { color:#0A2540; }
+        .badge-count.empty { color:#ef4444; font-weight:600; }
+
+        .tpl-item {
+            border:1px solid #e2e8f0; border-radius:10px; padding:14px 16px;
+            margin-bottom:10px; transition:all .15s ease; position:relative;
+        }
+        .tpl-item.inactive { opacity:.55; background:#f8fafc; }
+        .tpl-item:hover { border-color:#0088cc; }
+
+        .tpl-text {
+            white-space:pre-wrap; word-wrap:break-word;
+            font-size:13.5px; color:#0A2540; line-height:1.65;
+            margin:0 0 10px; max-height:160px; overflow-y:auto;
+            font-family:'Inter',sans-serif;
+        }
+        .tpl-note { font-size:12px; color:#64748b; margin-bottom:10px; font-style:italic; }
+        .tpl-actions { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+        .tpl-meta    { font-size:11.5px; color:#94a3b8; margin-left:auto; }
+        .status-pill {
+            font-size:11px; padding:2px 8px; border-radius:999px;
+            font-weight:700; letter-spacing:.02em;
+        }
+        .status-pill.on  { background:#d1fae5; color:#065f46; }
+        .status-pill.off { background:#fee2e2; color:#991b1b; }
+
+        .empty-slot {
+            padding:18px; border:2px dashed #cbd5e1; border-radius:10px;
+            text-align:center; color:#94a3b8; font-size:13px;
+        }
+        .empty-slot a { color:#0088cc; font-weight:600; text-decoration:none; }
+
+        .messages { margin-bottom:18px; }
+        .msg {
+            padding:12px 16px; border-radius:8px; margin-bottom:8px; font-size:14px;
+            border:1px solid transparent;
+        }
+        .msg.success { background:#d1fae5; color:#065f46; border-color:#6ee7b7; }
+        .msg.error   { background:#fee2e2; color:#991b1b; border-color:#fca5a5; }
+        .msg.warning { background:#fef3c7; color:#92400e; border-color:#fcd34d; }
+        .msg.info    { background:#dbeafe; color:#1e40af; border-color:#93c5fd; }
+
+        form.inline { display:inline; }
+
+        @media (max-width:640px) {
+            .page-head { padding:18px 16px; }
+            .page-head h1 { font-size:18px; }
+            .reminders-page { padding:16px; }
+            .group-card { padding:16px; }
+        }
+    </style>
+</head>
+<body>
+<div class="reminders-page">
+
+    <div class="page-head">
+        <div>
+            <h1><i class="fas fa-clock"></i> Ежедневные напоминания</h1>
+            <p>Автоматические утренние и вечерние сообщения через Telegram-бот.
+               Текст подбирается по языку пользователя (ru / uz / en).
+               Можно держать несколько вариантов на каждый слот — бот выберет случайный активный.</p>
+        </div>
+        <div class="head-actions">
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-ghost" style="background:#fff">
+                <i class="fas fa-arrow-left"></i> К дашборду
+            </a>
+            <a href="{% url 'daily_reminder_create' %}" class="btn btn-light">
+                <i class="fas fa-plus"></i> Новый шаблон
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="msg {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="summary-row">
+        <div class="summary-card">
+            <div class="num">{{ total_templates }}</div>
+            <div class="lbl">Всего шаблонов</div>
+        </div>
+        <div class="summary-card" style="border-left-color:#10b981">
+            <div class="num">{{ total_active }}</div>
+            <div class="lbl">Активных</div>
+        </div>
+        <div class="summary-card" style="border-left-color:#f59e0b">
+            <div class="num">🌅 2×3</div>
+            <div class="lbl">Слотов (утро × ru/uz/en)</div>
+        </div>
+        <div class="summary-card" style="border-left-color:#6366f1">
+            <div class="num">🌙 2×3</div>
+            <div class="lbl">Слотов (вечер × ru/uz/en)</div>
+        </div>
+    </div>
+
+    <div class="info-box">
+        <strong>Как это работает:</strong>
+        утренняя и вечерняя рассылка запускается cron-скриптом:
+        <code>python manage.py send_daily_reminder --period morning</code> и
+        <code>--period evening</code>.
+        Для каждого пользователя берётся <b>активный</b> шаблон его языка
+        (<code>ru</code> / <code>uz</code> / <code>en</code>), если вариантов несколько — выбирается случайно.
+        Если для языка нет активных шаблонов — используется русский.
+        Поддерживается Markdown: <code>*жирный*</code>, <code>_курсив_</code>, эмодзи.
+    </div>
+
+    <div class="groups-grid">
+        {% for grp in summary %}
+        <div class="group-card">
+            <div class="group-head">
+                <div class="group-title">
+                    {% if grp.period == 'morning' %}
+                        <span class="chip morning">☀️ {{ grp.period_label }}</span>
+                    {% else %}
+                        <span class="chip evening">🌙 {{ grp.period_label }}</span>
+                    {% endif %}
+                    <span class="chip lang">{{ grp.language_label }}</span>
+                </div>
+                <div>
+                    {% if grp.active_count == 0 %}
+                        <span class="badge-count empty">Нет активных</span>
+                    {% else %}
+                        <span class="badge-count"><strong>{{ grp.active_count }}</strong> из {{ grp.total_count }} активно</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% for tpl in grp.items %}
+            <div class="tpl-item {% if not tpl.is_active %}inactive{% endif %}">
+                <div class="tpl-text">{{ tpl.text }}</div>
+                {% if tpl.note %}
+                <div class="tpl-note"><i class="fas fa-sticky-note"></i> {{ tpl.note }}</div>
+                {% endif %}
+                <div class="tpl-actions">
+                    <span class="status-pill {% if tpl.is_active %}on{% else %}off{% endif %}">
+                        {% if tpl.is_active %}АКТИВЕН{% else %}ВЫКЛЮЧЕН{% endif %}
+                    </span>
+                    <a href="{% url 'daily_reminder_edit' tpl.id %}" class="btn btn-ghost btn-sm">
+                        <i class="fas fa-pen"></i> Изменить
+                    </a>
+                    <form class="inline" method="post" action="{% url 'daily_reminder_toggle' tpl.id %}">
+                        {% csrf_token %}
+                        <button class="btn btn-ghost btn-sm" type="submit">
+                            {% if tpl.is_active %}
+                                <i class="fas fa-pause"></i> Выключить
+                            {% else %}
+                                <i class="fas fa-play"></i> Включить
+                            {% endif %}
+                        </button>
+                    </form>
+                    <form class="inline" method="post" action="{% url 'daily_reminder_test' tpl.id %}"
+                          onsubmit="return confirm('Отправить тестовое сообщение вам в Telegram?')">
+                        {% csrf_token %}
+                        <button class="btn btn-ghost btn-sm" type="submit" title="Отправить себе тестовое сообщение">
+                            <i class="fas fa-paper-plane"></i> Тест
+                        </button>
+                    </form>
+                    <form class="inline" method="post" action="{% url 'daily_reminder_delete' tpl.id %}"
+                          onsubmit="return confirm('Удалить шаблон безвозвратно?')">
+                        {% csrf_token %}
+                        <button class="btn btn-danger btn-sm" type="submit">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
+                    <span class="tpl-meta">обновлён {{ tpl.updated_at|date:"d.m.Y H:i" }}</span>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-slot">
+                Для этого слота ещё нет шаблонов.
+                <br>
+                <a href="{% url 'daily_reminder_create' %}?period={{ grp.period }}&language={{ grp.language }}">
+                    <i class="fas fa-plus"></i> Добавить первый
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+</body>
+</html>

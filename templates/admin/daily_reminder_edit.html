@@ -1,0 +1,226 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{% static 'logo/new_logo.png' %}" type="image/x-icon">
+    <title>{% if instance %}Редактировать шаблон{% else %}Новый шаблон{% endif %} — UstozHub Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'teachers/admin.css' %}">
+    <style>
+        body { font-family:'Inter',sans-serif; background:#f8fafc; }
+        .edit-page { max-width:760px; margin:0 auto; padding:28px 20px; }
+
+        .page-head {
+            background:linear-gradient(135deg,#0088cc,#0099dd);
+            color:#fff; padding:22px 26px; border-radius:14px; margin-bottom:22px;
+            display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;
+        }
+        .page-head h1 { margin:0; font-size:20px; display:flex; align-items:center; gap:10px; }
+        .page-head a  { color:#fff; background:rgba(255,255,255,.15); padding:8px 14px;
+                        border-radius:8px; text-decoration:none; font-size:13.5px; font-weight:600; }
+        .page-head a:hover { background:rgba(255,255,255,.25); }
+
+        .card {
+            background:#fff; border-radius:14px; padding:28px;
+            box-shadow:0 2px 12px rgba(0,0,0,.06);
+        }
+
+        .row {
+            display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px;
+        }
+        @media (max-width:560px) { .row { grid-template-columns:1fr; } }
+
+        label {
+            display:block; font-size:13px; font-weight:600; color:#0A2540;
+            margin-bottom:6px; letter-spacing:.01em;
+        }
+        input[type=text], select, textarea {
+            width:100%; padding:11px 14px; border:1.5px solid #e2e8f0;
+            border-radius:8px; font-size:14px; font-family:'Inter',sans-serif;
+            transition:border-color .15s ease, box-shadow .15s ease;
+            background:#fff;
+        }
+        input[type=text]:focus, select:focus, textarea:focus {
+            outline:none; border-color:#0088cc; box-shadow:0 0 0 3px rgba(0,136,204,.12);
+        }
+
+        textarea { min-height:240px; resize:vertical; line-height:1.6; }
+
+        .hint { font-size:12px; color:#64748b; margin-top:5px; line-height:1.5; }
+
+        .checkbox-row {
+            display:flex; align-items:center; gap:10px; padding:12px 14px;
+            background:#f1f5f9; border-radius:8px; margin-bottom:18px;
+        }
+        .checkbox-row input { width:18px; height:18px; accent-color:#0088cc; }
+        .checkbox-row label { margin:0; font-size:13.5px; }
+
+        .preview-box {
+            margin-top:6px; padding:14px 16px; background:#f8fafc;
+            border:1px dashed #cbd5e1; border-radius:8px; font-size:13px;
+            white-space:pre-wrap; color:#0A2540; line-height:1.65; min-height:60px;
+        }
+        .preview-box b { color:#0a2540; }
+        .preview-box i { color:#475569; }
+
+        .messages { margin-bottom:16px; }
+        .msg { padding:11px 14px; border-radius:8px; margin-bottom:8px;
+               font-size:13.5px; border:1px solid transparent; }
+        .msg.error   { background:#fee2e2; color:#991b1b; border-color:#fca5a5; }
+        .msg.success { background:#d1fae5; color:#065f46; border-color:#6ee7b7; }
+
+        .actions {
+            display:flex; gap:10px; justify-content:flex-end;
+            margin-top:22px; padding-top:18px; border-top:1px solid #eef2f7;
+            flex-wrap:wrap;
+        }
+        .btn {
+            padding:11px 20px; border:none; border-radius:8px;
+            font-size:14px; font-weight:600; cursor:pointer; text-decoration:none;
+            display:inline-flex; align-items:center; gap:7px; transition:all .15s ease;
+        }
+        .btn-primary { background:#0088cc; color:#fff; }
+        .btn-primary:hover { background:#0077b3; transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,136,204,.28); }
+        .btn-ghost   { background:transparent; color:#334155; border:1.5px solid #cbd5e1; }
+        .btn-ghost:hover { background:#f1f5f9; }
+
+        .help-block {
+            background:#eff6ff; border:1px solid #bfdbfe;
+            padding:12px 16px; border-radius:8px; font-size:12.5px;
+            color:#1e3a8a; line-height:1.6; margin-bottom:18px;
+        }
+        .help-block code {
+            background:#dbeafe; padding:1px 5px; border-radius:4px;
+            color:#1e40af; font-size:12px;
+        }
+    </style>
+</head>
+<body>
+<div class="edit-page">
+
+    <div class="page-head">
+        <h1>
+            <i class="fas {% if instance %}fa-pen{% else %}fa-plus-circle{% endif %}"></i>
+            {% if instance %}Редактирование шаблона{% else %}Новый шаблон{% endif %}
+        </h1>
+        <a href="{% url 'daily_reminders_list' %}">
+            <i class="fas fa-arrow-left"></i> Назад к списку
+        </a>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="msg {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="help-block">
+            <strong>Поддерживается Markdown:</strong>
+            <code>*жирный*</code>, <code>_курсив_</code>, эмодзи, переводы строк.
+            Telegram-лимит — 4096 символов.
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="row">
+                <div>
+                    <label for="id_period">Период</label>
+                    <select id="id_period" name="period" required>
+                        {% for code, label in period_choices %}
+                            <option value="{{ code }}"
+                                {% if instance and instance.period == code %}selected
+                                {% elif not instance and prefill_period == code %}selected{% endif %}>
+                                {% if code == 'morning' %}☀️{% else %}🌙{% endif %} {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="id_language">Язык</label>
+                    <select id="id_language" name="language" required>
+                        {% for code, label in language_choices %}
+                            <option value="{{ code }}"
+                                {% if instance and instance.language == code %}selected
+                                {% elif not instance and prefill_language == code %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <label for="id_text">Текст сообщения</label>
+            <textarea id="id_text" name="text" required maxlength="4000"
+                      placeholder="☀️ *Доброе утро!*&#10;&#10;Загляните на UstozHub..."
+            >{% if instance %}{{ instance.text }}{% endif %}</textarea>
+            <div class="hint">
+                <span id="charCount">0</span> / 4000 символов.
+                Используйте пустую строку для разделения абзацев.
+            </div>
+
+            <div style="margin-top:16px;">
+                <label>Предпросмотр</label>
+                <div id="preview" class="preview-box">—</div>
+            </div>
+
+            <div style="margin-top:18px;">
+                <label for="id_note">Заметка для админа (необязательно)</label>
+                <input type="text" id="id_note" name="note" maxlength="200"
+                       value="{% if instance %}{{ instance.note }}{% endif %}"
+                       placeholder="Например: весёлый вариант для будней">
+            </div>
+
+            <div class="checkbox-row" style="margin-top:16px;">
+                <input type="checkbox" id="id_is_active" name="is_active"
+                    {% if instance %}{% if instance.is_active %}checked{% endif %}{% else %}checked{% endif %}>
+                <label for="id_is_active">Шаблон активен и попадает в рассылку</label>
+            </div>
+
+            <div class="actions">
+                <a href="{% url 'daily_reminders_list' %}" class="btn btn-ghost">
+                    <i class="fas fa-times"></i> Отмена
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    {% if instance %}Сохранить{% else %}Создать шаблон{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Простой предпросмотр Markdown (жирный/курсив) + счётчик символов
+    const textarea   = document.getElementById('id_text');
+    const preview    = document.getElementById('preview');
+    const charCount  = document.getElementById('charCount');
+
+    function escapeHtml(s) {
+        return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    }
+
+    function renderPreview() {
+        const raw = textarea.value;
+        charCount.textContent = raw.length;
+
+        if (!raw.trim()) { preview.textContent = '—'; return; }
+
+        let html = escapeHtml(raw);
+        // *bold*
+        html = html.replace(/\*(.+?)\*/gs, '<b>$1</b>');
+        // _italic_
+        html = html.replace(/(^|[\s(])_(.+?)_(?=[\s).,!?;:]|$)/gs, '$1<i>$2</i>');
+        preview.innerHTML = html;
+    }
+
+    textarea.addEventListener('input', renderPreview);
+    renderPreview();
+</script>
+</body>
+</html>
