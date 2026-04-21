@@ -28,9 +28,9 @@ class TelegramNotificationService:
             logger.warning("TELEGRAM_BOT_TOKEN не установлен!")
     
     async def send_message(
-        self, 
-        telegram_id: int, 
-        text: str, 
+        self,
+        telegram_id: int,
+        text: str,
         reply_markup=None,
         parse_mode='Markdown'
     ) -> bool:
