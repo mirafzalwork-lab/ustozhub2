@@ -1,0 +1,412 @@
+"""
+Полный regression-test: Phase 0 + Phase 1 + Phase 2.
+
+Запуск:
+    python manage.py shell < scripts/regression_test.py
+
+Тесты НЕ изменяют production-данные:
+- TimeSlot создаются с start_at в году 2099 (далеко в будущем)
+- Booking создаются от тестового teacher/student (первые найденные)
+- В конце ВСЁ удаляется в cleanup-блоке
+
+Считает passed/failed, в конце печатает summary.
+"""
+import json
+import sys
+import urllib.parse
+from datetime import timedelta
+from contextlib import contextmanager
+
+from django.core.cache import cache
+from django.db import IntegrityError, connection, transaction
+from django.test import Client
+from django.urls import reverse
+from django.utils import timezone
+
+from teachers.models import (
+    User, TeacherProfile, TimeSlot, Booking, SlotUnavailable,
+    Subject, WizardDraft, Notification, ProfileView,
+)
+from teachers.tasks import (
+    release_expired_holds, mark_completed_lessons,
+    cleanup_wizard_drafts_async, health_check,
+)
+
+# ============================================================
+# Test framework (минималистичный, без pytest)
+# ============================================================
+
+PASSED, FAILED = 0, 0
+FAILURES = []
+
+
+@contextmanager
+def section(name):
+    print(f'\n━━━ {name} ━━━')
+    yield
+
+
+def check(name, cond, detail=''):
+    global PASSED, FAILED
+    if cond:
+        PASSED += 1
+        print(f'  ✓ {name}')
+    else:
+        FAILED += 1
+        FAILURES.append(f'{name} — {detail}')
+        print(f'  ✗ {name}    {detail}')
+
+
+def expect_exc(name, fn, exc_class):
+    try:
+        fn()
+    except exc_class as e:
+        check(name, True)
+        return e
+    except Exception as e:
+        check(name, False, f'неожиданный {type(e).__name__}: {e}')
+        return None
+    check(name, False, 'исключения не было')
+    return None
+
+
+# ============================================================
+# Setup: фикстуры
+# ============================================================
+
+teacher_user = User.objects.filter(user_type='teacher', teacher_profile__isnull=False).first()
+teacher_profile = teacher_user.teacher_profile
+student1 = User.objects.filter(user_type='student').first()
+student2 = User.objects.filter(user_type='student').exclude(pk=student1.pk).first()
+other_teacher = User.objects.filter(user_type='teacher', teacher_profile__isnull=False).exclude(pk=teacher_user.pk).first()
+
+print(f'Test fixtures:')
+print(f'  teacher: {teacher_user.username} (profile id={teacher_profile.pk})')
+print(f'  student1: {student1.username}')
+print(f'  student2: {student2.username}')
+print(f'  other_teacher: {other_teacher.username if other_teacher else "—"}')
+
+# Уборка перед стартом
+TimeSlot.objects.filter(start_at__year=2099).delete()
+WizardDraft.objects.filter(session_key__startswith='__test__').delete()
+
+
+# ============================================================
+# Phase 0: Infrastructure
+# ============================================================
+
+with section('Phase 0: Infrastructure'):
+    check('DB engine is configured (sqlite ok локально)',
+          connection.vendor in ('postgresql', 'sqlite'),
+          detail=f'vendor={connection.vendor}')
+
+    cache.set('__regression__', 'pong', 30)
+    check('Cache backend write+read', cache.get('__regression__') == 'pong')
+    cache.delete('__regression__')
+
+    # apply() — синхронный запуск Celery task без отправки в broker
+    # (локально мы не запускаем worker, реальный broker-flow проверим на проде)
+    result = health_check.apply().get()
+    check('Celery health_check task returns ok (sync apply)', result.get('ok') is True)
+
+    # Email backend (console в dev)
+    from django.core.mail import send_mail
+    try:
+        send_mail('Regression test', 'ignore me', 'test@local', ['test@local'])
+        check('Email backend send_mail работает', True)
+    except Exception as e:
+        check('Email backend send_mail работает', False, str(e))
+
+
+# ============================================================
+# Phase 1: Models
+# ============================================================
+
+with section('Phase 1: TimeSlot & Booking models'):
+    base = timezone.make_aware(timezone.datetime(2099, 7, 1, 10, 0))
+
+    slot = TimeSlot.objects.create(teacher=teacher_profile, start_at=base, end_at=base + timedelta(hours=1))
+    check('TimeSlot создаётся', slot.pk and slot.status == 'free')
+    check('TimeSlot.duration_minutes = 60', slot.duration_minutes == 60)
+    check('TimeSlot.is_in_past = False (будущий)', slot.is_in_past is False)
+
+    def _bad_slot():
+        TimeSlot.objects.create(
+            teacher=teacher_profile,
+            start_at=base + timedelta(hours=2),
+            end_at=base + timedelta(hours=1),  # end < start
+        )
+    expect_exc('CHECK constraint: end > start', _bad_slot, IntegrityError)
+
+    # create_hold
+    b = Booking.create_hold(slot.pk, student1, message='Тест holdа')
+    slot.refresh_from_db()
+    check('create_hold: booking.status = pending', b.status == 'pending')
+    check('create_hold: slot.status = held', slot.status == 'held')
+    check('create_hold: expires_at установлен', b.expires_at is not None)
+    check('create_hold: slot.hold_expires_at установлен', slot.hold_expires_at is not None)
+
+    # race: второй студент
+    expect_exc('Race: SlotUnavailable при двойном hold',
+               lambda: Booking.create_hold(slot.pk, student2), SlotUnavailable)
+
+    # DB UNIQUE
+    def _dup_booking():
+        Booking.objects.create(slot=slot, student=student2, status='pending')
+    expect_exc('OneToOneField UNIQUE на slot блокирует дубль', _dup_booking, IntegrityError)
+
+    # confirm
+    b.confirm(teacher_reply='OK')
+    slot.refresh_from_db(); b.refresh_from_db()
+    check('confirm: booking.status=confirmed', b.status == 'confirmed')
+    check('confirm: slot.status=booked', slot.status == 'booked')
+    check('confirm: expires_at сброшен', b.expires_at is None)
+    check('confirm: slot.hold_expires_at сброшен', slot.hold_expires_at is None)
+    check('confirm: teacher_reply сохранён', b.teacher_reply == 'OK')
+
+    # cancel_by_student
+    b.cancel_by_student()
+    slot.refresh_from_db(); b.refresh_from_db()
+    check('cancel_by_student: booking → cancelled_by_student', b.status == 'cancelled_by_student')
+    check('cancel_by_student: slot → free', slot.status == 'free')
+
+    # reject scenario
+    b2 = Booking.create_hold(slot.pk, student1)
+    b2.reject(teacher_reply='Сегодня не могу')
+    slot.refresh_from_db(); b2.refresh_from_db()
+    check('reject: booking → cancelled_by_teacher', b2.status == 'cancelled_by_teacher')
+    check('reject: slot → free', slot.status == 'free')
+
+    # expire
+    b3 = Booking.create_hold(slot.pk, student1, hold_minutes=15)
+    Booking.objects.filter(pk=b3.pk).update(expires_at=timezone.now() - timedelta(seconds=10))
+    slot.refresh_from_db()
+    n_expired = release_expired_holds()
+    slot.refresh_from_db(); b3.refresh_from_db()
+    check('release_expired_holds возвращает count > 0', n_expired >= 1)
+    check('expire: booking → expired', b3.status == 'expired')
+    check('expire: slot → free', slot.status == 'free')
+
+    # mark_completed (через past confirmed)
+    past_slot = TimeSlot.objects.create(
+        teacher=teacher_profile,
+        start_at=timezone.make_aware(timezone.datetime(2099, 7, 1, 12, 0)),
+        end_at=timezone.make_aware(timezone.datetime(2099, 7, 1, 13, 0)),
+    )
+    b4 = Booking.create_hold(past_slot.pk, student1)
+    b4.confirm()
+    # Имитируем что slot уже прошёл: ставим И start_at И end_at в прошлое
+    # (start < end сохраняем для CHECK constraint)
+    now = timezone.now()
+    TimeSlot.objects.filter(pk=past_slot.pk).update(
+        start_at=now - timedelta(hours=2),
+        end_at=now - timedelta(minutes=5),
+    )
+    n_completed = mark_completed_lessons()
+    b4.refresh_from_db()
+    check('mark_completed_lessons → status completed', b4.status == 'completed')
+    check('mark_completed: ended_at установлен', b4.ended_at is not None)
+
+    # cleanup_wizard_drafts_async
+    WizardDraft.objects.create(
+        session_key='__test__regress',
+        current_step='basic',
+        data={'k': 'v'},
+    )
+    WizardDraft.objects.filter(session_key='__test__regress').update(
+        updated_at=timezone.now() - timedelta(days=30)
+    )
+    n_deleted = cleanup_wizard_drafts_async(days=14)
+    check('cleanup_wizard_drafts_async удаляет старые', n_deleted >= 1)
+
+
+# ============================================================
+# Phase 2: Calendar API
+# ============================================================
+
+with section('Phase 2: Calendar API (Django Client)'):
+    c = Client()
+
+    # Anonymous → redirect to login
+    r = c.get(reverse('teacher_calendar'))
+    check('Anonymous GET calendar → redirect (302)', r.status_code in (301, 302))
+
+    # Student → 403
+    c.force_login(student1)
+    r = c.get(reverse('teacher_calendar'))
+    check('Student GET calendar → 403', r.status_code == 403)
+    r = c.get(reverse('slots_list_api') + '?start=2099-01-01&end=2099-01-02')
+    check('Student GET API → 403', r.status_code == 403)
+    c.logout()
+
+    # Teacher full lifecycle
+    c.force_login(teacher_user)
+    r = c.get(reverse('teacher_calendar'))
+    check('Teacher GET calendar → 200', r.status_code == 200)
+    check('Calendar HTML содержит fullcalendar', b'fullcalendar' in r.content.lower())
+    check('Calendar HTML содержит CSRF token', b'csrfmiddlewaretoken' in r.content)
+
+    # Create slot
+    start = timezone.make_aware(timezone.datetime(2099, 8, 1, 10, 0))
+    end = start + timedelta(hours=1)
+    r = c.post(reverse('slots_create_api'),
+               json.dumps({'start': start.isoformat(), 'end': end.isoformat()}),
+               'application/json')
+    check('POST create → 201', r.status_code == 201)
+    if r.status_code == 201:
+        slot_id = r.json()['event']['id']
+        check('Create response содержит event.id', slot_id is not None)
+        check('Create response содержит backgroundColor', 'backgroundColor' in r.json()['event'])
+
+        # GET list
+        qs = urllib.parse.urlencode({
+            'start': (start - timedelta(days=1)).isoformat(),
+            'end': (start + timedelta(days=2)).isoformat(),
+        })
+        r = c.get(reverse('slots_list_api') + '?' + qs)
+        check('GET list → 200', r.status_code == 200)
+        check('GET list содержит созданный slot',
+              any(e['id'] == slot_id for e in r.json()['events']))
+
+        # PATCH drag
+        new_start = start + timedelta(hours=2)
+        new_end = new_start + timedelta(hours=1)
+        r = c.patch(reverse('slots_detail_api', args=[slot_id]),
+                    json.dumps({'start': new_start.isoformat(), 'end': new_end.isoformat()}),
+                    'application/json')
+        check('PATCH drag → 200', r.status_code == 200)
+
+        # PATCH change status to blocked
+        r = c.patch(reverse('slots_detail_api', args=[slot_id]),
+                    json.dumps({'status': 'blocked'}),
+                    'application/json')
+        check('PATCH status=blocked → 200', r.status_code == 200)
+        check('PATCH response отражает blocked',
+              r.json()['event']['extendedProps']['status'] == 'blocked')
+
+        # PATCH invalid status
+        r = c.patch(reverse('slots_detail_api', args=[slot_id]),
+                    json.dumps({'status': 'invalid'}),
+                    'application/json')
+        check('PATCH invalid status → 400', r.status_code == 400)
+
+        # Overlap
+        r = c.post(reverse('slots_create_api'),
+                   json.dumps({'start': new_start.isoformat(), 'end': new_end.isoformat()}),
+                   'application/json')
+        check('POST overlap → 409', r.status_code == 409)
+
+        # DELETE
+        r = c.delete(reverse('slots_detail_api', args=[slot_id]))
+        check('DELETE free slot → 200', r.status_code == 200)
+
+    # Past slot
+    past = (timezone.now() - timedelta(days=1)).replace(hour=10, minute=0, second=0, microsecond=0)
+    r = c.post(reverse('slots_create_api'),
+               json.dumps({'start': past.isoformat(), 'end': (past + timedelta(hours=1)).isoformat()}),
+               'application/json')
+    check('POST past slot → 400', r.status_code == 400)
+
+    # Duration > 8h
+    r = c.post(reverse('slots_create_api'),
+               json.dumps({'start': start.isoformat(), 'end': (start + timedelta(hours=9)).isoformat()}),
+               'application/json')
+    check('POST > 8h → 400', r.status_code == 400)
+
+    # end <= start
+    r = c.post(reverse('slots_create_api'),
+               json.dumps({'start': start.isoformat(), 'end': start.isoformat()}),
+               'application/json')
+    check('POST end==start → 400', r.status_code == 400)
+
+    # Invalid JSON
+    r = c.post(reverse('slots_create_api'), 'not json', 'application/json')
+    check('POST invalid JSON → 400', r.status_code == 400)
+
+    # Missing fields
+    r = c.post(reverse('slots_create_api'), '{}', 'application/json')
+    check('POST empty body → 400', r.status_code == 400)
+
+    # DELETE/PATCH on held slot (нельзя)
+    base2 = timezone.make_aware(timezone.datetime(2099, 9, 1, 10, 0))
+    slot_held = TimeSlot.objects.create(teacher=teacher_profile, start_at=base2, end_at=base2 + timedelta(hours=1))
+    b_held = Booking.create_hold(slot_held.pk, student1)
+    r = c.delete(reverse('slots_detail_api', args=[slot_held.pk]))
+    check('DELETE held slot → 409', r.status_code == 409)
+    r = c.patch(reverse('slots_detail_api', args=[slot_held.pk]),
+                json.dumps({'start': (base2 + timedelta(hours=3)).isoformat(),
+                            'end':   (base2 + timedelta(hours=4)).isoformat()}),
+                'application/json')
+    check('PATCH held slot → 409', r.status_code == 409)
+
+    # Cross-teacher access: teacher_user пытается изменить slot other_teacher
+    if other_teacher:
+        other_slot = TimeSlot.objects.create(
+            teacher=other_teacher.teacher_profile,
+            start_at=timezone.make_aware(timezone.datetime(2099, 9, 5, 10, 0)),
+            end_at=timezone.make_aware(timezone.datetime(2099, 9, 5, 11, 0)),
+        )
+        r = c.delete(reverse('slots_detail_api', args=[other_slot.pk]))
+        check('Teacher A пытается удалить slot Teacher B → 404', r.status_code == 404)
+        r = c.patch(reverse('slots_detail_api', args=[other_slot.pk]),
+                    json.dumps({'start': '2099-09-05T12:00:00+00:00', 'end': '2099-09-05T13:00:00+00:00'}),
+                    'application/json')
+        check('Teacher A пытается изменить slot Teacher B → 404', r.status_code == 404)
+
+    c.logout()
+
+
+# ============================================================
+# Phase 0/legacy: critical pages still respond
+# ============================================================
+
+with section('Regression: основные страницы'):
+    c = Client()
+    pages_anon = [
+        ('home', reverse('home'), 200),
+        ('login', reverse('login'), 200),
+        ('register_choose', reverse('register_choose'), 200),
+    ]
+    for name, url, expected in pages_anon:
+        r = c.get(url)
+        check(f'Anonymous {name} → {expected}', r.status_code == expected, f'got {r.status_code}')
+
+    # Залогиненный учитель — home + profile
+    c.force_login(teacher_user)
+    r = c.get(reverse('home')); check('Teacher home → 200', r.status_code == 200)
+    r = c.get(reverse('profile')); check('Teacher profile → 200', r.status_code == 200)
+    r = c.get(reverse('conversations_list')); check('Teacher conversations → 200', r.status_code == 200)
+    r = c.get(reverse('notifications_list')); check('Teacher notifications → 200', r.status_code == 200)
+    c.logout()
+
+    # Залогиненный ученик
+    c.force_login(student1)
+    r = c.get(reverse('home')); check('Student home → 200', r.status_code == 200)
+    r = c.get(reverse('profile')); check('Student profile → 200', r.status_code == 200)
+    r = c.get(reverse('my_favorite_teachers')); check('Student favorites → 200', r.status_code == 200)
+    c.logout()
+
+
+# ============================================================
+# Cleanup
+# ============================================================
+
+with section('Cleanup'):
+    n1, _ = TimeSlot.objects.filter(start_at__year=2099).delete()
+    n2, _ = WizardDraft.objects.filter(session_key__startswith='__test__').delete()
+    print(f'  deleted: {n1} test TimeSlots+bookings, {n2} test drafts')
+
+
+# ============================================================
+# Summary
+# ============================================================
+
+print(f'\n{"="*60}')
+print(f'  RESULT: {PASSED} passed, {FAILED} failed')
+print(f'{"="*60}')
+if FAILURES:
+    print('\nFailures:')
+    for f in FAILURES:
+        print(f'  • {f}')
+    sys.exit(1)
+print('\n🎉 ALL TESTS PASSED')

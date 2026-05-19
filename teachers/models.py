@@ -1886,12 +1886,16 @@ class Booking(models.Model):
         ('no_show_teacher', 'Учитель не пришёл'),
     ]
 
+    # Активные статусы — slot может иметь только один Booking в этих статусах.
+    # Cancelled / expired / completed / no_show — могут быть в истории сколько угодно.
+    ACTIVE_STATUSES = ('pending', 'confirmed')
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    slot = models.OneToOneField(
+    slot = models.ForeignKey(
         TimeSlot,
         on_delete=models.CASCADE,
-        related_name='booking',
+        related_name='bookings',
         verbose_name='Слот',
     )
     student = models.ForeignKey(
@@ -1950,6 +1954,17 @@ class Booking(models.Model):
             models.Index(fields=['student', '-created_at']),
             models.Index(fields=['status', 'expires_at']),
             models.Index(fields=['status', '-created_at']),
+            models.Index(fields=['slot', 'status']),
+        ]
+        constraints = [
+            # На slot может быть только один Booking в активных статусах
+            # (pending или confirmed). История cancelled/expired/completed
+            # не ограничена. Гарантия на уровне БД.
+            models.UniqueConstraint(
+                fields=['slot'],
+                condition=models.Q(status__in=('pending', 'confirmed')),
+                name='one_active_booking_per_slot',
+            ),
         ]
 
     def __str__(self):

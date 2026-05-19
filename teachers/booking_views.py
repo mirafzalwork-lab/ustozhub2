@@ -76,16 +76,24 @@ def _slot_to_event(slot: TimeSlot) -> dict:
     }
     c = colors.get(slot.status, colors['free'])
 
+    # Берём активный booking (pending/confirmed) — если есть.
+    # Используем prefetched список (см. slots_list_api), либо fallback на запрос.
+    from .models import Booking
+    active_bookings = getattr(slot, '_active_bookings', None)
+    if active_bookings is None:
+        active = slot.bookings.filter(status__in=Booking.ACTIVE_STATUSES).first()
+    else:
+        active = active_bookings[0] if active_bookings else None
+
     booking_info = None
-    if hasattr(slot, 'booking'):
-        b = slot.booking
+    if active:
         booking_info = {
-            'id': str(b.id),
-            'student_name': b.student.get_full_name() or b.student.username,
-            'status': b.status,
-            'status_display': b.get_status_display(),
-            'is_trial': b.is_trial,
-            'student_message': b.student_message[:200],
+            'id': str(active.id),
+            'student_name': active.student.get_full_name() or active.student.username,
+            'status': active.status,
+            'status_display': active.get_status_display(),
+            'is_trial': active.is_trial,
+            'student_message': active.student_message[:200],
         }
 
     return {
@@ -136,10 +144,15 @@ def slots_list_api(request):
     if start >= end:
         return _json_error('start должен быть раньше end')
 
+    from django.db.models import Prefetch
+    from .models import Booking
+    active_qs = Booking.objects.filter(
+        status__in=Booking.ACTIVE_STATUSES,
+    ).select_related('student')
     slots = (
         TimeSlot.objects
         .filter(teacher=request.teacher_profile, start_at__gte=start, start_at__lt=end)
-        .select_related('booking', 'booking__student')
+        .prefetch_related(Prefetch('bookings', queryset=active_qs, to_attr='_active_bookings'))
         .order_by('start_at')
     )
     return JsonResponse({'events': [_slot_to_event(s) for s in slots]})
