@@ -14,6 +14,7 @@ from .models import (
     Conversation, Message, Review, Favorite, SubjectSearchLog,
     ProfileView, TelegramUser, NotificationQueue, NotificationLog,
     Notification, NotificationRead, DailyReminderTemplate,
+    TimeSlot, Booking,
 )
 from .admin_telegram_service import admin_telegram_service
 
@@ -1099,3 +1100,107 @@ class DailyReminderTemplateAdmin(admin.ModelAdmin):
         first_line = obj.text.splitlines()[0] if obj.text else ''
         return first_line[:60] + ('…' if len(first_line) > 60 else '')
     short_text.short_description = 'Превью'
+
+
+# =============================================================================
+# BOOKING / LESSON ADMIN
+# =============================================================================
+
+@admin.register(TimeSlot)
+class TimeSlotAdmin(admin.ModelAdmin):
+    list_display = ('id', 'teacher_name', 'start_at', 'end_at', 'duration', 'status_colored', 'hold_expires_at')
+    list_filter = ('status', 'start_at')
+    search_fields = ('teacher__user__first_name', 'teacher__user__last_name', 'teacher__user__email')
+    date_hierarchy = 'start_at'
+    autocomplete_fields = ('teacher',)
+    readonly_fields = ('created_at', 'updated_at')
+    ordering = ('-start_at',)
+    list_per_page = 50
+
+    @admin.display(description='Учитель', ordering='teacher__user__last_name')
+    def teacher_name(self, obj):
+        return obj.teacher.user.get_full_name() or obj.teacher.user.username
+
+    @admin.display(description='Длительность')
+    def duration(self, obj):
+        return f'{obj.duration_minutes} мин'
+
+    @admin.display(description='Статус')
+    def status_colored(self, obj):
+        colors = {
+            'free': '#10B981',
+            'held': '#F59E0B',
+            'booked': '#4F46E5',
+            'blocked': '#6B7280',
+        }
+        c = colors.get(obj.status, '#000')
+        return format_html('<b style="color:{}">{}</b>', c, obj.get_status_display())
+
+
+@admin.register(Booking)
+class BookingAdmin(admin.ModelAdmin):
+    list_display = (
+        'short_id', 'student_name', 'teacher_name', 'slot_time',
+        'status_colored', 'is_trial', 'expires_at', 'created_at',
+    )
+    list_filter = ('status', 'is_trial', 'created_at')
+    search_fields = (
+        'student__first_name', 'student__last_name', 'student__email',
+        'slot__teacher__user__first_name', 'slot__teacher__user__last_name',
+    )
+    autocomplete_fields = ('slot', 'student', 'subject')
+    readonly_fields = ('id', 'created_at', 'updated_at', 'started_at', 'ended_at')
+    date_hierarchy = 'created_at'
+    ordering = ('-created_at',)
+    list_per_page = 50
+
+    fieldsets = (
+        ('Основное', {
+            'fields': ('id', 'slot', 'student', 'subject', 'is_trial', 'status'),
+        }),
+        ('Hold', {
+            'fields': ('expires_at',),
+        }),
+        ('Сообщения', {
+            'fields': ('student_message', 'teacher_reply'),
+        }),
+        ('Урок', {
+            'fields': ('meeting_url', 'started_at', 'ended_at'),
+        }),
+        ('Метаданные', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',),
+        }),
+    )
+
+    @admin.display(description='ID')
+    def short_id(self, obj):
+        return str(obj.id)[:8] + '…'
+
+    @admin.display(description='Ученик')
+    def student_name(self, obj):
+        return obj.student.get_full_name() or obj.student.username
+
+    @admin.display(description='Учитель')
+    def teacher_name(self, obj):
+        return obj.slot.teacher.user.get_full_name()
+
+    @admin.display(description='Время', ordering='slot__start_at')
+    def slot_time(self, obj):
+        return f'{obj.slot.start_at:%Y-%m-%d %H:%M}'
+
+    @admin.display(description='Статус')
+    def status_colored(self, obj):
+        colors = {
+            'pending': '#F59E0B',
+            'confirmed': '#4F46E5',
+            'completed': '#10B981',
+            'expired': '#9CA3AF',
+            'cancelled_by_student': '#EF4444',
+            'cancelled_by_teacher': '#EF4444',
+            'rescheduled': '#A855F7',
+            'no_show_student': '#DC2626',
+            'no_show_teacher': '#DC2626',
+        }
+        c = colors.get(obj.status, '#000')
+        return format_html('<b style="color:{}">{}</b>', c, obj.get_status_display())

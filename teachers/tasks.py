@@ -36,3 +36,68 @@ def cleanup_wizard_drafts_async(days: int = 14) -> int:
     deleted, _ = WizardDraft.objects.filter(updated_at__lt=cutoff).delete()
     logger.info(f'cleanup_wizard_drafts_async: deleted {deleted} drafts')
     return deleted
+
+
+@shared_task(name='teachers.release_expired_holds')
+def release_expired_holds() -> int:
+    """
+    Освобождает слоты с истёкшим 15-мин hold.
+    Запускается Celery Beat каждую минуту.
+
+    Логика: для каждого Booking со status='pending' и expires_at<now
+    переводим в 'expired', а связанный TimeSlot — в 'free'.
+    """
+    from django.utils import timezone
+    from .models import Booking
+
+    now = timezone.now()
+    expired = Booking.objects.filter(
+        status='pending',
+        expires_at__lt=now,
+    ).select_related('slot')
+
+    count = 0
+    for booking in expired:
+        try:
+            booking.expire()
+            count += 1
+        except Exception as e:
+            logger.error(
+                f'release_expired_holds: failed to expire booking {booking.pk}: {e}',
+                exc_info=True,
+            )
+
+    if count:
+        logger.info(f'release_expired_holds: expired {count} bookings')
+    return count
+
+
+@shared_task(name='teachers.mark_completed_lessons')
+def mark_completed_lessons() -> int:
+    """
+    Помечает confirmed-бронирования как completed после end_at слота.
+    Запускается Celery Beat каждые 5 минут.
+    """
+    from django.utils import timezone
+    from .models import Booking
+
+    now = timezone.now()
+    to_complete = Booking.objects.filter(
+        status='confirmed',
+        slot__end_at__lt=now,
+    ).select_related('slot')
+
+    count = 0
+    for booking in to_complete:
+        try:
+            booking.mark_completed()
+            count += 1
+        except Exception as e:
+            logger.error(
+                f'mark_completed_lessons: failed for booking {booking.pk}: {e}',
+                exc_info=True,
+            )
+
+    if count:
+        logger.info(f'mark_completed_lessons: completed {count} lessons')
+    return count

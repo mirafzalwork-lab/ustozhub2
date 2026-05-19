@@ -1772,3 +1772,282 @@ class WizardDraft(models.Model):
     def __str__(self):
         return f"Draft {self.session_key[:8]}… step={self.current_step}"
 
+
+# =============================================================================
+# BOOKING / LESSON SYSTEM (Phase 1)
+# =============================================================================
+# Сценарий:
+#   1. Учитель создаёт TimeSlot (либо вручную, либо генерируется из расписания).
+#   2. Ученик нажимает Book на свободном слоте → create_hold():
+#      - status слота меняется на 'held'
+#      - создаётся Booking со status='pending' и expires_at=now+15min
+#      - Celery beat-задача release_expired_holds каждую минуту чистит протухшие
+#   3. Учитель подтверждает или отклоняет → Booking.confirm() / reject().
+#   4. После урока → Booking.complete().
+#
+# Race-safety: Booking.slot = OneToOneField → UNIQUE constraint на уровне БД.
+# Два одновременных запроса не смогут забронировать один и тот же слот —
+# второй INSERT упадёт IntegrityError, плюс мы используем select_for_update.
+
+
+class SlotUnavailable(Exception):
+    """Raised when trying to book a slot that's no longer free."""
+    pass
+
+
+class TimeSlot(models.Model):
+    """
+    Конкретный временной слот учителя (без рекурренции).
+    Не пересекается с другими слотами того же учителя.
+    """
+    STATUS_CHOICES = [
+        ('free', 'Свободен'),
+        ('held', 'Зарезервирован (ожидает подтверждения)'),
+        ('booked', 'Забронирован'),
+        ('blocked', 'Заблокирован учителем'),
+    ]
+
+    teacher = models.ForeignKey(
+        TeacherProfile,
+        on_delete=models.CASCADE,
+        related_name='time_slots',
+        verbose_name='Учитель',
+    )
+    start_at = models.DateTimeField(verbose_name='Начало')
+    end_at = models.DateTimeField(verbose_name='Конец')
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default='free',
+        db_index=True,
+        verbose_name='Статус',
+    )
+    # Время истечения 15-мин hold. Заполнено только когда status='held'.
+    hold_expires_at = models.DateTimeField(null=True, blank=True, db_index=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Временной слот'
+        verbose_name_plural = 'Временные слоты'
+        ordering = ['start_at']
+        indexes = [
+            models.Index(fields=['teacher', 'start_at']),
+            models.Index(fields=['status', 'hold_expires_at']),
+            models.Index(fields=['teacher', 'status', 'start_at']),
+        ]
+        constraints = [
+            # Слот не может начинаться позже чем заканчивается
+            models.CheckConstraint(
+                check=models.Q(end_at__gt=models.F('start_at')),
+                name='timeslot_end_after_start',
+            ),
+            # Hold-поле имеет смысл только когда status='held'
+            models.CheckConstraint(
+                check=(
+                    models.Q(status='held', hold_expires_at__isnull=False) |
+                    ~models.Q(status='held')
+                ),
+                name='timeslot_hold_consistency',
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.teacher.user.get_full_name()} • {self.start_at:%Y-%m-%d %H:%M}-{self.end_at:%H:%M} • {self.get_status_display()}"
+
+    @property
+    def duration_minutes(self):
+        return int((self.end_at - self.start_at).total_seconds() // 60)
+
+    @property
+    def is_in_past(self):
+        return self.end_at < timezone.now()
+
+    def overlaps_with(self, other_start, other_end):
+        """True если слот пересекается с диапазоном [other_start, other_end)."""
+        return self.start_at < other_end and other_start < self.end_at
+
+
+class Booking(models.Model):
+    """
+    Заявка ученика на конкретный TimeSlot.
+    OneToOneField на slot — гарантирует что один слот = одна заявка.
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Ожидает подтверждения учителя'),
+        ('confirmed', 'Подтверждено'),
+        ('completed', 'Завершён'),
+        ('cancelled_by_student', 'Отменено учеником'),
+        ('cancelled_by_teacher', 'Отменено учителем'),
+        ('rescheduled', 'Перенесено'),
+        ('expired', 'Hold истёк (не подтверждено в 15 мин)'),
+        ('no_show_student', 'Ученик не пришёл'),
+        ('no_show_teacher', 'Учитель не пришёл'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    slot = models.OneToOneField(
+        TimeSlot,
+        on_delete=models.CASCADE,
+        related_name='booking',
+        verbose_name='Слот',
+    )
+    student = models.ForeignKey(
+        'User',
+        on_delete=models.CASCADE,
+        related_name='bookings',
+        verbose_name='Ученик',
+    )
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='bookings',
+        verbose_name='Предмет',
+    )
+
+    status = models.CharField(
+        max_length=25,
+        choices=STATUS_CHOICES,
+        default='pending',
+        db_index=True,
+    )
+
+    # 15-минутный hold expires (только пока status='pending')
+    expires_at = models.DateTimeField(null=True, blank=True, db_index=True)
+
+    student_message = models.TextField(
+        blank=True, max_length=1000,
+        help_text='Сообщение от ученика при бронировании',
+    )
+    teacher_reply = models.TextField(
+        blank=True, max_length=1000,
+        help_text='Комментарий учителя при подтверждении/отказе',
+    )
+
+    is_trial = models.BooleanField(
+        default=False,
+        verbose_name='Пробный урок',
+    )
+
+    # Phase 5: ссылка на видеоконференцию (Google Meet/Zoom)
+    meeting_url = models.URLField(blank=True, max_length=500)
+
+    # Фактические времена урока (заполняются Celery при start/complete)
+    started_at = models.DateTimeField(null=True, blank=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Бронирование / Урок'
+        verbose_name_plural = 'Бронирования / Уроки'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['student', '-created_at']),
+            models.Index(fields=['status', 'expires_at']),
+            models.Index(fields=['status', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.student.get_full_name()} → {self.slot} • {self.get_status_display()}"
+
+    # ---------- Lifecycle методы ----------
+
+    @classmethod
+    def create_hold(cls, slot_id, student, subject=None, message='',
+                    is_trial=False, hold_minutes=15):
+        """
+        Атомарно: помечаем slot 'held' и создаём Booking 'pending'.
+        Если slot уже занят — SlotUnavailable.
+        Race-safe: select_for_update + UNIQUE на slot.
+        """
+        from django.db import transaction
+        with transaction.atomic():
+            slot = TimeSlot.objects.select_for_update().get(pk=slot_id)
+            if slot.status != 'free':
+                raise SlotUnavailable(f'Slot {slot_id} is {slot.status}, not free')
+            if slot.is_in_past:
+                raise SlotUnavailable(f'Slot {slot_id} is in the past')
+            expires = timezone.now() + timedelta(minutes=hold_minutes)
+            slot.status = 'held'
+            slot.hold_expires_at = expires
+            slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+            booking = cls.objects.create(
+                slot=slot,
+                student=student,
+                subject=subject,
+                student_message=message[:1000],
+                is_trial=is_trial,
+                status='pending',
+                expires_at=expires,
+            )
+            return booking
+
+    def confirm(self, teacher_reply=''):
+        """Учитель подтверждает: status→confirmed, slot→booked, hold снимается."""
+        from django.db import transaction
+        with transaction.atomic():
+            if self.status not in ('pending',):
+                raise ValueError(f'Cannot confirm booking in status {self.status}')
+            self.status = 'confirmed'
+            self.expires_at = None
+            self.teacher_reply = (teacher_reply or '')[:1000]
+            self.save(update_fields=['status', 'expires_at', 'teacher_reply', 'updated_at'])
+            self.slot.status = 'booked'
+            self.slot.hold_expires_at = None
+            self.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+
+    def reject(self, teacher_reply=''):
+        """Учитель отказывает: status→cancelled_by_teacher, slot→free."""
+        from django.db import transaction
+        with transaction.atomic():
+            if self.status not in ('pending',):
+                raise ValueError(f'Cannot reject booking in status {self.status}')
+            self.status = 'cancelled_by_teacher'
+            self.expires_at = None
+            self.teacher_reply = (teacher_reply or '')[:1000]
+            self.save(update_fields=['status', 'expires_at', 'teacher_reply', 'updated_at'])
+            self.slot.status = 'free'
+            self.slot.hold_expires_at = None
+            self.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+
+    def cancel_by_student(self):
+        """Ученик отменяет до начала: slot снова free, бронирование cancelled."""
+        from django.db import transaction
+        with transaction.atomic():
+            if self.status not in ('pending', 'confirmed'):
+                raise ValueError(f'Cannot cancel booking in status {self.status}')
+            self.status = 'cancelled_by_student'
+            self.expires_at = None
+            self.save(update_fields=['status', 'expires_at', 'updated_at'])
+            self.slot.status = 'free'
+            self.slot.hold_expires_at = None
+            self.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+
+    def expire(self):
+        """Hold протух (вызывается Celery задачей). slot снова free."""
+        from django.db import transaction
+        with transaction.atomic():
+            if self.status != 'pending':
+                return  # уже не pending — игнорируем
+            self.status = 'expired'
+            self.expires_at = None
+            self.save(update_fields=['status', 'expires_at', 'updated_at'])
+            if self.slot.status == 'held':
+                self.slot.status = 'free'
+                self.slot.hold_expires_at = None
+                self.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+
+    def mark_completed(self):
+        """Урок прошёл (вызывается Celery после end_at)."""
+        if self.status != 'confirmed':
+            return
+        self.status = 'completed'
+        self.ended_at = timezone.now()
+        self.save(update_fields=['status', 'ended_at', 'updated_at'])
+
+
