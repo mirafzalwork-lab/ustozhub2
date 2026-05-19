@@ -990,7 +990,13 @@
                 <a href="{% url 'teacher_profile_edit' %}" class="btn btn-primary">
                     <i class="fas fa-edit"></i> {% trans 'Редактировать профиль' %}
                 </a>
-                <a href="{% url 'home' %}" class="btn btn-success">
+                <a href="{% url 'teacher_calendar' %}" class="btn btn-primary" style="background: linear-gradient(135deg, #4F46E5, #4338CA);">
+                    <i class="fa-regular fa-calendar"></i> {% trans 'Управление расписанием' %}
+                </a>
+                <a href="{% url 'my_bookings_page' %}" class="btn btn-success">
+                    <i class="fa-regular fa-calendar-check"></i> {% trans 'Заявки и уроки' %}
+                </a>
+                <a href="{% url 'home' %}" class="btn btn-secondary">
                     <i class="fas fa-eye"></i> {% trans 'Посмотреть как видят ученики' %}
                 </a>
                 <a href="{% url 'my_favorite_students' %}" class="btn btn-secondary">
@@ -998,6 +1004,28 @@
                 </a>
                 <a href="{% url 'logout' %}" class="btn btn-secondary">
                     <i class="fas fa-sign-out-alt"></i> {% trans 'Выйти' %}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✅ CTA: управление расписанием (Phase 5.5) -->
+    <div style="margin: 0 auto 24px; padding: 20px 24px; background: linear-gradient(135deg, #EEF2FF 0%, #DBEAFE 100%); border: 1px solid #C7D2FE; border-radius: 16px; max-width: 1200px;">
+        <div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
+            <div style="flex:1; min-width:240px;">
+                <h3 style="margin:0 0 6px; font-size:18px; font-weight:700; color:#1E1B4B;">
+                    📅 {% trans "Управляйте своим расписанием" %}
+                </h3>
+                <p style="margin:0; color:#3730A3; font-size:14px; line-height:1.5;">
+                    {% trans "Создавайте свободные слоты, чтобы ученики могли бронировать уроки. Можно нажать-и-протянуть в календаре, или сгенерировать слоты пачкой из шаблона." %}
+                </p>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <a href="{% url 'teacher_calendar' %}" style="padding:10px 20px; background:#4F46E5; color:#fff; border-radius:10px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;">
+                    <i class="fa-regular fa-calendar"></i> {% trans "Открыть календарь" %}
+                </a>
+                <a href="{% url 'my_bookings_page' %}" style="padding:10px 20px; background:#fff; color:#4F46E5; border:1px solid #C7D2FE; border-radius:10px; text-decoration:none; font-weight:500; display:inline-flex; align-items:center; gap:8px;">
+                    <i class="fa-regular fa-calendar-check"></i> {% trans "Заявки и уроки" %}
                 </a>
             </div>
         </div>

@@ -34,6 +34,7 @@ from .registration_wizard import TeacherRegistrationWizard, teacher_register_com
 from .video_views import video_presigned_url, video_presigned_url_register, video_save, video_delete
 from .booking_views import (
     teacher_calendar, slots_list_api, slots_create_api, slots_detail_api,
+    slots_bulk_generate_api, slots_bulk_delete_api,
     public_teacher_slots,
     booking_create_api, booking_cancel_api,
     booking_confirm_api, booking_reject_api,
@@ -131,6 +132,8 @@ urlpatterns = [
     path('api/calendar/slots/', slots_list_api, name='slots_list_api'),
     path('api/calendar/slots/create/', slots_create_api, name='slots_create_api'),
     path('api/calendar/slots/<int:slot_id>/', slots_detail_api, name='slots_detail_api'),
+    path('api/calendar/slots/bulk-generate/', slots_bulk_generate_api, name='slots_bulk_generate_api'),
+    path('api/calendar/slots/bulk-delete/', slots_bulk_delete_api, name='slots_bulk_delete_api'),
 
     # Booking flow ученика (Phase 3)
     path('teacher/<int:teacher_id>/book/', book_teacher_page, name='book_teacher_page'),

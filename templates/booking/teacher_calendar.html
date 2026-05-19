@@ -29,6 +29,22 @@
         </div>
     </header>
 
+    <div class="bulk-actions" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
+        <button type="button" class="btn btn-primary" id="bulk-generate-btn"
+                style="padding:10px 16px; border-radius:10px; background:linear-gradient(135deg,#4F46E5,#4338CA); color:#fff; border:none; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-magic-wand-sparkles"></i>
+            {% trans "Сгенерировать из расписания" %}
+        </button>
+        <button type="button" class="btn btn-secondary" id="bulk-delete-btn"
+                style="padding:10px 16px; border-radius:10px; background:#fff; border:1px solid #FEE2E2; color:#B91C1C; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:8px;">
+            <i class="fa-regular fa-trash-can"></i>
+            {% trans "Очистить свободные слоты" %}
+        </button>
+        <span style="margin-left:auto; font-size:13px; color:var(--cal-muted,#64748B);">
+            💡 {% trans "Зажмите и протяните по сетке, чтобы создать слот вручную" %}
+        </span>
+    </div>
+
     <div id="calendar" class="calendar-grid"></div>
 </section>
 
@@ -92,6 +108,16 @@ window.UstozCalendar = {
         list:   "{% url 'slots_list_api' %}",
         create: "{% url 'slots_create_api' %}",
         detail: "/api/calendar/slots/__ID__/",
+        bulkGenerate: "{% url 'slots_bulk_generate_api' %}",
+        bulkDelete:   "{% url 'slots_bulk_delete_api' %}",
+    },
+    i18n: {
+        askWeeks: "{% trans 'На сколько недель вперёд создать слоты? (1-12)' %}",
+        askSlotMinutes: "{% trans 'Длительность одного слота в минутах? (30/45/60/90/120)' %}",
+        confirmDelete: "{% trans 'Удалить ВСЕ свободные слоты на видимой неделе? (held/booked не тронем)' %}",
+        generated: "{% trans 'Создано слотов:' %}",
+        deleted: "{% trans 'Удалено слотов:' %}",
+        noSchedule: "{% trans 'У вас не задано шаблонное расписание. Создавайте слоты вручную или заполните расписание в профиле.' %}",
     },
 };
 </script>

@@ -296,6 +296,179 @@ def slots_detail_api(request, slot_id: int):
 
 
 # =============================================================================
+# Phase 5.5 — bulk-операции: генерация из weekly_schedule, массовое удаление
+# =============================================================================
+
+@teacher_required
+@require_http_methods(['POST'])
+@transaction.atomic
+def slots_bulk_generate_api(request):
+    """
+    Создать TimeSlot пачкой из шаблонного расписания TeacherProfile.weekly_schedule.
+
+    Body:
+        weeks (int, default 4) — на сколько недель вперёд
+        slot_minutes (int, default 60) — длительность одного слота в минутах
+        starting_from (ISO date, optional) — с какой даты начать (default: завтра)
+
+    Логика:
+        Для каждого дня недели из weekly_schedule
+        В заданном интервале [from, to] нарезаем слоты по slot_minutes
+        Пропускаем слоты в прошлом и пересекающиеся с существующими
+
+    Возвращает: {created: N, skipped: M, total_attempted: K}
+    """
+    try:
+        data = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return _json_error('Invalid JSON')
+
+    weeks = int(data.get('weeks') or 4)
+    if not (1 <= weeks <= 12):
+        return _json_error('weeks должно быть от 1 до 12')
+
+    slot_minutes = int(data.get('slot_minutes') or 60)
+    if slot_minutes not in (30, 45, 60, 90, 120):
+        return _json_error('slot_minutes должно быть 30/45/60/90/120')
+
+    from datetime import datetime, time as dt_time, timedelta
+    teacher = request.teacher_profile
+    schedule = teacher.weekly_schedule or {}
+    if not schedule:
+        return _json_error(
+            'У вас не задано шаблонное расписание (weekly_schedule пуст). '
+            'Заполните рабочие дни и часы в профиле, либо создавайте слоты вручную.',
+            status=400,
+        )
+
+    # Маппинг weekday → Python weekday (Mon=0)
+    weekday_map = {
+        'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3,
+        'friday': 4, 'saturday': 5, 'sunday': 6,
+    }
+
+    tz = timezone.get_current_timezone()
+    now = timezone.now()
+    starting_from_str = data.get('starting_from')
+    if starting_from_str:
+        try:
+            start_date = datetime.fromisoformat(starting_from_str).date()
+        except ValueError:
+            return _json_error('starting_from должен быть ISO date (YYYY-MM-DD)')
+    else:
+        start_date = (now + timedelta(days=1)).date()  # завтра
+
+    end_date = start_date + timedelta(weeks=weeks)
+
+    # Заранее тянем существующие слоты учителя в этом диапазоне для проверки пересечений
+    existing = list(TimeSlot.objects.filter(
+        teacher=teacher,
+        start_at__gte=timezone.make_aware(datetime.combine(start_date, dt_time(0, 0)), tz),
+        start_at__lt=timezone.make_aware(datetime.combine(end_date, dt_time(0, 0)), tz),
+    ).values_list('start_at', 'end_at'))
+
+    def overlaps_existing(s_start, s_end):
+        for ex_start, ex_end in existing:
+            if s_start < ex_end and ex_start < s_end:
+                return True
+        return False
+
+    created = 0
+    skipped = 0
+    total_attempted = 0
+
+    current = start_date
+    while current < end_date:
+        weekday_name = current.strftime('%A').lower()  # 'monday', 'tuesday'...
+        day_cfg = schedule.get(weekday_name)
+        if day_cfg and day_cfg.get('from') and day_cfg.get('to'):
+            try:
+                from_t = dt_time.fromisoformat(day_cfg['from'])
+                to_t = dt_time.fromisoformat(day_cfg['to'])
+            except ValueError:
+                current += timedelta(days=1)
+                continue
+
+            day_start = timezone.make_aware(datetime.combine(current, from_t), tz)
+            day_end = timezone.make_aware(datetime.combine(current, to_t), tz)
+
+            cursor = day_start
+            while cursor + timedelta(minutes=slot_minutes) <= day_end:
+                slot_end = cursor + timedelta(minutes=slot_minutes)
+                total_attempted += 1
+                # В прошлом → skip
+                if cursor < now:
+                    skipped += 1
+                # Пересекается с существующим → skip
+                elif overlaps_existing(cursor, slot_end):
+                    skipped += 1
+                else:
+                    TimeSlot.objects.create(
+                        teacher=teacher,
+                        start_at=cursor,
+                        end_at=slot_end,
+                        status='free',
+                    )
+                    existing.append((cursor, slot_end))  # для последующих проверок в том же запуске
+                    created += 1
+                cursor = slot_end
+
+        current += timedelta(days=1)
+
+    logger.info(
+        f'bulk_generate: teacher={teacher.pk} weeks={weeks} '
+        f'created={created} skipped={skipped} total={total_attempted}'
+    )
+    return JsonResponse({
+        'created': created,
+        'skipped': skipped,
+        'total_attempted': total_attempted,
+        'weeks': weeks,
+        'slot_minutes': slot_minutes,
+    }, status=201 if created else 200)
+
+
+@teacher_required
+@require_http_methods(['POST'])
+@transaction.atomic
+def slots_bulk_delete_api(request):
+    """
+    Массово удалить слоты в диапазоне.
+    Body: {from: ISO datetime, to: ISO datetime, only_free?: bool=true}
+
+    Защита: only_free=true (default) — не трогаем held/booked.
+    """
+    try:
+        data = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return _json_error('Invalid JSON')
+
+    start = _parse_iso(data.get('from'))
+    end = _parse_iso(data.get('to'))
+    if not start or not end:
+        return _json_error('from и to обязательны')
+    if start >= end:
+        return _json_error('from должен быть раньше to')
+
+    only_free = data.get('only_free', True)
+
+    qs = TimeSlot.objects.filter(
+        teacher=request.teacher_profile,
+        start_at__gte=start,
+        start_at__lt=end,
+    )
+    if only_free:
+        qs = qs.filter(status='free')
+
+    count = qs.count()
+    qs.delete()
+
+    logger.info(f'bulk_delete: teacher={request.teacher_profile.pk} '
+                f'range={start}..{end} only_free={only_free} deleted={count}')
+    return JsonResponse({'deleted': count, 'only_free': only_free})
+
+
+# =============================================================================
 # Phase 3 — Booking API для учеников и учителей
 # =============================================================================
 

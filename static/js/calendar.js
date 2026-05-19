@@ -224,6 +224,61 @@
 
     calendar.render();
 
+    // ---- Bulk actions --------------------------------------------------
+    const $bulkGenerate = document.getElementById('bulk-generate-btn');
+    const $bulkDelete = document.getElementById('bulk-delete-btn');
+
+    if ($bulkGenerate) {
+        $bulkGenerate.addEventListener('click', async () => {
+            const weeksStr = prompt(cfg.i18n.askWeeks, '4');
+            if (weeksStr === null) return;
+            const weeks = parseInt(weeksStr, 10);
+            if (!weeks || weeks < 1 || weeks > 12) {
+                alert('1-12');
+                return;
+            }
+            const slotMinStr = prompt(cfg.i18n.askSlotMinutes, '60');
+            if (slotMinStr === null) return;
+            const slot_minutes = parseInt(slotMinStr, 10);
+            if (![30, 45, 60, 90, 120].includes(slot_minutes)) {
+                alert('30/45/60/90/120');
+                return;
+            }
+            $bulkGenerate.disabled = true;
+            try {
+                const data = await api('POST', cfg.urls.bulkGenerate, { weeks, slot_minutes });
+                alert(`${cfg.i18n.generated} ${data.created}\n(${cfg.i18n.deleted.replace('Удалено', 'Пропущено')} ${data.skipped})`);
+                calendar.refetchEvents();
+            } catch (e) {
+                alert(e.message);
+            } finally {
+                $bulkGenerate.disabled = false;
+            }
+        });
+    }
+
+    if ($bulkDelete) {
+        $bulkDelete.addEventListener('click', async () => {
+            if (!confirm(cfg.i18n.confirmDelete)) return;
+            // Удаляем в видимом диапазоне календаря
+            const view = calendar.view;
+            const fromIso = view.currentStart.toISOString();
+            const toIso = view.currentEnd.toISOString();
+            $bulkDelete.disabled = true;
+            try {
+                const data = await api('POST', cfg.urls.bulkDelete, {
+                    from: fromIso, to: toIso, only_free: true,
+                });
+                alert(`${cfg.i18n.deleted} ${data.deleted}`);
+                calendar.refetchEvents();
+            } catch (e) {
+                alert(e.message);
+            } finally {
+                $bulkDelete.disabled = false;
+            }
+        });
+    }
+
     // ---- datetime-local helpers ----------------------------------------
     function toLocalInput(d) {
         if (!d) return '';

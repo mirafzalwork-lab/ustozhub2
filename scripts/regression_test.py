@@ -424,6 +424,80 @@ with section('Phase 2: Calendar API (Django Client)'):
                 'application/json')
     check('PATCH held slot → 409', r.status_code == 409)
 
+    # ---- Phase 5.5: bulk-операции ----
+    # bulk_delete на видимом окне (без слотов — 0)
+    r = c.post(reverse('slots_bulk_delete_api'),
+               json.dumps({
+                   'from': '2099-12-01T00:00:00+00:00',
+                   'to': '2099-12-31T23:59:59+00:00',
+                   'only_free': True,
+               }), 'application/json')
+    check('bulk_delete пустого окна → 200', r.status_code == 200)
+    check('bulk_delete deleted=0 для пустого', r.json()['deleted'] == 0)
+
+    # Создаём 3 свободных + 1 booked в окне дек 2099
+    base_bulk = timezone.make_aware(timezone.datetime(2099, 12, 5, 10, 0))
+    bulk_slots = []
+    for i in range(3):
+        s = TimeSlot.objects.create(
+            teacher=teacher_profile,
+            start_at=base_bulk + timedelta(hours=i),
+            end_at=base_bulk + timedelta(hours=i + 1),
+        )
+        bulk_slots.append(s)
+    # Один с booking → не должен удалиться
+    s_book = TimeSlot.objects.create(
+        teacher=teacher_profile,
+        start_at=base_bulk + timedelta(days=1),
+        end_at=base_bulk + timedelta(days=1, hours=1),
+    )
+    b_book = Booking.create_hold(s_book.pk, student1)
+    b_book.confirm()
+
+    r = c.post(reverse('slots_bulk_delete_api'),
+               json.dumps({
+                   'from': '2099-12-01T00:00:00+00:00',
+                   'to':   '2099-12-31T23:59:59+00:00',
+                   'only_free': True,
+               }), 'application/json')
+    check('bulk_delete только free → 200', r.status_code == 200)
+    check('bulk_delete deleted=3 (3 free слота)', r.json()['deleted'] == 3)
+    check('booked-слот НЕ удалён', TimeSlot.objects.filter(pk=s_book.pk).exists())
+
+    # Cleanup booked
+    TimeSlot.objects.filter(pk=s_book.pk).delete()
+
+    # bulk_generate без weekly_schedule → 400
+    tp = teacher_profile
+    original_schedule = tp.weekly_schedule
+    TeacherProfile.objects.filter(pk=tp.pk).update(weekly_schedule={})
+    r = c.post(reverse('slots_bulk_generate_api'),
+               json.dumps({'weeks': 1, 'slot_minutes': 60}), 'application/json')
+    check('bulk_generate без weekly_schedule → 400', r.status_code == 400)
+
+    # bulk_generate с шаблоном — должны создаться слоты
+    TeacherProfile.objects.filter(pk=tp.pk).update(weekly_schedule={
+        'monday': {'from': '10:00', 'to': '12:00'},
+        'wednesday': {'from': '14:00', 'to': '15:00'},
+    })
+    r = c.post(reverse('slots_bulk_generate_api'),
+               json.dumps({'weeks': 2, 'slot_minutes': 60}), 'application/json')
+    check('bulk_generate с шаблоном → 201', r.status_code == 201)
+    check('bulk_generate created > 0', r.json()['created'] > 0)
+
+    # bulk_generate валидация
+    r = c.post(reverse('slots_bulk_generate_api'),
+               json.dumps({'weeks': 999, 'slot_minutes': 60}), 'application/json')
+    check('bulk_generate weeks=999 → 400', r.status_code == 400)
+    r = c.post(reverse('slots_bulk_generate_api'),
+               json.dumps({'weeks': 1, 'slot_minutes': 17}), 'application/json')
+    check('bulk_generate slot_minutes=17 → 400', r.status_code == 400)
+
+    # Восстанавливаем расписание
+    TeacherProfile.objects.filter(pk=tp.pk).update(weekly_schedule=original_schedule)
+    # Удаляем все сгенерированные тестовые слоты
+    TimeSlot.objects.filter(teacher=tp, start_at__gte=timezone.now()).delete()
+
     # Cross-teacher access: teacher_user пытается изменить slot other_teacher
     if other_teacher:
         other_slot = TimeSlot.objects.create(
