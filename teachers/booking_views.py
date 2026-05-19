@@ -160,8 +160,13 @@ def slots_list_api(request):
 
 @teacher_required
 @require_http_methods(['POST'])
+@transaction.atomic
 def slots_create_api(request):
-    """Создать новый слот. Body: {start, end, status?}."""
+    """Создать новый слот. Body: {start, end, status?}.
+
+    Транзакция атомарна — overlap-check и insert в одной транзакции,
+    исключает race condition между двумя одновременными POST.
+    """
     try:
         data = json.loads(request.body or '{}')
     except json.JSONDecodeError:
@@ -182,8 +187,8 @@ def slots_create_api(request):
     if status not in ('free', 'blocked'):
         return _json_error('status должен быть free или blocked')
 
-    # Проверяем пересечение с существующими слотами
-    overlap = TimeSlot.objects.filter(
+    # Проверяем пересечение (lock на пересекающиеся строки этого учителя)
+    overlap = TimeSlot.objects.select_for_update().filter(
         teacher=request.teacher_profile,
         start_at__lt=end,
         end_at__gt=start,
@@ -203,8 +208,14 @@ def slots_create_api(request):
 
 @teacher_required
 @require_http_methods(['PATCH', 'DELETE'])
+@transaction.atomic
 def slots_detail_api(request, slot_id: int):
-    """Изменить (drag/resize) или удалить слот."""
+    """Изменить (drag/resize) или удалить слот.
+
+    Всё тело view — в единой транзакции. select_for_update требует
+    активной транзакции на PostgreSQL (на SQLite — мягче, но единая
+    логика проще и безопаснее).
+    """
     try:
         slot = TimeSlot.objects.select_for_update().get(
             pk=slot_id, teacher=request.teacher_profile,
@@ -252,10 +263,9 @@ def slots_detail_api(request, slot_id: int):
     if overlap:
         return _json_error('Слот пересекается с существующим', status=409)
 
-    with transaction.atomic():
-        slot.start_at = start
-        slot.end_at = end
-        slot.status = new_status
-        slot.save(update_fields=['start_at', 'end_at', 'status', 'updated_at'])
+    slot.start_at = start
+    slot.end_at = end
+    slot.status = new_status
+    slot.save(update_fields=['start_at', 'end_at', 'status', 'updated_at'])
 
     return JsonResponse({'event': _slot_to_event(slot)})
