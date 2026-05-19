@@ -619,6 +619,89 @@ with section('Phase 3: Booking flow API'):
 
 
 # ============================================================
+# Phase 5: meeting_url при confirm + Join Lesson
+# ============================================================
+
+with section('Phase 5: meeting_url для videos'):
+    c = Client()
+    TimeSlot.objects.filter(start_at__year=2099).delete()
+
+    base = timezone.make_aware(timezone.datetime(2099, 11, 1, 10, 0))
+    slot_v1 = TimeSlot.objects.create(teacher=teacher_profile, start_at=base, end_at=base + timedelta(hours=1))
+
+    # Студент создаёт hold
+    c.force_login(student1)
+    r = c.post(reverse('booking_create_api'),
+               json.dumps({'slot_id': slot_v1.pk}), 'application/json')
+    bk_id = r.json()['booking']['id'] if r.status_code == 201 else None
+    c.logout()
+
+    # Учитель confirm с валидным URL
+    c.force_login(teacher_user)
+    r = c.post(reverse('booking_confirm_api', args=[bk_id]),
+               json.dumps({'reply': 'Жду', 'meeting_url': 'https://meet.google.com/abc-defg-hij'}),
+               'application/json')
+    check('Confirm с валидным meeting_url → 200', r.status_code == 200)
+    check('booking.meeting_url сохранён',
+          r.json()['booking']['meeting_url'] == 'https://meet.google.com/abc-defg-hij')
+
+    # Confirm с невалидным URL (не http://) — 400
+    slot_v2 = TimeSlot.objects.create(teacher=teacher_profile,
+                                       start_at=base + timedelta(hours=3),
+                                       end_at=base + timedelta(hours=4))
+    c.logout(); c.force_login(student1)
+    r = c.post(reverse('booking_create_api'),
+               json.dumps({'slot_id': slot_v2.pk}), 'application/json')
+    bk_id2 = r.json()['booking']['id'] if r.status_code == 201 else None
+    c.logout(); c.force_login(teacher_user)
+    r = c.post(reverse('booking_confirm_api', args=[bk_id2]),
+               json.dumps({'meeting_url': 'javascript:alert(1)'}),
+               'application/json')
+    check('Confirm с javascript: URL → 400', r.status_code == 400)
+    r = c.post(reverse('booking_confirm_api', args=[bk_id2]),
+               json.dumps({'meeting_url': 'not a url'}),
+               'application/json')
+    check('Confirm с мусорным meeting_url → 400', r.status_code == 400)
+    # Confirm без meeting_url — должен пройти (URL опционален)
+    r = c.post(reverse('booking_confirm_api', args=[bk_id2]),
+               json.dumps({}), 'application/json')
+    check('Confirm без meeting_url → 200', r.status_code == 200)
+    check('booking.meeting_url пустой', r.json()['booking']['meeting_url'] == '')
+
+    # Учитель может задать URL после confirm через отдельный endpoint
+    url_endpoint = reverse('booking_set_meeting_url_api', args=[bk_id2])
+    r = c.post(url_endpoint, json.dumps({'meeting_url': 'https://zoom.us/j/123'}), 'application/json')
+    check('Set meeting_url после confirm → 200', r.status_code == 200)
+    check('meeting_url обновлён', r.json()['booking']['meeting_url'] == 'https://zoom.us/j/123')
+
+    # Невалидный URL через set-link → 400
+    r = c.post(url_endpoint, json.dumps({'meeting_url': 'ftp://example.com'}), 'application/json')
+    check('Set невалидного URL → 400', r.status_code == 400)
+
+    # Другой учитель не может изменить
+    c.logout()
+    if other_teacher:
+        c.force_login(other_teacher)
+        r = c.post(url_endpoint, json.dumps({'meeting_url': 'https://hack.com'}), 'application/json')
+        check('Other teacher set-link → 403', r.status_code == 403)
+    c.logout()
+
+    # Студент не может set-link
+    c.force_login(student1)
+    r = c.post(url_endpoint, json.dumps({'meeting_url': 'https://x.com'}), 'application/json')
+    check('Student set-link → 403', r.status_code == 403)
+    c.logout()
+
+    # GET my_bookings возвращает meeting_url
+    c.force_login(student1)
+    r = c.get(reverse('my_bookings_api'))
+    bk = [b for b in r.json()['bookings'] if b['id'] == bk_id]
+    check('my_bookings API возвращает meeting_url для подтверждённого',
+          bool(bk) and bk[0]['meeting_url'] == 'https://meet.google.com/abc-defg-hij')
+    c.logout()
+
+
+# ============================================================
 # Phase 0/legacy: critical pages still respond
 # ============================================================
 

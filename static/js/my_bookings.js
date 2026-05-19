@@ -65,8 +65,11 @@
         // Действия по роли и статусу
         const actions = renderActions(b);
 
+        const meetingUrlMeta = b.meeting_url
+            ? `<div class="msg" style="background:#EEF2FF; color:#3730A3;">🎥 ${escapeHtml(b.meeting_url)}</div>` : '';
+
         return `
-            <div class="bk-card" data-id="${b.id}">
+            <div class="bk-card" data-id="${b.id}" data-meeting-url="${escapeHtml(b.meeting_url || '')}">
                 <div class="bk-date">
                     <div class="day">${start.getDate()}</div>
                     <div class="month">${monthName}</div>
@@ -83,6 +86,7 @@
                     </div>
                     ${messageBlock}
                     ${teacherReplyBlock}
+                    ${meetingUrlMeta}
                 </div>
                 <div class="bk-actions">
                     ${actions}
@@ -93,17 +97,36 @@
 
     function renderActions(b) {
         const buttons = [];
+
+        // Join Lesson — приоритет для confirmed с meeting_url в окне [-15min, end]
+        if (b.status === 'confirmed' && b.meeting_url && isJoinable(b)) {
+            buttons.push(`<a class="bk-btn join" href="${b.meeting_url}" target="_blank" rel="noopener">
+                <i class="fa-solid fa-video"></i> ${cfg.i18n.joinLesson}
+            </a>`);
+        }
+
         if (cfg.role === 'teacher' && b.status === 'pending') {
             buttons.push(`<button class="bk-btn primary" data-action="confirm">${cfg.i18n.confirm}</button>`);
             buttons.push(`<button class="bk-btn danger" data-action="reject">${cfg.i18n.reject}</button>`);
         }
+        if (cfg.role === 'teacher' && b.status === 'confirmed') {
+            // Учитель может задать/изменить ссылку
+            const lbl = b.meeting_url ? cfg.i18n.editLink : cfg.i18n.setLink;
+            buttons.push(`<button class="bk-btn secondary" data-action="set-link">${lbl}</button>`);
+            buttons.push(`<button class="bk-btn danger" data-action="cancel">${cfg.i18n.cancel}</button>`);
+        }
         if (cfg.role === 'student' && (b.status === 'pending' || b.status === 'confirmed')) {
             buttons.push(`<button class="bk-btn danger" data-action="cancel">${cfg.i18n.cancel}</button>`);
         }
-        if (cfg.role === 'teacher' && b.status === 'confirmed') {
-            buttons.push(`<button class="bk-btn danger" data-action="cancel">${cfg.i18n.cancel}</button>`);
-        }
         return buttons.join('');
+    }
+
+    function isJoinable(b) {
+        // Кнопка Join видна за 15 минут до start_at и до конца урока
+        const start = new Date(b.slot.start);
+        const end = new Date(b.slot.end);
+        const now = new Date();
+        return (start - now <= 15 * 60 * 1000) && (now <= end);
     }
 
     function escapeHtml(s) {
@@ -144,12 +167,14 @@
         if (!id) return;
         const action = btn.dataset.action;
 
-        let url, body, message;
+        let url, body;
         if (action === 'confirm') {
+            const meetingUrl = prompt(cfg.i18n.askMeetingUrl, '');
+            if (meetingUrl === null) return; // отмена
             const reply = prompt(cfg.i18n.confirmReply, '');
             if (reply === null) return;
             url = cfg.urls.confirm.replace('__ID__', id);
-            body = { reply };
+            body = { reply, meeting_url: (meetingUrl || '').trim() };
         } else if (action === 'reject') {
             const reply = prompt(cfg.i18n.rejectReason, '');
             if (reply === null) return;
@@ -159,6 +184,12 @@
             if (!confirm(cfg.i18n.confirmCancel)) return;
             url = cfg.urls.cancel.replace('__ID__', id);
             body = {};
+        } else if (action === 'set-link') {
+            const current = card.dataset.meetingUrl || '';
+            const next = prompt(cfg.i18n.askMeetingUrl, current);
+            if (next === null) return;
+            url = cfg.urls.setLink.replace('__ID__', id);
+            body = { meeting_url: (next || '').trim() };
         } else {
             return;
         }

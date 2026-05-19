@@ -492,16 +492,45 @@ def booking_cancel_api(request, booking_id):
 
 # ---------------------------------------------------------------- TEACHER --
 
+_MEETING_URL_MAX_LEN = 500
+_MEETING_URL_ALLOWED_SCHEMES = ('https://', 'http://')
+
+
+def _validate_meeting_url(url: str) -> tuple[bool, str]:
+    """
+    Простая валидация URL для встречи: должен быть http(s), длина ≤ 500,
+    выглядит как URL. Возвращает (ok, error_msg).
+    """
+    url = (url or '').strip()
+    if not url:
+        return True, ''  # пусто — это ок, учитель может оставить пустым
+    if len(url) > _MEETING_URL_MAX_LEN:
+        return False, f'URL слишком длинный (макс {_MEETING_URL_MAX_LEN})'
+    if not url.lower().startswith(_MEETING_URL_ALLOWED_SCHEMES):
+        return False, 'Ссылка должна начинаться с https:// или http://'
+    # Минимальная sanity-проверка: должен быть хост
+    from urllib.parse import urlparse
+    try:
+        parsed = urlparse(url)
+        if not parsed.netloc or '.' not in parsed.netloc:
+            return False, 'Некорректный URL'
+    except Exception:
+        return False, 'Некорректный URL'
+    return True, ''
+
+
 @teacher_required
 @require_http_methods(['POST'])
 def booking_confirm_api(request, booking_id):
-    """Учитель подтверждает pending booking → confirmed, slot → booked."""
+    """
+    Учитель подтверждает pending booking → confirmed, slot → booked.
+    Body: { reply?, meeting_url? }  — meeting_url опционально.
+    """
     try:
         booking = Booking.objects.select_related('slot__teacher__user', 'student').get(pk=booking_id)
     except Booking.DoesNotExist:
         return _json_error('Бронирование не найдено', status=404)
 
-    # Только владелец slot
     if booking.slot.teacher_id != request.teacher_profile.pk:
         return _json_error('Доступ запрещён', status=403)
 
@@ -509,15 +538,57 @@ def booking_confirm_api(request, booking_id):
         data = json.loads(request.body or '{}')
     except json.JSONDecodeError:
         data = {}
+
     reply = (data.get('reply') or '').strip()
+    meeting_url = (data.get('meeting_url') or '').strip()
+
+    ok, err = _validate_meeting_url(meeting_url)
+    if not ok:
+        return _json_error(f'meeting_url: {err}', status=400)
 
     try:
         booking.confirm(teacher_reply=reply)
     except ValueError as e:
         return _json_error(str(e), status=409)
 
+    if meeting_url:
+        booking.meeting_url = meeting_url
+        booking.save(update_fields=['meeting_url', 'updated_at'])
+
     _notify_student_about_decision(booking, decision='confirmed')
-    logger.info(f'Booking confirmed: {booking.pk}')
+    logger.info(f'Booking confirmed: {booking.pk}, meeting_url={"set" if meeting_url else "empty"}')
+    return JsonResponse({'booking': _booking_to_dict(booking)})
+
+
+@teacher_required
+@require_http_methods(['POST', 'PATCH'])
+def booking_set_meeting_url_api(request, booking_id):
+    """
+    Обновить meeting_url у уже подтверждённого booking.
+    Учитель может задать/изменить ссылку и после confirm (например, если забыл).
+    """
+    try:
+        booking = Booking.objects.select_related('slot__teacher__user').get(pk=booking_id)
+    except Booking.DoesNotExist:
+        return _json_error('Бронирование не найдено', status=404)
+
+    if booking.slot.teacher_id != request.teacher_profile.pk:
+        return _json_error('Доступ запрещён', status=403)
+    if booking.status not in ('pending', 'confirmed'):
+        return _json_error('Можно установить ссылку только для активного бронирования', status=409)
+
+    try:
+        data = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return _json_error('Invalid JSON')
+
+    url = (data.get('meeting_url') or '').strip()
+    ok, err = _validate_meeting_url(url)
+    if not ok:
+        return _json_error(err, status=400)
+
+    booking.meeting_url = url
+    booking.save(update_fields=['meeting_url', 'updated_at'])
     return JsonResponse({'booking': _booking_to_dict(booking)})
 
 

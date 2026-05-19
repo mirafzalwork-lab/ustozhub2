@@ -93,6 +93,17 @@
     .bk-btn.danger:hover { background:#FEE2E2; }
     .bk-btn.secondary { border-color: var(--cal-border,#E2E8F0); }
     .bk-btn.secondary:hover { background: var(--cal-bg,#F8FAFC); }
+    .bk-btn.join {
+        background: linear-gradient(135deg, #10B981, #059669);
+        color: #fff; border: none; text-decoration: none;
+        display: inline-flex; align-items: center; gap: 6px;
+        animation: bk-pulse 2s ease-in-out infinite;
+    }
+    .bk-btn.join:hover { filter: brightness(1.05); }
+    @keyframes bk-pulse {
+        0%,100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, .35); }
+        50% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+    }
 
     .bk-countdown { font-size:11px; color:#92400E; margin-left:6px; }
 
@@ -150,6 +161,7 @@ window.UstozMyBookings = {
         confirm: "/api/bookings/__ID__/confirm/",
         reject:  "/api/bookings/__ID__/reject/",
         cancel:  "/api/bookings/__ID__/cancel/",
+        setLink: "/api/bookings/__ID__/meeting-url/",
     },
     i18n: {
         confirm: "{% trans 'Подтвердить' %}",
@@ -160,6 +172,10 @@ window.UstozMyBookings = {
         confirmReply: "{% trans 'Сообщение ученику (необязательно):' %}",
         rejectReason: "{% trans 'Причина отклонения (необязательно):' %}",
         confirmCancel: "{% trans 'Отменить это бронирование?' %}",
+        joinLesson: "{% trans 'Войти в урок' %}",
+        setLink: "{% trans 'Добавить ссылку' %}",
+        editLink: "{% trans 'Изменить ссылку' %}",
+        askMeetingUrl: "{% trans 'Ссылка на встречу (Meet/Zoom, оставьте пустой если позже):' %}",
     },
 };
 </script>
