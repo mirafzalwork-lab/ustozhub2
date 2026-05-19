@@ -1311,6 +1311,10 @@
                             </a>
 
                             {% if user.user_type == 'teacher' %}
+                                <a href="{% url 'teacher_calendar' %}" class="dropdown-item">
+                                    <i class="fa-regular fa-calendar"></i>
+                                    <span>{% trans 'Календарь' %}</span>
+                                </a>
                                 <a href="{% url 'profile' %}" class="dropdown-item">
                                     <i class="fas fa-chalkboard"></i>
                                     <span>{% trans 'Мои занятия' %}</span>

@@ -1,0 +1,355 @@
+/* ============================================================
+ * UstozHub — Teacher Calendar
+ * Premium minimal design (Linear/Cal.com vibe)
+ * ============================================================ */
+
+:root {
+    --cal-radius: 12px;
+    --cal-shadow: 0 1px 3px rgba(15, 23, 42, .05), 0 4px 12px rgba(15, 23, 42, .04);
+    --cal-bg: #F8FAFC;
+    --cal-surface: #FFFFFF;
+    --cal-border: #E2E8F0;
+    --cal-text: #0F172A;
+    --cal-muted: #64748B;
+    --cal-primary: #4F46E5;
+    --cal-primary-50: #EEF2FF;
+    --cal-success: #10B981;
+    --cal-warning: #F59E0B;
+    --cal-danger: #EF4444;
+}
+
+/* ---------- Page ---------- */
+.calendar-page {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.calendar-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--cal-text);
+    margin: 0 0 6px;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.calendar-title i { color: var(--cal-primary); }
+
+.calendar-subtitle {
+    color: var(--cal-muted);
+    font-size: 14px;
+    margin: 0;
+    max-width: 520px;
+    line-height: 1.5;
+}
+
+.calendar-legend {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 8px 14px;
+    background: var(--cal-surface);
+    border: 1px solid var(--cal-border);
+    border-radius: 999px;
+    font-size: 12px;
+    color: var(--cal-muted);
+    box-shadow: var(--cal-shadow);
+}
+
+.legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.legend-item .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    display: inline-block;
+}
+
+/* ---------- Calendar grid ---------- */
+.calendar-grid {
+    background: var(--cal-surface);
+    border: 1px solid var(--cal-border);
+    border-radius: var(--cal-radius);
+    padding: 16px;
+    box-shadow: var(--cal-shadow);
+}
+
+/* FullCalendar overrides */
+.fc {
+    --fc-border-color: var(--cal-border);
+    --fc-button-bg-color: var(--cal-surface);
+    --fc-button-border-color: var(--cal-border);
+    --fc-button-text-color: var(--cal-text);
+    --fc-button-hover-bg-color: var(--cal-primary-50);
+    --fc-button-hover-border-color: var(--cal-primary);
+    --fc-button-active-bg-color: var(--cal-primary);
+    --fc-button-active-border-color: var(--cal-primary);
+    --fc-today-bg-color: rgba(79, 70, 229, .04);
+    --fc-page-bg-color: var(--cal-surface);
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+.fc .fc-toolbar-title {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.fc .fc-button {
+    border-radius: 8px;
+    font-weight: 500;
+    text-transform: none;
+    box-shadow: none;
+    padding: 6px 14px;
+    transition: all .15s ease;
+}
+
+.fc .fc-button:focus {
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, .2);
+}
+
+.fc .fc-button.fc-button-active {
+    color: #fff;
+}
+
+.fc .fc-col-header-cell-cushion {
+    color: var(--cal-muted);
+    font-weight: 500;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 8px 4px;
+}
+
+.fc .fc-timegrid-slot {
+    height: 36px;
+}
+
+.fc .fc-event {
+    border-radius: 6px;
+    border: none;
+    padding: 2px 4px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.fc .fc-event:hover {
+    filter: brightness(1.05);
+}
+
+.fc .fc-timegrid-event-harness > .fc-timegrid-event {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+}
+
+/* ---------- Modal ---------- */
+.cal-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.cal-modal[hidden] { display: none; }
+
+.cal-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, .55);
+    backdrop-filter: blur(4px);
+}
+
+.cal-modal__dialog {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    background: var(--cal-surface);
+    border-radius: var(--cal-radius);
+    box-shadow: 0 20px 60px rgba(15, 23, 42, .25);
+    overflow: hidden;
+    animation: cal-pop .18s ease-out;
+}
+
+@keyframes cal-pop {
+    from { transform: scale(.96) translateY(8px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.cal-modal__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--cal-border);
+}
+
+.cal-modal__head h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--cal-text);
+}
+
+.cal-modal__close {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    color: var(--cal-muted);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    transition: background .15s;
+}
+
+.cal-modal__close:hover {
+    background: var(--cal-bg);
+    color: var(--cal-text);
+}
+
+.cal-modal__body {
+    padding: 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.cal-modal__foot {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 12px 20px;
+    border-top: 1px solid var(--cal-border);
+    background: var(--cal-bg);
+}
+
+.cal-field {
+    margin-bottom: 14px;
+}
+
+.cal-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--cal-muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.cal-field input, .cal-field select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--cal-border);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--cal-text);
+    background: var(--cal-surface);
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.cal-field input:focus, .cal-field select:focus {
+    outline: none;
+    border-color: var(--cal-primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, .15);
+}
+
+.cal-section-title {
+    margin: 20px 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cal-text);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.cal-info {
+    margin: 0;
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px 12px;
+    font-size: 13px;
+}
+
+.cal-info dt {
+    color: var(--cal-muted);
+    font-weight: 500;
+}
+
+.cal-info dd {
+    margin: 0;
+    color: var(--cal-text);
+}
+
+.cal-error {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: #FEF2F2;
+    border: 1px solid #FCA5A5;
+    color: #B91C1C;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+/* Buttons (если не определены в base) */
+.cal-modal .btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cal-modal .btn-primary {
+    background: var(--cal-primary);
+    color: #fff;
+}
+
+.cal-modal .btn-primary:hover {
+    background: #4338CA;
+}
+
+.cal-modal .btn-secondary {
+    background: var(--cal-surface);
+    color: var(--cal-text);
+    border-color: var(--cal-border);
+}
+
+.cal-modal .btn-secondary:hover {
+    background: var(--cal-bg);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+    .calendar-page { padding: 20px 12px 32px; }
+    .calendar-title { font-size: 22px; }
+    .calendar-legend { width: 100%; justify-content: flex-start; }
+    .fc .fc-toolbar { flex-direction: column; gap: 8px; align-items: flex-start; }
+    .fc .fc-toolbar-title { font-size: 16px; }
+}

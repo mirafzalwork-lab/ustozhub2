@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "Календарь" %} — UstozHub{% endblock %}
+
+{% block extra_css %}
+{# FullCalendar v6 via CDN #}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
+<link href="{% static 'css/calendar.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<section class="calendar-page">
+    <header class="calendar-header">
+        <div class="calendar-header__left">
+            <h1 class="calendar-title">
+                <i class="fa-regular fa-calendar"></i>
+                {% trans "Календарь расписания" %}
+            </h1>
+            <p class="calendar-subtitle">
+                {% trans "Перетащите курсором по сетке, чтобы создать слот. Кликните по слоту для деталей." %}
+            </p>
+        </div>
+        <div class="calendar-legend">
+            <span class="legend-item"><span class="dot" style="background:#10B981"></span> {% trans "Свободен" %}</span>
+            <span class="legend-item"><span class="dot" style="background:#F59E0B"></span> {% trans "Ожидает" %}</span>
+            <span class="legend-item"><span class="dot" style="background:#4F46E5"></span> {% trans "Забронирован" %}</span>
+            <span class="legend-item"><span class="dot" style="background:#6B7280"></span> {% trans "Заблокирован" %}</span>
+        </div>
+    </header>
+
+    <div id="calendar" class="calendar-grid"></div>
+</section>
+
+{# Modal: создание/редактирование слота #}
+<div class="cal-modal" id="cal-modal" hidden>
+    <div class="cal-modal__backdrop" data-close></div>
+    <div class="cal-modal__dialog" role="dialog" aria-modal="true">
+        <header class="cal-modal__head">
+            <h3 id="cal-modal-title">{% trans "Слот" %}</h3>
+            <button type="button" class="cal-modal__close" data-close aria-label="Close">×</button>
+        </header>
+        <div class="cal-modal__body">
+            <div class="cal-field">
+                <label>{% trans "Начало" %}</label>
+                <input type="datetime-local" id="cal-start">
+            </div>
+            <div class="cal-field">
+                <label>{% trans "Конец" %}</label>
+                <input type="datetime-local" id="cal-end">
+            </div>
+            <div class="cal-field">
+                <label>{% trans "Статус" %}</label>
+                <select id="cal-status">
+                    <option value="free">{% trans "Свободен (можно бронировать)" %}</option>
+                    <option value="blocked">{% trans "Заблокирован (личное время)" %}</option>
+                </select>
+            </div>
+            <div id="cal-booking-info" hidden>
+                <h4 class="cal-section-title">{% trans "Бронирование" %}</h4>
+                <dl class="cal-info">
+                    <dt>{% trans "Ученик" %}</dt><dd id="cal-bk-student">—</dd>
+                    <dt>{% trans "Статус" %}</dt><dd id="cal-bk-status">—</dd>
+                    <dt>{% trans "Сообщение" %}</dt><dd id="cal-bk-message">—</dd>
+                </dl>
+            </div>
+            <div id="cal-error" class="cal-error" hidden></div>
+        </div>
+        <footer class="cal-modal__foot">
+            <button type="button" class="btn btn-secondary" id="cal-delete" hidden>
+                <i class="fa fa-trash"></i> {% trans "Удалить" %}
+            </button>
+            <div style="flex:1"></div>
+            <button type="button" class="btn btn-secondary" data-close>{% trans "Отмена" %}</button>
+            <button type="button" class="btn btn-primary" id="cal-save">{% trans "Сохранить" %}</button>
+        </footer>
+    </div>
+</div>
+
+{# CSRF token для AJAX #}
+{% csrf_token %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/locales-all.global.min.js"></script>
+<script>
+window.UstozCalendar = {
+    locale: '{{ LANGUAGE_CODE|default:"ru" }}',
+    csrf: document.querySelector('[name=csrfmiddlewaretoken]').value,
+    urls: {
+        list:   "{% url 'slots_list_api' %}",
+        create: "{% url 'slots_create_api' %}",
+        detail: "/api/calendar/slots/__ID__/",
+    },
+};
+</script>
+<script src="{% static 'js/calendar.js' %}"></script>
+{% endblock %}

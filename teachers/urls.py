@@ -32,6 +32,9 @@ from .telegram_views import (
 )
 from .registration_wizard import TeacherRegistrationWizard, teacher_register_complete
 from .video_views import video_presigned_url, video_presigned_url_register, video_save, video_delete
+from .booking_views import (
+    teacher_calendar, slots_list_api, slots_create_api, slots_detail_api,
+)
 
 urlpatterns = [
     path('', home, name='home'),
@@ -117,6 +120,12 @@ urlpatterns = [
     path('api/video/presigned-url/register/', video_presigned_url_register, name='video_presigned_url_register'),
     path('api/video/save/', video_save, name='video_save'),
     path('api/video/delete/', video_delete, name='video_delete'),
+
+    # Booking / Calendar (Phase 2)
+    path('teacher/calendar/', teacher_calendar, name='teacher_calendar'),
+    path('api/calendar/slots/', slots_list_api, name='slots_list_api'),
+    path('api/calendar/slots/create/', slots_create_api, name='slots_create_api'),
+    path('api/calendar/slots/<int:slot_id>/', slots_detail_api, name='slots_detail_api'),
 
     # Google OAuth2
     path('auth/google/', google_login_view, name='google_login'),
