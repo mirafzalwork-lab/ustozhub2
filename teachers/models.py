@@ -2066,3 +2066,51 @@ class Booking(models.Model):
         self.save(update_fields=['status', 'ended_at', 'updated_at'])
 
 
+class LessonReminderSent(models.Model):
+    """
+    Журнал отправленных напоминаний (для идемпотентности).
+    Celery beat-задача send_lesson_reminders проверяет наличие записи
+    перед отправкой — гарантирует что одно напоминание уходит только один раз.
+
+    KIND_CHOICES соответствуют T-Xh точкам:
+        '24h' — за сутки до урока
+        '3h'  — за 3 часа
+        '10min' — за 10 минут
+    """
+    KIND_CHOICES = [
+        ('24h', 'За 24 часа'),
+        ('3h', 'За 3 часа'),
+        ('10min', 'За 10 минут'),
+    ]
+
+    booking = models.ForeignKey(
+        Booking,
+        on_delete=models.CASCADE,
+        related_name='reminders_sent',
+    )
+    kind = models.CharField(max_length=10, choices=KIND_CHOICES)
+    sent_at = models.DateTimeField(auto_now_add=True)
+    # Что было отправлено (для аудита)
+    channels = models.CharField(
+        max_length=100, blank=True, default='',
+        help_text='Каналы через запятую: email,in_app,telegram',
+    )
+
+    class Meta:
+        verbose_name = 'Отправленное напоминание'
+        verbose_name_plural = 'Отправленные напоминания'
+        ordering = ['-sent_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['booking', 'kind'],
+                name='unique_reminder_per_booking_kind',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['booking', 'kind']),
+        ]
+
+    def __str__(self):
+        return f'{self.booking_id} • {self.kind} • {self.sent_at:%Y-%m-%d %H:%M}'
+
+

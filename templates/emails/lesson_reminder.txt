@@ -1,0 +1,19 @@
+{% load i18n %}{% blocktrans with name=recipient_name %}Здравствуйте, {{ name }}!{% endblocktrans %}
+
+{% if kind == '24h' %}{% blocktrans %}Напоминаем: завтра у вас запланирован урок.{% endblocktrans %}
+{% elif kind == '3h' %}{% blocktrans %}Ваш урок начнётся через 3 часа.{% endblocktrans %}
+{% else %}{% blocktrans %}Ваш урок начнётся через 10 минут. Готовьтесь подключаться!{% endblocktrans %}{% endif %}
+
+{% trans "Детали:" %}
+  {% trans "Учитель:" %} {{ teacher_name }}
+  {% trans "Ученик:" %} {{ student_name }}
+{% if subject_name %}  {% trans "Предмет:" %} {{ subject_name }}
+{% endif %}  {% trans "Когда:" %} {{ start_at }}
+  {% trans "Длительность:" %} {{ duration_minutes }} {% trans "мин" %}
+
+{% if meeting_url %}{% trans "Ссылка на урок:" %} {{ meeting_url }}
+{% endif %}
+{% trans "Управлять бронированиями:" %} {{ site_url }}{{ bookings_url }}
+
+—
+UstozHub

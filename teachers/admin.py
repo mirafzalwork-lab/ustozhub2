@@ -14,7 +14,7 @@ from .models import (
     Conversation, Message, Review, Favorite, SubjectSearchLog,
     ProfileView, TelegramUser, NotificationQueue, NotificationLog,
     Notification, NotificationRead, DailyReminderTemplate,
-    TimeSlot, Booking,
+    TimeSlot, Booking, LessonReminderSent,
 )
 from .admin_telegram_service import admin_telegram_service
 
@@ -1204,3 +1204,13 @@ class BookingAdmin(admin.ModelAdmin):
         }
         c = colors.get(obj.status, '#000')
         return format_html('<b style="color:{}">{}</b>', c, obj.get_status_display())
+
+
+@admin.register(LessonReminderSent)
+class LessonReminderSentAdmin(admin.ModelAdmin):
+    list_display = ('id', 'booking_id', 'kind', 'channels', 'sent_at')
+    list_filter = ('kind', 'sent_at')
+    search_fields = ('booking__id',)
+    date_hierarchy = 'sent_at'
+    readonly_fields = ('booking', 'kind', 'channels', 'sent_at')
+    ordering = ('-sent_at',)

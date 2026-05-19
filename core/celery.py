@@ -45,6 +45,11 @@ app.conf.beat_schedule = {
         'task': 'teachers.mark_completed_lessons',
         'schedule': 300.0,
     },
+    # Phase 4: напоминания об уроках (T-24h / T-3h / T-10min)
+    'send-lesson-reminders-every-minute': {
+        'task': 'teachers.send_lesson_reminders',
+        'schedule': 60.0,
+    },
     # Чистка старых wizard-drafts раз в сутки в 3:00 Asia/Tashkent
     'cleanup-wizard-drafts-daily': {
         'task': 'teachers.cleanup_wizard_drafts_async',

@@ -1,0 +1,73 @@
+{% load i18n %}<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>{% trans "Напоминание об уроке" %}</title>
+</head>
+<body style="margin:0; padding:24px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,sans-serif; background:#F8FAFC; color:#0F172A; line-height:1.6;">
+    <div style="max-width:560px; margin:0 auto; background:#FFFFFF; border:1px solid #E2E8F0; border-radius:14px; overflow:hidden;">
+
+        <div style="padding:24px 28px 18px; border-bottom:1px solid #F1F5F9;">
+            <div style="font-size:13px; color:#64748B; text-transform:uppercase; letter-spacing:0.06em; font-weight:600;">
+                {% if kind == '24h' %}{% trans "Завтра" %}{% elif kind == '3h' %}{% trans "Через 3 часа" %}{% else %}{% trans "Через 10 минут" %}{% endif %}
+            </div>
+            <h1 style="margin:6px 0 0; font-size:22px; font-weight:700; letter-spacing:-0.01em;">
+                {% blocktrans %}Урок на UstozHub{% endblocktrans %}
+            </h1>
+        </div>
+
+        <div style="padding:24px 28px;">
+            <p style="margin:0 0 16px;">{% blocktrans with name=recipient_name %}Здравствуйте, {{ name }}!{% endblocktrans %}</p>
+
+            <p style="margin:0 0 20px; color:#334155;">
+                {% if kind == '24h' %}{% trans "Напоминаем: завтра у вас запланирован урок." %}
+                {% elif kind == '3h' %}{% trans "Ваш урок начнётся через 3 часа." %}
+                {% else %}{% trans "Ваш урок начнётся через 10 минут — готовьтесь подключаться!" %}{% endif %}
+            </p>
+
+            <table cellpadding="0" cellspacing="0" border="0" style="width:100%; background:#F8FAFC; border-radius:10px; padding:16px 18px; margin-bottom:20px;">
+                <tr>
+                    <td style="padding:6px 0; color:#64748B; font-size:13px;">{% trans "Учитель" %}</td>
+                    <td style="padding:6px 0; text-align:right; font-weight:600;">{{ teacher_name }}</td>
+                </tr>
+                <tr>
+                    <td style="padding:6px 0; color:#64748B; font-size:13px;">{% trans "Ученик" %}</td>
+                    <td style="padding:6px 0; text-align:right; font-weight:600;">{{ student_name }}</td>
+                </tr>
+                {% if subject_name %}
+                <tr>
+                    <td style="padding:6px 0; color:#64748B; font-size:13px;">{% trans "Предмет" %}</td>
+                    <td style="padding:6px 0; text-align:right; font-weight:600;">{{ subject_name }}</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td style="padding:6px 0; color:#64748B; font-size:13px;">{% trans "Когда" %}</td>
+                    <td style="padding:6px 0; text-align:right; font-weight:600;">{{ start_at }}</td>
+                </tr>
+                <tr>
+                    <td style="padding:6px 0; color:#64748B; font-size:13px;">{% trans "Длительность" %}</td>
+                    <td style="padding:6px 0; text-align:right; font-weight:600;">{{ duration_minutes }} {% trans "мин" %}</td>
+                </tr>
+            </table>
+
+            {% if meeting_url %}
+            <p style="text-align:center; margin:20px 0;">
+                <a href="{{ meeting_url }}" style="display:inline-block; padding:12px 24px; background:#4F46E5; color:#FFFFFF; text-decoration:none; border-radius:10px; font-weight:600; font-size:14px;">
+                    {% trans "🎥 Присоединиться к уроку" %}
+                </a>
+            </p>
+            {% endif %}
+
+            <p style="text-align:center; margin:20px 0 0; font-size:13px;">
+                <a href="{{ site_url }}{{ bookings_url }}" style="color:#4F46E5; text-decoration:none;">
+                    {% trans "Открыть мои бронирования →" %}
+                </a>
+            </p>
+        </div>
+
+        <div style="padding:14px 28px; background:#F8FAFC; border-top:1px solid #F1F5F9; color:#94A3B8; font-size:12px; text-align:center;">
+            UstozHub · {% trans "Платформа для поиска репетиторов" %}
+        </div>
+    </div>
+</body>
+</html>

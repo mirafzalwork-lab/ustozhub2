@@ -25,11 +25,12 @@ from django.utils import timezone
 
 from teachers.models import (
     User, TeacherProfile, TimeSlot, Booking, SlotUnavailable,
-    Subject, WizardDraft, Notification, ProfileView,
+    Subject, WizardDraft, Notification, ProfileView, LessonReminderSent,
 )
 from teachers.tasks import (
     release_expired_holds, mark_completed_lessons,
     cleanup_wizard_drafts_async, health_check,
+    send_lesson_reminders,
 )
 
 # ============================================================
@@ -220,6 +221,81 @@ with section('Phase 1: TimeSlot & Booking models'):
     )
     n_deleted = cleanup_wizard_drafts_async(days=14)
     check('cleanup_wizard_drafts_async удаляет старые', n_deleted >= 1)
+
+
+# ============================================================
+# Phase 4: Lesson Reminders (T-24h / T-3h / T-10min)
+# ============================================================
+
+with section('Phase 4: Lesson Reminders'):
+    from django.core import mail
+    from datetime import timedelta
+
+    # Очистка
+    TimeSlot.objects.filter(start_at__year=2099).delete()
+    LessonReminderSent.objects.filter(booking__student=student1).delete()
+
+    # Создаём slot чтобы start_at попал точно в окно T-10min ± 90 сек
+    now = timezone.now()
+    target = now + timedelta(minutes=10)
+    slot_rem = TimeSlot.objects.create(
+        teacher=teacher_profile,
+        start_at=target,
+        end_at=target + timedelta(hours=1),
+    )
+    b_rem = Booking.create_hold(slot_rem.pk, student1)
+    b_rem.confirm()
+
+    mail.outbox = []  # очищаем
+    sent_count = send_lesson_reminders()
+    check('send_lesson_reminders: отправлено >= 1', sent_count >= 1, detail=f'got {sent_count}')
+    rem = LessonReminderSent.objects.filter(booking=b_rem, kind='10min').first()
+    check('Reminder для T-10min записан в БД', rem is not None)
+    # channels content проверяет что попытка отправки была (in_app или email)
+    if rem:
+        check('Reminder channels содержит in_app', 'in_app' in rem.channels,
+              detail=f'channels={rem.channels}')
+        # Email отправлен — либо в outbox (locmem), либо записан в channels
+        email_attempted = ('email' in rem.channels) or (len(mail.outbox) >= 1)
+        check('Email-канал использован', email_attempted,
+              detail=f'channels={rem.channels} outbox={len(mail.outbox)}')
+
+    # Проверка idempotency: второй запуск ничего не должен сделать
+    sent_count2 = send_lesson_reminders()
+    check('Повторный send_lesson_reminders → 0 (idempotency)', sent_count2 == 0)
+    check('LessonReminderSent ровно одна запись (UNIQUE)',
+          LessonReminderSent.objects.filter(booking=b_rem, kind='10min').count() == 1)
+
+    # Создаём ещё один slot в окне T-24h
+    target24 = now + timedelta(hours=24)
+    slot24 = TimeSlot.objects.create(
+        teacher=teacher_profile,
+        start_at=target24,
+        end_at=target24 + timedelta(hours=1),
+    )
+    b24 = Booking.create_hold(slot24.pk, student1)
+    b24.confirm()
+    sent_24 = send_lesson_reminders()
+    check('Reminder T-24h тоже отправляется', sent_24 >= 1)
+    check('LessonReminderSent для T-24h создан',
+          LessonReminderSent.objects.filter(booking=b24, kind='24h').exists())
+
+    # Slot вне окна (через 6 часов) — НЕ должен попасть
+    target_out = now + timedelta(hours=6)
+    slot_out = TimeSlot.objects.create(
+        teacher=teacher_profile,
+        start_at=target_out,
+        end_at=target_out + timedelta(hours=1),
+    )
+    b_out = Booking.create_hold(slot_out.pk, student1)
+    b_out.confirm()
+    sent_out = send_lesson_reminders()
+    check('Slot вне окна не получает reminder', sent_out == 0)
+    check('Нет записи для slot вне окна',
+          not LessonReminderSent.objects.filter(booking=b_out).exists())
+
+    # Cleanup
+    LessonReminderSent.objects.filter(booking__student=student1).delete()
 
 
 # ============================================================
