@@ -34,6 +34,10 @@ from .registration_wizard import TeacherRegistrationWizard, teacher_register_com
 from .video_views import video_presigned_url, video_presigned_url_register, video_save, video_delete
 from .booking_views import (
     teacher_calendar, slots_list_api, slots_create_api, slots_detail_api,
+    public_teacher_slots,
+    booking_create_api, booking_cancel_api,
+    booking_confirm_api, booking_reject_api,
+    my_bookings_api, my_bookings_page, book_teacher_page,
 )
 
 urlpatterns = [
@@ -126,6 +130,16 @@ urlpatterns = [
     path('api/calendar/slots/', slots_list_api, name='slots_list_api'),
     path('api/calendar/slots/create/', slots_create_api, name='slots_create_api'),
     path('api/calendar/slots/<int:slot_id>/', slots_detail_api, name='slots_detail_api'),
+
+    # Booking flow ученика (Phase 3)
+    path('teacher/<int:teacher_id>/book/', book_teacher_page, name='book_teacher_page'),
+    path('api/teachers/<int:teacher_id>/slots/', public_teacher_slots, name='public_teacher_slots'),
+    path('api/bookings/create/', booking_create_api, name='booking_create_api'),
+    path('api/bookings/<uuid:booking_id>/confirm/', booking_confirm_api, name='booking_confirm_api'),
+    path('api/bookings/<uuid:booking_id>/reject/', booking_reject_api, name='booking_reject_api'),
+    path('api/bookings/<uuid:booking_id>/cancel/', booking_cancel_api, name='booking_cancel_api'),
+    path('api/bookings/my/', my_bookings_api, name='my_bookings_api'),
+    path('my/bookings/', my_bookings_page, name='my_bookings_page'),
 
     # Google OAuth2
     path('auth/google/', google_login_view, name='google_login'),

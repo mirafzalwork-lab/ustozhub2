@@ -1315,11 +1315,19 @@
                                     <i class="fa-regular fa-calendar"></i>
                                     <span>{% trans 'Календарь' %}</span>
                                 </a>
+                                <a href="{% url 'my_bookings_page' %}" class="dropdown-item">
+                                    <i class="fa-regular fa-calendar-check"></i>
+                                    <span>{% trans 'Заявки и уроки' %}</span>
+                                </a>
                                 <a href="{% url 'profile' %}" class="dropdown-item">
                                     <i class="fas fa-chalkboard"></i>
                                     <span>{% trans 'Мои занятия' %}</span>
                                 </a>
                             {% elif user.user_type == 'student' %}
+                                <a href="{% url 'my_bookings_page' %}" class="dropdown-item">
+                                    <i class="fa-regular fa-calendar-check"></i>
+                                    <span>{% trans 'Мои бронирования' %}</span>
+                                </a>
                                 <a href="{% url 'my_favorite_teachers' %}" class="dropdown-item">
                                     <i class="fas fa-heart"></i>
                                     <span>{% trans 'Избранное' %}</span>

@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "Забронировать" %} — {{ teacher.user.get_full_name }}{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
+<link href="{% static 'css/calendar.css' %}" rel="stylesheet">
+<style>
+    .book-page { max-width: 1100px; margin: 0 auto; padding: 32px 20px 64px; }
+    .book-hero {
+        display: flex; align-items: center; gap: 20px;
+        padding: 24px; background: var(--cal-surface, #fff);
+        border: 1px solid var(--cal-border, #E2E8F0);
+        border-radius: 16px; margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(15,23,42,.05);
+    }
+    .book-hero img {
+        width: 72px; height: 72px; border-radius: 50%;
+        object-fit: cover; flex-shrink: 0;
+    }
+    .book-hero__info h1 {
+        margin: 0 0 4px; font-size: 22px; font-weight: 700;
+        letter-spacing: -0.02em;
+    }
+    .book-hero__info p { margin: 0; color: var(--cal-muted, #64748B); font-size: 14px; }
+    .book-hero__back {
+        margin-left: auto; padding: 8px 14px;
+        border-radius: 8px; border: 1px solid var(--cal-border, #E2E8F0);
+        text-decoration: none; color: var(--cal-text, #0F172A);
+        font-size: 14px; transition: all .15s;
+    }
+    .book-hero__back:hover { background: var(--cal-bg, #F8FAFC); }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="book-page">
+    <header class="book-hero">
+        {% if teacher.user.avatar %}
+            <img src="{{ teacher.user.avatar.url }}" alt="">
+        {% else %}
+            <img src="{% static 'avatars/default.png' %}" alt="">
+        {% endif %}
+        <div class="book-hero__info">
+            <h1>{{ teacher.user.get_full_name|default:teacher.user.username }}</h1>
+            <p>
+                {% trans "Выберите свободный слот на календаре, чтобы запросить урок." %}
+                {% if teacher.city %}· {{ teacher.city.name }}{% endif %}
+            </p>
+        </div>
+        <a href="{% url 'teacher_detail' id=teacher.pk %}" class="book-hero__back">
+            <i class="fa fa-arrow-left"></i> {% trans "К профилю" %}
+        </a>
+    </header>
+
+    <div class="calendar-grid">
+        <div id="calendar"></div>
+    </div>
+</section>
+
+{# Modal: confirm booking #}
+<div class="cal-modal" id="book-modal" hidden>
+    <div class="cal-modal__backdrop" data-close></div>
+    <div class="cal-modal__dialog" role="dialog">
+        <header class="cal-modal__head">
+            <h3>{% trans "Забронировать урок" %}</h3>
+            <button type="button" class="cal-modal__close" data-close>×</button>
+        </header>
+        <div class="cal-modal__body">
+            <dl class="cal-info" id="book-slot-info" style="margin-bottom:16px;">
+                <dt>{% trans "Когда" %}</dt><dd id="book-when">—</dd>
+                <dt>{% trans "Длительность" %}</dt><dd id="book-duration">—</dd>
+            </dl>
+
+            {% if teacher_subjects %}
+            <div class="cal-field">
+                <label>{% trans "Предмет" %}</label>
+                <select id="book-subject">
+                    <option value="">{% trans "— выберите —" %}</option>
+                    {% for ts in teacher_subjects %}
+                        <option value="{{ ts.subject__id }}" data-free-trial="{{ ts.is_free_trial|yesno:'1,0' }}">
+                            {{ ts.subject__name }} · {{ ts.hourly_rate|floatformat:0 }} {% trans "сум/час" %}
+                            {% if ts.is_free_trial %} · 🎁 {% trans "пробный бесплатно" %}{% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            <div class="cal-field">
+                <label>
+                    <input type="checkbox" id="book-trial" style="width:auto; margin-right:6px;">
+                    {% trans "Это пробный урок" %}
+                </label>
+            </div>
+
+            <div class="cal-field">
+                <label>{% trans "Сообщение учителю (необязательно)" %}</label>
+                <textarea id="book-message" rows="3" style="width:100%; padding:10px 12px; border:1px solid var(--cal-border,#E2E8F0); border-radius:8px; font:inherit; resize:vertical;" maxlength="500" placeholder="{% trans 'Расскажите немного о ваших целях обучения...' %}"></textarea>
+            </div>
+
+            <div id="book-error" class="cal-error" hidden></div>
+        </div>
+        <footer class="cal-modal__foot">
+            <div style="flex:1; font-size:12px; color:var(--cal-muted,#64748B);">
+                {% trans "У учителя будет 15 минут для подтверждения" %}
+            </div>
+            <button type="button" class="btn btn-secondary" data-close>{% trans "Отмена" %}</button>
+            <button type="button" class="btn btn-primary" id="book-confirm">
+                <i class="fa fa-calendar-check"></i> {% trans "Запросить урок" %}
+            </button>
+        </footer>
+    </div>
+</div>
+
+{% csrf_token %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/locales-all.global.min.js"></script>
+<script>
+window.UstozBook = {
+    teacherId: {{ teacher.pk }},
+    locale: '{{ LANGUAGE_CODE|default:"ru" }}',
+    csrf: document.querySelector('[name=csrfmiddlewaretoken]').value,
+    isAuth: {{ user.is_authenticated|yesno:'true,false' }},
+    isStudent: {% if user.is_authenticated and user.user_type == 'student' %}true{% else %}false{% endif %},
+    urls: {
+        slots:  "{% url 'public_teacher_slots' teacher_id=teacher.pk %}",
+        book:   "{% url 'booking_create_api' %}",
+        login:  "{% url 'login' %}?next={{ request.path|urlencode }}",
+        myBookings: "{% url 'my_bookings_page' %}",
+    },
+    i18n: {
+        loginRequired: "{% trans 'Войдите в систему, чтобы забронировать урок' %}",
+        teachersCantBook: "{% trans 'Учителя не могут бронировать уроки' %}",
+        success: "{% trans 'Заявка отправлена! Учителю даётся 15 минут.' %}",
+    },
+};
+</script>
+<script src="{% static 'js/book_teacher.js' %}"></script>
+{% endblock %}

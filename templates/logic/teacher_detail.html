@@ -2299,6 +2299,12 @@
                     </div>
 
                     <div class="booking-actions">
+                        {# Phase 3: кнопка бронирования урока с мини-календарём #}
+                        <a href="{% url 'book_teacher_page' teacher_id=teacher.id %}" class="btn-primary" style="background: linear-gradient(135deg, #4F46E5, #4338CA); border: none;">
+                            <i class="fa-regular fa-calendar-check"></i>
+                            {% trans 'Забронировать урок' %}
+                        </a>
+
                         {% if user.is_authenticated and user != teacher.user %}
                         <!-- Онлайн чат с real-time сообщениями -->
                         <a href="{% url 'start_conversation' user_id=teacher.user.id %}" class="btn-primary" style="background: linear-gradient(135deg, #10B981, #059669); border: none;">

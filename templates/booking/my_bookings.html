@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "Мои бронирования" %} — UstozHub{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/calendar.css' %}" rel="stylesheet">
+<style>
+    .bookings-page { max-width: 1100px; margin: 0 auto; padding: 32px 20px 64px; }
+    .bk-head {
+        display:flex; align-items:center; justify-content:space-between;
+        gap:16px; flex-wrap:wrap; margin-bottom:24px;
+    }
+    .bk-title {
+        font-size:28px; font-weight:700; margin:0;
+        letter-spacing:-0.02em; display:flex; align-items:center; gap:12px;
+    }
+    .bk-title i { color: var(--cal-primary, #4F46E5); }
+    .bk-filters {
+        display:flex; gap:8px; flex-wrap:wrap;
+    }
+    .bk-filter {
+        padding:6px 14px; border-radius:999px;
+        background: var(--cal-surface,#fff); border:1px solid var(--cal-border,#E2E8F0);
+        font-size:13px; color: var(--cal-muted,#64748B);
+        cursor:pointer; transition:all .15s;
+    }
+    .bk-filter:hover { background: var(--cal-bg,#F8FAFC); }
+    .bk-filter.is-active {
+        background: var(--cal-primary,#4F46E5); color:#fff; border-color: var(--cal-primary,#4F46E5);
+    }
+
+    .bk-list { display:flex; flex-direction:column; gap:12px; }
+    .bk-card {
+        display:grid; grid-template-columns: 80px 1fr auto;
+        gap:16px; align-items:center;
+        padding:16px 20px;
+        background: var(--cal-surface,#fff);
+        border:1px solid var(--cal-border,#E2E8F0);
+        border-radius:14px;
+        box-shadow: 0 1px 3px rgba(15,23,42,.04);
+        transition: all .15s;
+    }
+    .bk-card:hover { box-shadow: 0 4px 12px rgba(15,23,42,.06); border-color:#CBD5E1; }
+
+    .bk-date {
+        text-align:center;
+        background: var(--cal-bg,#F8FAFC);
+        border-radius:10px;
+        padding:10px 4px;
+        font-weight:600;
+    }
+    .bk-date .day { font-size:24px; line-height:1; color: var(--cal-text,#0F172A); }
+    .bk-date .month { font-size:11px; text-transform:uppercase; color: var(--cal-muted,#64748B); letter-spacing:.05em; }
+    .bk-date .time { font-size:12px; color: var(--cal-muted,#64748B); margin-top:4px; }
+
+    .bk-info h3 {
+        margin:0 0 4px; font-size:15px; font-weight:600;
+    }
+    .bk-info .meta {
+        font-size:13px; color: var(--cal-muted,#64748B);
+        display:flex; gap:8px; flex-wrap:wrap;
+    }
+    .bk-info .meta span:not(:last-child)::after { content:"·"; margin-left:8px; color:#CBD5E1; }
+    .bk-info .msg {
+        margin-top:8px; padding:8px 10px;
+        background:#F8FAFC; border-radius:6px;
+        font-size:13px; color:#334155;
+    }
+
+    .bk-status {
+        display:inline-flex; align-items:center; gap:6px;
+        padding:4px 10px; border-radius:999px;
+        font-size:11px; font-weight:600; text-transform:uppercase;
+        letter-spacing:.04em;
+    }
+    .bk-status.pending { background:#FEF3C7; color:#92400E; }
+    .bk-status.confirmed { background:#E0E7FF; color:#3730A3; }
+    .bk-status.completed { background:#D1FAE5; color:#065F46; }
+    .bk-status.cancelled { background:#FEE2E2; color:#991B1B; }
+    .bk-status.expired { background:#F3F4F6; color:#374151; }
+
+    .bk-actions { display:flex; gap:6px; align-items:center; }
+    .bk-btn {
+        padding:6px 12px; border-radius:8px; font-size:13px;
+        cursor:pointer; border:1px solid transparent;
+        background: var(--cal-surface,#fff); color: var(--cal-text,#0F172A);
+        transition:all .15s;
+    }
+    .bk-btn.primary { background: var(--cal-primary,#4F46E5); color:#fff; }
+    .bk-btn.primary:hover { background:#4338CA; }
+    .bk-btn.danger { color:#B91C1C; border-color:#FEE2E2; background:#FEF2F2; }
+    .bk-btn.danger:hover { background:#FEE2E2; }
+    .bk-btn.secondary { border-color: var(--cal-border,#E2E8F0); }
+    .bk-btn.secondary:hover { background: var(--cal-bg,#F8FAFC); }
+
+    .bk-countdown { font-size:11px; color:#92400E; margin-left:6px; }
+
+    .bk-empty {
+        text-align:center; padding:64px 20px;
+        background: var(--cal-surface,#fff);
+        border: 1px dashed var(--cal-border,#E2E8F0);
+        border-radius:14px;
+        color: var(--cal-muted,#64748B);
+    }
+    .bk-empty i { font-size:48px; opacity:.4; margin-bottom:12px; display:block; }
+
+    @media (max-width:640px){
+        .bk-card { grid-template-columns: 60px 1fr; gap:12px; padding:14px; }
+        .bk-actions { grid-column: 1 / -1; justify-content:flex-end; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="bookings-page">
+    <header class="bk-head">
+        <h1 class="bk-title">
+            <i class="fa-regular fa-calendar"></i>
+            {% if role == 'teacher' %}
+                {% trans "Заявки и уроки" %}
+            {% else %}
+                {% trans "Мои бронирования" %}
+            {% endif %}
+        </h1>
+        <div class="bk-filters" id="bk-filters">
+            <button class="bk-filter is-active" data-status="">{% trans "Все" %}</button>
+            <button class="bk-filter" data-status="pending">{% trans "Ожидают" %}</button>
+            <button class="bk-filter" data-status="confirmed">{% trans "Подтверждены" %}</button>
+            <button class="bk-filter" data-status="completed">{% trans "Завершены" %}</button>
+        </div>
+    </header>
+
+    <div class="bk-list" id="bk-list">
+        <div class="bk-empty"><i class="fa-regular fa-clock"></i><div>{% trans "Загрузка..." %}</div></div>
+    </div>
+</section>
+
+{% csrf_token %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+window.UstozMyBookings = {
+    role: '{{ role }}',
+    csrf: document.querySelector('[name=csrfmiddlewaretoken]').value,
+    locale: '{{ LANGUAGE_CODE|default:"ru" }}',
+    urls: {
+        list:    "{% url 'my_bookings_api' %}",
+        confirm: "/api/bookings/__ID__/confirm/",
+        reject:  "/api/bookings/__ID__/reject/",
+        cancel:  "/api/bookings/__ID__/cancel/",
+    },
+    i18n: {
+        confirm: "{% trans 'Подтвердить' %}",
+        reject: "{% trans 'Отклонить' %}",
+        cancel: "{% trans 'Отменить' %}",
+        details: "{% trans 'Подробнее' %}",
+        empty: "{% trans 'Пока нет бронирований' %}",
+        confirmReply: "{% trans 'Сообщение ученику (необязательно):' %}",
+        rejectReason: "{% trans 'Причина отклонения (необязательно):' %}",
+        confirmCancel: "{% trans 'Отменить это бронирование?' %}",
+    },
+};
+</script>
+<script src="{% static 'js/my_bookings.js' %}"></script>
+{% endblock %}
