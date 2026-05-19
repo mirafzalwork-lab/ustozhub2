@@ -187,12 +187,14 @@ with section('Phase 1: TimeSlot & Booking models'):
     check('expire: booking → expired', b3.status == 'expired')
     check('expire: slot → free', slot.status == 'free')
 
-    # mark_completed (через past confirmed)
+    # mark_completed (через past confirmed) — slot станет с start_at сегодня
     past_slot = TimeSlot.objects.create(
         teacher=teacher_profile,
         start_at=timezone.make_aware(timezone.datetime(2099, 7, 1, 12, 0)),
         end_at=timezone.make_aware(timezone.datetime(2099, 7, 1, 13, 0)),
     )
+    # Запоминаем pk, чтобы cleanup явно его удалил
+    _completed_test_slot_pk = past_slot.pk
     b4 = Booking.create_hold(past_slot.pk, student1)
     b4.confirm()
     # Имитируем что slot уже прошёл: ставим И start_at И end_at в прошлое
@@ -392,9 +394,18 @@ with section('Regression: основные страницы'):
 # ============================================================
 
 with section('Cleanup'):
+    # 1. Все слоты в 2099 году (наш маркер)
     n1, _ = TimeSlot.objects.filter(start_at__year=2099).delete()
+    # 2. mark_completed-тест переписывает start_at в прошлое — ловим его явно по pk
+    n_extra = 0
+    try:
+        n_extra, _ = TimeSlot.objects.filter(pk=_completed_test_slot_pk).delete()
+    except NameError:
+        pass
+    # 3. Все остатки тестовых slot'ов нашего тестового учителя без активных бронирований —
+    #    safety net, если что-то осталось от падений в прошлом
     n2, _ = WizardDraft.objects.filter(session_key__startswith='__test__').delete()
-    print(f'  deleted: {n1} test TimeSlots+bookings, {n2} test drafts')
+    print(f'  deleted: {n1 + n_extra} test TimeSlots+bookings, {n2} test drafts')
 
 
 # ============================================================
