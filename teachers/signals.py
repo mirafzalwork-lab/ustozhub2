@@ -8,7 +8,7 @@ from django.core.cache import cache
 from .models import (
     Message, Subject, City, TeacherSubject, StudentProfile,
     SubjectCategory, TeacherProfile, Review, ProfileView,
-    Notification
+    Notification, User
 )
 import logging
 
@@ -260,6 +260,26 @@ def clear_teacher_reviews_cache(sender, instance=None, **kwargs):
                 logger.warning(f"Не удалось обновить ранжирование: {e}")
     except Exception as e:
         logger.error(f"Ошибка очистки кэша отзывов: {e}", exc_info=True)
+
+
+@receiver(post_save, sender=User)
+def sync_teacher_search_text_on_user_change(sender, instance=None, created=False, **kwargs):
+    """
+    Имя/фамилия хранятся в User, но search_text — в TeacherProfile.
+    При изменении User обновляем search_text связанного профиля учителя.
+    """
+    if created or not instance:
+        return
+    try:
+        tp = getattr(instance, 'teacher_profile', None)
+        if tp is None:
+            return
+        tp._rebuild_search_text()
+        TeacherProfile.objects.filter(pk=tp.pk).update(search_text=tp.search_text)
+    except TeacherProfile.DoesNotExist:
+        pass
+    except Exception as e:
+        logger.warning(f"Не удалось обновить search_text для user={instance.pk}: {e}")
 
 
 @receiver(post_save, sender=ProfileView)

@@ -203,16 +203,17 @@ def expand_query(query: str) -> list[str]:
 def build_subject_search_q(query: str) -> Q:
     """
     Строит Q-объект для поиска предметов (Subject).
-    Ищет по name и description с учётом синонимов.
+    Основной канал — денормализованное поле search_text (lowercase name+description),
+    которое имеет индекс. Это быстрее, чем OR по двум полям.
     """
     q = normalize_query(query)
     if not q:
         return Q()
 
-    conditions = Q(name__icontains=q) | Q(description__icontains=q)
+    conditions = Q(search_text__contains=q)
 
     for synonym in expand_query(q):
-        conditions |= Q(name__icontains=synonym) | Q(description__icontains=synonym)
+        conditions |= Q(search_text__contains=synonym)
 
     return conditions
 
@@ -220,25 +221,22 @@ def build_subject_search_q(query: str) -> Q:
 def build_teacher_search_q(query: str) -> Q:
     """
     Строит Q-объект для поиска учителей (TeacherProfile).
-    Ищет по предметам, имени/фамилии, bio — с учётом синонимов.
+    Основной канал — TeacherProfile.search_text (имя + фамилия + bio + university + specialization
+    в lowercase) плюс subjects__name. Синонимы расширяют only по search_text и subjects.
     """
     q = normalize_query(query)
     if not q:
         return Q()
 
-    # Базовый поиск по оригинальному запросу
     conditions = (
-        Q(subjects__name__icontains=q) |
-        Q(user__first_name__icontains=q) |
-        Q(user__last_name__icontains=q) |
-        Q(bio__icontains=q)
+        Q(search_text__contains=q) |
+        Q(subjects__name__icontains=q)
     )
 
-    # Расширенный поиск по синонимам (только предметы и bio)
     for synonym in expand_query(q):
         conditions |= (
-            Q(subjects__name__icontains=synonym) |
-            Q(bio__icontains=synonym)
+            Q(search_text__contains=synonym) |
+            Q(subjects__name__icontains=synonym)
         )
 
     return conditions
@@ -324,7 +322,8 @@ def build_subject_relevance_annotation(query: str):
 def build_student_search_q(query: str) -> Q:
     """
     Строит Q-объект для поиска студентов (StudentProfile).
-    Ищет по имени, описанию, bio — с учётом синонимов.
+    У StudentProfile пока нет search_text — оставляем OR-поиск.
+    Если нагрузка вырастет, можно симметрично добавить поле.
     """
     q = normalize_query(query)
     if not q:

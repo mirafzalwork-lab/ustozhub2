@@ -31,18 +31,25 @@ if not SECRET_KEY:
 # SECURITY: Debug mode from environment variable (default False in production)
 DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
+# Hosts разрешены из env (CSV), плюс обязательные defaults.
+# Wildcard '*' убран — это была дыра в безопасности (Host header injection).
+# 164.92.185.36 — production droplet (DigitalOcean), доступ по IP до настройки DNS.
+_default_hosts = "ustozhubedu.uz,www.ustozhubedu.uz,164.92.185.36,localhost,127.0.0.1"
 ALLOWED_HOSTS = [
-    "ustozhubedu.uz",
-    "www.ustozhubedu.uz",
-    "localhost",
-    "127.0.0.1",
-    '*'
+    h.strip() for h in os.environ.get('ALLOWED_HOSTS', _default_hosts).split(',') if h.strip()
 ]
 
-# Доверенные источники для CSRF (Django 4+ требует схему)
+# В DEBUG-режиме автоматически разрешаем все локальные хосты для удобства dev.
+if DEBUG:
+    for h in ('localhost', '127.0.0.1', '0.0.0.0', 'testserver'):
+        if h not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(h)
+
+# Доверенные источники для CSRF (Django 4+ требует схему).
+# Дополняются из env CSRF_TRUSTED_ORIGINS (CSV).
+_default_csrf = "https://ustozhubedu.uz,https://www.ustozhubedu.uz"
 CSRF_TRUSTED_ORIGINS = [
-    "https://ustozhubedu.uz",
-    "https://www.ustozhubedu.uz",
+    o.strip() for o in os.environ.get('CSRF_TRUSTED_ORIGINS', _default_csrf).split(',') if o.strip()
 ]
 
 # Application definition
@@ -119,25 +126,69 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # ASGI приложение для WebSocket support
 ASGI_APPLICATION = 'core.asgi.application'
 
+# Redis URL — общий для Channels, кэша и Celery.
+# Default: localhost:6379. В проде задаётся через env REDIS_URL.
+REDIS_URL = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379')
+
 # Конфигурация слоёв каналов с Redis backend
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],  # Redis сервер
+            "hosts": [REDIS_URL + '/0'],
             "capacity": 1500,  # Максимум сообщений в канале
             "expiry": 60,  # Время жизни сообщений (секунды)
         },
     },
 }
 
-# Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# =============================================================================
+# DATABASE
+# =============================================================================
+# Поддерживаются два варианта:
+#   • DATABASE_URL=postgres://user:pass@host:port/dbname  (production)
+#   • не задан → fallback на SQLite (development)
+#
+# Парсер написан вручную, чтобы не тащить dj-database-url ради одного URL.
+
+def _parse_database_url(url: str) -> dict:
+    """Парсит postgres://user:pass@host:port/dbname в Django DATABASES dict."""
+    from urllib.parse import urlparse, unquote
+    p = urlparse(url)
+    engine_map = {
+        'postgres': 'django.db.backends.postgresql',
+        'postgresql': 'django.db.backends.postgresql',
+        'mysql': 'django.db.backends.mysql',
+        'sqlite': 'django.db.backends.sqlite3',
     }
-}
+    engine = engine_map.get(p.scheme, p.scheme)
+    if engine == 'django.db.backends.sqlite3':
+        return {'ENGINE': engine, 'NAME': p.path.lstrip('/') or ':memory:'}
+    return {
+        'ENGINE': engine,
+        'NAME': p.path.lstrip('/'),
+        'USER': unquote(p.username) if p.username else '',
+        'PASSWORD': unquote(p.password) if p.password else '',
+        'HOST': p.hostname or '',
+        'PORT': str(p.port) if p.port else '',
+        'CONN_MAX_AGE': int(os.environ.get('DB_CONN_MAX_AGE', '60')),
+        'OPTIONS': {
+            # Для PG включаем SSL по умолчанию в проде (отключить можно через env)
+            'sslmode': os.environ.get('DB_SSLMODE', 'prefer'),
+        } if engine == 'django.db.backends.postgresql' else {},
+    }
+
+
+_database_url = os.environ.get('DATABASE_URL', '').strip()
+if _database_url:
+    DATABASES = {'default': _parse_database_url(_database_url)}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -153,6 +204,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
     },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
 ]
 
 # Security settings for production
@@ -167,6 +221,10 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 63072000  # 2 years
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+    # Django стоит за Nginx — без этого request.is_secure() возвращает False
+    # и SECURE_SSL_REDIRECT уходит в бесконечный редирект.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 else:
     # Development settings
     SESSION_COOKIE_SECURE = False
@@ -310,29 +368,91 @@ TELEGRAM_WEBAPP_URL = SITE_URL
 # ⚡ ОПТИМИЗАЦИЯ: КЭШИРОВАНИЕ
 # =============================================================================
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'teacherhub-cache',
-        'OPTIONS': {
-            'MAX_ENTRIES': 1000,
+# Кэш: Redis в production (шарится между Gunicorn и Daphne),
+# LocMemCache в dev (если REDIS_URL не задан или USE_REDIS_CACHE=False).
+# КРИТИЧНО для multi-process: при LocMem кэш у каждого процесса свой,
+# инвалидация не доходит → stale data в WebSocket-процессе.
+
+_use_redis_cache = os.environ.get('USE_REDIS_CACHE', '').lower() in ('true', '1', 'yes')
+if _use_redis_cache or (not DEBUG and os.environ.get('REDIS_URL')):
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': f'{REDIS_URL}/1',  # DB 1 — кэш (DB 0 — Channels, DB 2 — Celery)
+            'KEY_PREFIX': 'ustozhub',
+            'TIMEOUT': 300,
         }
     }
-}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'teacherhub-cache',
+            'OPTIONS': {'MAX_ENTRIES': 1000},
+        }
+    }
 
 # Время кэширования (в секундах)
 CACHE_TTL = 60 * 15  # 15 минут
 
 # =============================================================================
+# ⏰ CELERY (асинхронные задачи и расписание)
+# =============================================================================
+# Используется для:
+#   • scheduled-уведомлений (T-24h / T-3h / T-10min до урока)
+#   • очистки протухших booking-холдов
+#   • email-рассылок
+#   • daily reminder bot
+#
+# В dev можно гонять задачи синхронно через CELERY_TASK_ALWAYS_EAGER=True.
+
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', f'{REDIS_URL}/2')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', f'{REDIS_URL}/3')
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 5 * 60          # hard limit 5 min
+CELERY_TASK_SOFT_TIME_LIMIT = 4 * 60     # soft limit 4 min
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+# DatabaseScheduler подключим в Phase 4 (когда django_celery_beat будет установлен).
+# Пока используем дефолтный файловый PersistentScheduler.
+# CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# В dev — eager mode выключает реальный брокер (задачи бегут синхронно).
+CELERY_TASK_ALWAYS_EAGER = os.environ.get('CELERY_TASK_ALWAYS_EAGER', '').lower() in ('true', '1', 'yes')
+CELERY_TASK_EAGER_PROPAGATES = True
+
+# =============================================================================
+# 🔎 SUBJECT SEARCH LOG
+# =============================================================================
+# Логирование поисковых запросов для аналитики. Чтобы не раздувать БД при
+# каждом нажатии клавиши в автокомплите, применяется дедупликация (TTL)
+# и опциональное сэмплирование.
+
+SEARCH_LOG_ENABLED = True          # глобальный выключатель
+SEARCH_LOG_DEDUP_TTL = 300         # один (user|ip, query) пишем не чаще раза в N сек
+SEARCH_LOG_SAMPLE_RATE = 1.0       # 1.0 = писать всё, 0.1 = писать 10% запросов
+
+# =============================================================================
+# 📝 WIZARD DRAFTS
+# =============================================================================
+# Сколько дней хранить черновик регистрации учителя в БД (WizardDraft).
+WIZARD_DRAFT_TTL_DAYS = 14
+
+# =============================================================================
 # LOGGING
 # =============================================================================
+
+_LOG_DIR = BASE_DIR / 'logs'
+_LOG_DIR.mkdir(exist_ok=True)
 
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
+            'format': '{levelname} {asctime} {module} {process:d} {message}',
             'style': '{',
         },
     },
@@ -341,31 +461,88 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': str(_LOG_DIR / 'ustozhub.log'),
+            'maxBytes': 10 * 1024 * 1024,   # 10 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+            'encoding': 'utf-8',
+        },
     },
     'root': {
-        'handlers': ['console'],
+        'handlers': ['console', 'file'],
         'level': 'INFO',
     },
     'loggers': {
         'django': {
-            'handlers': ['console'],
+            'handlers': ['console', 'file'],
             'level': 'WARNING',
             'propagate': False,
         },
         'teachers': {
-            'handlers': ['console'],
+            'handlers': ['console', 'file'],
             'level': 'DEBUG' if DEBUG else 'INFO',
             'propagate': False,
         },
         'telegram_bot': {
-            'handlers': ['console'],
+            'handlers': ['console', 'file'],
             'level': 'DEBUG' if DEBUG else 'INFO',
             'propagate': False,
         },
         'allauth': {
             'handlers': ['console'],
-            'level': 'DEBUG',
+            'level': 'DEBUG' if DEBUG else 'WARNING',
+            'propagate': False,
+        },
+        'celery': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
             'propagate': False,
         },
     },
 }
+
+# =============================================================================
+# 🛰 SENTRY (опционально, только если задан DSN)
+# =============================================================================
+_sentry_dsn = os.environ.get('SENTRY_DSN', '').strip()
+if _sentry_dsn:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.django import DjangoIntegration
+        from sentry_sdk.integrations.celery import CeleryIntegration
+        from sentry_sdk.integrations.logging import LoggingIntegration
+
+        sentry_sdk.init(
+            dsn=_sentry_dsn,
+            integrations=[
+                DjangoIntegration(),
+                CeleryIntegration(),
+                LoggingIntegration(level=None, event_level=None),  # logging → breadcrumbs only
+            ],
+            traces_sample_rate=float(os.environ.get('SENTRY_TRACES_SAMPLE_RATE', '0.05')),
+            send_default_pii=False,
+            environment=os.environ.get('SENTRY_ENV', 'production' if not DEBUG else 'development'),
+            release=os.environ.get('SENTRY_RELEASE', ''),
+        )
+    except ImportError:
+        # sentry_sdk не установлен — это норма для dev
+        pass
+
+# =============================================================================
+# 📧 EMAIL
+# =============================================================================
+# В dev — пишем в консоль. В проде — настоящий SMTP через env.
+EMAIL_BACKEND = os.environ.get(
+    'EMAIL_BACKEND',
+    'django.core.mail.backends.console.EmailBackend' if DEBUG
+    else 'django.core.mail.backends.smtp.EmailBackend',
+)
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 'yes')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'UstozHub <noreply@ustozhubedu.uz>')
+SERVER_EMAIL = os.environ.get('SERVER_EMAIL', DEFAULT_FROM_EMAIL)

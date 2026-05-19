@@ -1,3 +1,17 @@
+# =============================================================================
+# Production-добавки (Phase 0):
+#   psycopg[binary]   — PostgreSQL driver
+#   redis             — Redis client (для CACHES и Celery)
+#   celery            — асинхронные задачи и beat-расписание
+#   sentry-sdk        — error tracking (опционально, активен только если SENTRY_DSN задан)
+#   channels-redis    — уже было нужно для Channels, явно фиксируем
+# =============================================================================
+psycopg[binary]>=3.2,<4.0
+redis>=5.0,<6.0
+celery>=5.4,<6.0
+sentry-sdk>=2.14,<3.0
+channels-redis>=4.2,<5.0
+
 anyio==4.11.0
 asgiref==3.9.1
 attrs==25.4.0

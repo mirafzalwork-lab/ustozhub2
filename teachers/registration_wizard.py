@@ -22,7 +22,31 @@ from .registration_forms import (
     Step6CertificatesForm,
     Step7VideoForm,
 )
-from .models import User, TeacherProfile, TeacherSubject, Certificate
+from .models import User, TeacherProfile, TeacherSubject, Certificate, WizardDraft
+
+
+# Поля, которые НЕ имеет смысла сохранять в черновик: пароли (нельзя в plaintext)
+# и загруженные файлы (FileField не сериализуется в JSON).
+_DRAFT_BLACKLIST_KEYS = {'password1', 'password2', 'avatar', 'file', 'video'}
+
+
+def _strip_unserializable(step_data):
+    """Удаляет из dict шага значения, которые нельзя/нельзя безопасно сохранить."""
+    if not isinstance(step_data, dict):
+        return step_data
+    cleaned = {}
+    for k, v in step_data.items():
+        # ключи в storage обычно имеют префикс step-name, поэтому проверяем по подстроке
+        if any(bad in k for bad in _DRAFT_BLACKLIST_KEYS):
+            continue
+        # Файлы / объекты — пропускаем
+        try:
+            import json
+            json.dumps(v)
+        except (TypeError, ValueError):
+            continue
+        cleaned[k] = v
+    return cleaned
 
 
 class TeacherRegistrationWizard(SessionWizardView):
@@ -62,7 +86,106 @@ class TeacherRegistrationWizard(SessionWizardView):
     
     # File storage for uploaded files during the wizard
     file_storage = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'temp_uploads'))
-    
+
+    # =========================================================================
+    # DRAFT PERSISTENCE
+    # Сохранение состояния wizard в БД (WizardDraft), привязка по session_key.
+    # Это позволяет пользователю продолжить регистрацию после закрытия браузера
+    # или истечения сессии. Восстановление происходит при первом GET-запросе,
+    # сохранение — после каждого валидного перехода между шагами.
+    # =========================================================================
+
+    def _get_or_create_session_key(self):
+        """Гарантирует наличие session_key. Без него мы не можем привязать draft."""
+        session = self.request.session
+        if not session.session_key:
+            session.save()  # создаёт session_key
+        return session.session_key
+
+    def _save_draft(self):
+        """Сохраняет текущее storage.data в БД как WizardDraft."""
+        try:
+            session_key = self._get_or_create_session_key()
+            data = self.storage.data or {}
+            # storage.data содержит вложенный step_data (по шагам) — чистим каждый
+            step_data = data.get(self.storage.step_data_key, {}) or {}
+            cleaned_step_data = {
+                step: _strip_unserializable(payload)
+                for step, payload in step_data.items()
+            }
+            safe_data = {
+                self.storage.step_key: data.get(self.storage.step_key, ''),
+                self.storage.step_data_key: cleaned_step_data,
+                self.storage.extra_data_key: _strip_unserializable(
+                    data.get(self.storage.extra_data_key, {}) or {}
+                ),
+            }
+            WizardDraft.objects.update_or_create(
+                session_key=session_key,
+                defaults={
+                    'wizard_name': 'teacher_registration',
+                    'current_step': self.steps.current or '',
+                    'data': safe_data,
+                },
+            )
+        except Exception as e:
+            logger.warning(f"Не удалось сохранить черновик wizard: {e}")
+
+    def _restore_draft(self):
+        """Восстанавливает данные из БД в storage, если в сессии пусто, а draft есть."""
+        try:
+            session = self.request.session
+            session_key = session.session_key
+            if not session_key:
+                return
+            # Восстанавливаем ТОЛЬКО если в текущей сессии нет своих данных wizard
+            # (т.е. пользователь начал с чистого листа).
+            if self.storage.data and self.storage.data.get(self.storage.step_data_key):
+                return
+            draft = WizardDraft.objects.filter(
+                session_key=session_key,
+                wizard_name='teacher_registration',
+            ).first()
+            if not draft or not draft.data:
+                return
+            for key, value in draft.data.items():
+                self.storage.data[key] = value
+            if draft.current_step:
+                self.storage.current_step = draft.current_step
+        except Exception as e:
+            logger.warning(f"Не удалось восстановить черновик wizard: {e}")
+
+    def _delete_draft(self):
+        """Удаляет draft после успешного завершения регистрации."""
+        try:
+            session_key = self.request.session.session_key
+            if session_key:
+                WizardDraft.objects.filter(session_key=session_key).delete()
+        except Exception as e:
+            logger.warning(f"Не удалось удалить черновик wizard: {e}")
+
+    def dispatch(self, request, *args, **kwargs):
+        """На каждый GET — пытаемся восстановить draft перед обработкой."""
+        if request.method == 'GET':
+            # ensure session_key, иначе session.session_key=None и draft не найдём
+            self._get_or_create_session_key()
+            # storage инициализируется в super().dispatch — сначала вызовем,
+            # но восстановление должно быть ДО построения формы.
+            # SessionWizardView создаёт storage в __init__/dispatch.
+            try:
+                # Доступ к self.storage активирует ленивую инициализацию.
+                _ = self.storage.data
+                self._restore_draft()
+            except Exception as e:
+                logger.warning(f"Wizard draft restore skipped: {e}")
+        return super().dispatch(request, *args, **kwargs)
+
+    def render_next_step(self, form, **kwargs):
+        """Сохраняем draft после успешного шага."""
+        response = super().render_next_step(form, **kwargs)
+        self._save_draft()
+        return response
+
     def _is_google_registration(self):
         """Check if this wizard is being used by a Google OAuth user."""
         return self.request.session.get('is_google_teacher', False)
@@ -133,6 +256,14 @@ class TeacherRegistrationWizard(SessionWizardView):
             'video': 'Загрузите короткое видео о себе (необязательно).',
         }
         
+        session_key = self.request.session.session_key
+        has_draft = False
+        if session_key:
+            has_draft = WizardDraft.objects.filter(
+                session_key=session_key,
+                wizard_name='teacher_registration',
+            ).exists()
+
         context.update({
             'current_step': current_step,
             'total_steps': total_steps,
@@ -141,8 +272,9 @@ class TeacherRegistrationWizard(SessionWizardView):
             'step_description': step_descriptions.get(self.steps.current, ''),
             'is_last_step': current_step == total_steps,
             'is_google': self._is_google_registration(),
+            'has_draft': has_draft,
         })
-        
+
         return context
     
     def done(self, form_list, **kwargs):
@@ -181,6 +313,9 @@ class TeacherRegistrationWizard(SessionWizardView):
             for key in ['google_first_name', 'google_last_name', 'google_email',
                         'google_user_id', 'is_google_teacher']:
                 self.request.session.pop(key, None)
+
+            # Удаляем черновик — регистрация завершена
+            self._delete_draft()
 
             # Success message
             messages.success(

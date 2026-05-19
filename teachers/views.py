@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import F, Q, Min, Max, Avg, Count, Case, When, Value, IntegerField
+from django.db.models import F, Q, Min, Max, Avg, Count, Sum, Case, When, Value, IntegerField
 from django.db.models.functions import Coalesce
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
@@ -165,21 +165,44 @@ def record_profile_view(request, profile, profile_type):
             if viewer_user.student_profile == profile:
                 return  # Не записываем просмотр своего профиля
     
-    # Создаем запись о просмотре
+    # Дедуплицируем по (профиль, viewer, дата): если просмотр за сегодня от того же
+    # пользователя/IP уже есть — увеличиваем views_count, иначе создаём новую строку.
+    # Это снимает DDoS-нагрузку с таблицы (F5-флуд) и не раздувает её.
     try:
-        view_data = {
+        today = timezone.localdate()
+        lookup = {
             'profile_type': profile_type,
-            'viewer_ip': ip_address,
-            'viewer_user': viewer_user,
-            'user_agent': user_agent[:500] if user_agent else '',  # Ограничиваем длину
+            'viewed_date': today,
         }
-        
         if profile_type == 'teacher':
-            view_data['teacher_profile'] = profile
+            lookup['teacher_profile'] = profile
         else:
-            view_data['student_profile'] = profile
-        
-        ProfileView.objects.create(**view_data)
+            lookup['student_profile'] = profile
+
+        if viewer_user is not None:
+            lookup['viewer_user'] = viewer_user
+            lookup['viewer_ip__isnull'] = False  # не критично, но фильтрует чище
+            # Уберём кавычки isnull-фильтра — он только усложняет:
+            lookup.pop('viewer_ip__isnull')
+        else:
+            lookup['viewer_user__isnull'] = True
+            lookup['viewer_ip'] = ip_address
+
+        defaults = {
+            'user_agent': user_agent[:500] if user_agent else '',
+            'last_viewed_at': timezone.now(),
+        }
+        # update_or_create НЕ умеет инкрементить F-выражениями в одном запросе,
+        # поэтому делаем get_or_create + UPDATE с F('views_count')+1 при существовании.
+        view, created = ProfileView.objects.get_or_create(
+            defaults={**defaults, 'viewer_ip': ip_address, 'viewer_user': viewer_user},
+            **lookup,
+        )
+        if not created:
+            ProfileView.objects.filter(pk=view.pk).update(
+                views_count=F('views_count') + 1,
+                last_viewed_at=timezone.now(),
+            )
     except Exception as e:
         # Логируем ошибку, но не прерываем работу приложения
         logger.error(f"Error recording profile view: {e}", exc_info=True)
@@ -489,10 +512,13 @@ def admin_dashboard(request):
     monthly_views = ViewCounter.objects.filter(month=current_month).count()
     
     # Просмотры профилей
-    total_profile_views = ProfileView.objects.count()
-    profile_views_today = ProfileView.objects.filter(viewed_at__gte=today_start).count()
-    profile_views_week = ProfileView.objects.filter(viewed_at__gte=week_ago).count()
-    profile_views_month = ProfileView.objects.filter(viewed_at__gte=month_ago).count()
+    # ProfileView хранит дедуплицированные строки (одна на день/viewer),
+    # реальное число просмотров — это SUM(views_count).
+    _pv_sum = lambda qs: qs.aggregate(total=Sum('views_count'))['total'] or 0
+    total_profile_views = _pv_sum(ProfileView.objects.all())
+    profile_views_today = _pv_sum(ProfileView.objects.filter(viewed_at__gte=today_start))
+    profile_views_week = _pv_sum(ProfileView.objects.filter(viewed_at__gte=week_ago))
+    profile_views_month = _pv_sum(ProfileView.objects.filter(viewed_at__gte=month_ago))
     
     # ========== МЕТРИКИ ОТЗЫВОВ ==========
     total_reviews = Review.objects.count()
@@ -1681,6 +1707,50 @@ def delete_conversation(request, conversation_id):
 # API ДЛЯ ПОИСКА И ВЫБОРА ПРЕДМЕТОВ
 # =============================================================================
 
+def _maybe_log_subject_search(request, query: str, results_count: int) -> None:
+    """
+    Пишет SubjectSearchLog с дедупликацией и сэмплированием.
+
+    - Дедуп: один и тот же запрос от одного пользователя/IP логируется
+      не чаще раза в SEARCH_LOG_DEDUP_TTL секунд (защита от автокомплита,
+      который дёргает endpoint на каждое нажатие клавиши).
+    - Сэмплинг: оставляем только SEARCH_LOG_SAMPLE_RATE % запросов
+      (для общего снижения пишущей нагрузки на основную БД).
+
+    Стоит за boolean-флагом — выключается без правки кода.
+    """
+    if not getattr(settings, 'SEARCH_LOG_ENABLED', True):
+        return
+
+    try:
+        normalized = normalize_query(query)
+        if not normalized:
+            return
+
+        actor = (
+            f'u:{request.user.pk}' if request.user.is_authenticated
+            else f'ip:{get_client_ip(request)}'
+        )
+        dedup_key = f'search_log_dedup:{actor}:{normalized}'
+        dedup_ttl = getattr(settings, 'SEARCH_LOG_DEDUP_TTL', 300)  # 5 минут
+        if cache.get(dedup_key):
+            return
+        cache.set(dedup_key, 1, dedup_ttl)
+
+        sample_rate = getattr(settings, 'SEARCH_LOG_SAMPLE_RATE', 1.0)
+        if sample_rate < 1.0 and random.random() > sample_rate:
+            return
+
+        SubjectSearchLog.objects.create(
+            query=normalized[:200],
+            user=request.user if request.user.is_authenticated else None,
+            ip_address=get_client_ip(request),
+            found_results_count=results_count,
+        )
+    except Exception as e:
+        logger.warning(f"Failed to log subject search: {e}")
+
+
 def subjects_autocomplete(request):
     """
     API для автокомплита предметов с умным поиском
@@ -1690,7 +1760,7 @@ def subjects_autocomplete(request):
 
     if not query or len(query) < 2:
         return JsonResponse({'results': []})
-    
+
     # Ограничиваем длину запроса для безопасности
     query = query[:100]
 
@@ -1715,19 +1785,10 @@ def subjects_autocomplete(request):
                 'teachers_count': teachers_count
             })
 
-        # Логируем поиск для аналитики
-        try:
-            SubjectSearchLog.objects.create(
-                query=query[:200],  # Ограничиваем длину
-                user=request.user if request.user.is_authenticated else None,
-                ip_address=get_client_ip(request),
-                found_results_count=len(results)
-            )
-        except Exception as e:
-            logger.warning(f"Failed to log subject search: {e}")
+        _maybe_log_subject_search(request, query, len(results))
 
         return JsonResponse({'results': results})
-    
+
     except Exception as e:
         logger.error(f"Error in subjects_autocomplete: {e}", exc_info=True)
         return JsonResponse({'error': 'Ошибка поиска предметов'}, status=500)

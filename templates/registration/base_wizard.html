@@ -17,7 +17,14 @@
                 <div class="progress-bar">
                     <div class="progress-fill" style="width: {{ progress_percentage }}%"></div>
                 </div>
-                <div class="progress-text">Шаг {{ current_step }} из {{ total_steps }}</div>
+                <div class="progress-text">
+                    Шаг {{ current_step }} из {{ total_steps }}
+                    {% if has_draft %}
+                        <span class="draft-indicator" title="Прогресс автоматически сохраняется — можно вернуться позже">
+                            · черновик сохранён
+                        </span>
+                    {% endif %}
+                </div>
             </div>
         </div>
 

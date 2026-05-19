@@ -74,6 +74,23 @@ class User(AbstractUser):
                 # Логируем ошибку, но не прерываем сохранение пользователя
                 logger.warning(f"Error processing avatar for user {self.username}: {e}", exc_info=True)
 
+def normalize_search_text(*parts) -> str:
+    """Нормализует набор строк в одно search_text-поле.
+    Lowercase + collapse whitespace. Используется для быстрого LIKE-поиска.
+    На PostgreSQL это поле станет основой GIN-индекса (pg_trgm).
+    """
+    cleaned = []
+    for p in parts:
+        if not p:
+            continue
+        s = str(p).strip().lower()
+        if s:
+            cleaned.append(s)
+    text = ' '.join(cleaned)
+    import re as _re
+    return _re.sub(r'\s+', ' ', text)
+
+
 class SubjectCategory(models.Model):
     """Категории предметов для удобной группировки"""
     name = models.CharField(max_length=100, unique=True, verbose_name='Название категории')
@@ -117,6 +134,11 @@ class Subject(models.Model):
     icon = models.CharField(max_length=50, blank=True, help_text="CSS класс иконки")
     is_active = models.BooleanField(default=True)
     is_popular = models.BooleanField(default=False, help_text="Популярный предмет (показывать в топе)")
+    search_text = models.TextField(
+        blank=True,
+        default='',
+        help_text='Нормализованный текст для быстрого поиска (lowercase: name + description)'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -126,11 +148,16 @@ class Subject(models.Model):
         indexes = [
             models.Index(fields=['category', 'is_active']),
             models.Index(fields=['is_popular', 'is_active']),
+            models.Index(fields=['search_text']),
         ]
 
     def __str__(self):
         return self.name
-    
+
+    def save(self, *args, **kwargs):
+        self.search_text = normalize_search_text(self.name, self.description)
+        super().save(*args, **kwargs)
+
     def get_teachers_count(self):
         """Количество учителей, преподающих этот предмет (с кэшированием)"""
         cache_key = f'subject_teachers_count_{self.id}'
@@ -257,6 +284,15 @@ class TeacherProfile(models.Model):
         help_text="URL видео-визитки в облачном хранилище"
     )
 
+    # Денормализованный текст для быстрого поиска.
+    # Конкатенация first_name + last_name + bio + university + specialization
+    # в lowercase. Перезаписывается на каждом save() и при изменении связанного User.
+    search_text = models.TextField(
+        blank=True,
+        default='',
+        help_text='Нормализованный текст для быстрого поиска (заполняется автоматически)'
+    )
+
     # Сертификаты
     certificates = models.ManyToManyField(Certificate, blank=True)
     
@@ -308,6 +344,7 @@ class TeacherProfile(models.Model):
             models.Index(fields=['city', 'is_active']),  # Для фильтра по городу
             models.Index(fields=['teaching_format']),  # Для фильтра формата
             models.Index(fields=['experience_years']),  # Для фильтра опыта
+            models.Index(fields=['search_text']),  # Для быстрого LIKE-поиска
         ]
     
     def update_ranking_score(self):
@@ -465,22 +502,27 @@ class TeacherProfile(models.Model):
         return ', '.join(self.get_teaching_languages_list())
 
     def get_views_count(self, period='all'):
-        """Получить количество просмотров профиля (с кэшированием)"""
+        """Получить количество просмотров профиля (с кэшированием).
+        Суммирует views_count (после дедупликации одна строка = N просмотров за день).
+        """
         cache_key = f'teacher_views_{self.id}_{period}'
         count = cache.get(cache_key)
         if count is not None:
             return count
-        count = _filter_views_by_period(self.profile_views.all(), period).count()
+        qs = _filter_views_by_period(self.profile_views.all(), period)
+        count = qs.aggregate(total=models.Sum('views_count'))['total'] or 0
         cache.set(cache_key, count, CACHE_TTL_SHORT)
         return count
 
     def get_unique_viewers_count(self, period='all'):
-        """Получить количество уникальных просмотров (по IP, с кэшированием)"""
+        """Уникальные зрители (по viewer_user/IP) — каждая строка после дедупа уже уникальна
+        в рамках дня, поэтому достаточно посчитать distinct (viewer_user, viewer_ip)."""
         cache_key = f'teacher_unique_views_{self.id}_{period}'
         count = cache.get(cache_key)
         if count is not None:
             return count
-        count = _filter_views_by_period(self.profile_views.all(), period).values('viewer_ip').distinct().count()
+        qs = _filter_views_by_period(self.profile_views.all(), period)
+        count = qs.values('viewer_user_id', 'viewer_ip').distinct().count()
         cache.set(cache_key, count, CACHE_TTL_SHORT)
         return count
 
@@ -514,8 +556,20 @@ class TeacherProfile(models.Model):
     def get_absolute_url(self):
         return reverse('teacher_detail', kwargs={'pk': self.pk})
     
+    def _rebuild_search_text(self):
+        """Пересобирает search_text из связанных полей."""
+        user = getattr(self, 'user', None)
+        first_name = getattr(user, 'first_name', '') if user else ''
+        last_name = getattr(user, 'last_name', '') if user else ''
+        self.search_text = normalize_search_text(
+            first_name, last_name, self.bio, self.university, self.specialization,
+        )
+
     def save(self, *args, **kwargs):
         """Переопределяем save для автоматического создания уведомлений и инвалидации кэша"""
+        # Пересобираем search_text перед каждым save — поля могли измениться
+        self._rebuild_search_text()
+
         # Проверяем, меняется ли статус модерации
         if self.pk:
             try:
@@ -740,22 +794,24 @@ class StudentProfile(models.Model):
         return "Не указано"
 
     def get_views_count(self, period='all'):
-        """Получить количество просмотров профиля (с кэшированием)"""
+        """Количество просмотров (сумма views_count после дедупа), с кэшем."""
         cache_key = f'student_views_{self.id}_{period}'
         count = cache.get(cache_key)
         if count is not None:
             return count
-        count = _filter_views_by_period(self.profile_views.all(), period).count()
+        qs = _filter_views_by_period(self.profile_views.all(), period)
+        count = qs.aggregate(total=models.Sum('views_count'))['total'] or 0
         cache.set(cache_key, count, CACHE_TTL_SHORT)
         return count
 
     def get_unique_viewers_count(self, period='all'):
-        """Получить количество уникальных просмотров (по IP, с кэшированием)"""
+        """Уникальные зрители (по viewer_user/IP)."""
         cache_key = f'student_unique_views_{self.id}_{period}'
         count = cache.get(cache_key)
         if count is not None:
             return count
-        count = _filter_views_by_period(self.profile_views.all(), period).values('viewer_ip').distinct().count()
+        qs = _filter_views_by_period(self.profile_views.all(), period)
+        count = qs.values('viewer_user_id', 'viewer_ip').distinct().count()
         cache.set(cache_key, count, CACHE_TTL_SHORT)
         return count
 
@@ -1002,10 +1058,27 @@ class ProfileView(models.Model):
         related_name='profile_views',
         verbose_name='Профиль ученика'
     )
-    
+
+    # Дата просмотра (без времени) — для дедупликации.
+    # На один (профиль, viewer, день) создаётся ровно одна запись,
+    # повторные просмотры инкрементируют views_count.
+    viewed_date = models.DateField(
+        default=timezone.now,
+        db_index=True,
+        verbose_name='Дата просмотра'
+    )
+    views_count = models.PositiveIntegerField(
+        default=1,
+        verbose_name='Количество просмотров в этот день'
+    )
+    last_viewed_at = models.DateTimeField(
+        default=timezone.now,
+        verbose_name='Время последнего просмотра в этот день'
+    )
+
     # Дополнительная информация
     user_agent = models.TextField(blank=True, verbose_name='User Agent браузера')
-    
+
     class Meta:
         verbose_name = 'Просмотр профиля'
         verbose_name_plural = 'Просмотры профилей'
@@ -1015,6 +1088,8 @@ class ProfileView(models.Model):
             models.Index(fields=['teacher_profile', '-viewed_at']),
             models.Index(fields=['student_profile', '-viewed_at']),
             models.Index(fields=['viewer_ip', '-viewed_at']),
+            models.Index(fields=['teacher_profile', '-viewed_date']),
+            models.Index(fields=['student_profile', '-viewed_date']),
         ]
     
     def __str__(self):
@@ -1651,3 +1726,49 @@ class NotificationRead(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.notification.title}"
+
+
+class WizardDraft(models.Model):
+    """
+    Черновик многошагового мастера регистрации учителя.
+
+    Хранит сериализованное состояние SessionWizardView, привязанное к session_key.
+    Если пользователь закроет браузер или выйдет — он сможет продолжить
+    регистрацию с того же шага, на котором остановился.
+
+    Действителен 14 дней (см. management-команду cleanup_wizard_drafts).
+    """
+    session_key = models.CharField(
+        max_length=64,
+        primary_key=True,
+        verbose_name='Ключ сессии Django'
+    )
+    wizard_name = models.CharField(
+        max_length=50,
+        default='teacher_registration',
+        help_text='Идентификатор wizard (на случай если их будет несколько)'
+    )
+    current_step = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text='На каком шаге был пользователь'
+    )
+    data = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Сериализованные данные wizard (storage.data)'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Черновик регистрации'
+        verbose_name_plural = 'Черновики регистрации'
+        ordering = ['-updated_at']
+        indexes = [
+            models.Index(fields=['-updated_at']),
+        ]
+
+    def __str__(self):
+        return f"Draft {self.session_key[:8]}… step={self.current_step}"
+

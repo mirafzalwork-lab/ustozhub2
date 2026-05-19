@@ -39,5 +39,8 @@ media/
 venv/
 .venv
 *.log
+logs/
 node_modules/
 temp_*
+celerybeat-schedule
+celerybeat.pid
