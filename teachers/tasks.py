@@ -101,6 +101,7 @@ def send_lesson_reminders() -> int:
         ('10min', timedelta(minutes=10)),
     ]
 
+    from django.db import transaction
     sent_total = 0
     for kind, delta in windows:
         target_time = now + delta
@@ -112,17 +113,26 @@ def send_lesson_reminders() -> int:
         ).select_related('slot', 'slot__teacher__user', 'student', 'subject')
 
         for booking in qs:
-            # Идемпотентность через UNIQUE constraint — пытаемся вставить,
-            # если упало — значит уже отправлено
+            # Каждая попытка — в savepoint, чтобы IntegrityError (idempotency)
+            # не рушил outer-транзакцию вызывающего кода.
+            try:
+                with transaction.atomic():
+                    # Сначала пробуем создать запись — если упадёт на UNIQUE,
+                    # значит уже отправлено, и savepoint откатится без побочек.
+                    LessonReminderSent.objects.create(
+                        booking=booking, kind=kind, channels='',
+                    )
+            except IntegrityError:
+                continue  # уже отправлено в этой kind-окно
+
+            # Запись создана — теперь отправляем (не в savepoint, чтобы
+            # WS push реально дошёл, а не откатился). Channels обновим после.
             try:
                 channels = _send_reminder_for_booking(booking, kind)
-                LessonReminderSent.objects.create(
-                    booking=booking, kind=kind, channels=','.join(channels),
-                )
+                LessonReminderSent.objects.filter(
+                    booking=booking, kind=kind,
+                ).update(channels=','.join(channels))
                 sent_total += 1
-            except IntegrityError:
-                # уже отправлено
-                continue
             except Exception as e:
                 logger.error(
                     f'send_lesson_reminders: failed for booking={booking.pk} kind={kind}: {e}',

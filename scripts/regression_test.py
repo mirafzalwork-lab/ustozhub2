@@ -225,77 +225,84 @@ with section('Phase 1: TimeSlot & Booking models'):
 
 # ============================================================
 # Phase 4: Lesson Reminders (T-24h / T-3h / T-10min)
+# ВНИМАНИЕ: тесты создают slots в БЛИЖАЙШЕМ будущем (10min / 24h)
+# не 2099 — потому что фильтрация задачи по абсолютному времени.
+# Все артефакты теста заворачиваем в transaction + savepoint и откатываем,
+# чтобы prod-БД не получила фейковые Notification.
 # ============================================================
 
 with section('Phase 4: Lesson Reminders'):
     from django.core import mail
     from datetime import timedelta
+    from django.db import transaction
 
-    # Очистка
-    TimeSlot.objects.filter(start_at__year=2099).delete()
-    LessonReminderSent.objects.filter(booking__student=student1).delete()
+    class _RollbackForTest(Exception):
+        """Используется чтобы явно откатить transaction.atomic в конце Phase 4."""
+        pass
 
-    # Создаём slot чтобы start_at попал точно в окно T-10min ± 90 сек
-    now = timezone.now()
-    target = now + timedelta(minutes=10)
-    slot_rem = TimeSlot.objects.create(
-        teacher=teacher_profile,
-        start_at=target,
-        end_at=target + timedelta(hours=1),
-    )
-    b_rem = Booking.create_hold(slot_rem.pk, student1)
-    b_rem.confirm()
+    phase4_passed_all = True
+    try:
+        with transaction.atomic():
+            # Создаём slot чтобы start_at попал точно в окно T-10min ± 90 сек
+            now = timezone.now()
+            target = now + timedelta(minutes=10)
+            slot_rem = TimeSlot.objects.create(
+                teacher=teacher_profile,
+                start_at=target,
+                end_at=target + timedelta(hours=1),
+            )
+            b_rem = Booking.create_hold(slot_rem.pk, student1)
+            b_rem.confirm()
 
-    mail.outbox = []  # очищаем
-    sent_count = send_lesson_reminders()
-    check('send_lesson_reminders: отправлено >= 1', sent_count >= 1, detail=f'got {sent_count}')
-    rem = LessonReminderSent.objects.filter(booking=b_rem, kind='10min').first()
-    check('Reminder для T-10min записан в БД', rem is not None)
-    # channels content проверяет что попытка отправки была (in_app или email)
-    if rem:
-        check('Reminder channels содержит in_app', 'in_app' in rem.channels,
-              detail=f'channels={rem.channels}')
-        # Email отправлен — либо в outbox (locmem), либо записан в channels
-        email_attempted = ('email' in rem.channels) or (len(mail.outbox) >= 1)
-        check('Email-канал использован', email_attempted,
-              detail=f'channels={rem.channels} outbox={len(mail.outbox)}')
+            mail.outbox = []
+            sent_count = send_lesson_reminders()
+            check('send_lesson_reminders: отправлено >= 1', sent_count >= 1, detail=f'got {sent_count}')
+            rem = LessonReminderSent.objects.filter(booking=b_rem, kind='10min').first()
+            check('Reminder для T-10min записан в БД', rem is not None)
+            if rem:
+                check('Reminder channels содержит in_app', 'in_app' in rem.channels,
+                      detail=f'channels={rem.channels}')
+                email_attempted = ('email' in rem.channels) or (len(mail.outbox) >= 1)
+                check('Email-канал использован', email_attempted,
+                      detail=f'channels={rem.channels} outbox={len(mail.outbox)}')
 
-    # Проверка idempotency: второй запуск ничего не должен сделать
-    sent_count2 = send_lesson_reminders()
-    check('Повторный send_lesson_reminders → 0 (idempotency)', sent_count2 == 0)
-    check('LessonReminderSent ровно одна запись (UNIQUE)',
-          LessonReminderSent.objects.filter(booking=b_rem, kind='10min').count() == 1)
+            sent_count2 = send_lesson_reminders()
+            check('Повторный send_lesson_reminders → 0 (idempotency)', sent_count2 == 0)
+            check('LessonReminderSent ровно одна запись (UNIQUE)',
+                  LessonReminderSent.objects.filter(booking=b_rem, kind='10min').count() == 1)
 
-    # Создаём ещё один slot в окне T-24h
-    target24 = now + timedelta(hours=24)
-    slot24 = TimeSlot.objects.create(
-        teacher=teacher_profile,
-        start_at=target24,
-        end_at=target24 + timedelta(hours=1),
-    )
-    b24 = Booking.create_hold(slot24.pk, student1)
-    b24.confirm()
-    sent_24 = send_lesson_reminders()
-    check('Reminder T-24h тоже отправляется', sent_24 >= 1)
-    check('LessonReminderSent для T-24h создан',
-          LessonReminderSent.objects.filter(booking=b24, kind='24h').exists())
+            # T-24h окно
+            target24 = now + timedelta(hours=24)
+            slot24 = TimeSlot.objects.create(
+                teacher=teacher_profile,
+                start_at=target24,
+                end_at=target24 + timedelta(hours=1),
+            )
+            b24 = Booking.create_hold(slot24.pk, student1)
+            b24.confirm()
+            sent_24 = send_lesson_reminders()
+            check('Reminder T-24h тоже отправляется', sent_24 >= 1)
+            check('LessonReminderSent для T-24h создан',
+                  LessonReminderSent.objects.filter(booking=b24, kind='24h').exists())
 
-    # Slot вне окна (через 6 часов) — НЕ должен попасть
-    target_out = now + timedelta(hours=6)
-    slot_out = TimeSlot.objects.create(
-        teacher=teacher_profile,
-        start_at=target_out,
-        end_at=target_out + timedelta(hours=1),
-    )
-    b_out = Booking.create_hold(slot_out.pk, student1)
-    b_out.confirm()
-    sent_out = send_lesson_reminders()
-    check('Slot вне окна не получает reminder', sent_out == 0)
-    check('Нет записи для slot вне окна',
-          not LessonReminderSent.objects.filter(booking=b_out).exists())
+            # Вне окна (6h) — не попадает
+            target_out = now + timedelta(hours=6)
+            slot_out = TimeSlot.objects.create(
+                teacher=teacher_profile,
+                start_at=target_out,
+                end_at=target_out + timedelta(hours=1),
+            )
+            b_out = Booking.create_hold(slot_out.pk, student1)
+            b_out.confirm()
+            sent_out = send_lesson_reminders()
+            check('Slot вне окна не получает reminder', sent_out == 0)
+            check('Нет записи для slot вне окна',
+                  not LessonReminderSent.objects.filter(booking=b_out).exists())
 
-    # Cleanup
-    LessonReminderSent.objects.filter(booking__student=student1).delete()
+            # Принудительный rollback всего что создано
+            raise _RollbackForTest()
+    except _RollbackForTest:
+        pass  # ожидаемо — транзакция откатилась, БД чиста
 
 
 # ============================================================
@@ -655,10 +662,26 @@ with section('Cleanup'):
         n_extra, _ = TimeSlot.objects.filter(pk=_completed_test_slot_pk).delete()
     except NameError:
         pass
-    # 3. Все остатки тестовых slot'ов нашего тестового учителя без активных бронирований —
-    #    safety net, если что-то осталось от падений в прошлом
+    # 3. Wizard-drafts
     n2, _ = WizardDraft.objects.filter(session_key__startswith='__test__').delete()
-    print(f'  deleted: {n1 + n_extra} test TimeSlots+bookings, {n2} test drafts')
+    # 4. Notification от Phase 3 booking flow и Phase 4 reminders —
+    #    создаются для реальных юзеров и не каскадятся при удалении Booking.
+    #    Удаляем только если target_user — наш тестовый студент или учитель.
+    test_user_pks = [
+        student1.pk, student2.pk, teacher_user.pk,
+        other_teacher.pk if other_teacher else None,
+    ]
+    test_user_pks = [pk for pk in test_user_pks if pk]
+    regression_titles = [
+        'Завтра урок на UstozHub', 'Урок через 3 часа', 'Урок через 10 минут',
+        'Новое бронирование', '✅ Урок подтверждён', '❌ Бронирование отклонено',
+        'Ученик отменил бронирование', 'Урок отменён учителем',
+    ]
+    n3, _ = Notification.objects.filter(
+        target_user_id__in=test_user_pks,
+        title__in=regression_titles,
+    ).delete()
+    print(f'  deleted: {n1 + n_extra} test TimeSlots+bookings, {n2} test drafts, {n3} test notifications')
 
 
 # ============================================================
