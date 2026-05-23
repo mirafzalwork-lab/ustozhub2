@@ -24,6 +24,51 @@ def health_check() -> dict:
     return {'ok': True, 'at': timezone.now().isoformat()}
 
 
+@shared_task(name='teachers.broadcast_notification_push', bind=True, max_retries=2)
+def broadcast_notification_push(self, notification_id: int) -> int:
+    """
+    Рассылает WebSocket-пуш по группе пользователей (all/students/teachers/admins).
+
+    Вынесено из синхронного post_save сигнала, чтобы не блокировать
+    web-worker при массовых уведомлениях (10k+ пользователей).
+    Возвращает количество получателей.
+    """
+    from .models import Notification, User
+    from .consumers import notify_user
+    from .context_processors import invalidate_notification_cache
+
+    try:
+        n = Notification.objects.get(pk=notification_id, is_active=True)
+    except Notification.DoesNotExist:
+        logger.warning(f'broadcast_notification_push: notification {notification_id} not found')
+        return 0
+
+    payload = {'id': n.id, 'title': n.title, 'short_text': n.short_text}
+
+    qs = User.objects.filter(is_active=True)
+    if n.target == 'students':
+        qs = qs.filter(user_type='student')
+    elif n.target == 'teachers':
+        qs = qs.filter(user_type='teacher')
+    elif n.target == 'admins':
+        qs = qs.filter(is_staff=True)
+    elif n.target != 'all':
+        return 0  # неожиданный target — пропускаем
+
+    sent = 0
+    # Батчим по 500 — баланс между памятью и числом round-trips к channel layer
+    for uid in qs.values_list('id', flat=True).iterator(chunk_size=500):
+        try:
+            invalidate_notification_cache(uid)
+            notify_user(uid, 'new_notification', payload)
+            sent += 1
+        except Exception as e:
+            logger.warning(f'broadcast push failed for user_id={uid}: {e}')
+
+    logger.info(f'broadcast_notification_push: notification={n.id} target={n.target} sent={sent}')
+    return sent
+
+
 @shared_task(name='teachers.cleanup_wizard_drafts_async')
 def cleanup_wizard_drafts_async(days: int = 14) -> int:
     """Удалить устаревшие WizardDraft. Дублирует management-команду,

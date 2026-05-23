@@ -306,46 +306,36 @@ def update_view_stats_cache(sender, instance=None, created=False, **kwargs):
 def push_notification_realtime(sender, instance, created, **kwargs):
     """
     При создании нового Notification — пушим real-time событие целевым пользователям.
+
+    Персональные (target='specific_user') — синхронно, один WS-push.
+    Broadcast (all/students/teachers/admins) — асинхронно через Celery, чтобы
+    не блокировать web-worker на массовых рассылках (10k+ пользователей).
     """
     if not created or not instance.is_active:
         return
 
     try:
-        from .consumers import notify_user
-        from .context_processors import invalidate_notification_cache
-        from .models import User
-
-        payload = {
-            'id': instance.id,
-            'title': instance.title,
-            'short_text': instance.short_text,
-        }
-
         if instance.target == 'specific_user' and instance.target_user_id:
-            # Персональное уведомление — пушим одному пользователю
+            # Один WS-push — делаем синхронно, это быстро.
+            from .consumers import notify_user
+            from .context_processors import invalidate_notification_cache
             invalidate_notification_cache(instance.target_user_id)
-            notify_user(instance.target_user_id, 'new_notification', payload)
-
-        elif instance.target == 'all':
-            # Всем пользователям — пушим каждому активному
-            for uid in User.objects.filter(is_active=True).values_list('id', flat=True):
-                invalidate_notification_cache(uid)
-                notify_user(uid, 'new_notification', payload)
-
-        elif instance.target in ('students', 'teachers'):
-            user_type = 'student' if instance.target == 'students' else 'teacher'
-            for uid in User.objects.filter(
-                is_active=True, user_type=user_type
-            ).values_list('id', flat=True):
-                invalidate_notification_cache(uid)
-                notify_user(uid, 'new_notification', payload)
-
-        elif instance.target == 'admins':
-            for uid in User.objects.filter(
-                is_active=True, is_staff=True
-            ).values_list('id', flat=True):
-                invalidate_notification_cache(uid)
-                notify_user(uid, 'new_notification', payload)
+            notify_user(instance.target_user_id, 'new_notification', {
+                'id': instance.id,
+                'title': instance.title,
+                'short_text': instance.short_text,
+            })
+        elif instance.target in ('all', 'students', 'teachers', 'admins'):
+            # Массовая рассылка — в Celery, чтобы не подвешивать web-процесс.
+            # Eager-fallback: если Celery недоступен, выполнится синхронно (.apply()).
+            from .tasks import broadcast_notification_push
+            try:
+                broadcast_notification_push.delay(instance.pk)
+            except Exception as e:
+                logger.warning(
+                    f"Celery broker unavailable, falling back to sync broadcast for notification {instance.pk}: {e}"
+                )
+                broadcast_notification_push.apply(args=[instance.pk])
 
     except Exception as e:
         logger.error(f"Error pushing real-time notification id={instance.pk}: {e}", exc_info=True)

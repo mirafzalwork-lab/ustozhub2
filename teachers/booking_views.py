@@ -563,8 +563,14 @@ def _public_slot_to_event(slot: TimeSlot) -> dict:
     }
 
 
-def _booking_to_dict(b: Booking) -> dict:
-    """Сериализация бронирования для JSON-ответов."""
+def _booking_to_dict(b: Booking, has_review: bool | None = None) -> dict:
+    """Сериализация бронирования для JSON-ответов.
+
+    has_review: если передан — используется без запроса в БД (для списочных
+    эндпоинтов, которые предвычисляют флаг batch'ем — см. my_bookings_api).
+    """
+    if has_review is None:
+        has_review = Review.objects.filter(booking=b).exists()
     return {
         'id': str(b.id),
         'status': b.status,
@@ -581,7 +587,7 @@ def _booking_to_dict(b: Booking) -> dict:
         'lesson_room_url': reverse('lesson_room', args=[b.id]),
         # Отзыв: ученик может оценить завершённый урок (или обновить отзыв)
         'review_url': reverse('leave_review', args=[b.id]),
-        'has_review': Review.objects.filter(booking=b).exists(),
+        'has_review': has_review,
         'subject': {
             'id': b.subject.pk,
             'name': b.subject.name,
@@ -945,7 +951,15 @@ def my_bookings_api(request):
         qs = qs.filter(slot__end_at__gte=timezone.now())
 
     qs = qs.order_by('slot__start_at')[:200]
-    return JsonResponse({'bookings': [_booking_to_dict(b) for b in qs]})
+    bookings = list(qs)
+    # Предвычисляем has_review одним запросом, чтобы не делать exists() в цикле (N+1)
+    reviewed_ids = set(
+        Review.objects.filter(booking_id__in=[b.id for b in bookings])
+        .values_list('booking_id', flat=True)
+    )
+    return JsonResponse({
+        'bookings': [_booking_to_dict(b, has_review=b.id in reviewed_ids) for b in bookings]
+    })
 
 
 @authenticated_required

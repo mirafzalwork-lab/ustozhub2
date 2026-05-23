@@ -469,11 +469,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Формируем WebSocket URL
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
-    const roomId = '{{ room_id|safe }}';
+    const roomId = '{{ room_id|escapejs }}';
     const websocketUrl = `${protocol}//${host}/ws/chat/${roomId}/`;
-    
+
     const currentUserId = {{ request.user.id }};
-    const otherUserName = '{{ other_user.get_full_name|default:other_user.username|safe }}';
+    const otherUserName = '{{ other_user.get_full_name|default:other_user.username|escapejs }}';
 
     console.log('Инициализация чата с URL:', websocketUrl);
 
