@@ -664,7 +664,13 @@ def booking_create_api(request):
     Ученик создаёт booking на конкретный slot.
     Body: {slot_id, subject_id?, message?, is_trial?}
     Атомарно через Booking.create_hold (select_for_update + UniqueConstraint).
+    Rate-limited: 20 заявок/час на пользователя — анти-спам.
     """
+    from django_ratelimit.core import is_ratelimited
+    if is_ratelimited(request=request, group='booking_create', key='user',
+                       rate='20/h', method='POST', increment=True):
+        return _json_error('Слишком много заявок. Подождите час и попробуйте снова.', status=429)
+
     try:
         data = json.loads(request.body or '{}')
     except json.JSONDecodeError:
@@ -825,7 +831,13 @@ def booking_confirm_api(request, booking_id):
     """
     Учитель подтверждает pending booking → confirmed, slot → booked.
     Body: { reply?, meeting_url? }  — meeting_url опционально.
+    Rate-limited: 60/час на учителя (защита от случайных двойных кликов и спама).
     """
+    from django_ratelimit.core import is_ratelimited
+    if is_ratelimited(request=request, group='booking_confirm', key='user',
+                       rate='60/h', method='POST', increment=True):
+        return _json_error('Слишком много запросов. Подождите.', status=429)
+
     try:
         booking = Booking.objects.select_related('slot__teacher__user', 'student').get(pk=booking_id)
     except Booking.DoesNotExist:

@@ -895,11 +895,21 @@ def student_detail(request, id):
 
 
 def login_view(request):
-    """Вход в систему"""
+    """Вход в систему. Rate-limited: 10 POST/10мин по IP — защита от brute force."""
+    from django_ratelimit.core import is_ratelimited
     if request.user.is_authenticated:
         return redirect('home')
-    
+
     if request.method == 'POST':
+        # Считаем только POST'ы (увеличиваем счётчик), GET-открытие страницы свободно
+        limited = is_ratelimited(
+            request=request, group='login', key='ip',
+            rate='10/10m', method='POST', increment=True,
+        )
+        if limited:
+            messages.error(request, 'Слишком много попыток входа. Подождите 10 минут и попробуйте снова.')
+            return render(request, 'logic/login.html', {'form': LoginForm(), 'next': request.GET.get('next', '')}, status=429)
+
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
             username = form.cleaned_data.get('username')
@@ -975,7 +985,7 @@ def register_choose(request):
 
 
 def register_student(request):
-    """Регистрация ученика"""
+    """Регистрация ученика. Rate-limited: 5/час с одного IP — анти-спам."""
     if request.user.is_authenticated:
         # Разрешаем доступ Google-пользователям без профиля студента
         has_student = False
@@ -988,6 +998,15 @@ def register_student(request):
             return redirect('home')
     
     if request.method == 'POST':
+        from django_ratelimit.core import is_ratelimited
+        limited = is_ratelimited(
+            request=request, group='register_student', key='ip',
+            rate='5/h', method='POST', increment=True,
+        )
+        if limited:
+            messages.error(request, 'Слишком много регистраций с этого IP. Попробуйте позже.')
+            return render(request, 'logic/register_student.html', {'form': StudentRegistrationForm()}, status=429)
+
         form = StudentRegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()

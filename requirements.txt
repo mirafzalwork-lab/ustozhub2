@@ -61,3 +61,6 @@ ujson==5.11.0
 urllib3==2.6.3
 whitenoise==6.5.0
 zope.interface==8.1.1
+
+# === Безопасность (rate-limiting) ===
+django-ratelimit==4.1.0
