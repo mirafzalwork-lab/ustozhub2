@@ -99,3 +99,54 @@ class OnboardingMiddleware:
             return redirect('register_choose')
 
         return self.get_response(request)
+
+
+# ---------------------------------------------------------------- #
+# CSP (Content-Security-Policy) — Report-Only режим
+# ---------------------------------------------------------------- #
+
+class CSPReportOnlyMiddleware:
+    """
+    Добавляет Content-Security-Policy-Report-Only заголовок.
+
+    Report-Only: браузер НЕ блокирует нарушения, только логирует их в консоль.
+    Это безопасный первый шаг — собираем real-world нарушения, потом
+    переключаем на enforcing.
+
+    Политика разрешает наши доверенные источники:
+      - 'self' для всего нашего
+      - CDN: Font Awesome, FullCalendar, Google Fonts
+      - meet.jit.si + meet.ustozhubedu.uz (для встроенной видео-комнаты)
+      - R2/S3 для медиа
+      - inline scripts/styles пока разрешены ('unsafe-inline') — мы их активно
+        используем в шаблонах; чтобы отказаться, понадобится nonce/hash
+        на каждом <script>/<style>.
+    """
+    POLICY = "; ".join([
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' "
+            "https://cdnjs.cloudflare.com https://cdn.jsdelivr.net "
+            "https://meet.jit.si https://meet.ustozhubedu.uz",
+        "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com "
+            "https://cdn.jsdelivr.net https://fonts.googleapis.com",
+        "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:",
+        "img-src 'self' data: blob: https:",
+        "media-src 'self' blob: https:",
+        "connect-src 'self' wss: https:",
+        "frame-src 'self' https://meet.jit.si https://meet.ustozhubedu.uz "
+            "https://accounts.google.com",
+        "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "form-action 'self' https://accounts.google.com",
+    ])
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        # На admin-страницы не вешаем (там reverse JS-тяжелее)
+        if request.path.startswith('/admin/'):
+            return response
+        response['Content-Security-Policy-Report-Only'] = self.POLICY
+        return response

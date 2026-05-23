@@ -2135,47 +2135,65 @@ class Booking(models.Model):
 
         Если ссылка на встречу не задана — автоматически создаём
         видео-комнату Jitsi, чтобы кнопка «Войти в урок» всегда работала.
+
+        Race-safe: блокируем строку брони через select_for_update —
+        две параллельные вкладки/клика учителя не пройдут оба чек статуса.
         """
         from django.db import transaction
         with transaction.atomic():
-            if self.status not in ('pending',):
-                raise ValueError(f'Cannot confirm booking in status {self.status}')
-            self.status = 'confirmed'
-            self.expires_at = None
-            self.teacher_reply = (teacher_reply or '')[:1000]
-            if not (self.meeting_url or '').strip():
-                self.meeting_url = self.build_meeting_url()
-            self.save(update_fields=['status', 'expires_at', 'teacher_reply', 'meeting_url', 'updated_at'])
-            self.slot.status = 'booked'
-            self.slot.hold_expires_at = None
-            self.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+            # Перечитываем с блокировкой, чтобы статус не «убежал» между read и write
+            locked = type(self).objects.select_for_update().get(pk=self.pk)
+            if locked.status != 'pending':
+                raise ValueError(f'Cannot confirm booking in status {locked.status}')
+            locked.status = 'confirmed'
+            locked.expires_at = None
+            locked.teacher_reply = (teacher_reply or '')[:1000]
+            if not (locked.meeting_url or '').strip():
+                locked.meeting_url = locked.build_meeting_url()
+            locked.save(update_fields=['status', 'expires_at', 'teacher_reply', 'meeting_url', 'updated_at'])
+            locked.slot.status = 'booked'
+            locked.slot.hold_expires_at = None
+            locked.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+            # Подтягиваем изменения в self (объект, переданный в вызывающий код)
+            self.refresh_from_db()
 
     def reject(self, teacher_reply=''):
-        """Учитель отказывает: status→cancelled_by_teacher, slot→free."""
+        """Учитель отказывает: status→cancelled_by_teacher, slot→free.
+
+        Race-safe: select_for_update — параллельные клики дадут ValueError
+        вместо двойной обработки.
+        """
         from django.db import transaction
         with transaction.atomic():
-            if self.status not in ('pending',):
-                raise ValueError(f'Cannot reject booking in status {self.status}')
-            self.status = 'cancelled_by_teacher'
-            self.expires_at = None
-            self.teacher_reply = (teacher_reply or '')[:1000]
-            self.save(update_fields=['status', 'expires_at', 'teacher_reply', 'updated_at'])
-            self.slot.status = 'free'
-            self.slot.hold_expires_at = None
-            self.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+            locked = type(self).objects.select_for_update().get(pk=self.pk)
+            if locked.status != 'pending':
+                raise ValueError(f'Cannot reject booking in status {locked.status}')
+            locked.status = 'cancelled_by_teacher'
+            locked.expires_at = None
+            locked.teacher_reply = (teacher_reply or '')[:1000]
+            locked.save(update_fields=['status', 'expires_at', 'teacher_reply', 'updated_at'])
+            locked.slot.status = 'free'
+            locked.slot.hold_expires_at = None
+            locked.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+            self.refresh_from_db()
 
     def cancel_by_student(self):
-        """Ученик отменяет до начала: slot снова free, бронирование cancelled."""
+        """Ученик отменяет до начала: slot снова free, бронирование cancelled.
+
+        Race-safe: select_for_update.
+        """
         from django.db import transaction
         with transaction.atomic():
-            if self.status not in ('pending', 'confirmed'):
-                raise ValueError(f'Cannot cancel booking in status {self.status}')
-            self.status = 'cancelled_by_student'
-            self.expires_at = None
-            self.save(update_fields=['status', 'expires_at', 'updated_at'])
-            self.slot.status = 'free'
-            self.slot.hold_expires_at = None
-            self.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+            locked = type(self).objects.select_for_update().get(pk=self.pk)
+            if locked.status not in ('pending', 'confirmed'):
+                raise ValueError(f'Cannot cancel booking in status {locked.status}')
+            locked.status = 'cancelled_by_student'
+            locked.expires_at = None
+            locked.save(update_fields=['status', 'expires_at', 'updated_at'])
+            locked.slot.status = 'free'
+            locked.slot.hold_expires_at = None
+            locked.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+            self.refresh_from_db()
 
     def reschedule_by_student(self, new_slot_id):
         """Ученик переносит активную бронь на другой свободный слот того же учителя.

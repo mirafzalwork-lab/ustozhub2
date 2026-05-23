@@ -10,6 +10,29 @@
     if (!el) return;
 
     const i18n = cfg.i18n || {};
+
+    // Toast helper (вместо alert)
+    let _toastTimer = null;
+    function toast(msg, isError) {
+        let $t = document.getElementById('book-toast');
+        if (!$t) {
+            $t = document.createElement('div');
+            $t.id = 'book-toast';
+            $t.style.cssText = 'position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);' +
+                'background:#0f172a;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;' +
+                'z-index:9999;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw;';
+            document.body.appendChild($t);
+        }
+        $t.textContent = msg;
+        $t.style.background = isError ? '#B91C1C' : '#0f172a';
+        $t.style.opacity = '1';
+        $t.style.transform = 'translateX(-50%) translateY(0)';
+        clearTimeout(_toastTimer);
+        _toastTimer = setTimeout(() => {
+            $t.style.opacity = '0';
+            $t.style.transform = 'translateX(-50%) translateY(20px)';
+        }, 3500);
+    }
     const modal = document.getElementById('book-modal');
     const $when = document.getElementById('book-when');
     const $duration = document.getElementById('book-duration');
@@ -188,7 +211,7 @@
                 return;
             }
             if (!cfg.isStudent) {
-                alert(cfg.i18n.teachersCantBook);
+                toast(cfg.i18n.teachersCantBook, true);
                 return;
             }
             openModal({

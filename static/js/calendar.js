@@ -11,6 +11,29 @@
 
     const DURATION_PRESETS = [30, 45, 60, 90, 120];
 
+    // ---- Toast helper (вместо alert) -----------------------------------
+    let _toastTimer = null;
+    function toast(msg, isError) {
+        let $t = document.getElementById('cal-toast');
+        if (!$t) {
+            $t = document.createElement('div');
+            $t.id = 'cal-toast';
+            $t.style.cssText = 'position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);' +
+                'background:#0f172a;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;' +
+                'z-index:9999;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw;';
+            document.body.appendChild($t);
+        }
+        $t.textContent = msg;
+        $t.style.background = isError ? '#B91C1C' : '#0f172a';
+        $t.style.opacity = '1';
+        $t.style.transform = 'translateX(-50%) translateY(0)';
+        clearTimeout(_toastTimer);
+        _toastTimer = setTimeout(() => {
+            $t.style.opacity = '0';
+            $t.style.transform = 'translateX(-50%) translateY(20px)';
+        }, 3500);
+    }
+
     // ---- Slot modal elements ------------------------------------------
     const modal = document.getElementById('cal-modal');
     const $title = document.getElementById('cal-modal-title');
@@ -211,7 +234,7 @@
                 });
                 calendar.addEvent(data.event);
             } catch (e) {
-                alert((i18n.createFailed || 'Не удалось создать слот:') + ' ' + e.message);
+                toast((i18n.createFailed || 'Не удалось создать слот:') + ' ' + e.message, true);
             } finally {
                 calendar.unselect();
             }
@@ -244,7 +267,7 @@
             }
         } catch (e) {
             info.revert();
-            alert((i18n.moveFailed || 'Не удалось переместить слот:') + ' ' + e.message);
+            toast((i18n.moveFailed || 'Не удалось переместить слот:') + ' ' + e.message, true);
         }
     }
 
@@ -305,7 +328,7 @@
             const fn = undoFn;
             hideUndo();
             if (!fn) return;
-            try { await fn(); } catch (e) { alert((i18n.undoFailed || 'Не удалось отменить действие.') + ' ' + e.message); }
+            try { await fn(); } catch (e) { toast((i18n.undoFailed || 'Не удалось отменить действие.') + ' ' + e.message, true); }
         });
     }
 
@@ -640,7 +663,7 @@
             });
             calendar.refetchEvents();
             closeDel();
-            alert((i18n.deletedFmt || 'Удалено свободных слотов:') + ' ' + data.deleted);
+            toast((i18n.deletedFmt || 'Удалено свободных слотов:') + ' ' + data.deleted);
         } catch (e) {
             showError($delError, e.message);
         } finally {

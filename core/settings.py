@@ -90,6 +90,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',  # Требуется для django-allauth
     'teachers.middleware.OnboardingMiddleware',  # Форсит onboarding для пользователей без профиля
+    'teachers.middleware.CSPReportOnlyMiddleware',  # CSP в report-only — собираем нарушения, не блокируя
 ]
 
 ROOT_URLCONF = 'core.urls'
