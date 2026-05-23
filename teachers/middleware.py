@@ -29,6 +29,9 @@ ONBOARDING_ALLOWED_URL_NAMES = {
     'socialaccount_connections',
     # Служебное
     'set_language',
+    # Юридические страницы — доступны всем
+    'privacy',
+    'terms',
 }
 
 # URL-префиксы, доступные без профиля (static, media, api allauth)

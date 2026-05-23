@@ -1390,7 +1390,7 @@
                     autocomplete="off"
                 />
 
-                <button class="global-search-btn" type="submit">Search</button>
+                <button class="global-search-btn" type="submit">{% trans "Поиск" %}</button>
 
                 {% if selected_subject %}<input type="hidden" name="subject" value="{{ selected_subject }}">{% endif %}
                 {% if selected_city %}<input type="hidden" name="city" value="{{ selected_city }}">{% endif %}
@@ -1408,8 +1408,8 @@
     <div class="quick-search" aria-label="Quick searches">
         <button type="button" class="quick-search-btn" data-quick-search="English">English</button>
         <button type="button" class="quick-search-btn" data-quick-search="Математика">Математика</button>
-        <button type="button" class="quick-search-btn" data-quick-search="Arab tiili">Arab tili</button>
-        <button type="button" class="quick-search-btn" data-quick-search="русский язык">руcский язык</button>
+        <button type="button" class="quick-search-btn" data-quick-search="Arab tili">Arab tili</button>
+        <button type="button" class="quick-search-btn" data-quick-search="русский язык">русский язык</button>
         <button type="button" class="quick-search-btn" data-quick-search="Biologiya">Biologiya</button>
         <button type="button" class="quick-search-btn" data-quick-search="история">История</button>
 

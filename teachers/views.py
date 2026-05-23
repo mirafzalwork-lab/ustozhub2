@@ -962,6 +962,16 @@ def logout_view(request):
     return render(request, 'logic/logout_confirm.html')
 
 
+def privacy_view(request):
+    """Политика конфиденциальности — публичная страница."""
+    return render(request, 'legal/privacy.html')
+
+
+def terms_view(request):
+    """Условия использования — публичная страница."""
+    return render(request, 'legal/terms.html')
+
+
 def register_choose(request):
     """Выбор типа регистрации"""
     if request.user.is_authenticated:

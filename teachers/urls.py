@@ -26,6 +26,8 @@ from .views import (
     badge_counts,
     # Google OAuth2 role completion
     google_complete_student, google_complete_teacher, google_student_onboarding,
+    # Legal pages
+    privacy_view, terms_view,
 )
 from .telegram_views import (
     telegram_auth, link_telegram_account, telegram_status, toggle_notifications
@@ -150,6 +152,10 @@ urlpatterns = [
     path('bookings/<uuid:booking_id>/calendar.ics', booking_ical, name='booking_ical'),
     path('lesson/<uuid:booking_id>/', lesson_room, name='lesson_room'),
     path('review/<uuid:booking_id>/', leave_review, name='leave_review'),
+
+    # Legal pages (footer links)
+    path('privacy/', privacy_view, name='privacy'),
+    path('terms/', terms_view, name='terms'),
 
     # Google OAuth2
     path('auth/google/', google_login_view, name='google_login'),

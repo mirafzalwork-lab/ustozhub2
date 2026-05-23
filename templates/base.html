@@ -1488,50 +1488,34 @@
             <div class="footer-section">
                 <h3>UstozHub</h3>
                 <p>{% trans 'Платформа №1 для поиска квалифицированных преподавателей в Узбекистане.' %}</p>
-                <div class="social-links">
-                    <a href="#" class="social-link" aria-label="Telegram">
-                        <i class="fab fa-telegram-plane"></i>
-                    </a>
-                    <a href="#" class="social-link" aria-label="Instagram">
-                        <i class="fab fa-instagram"></i>
-                    </a>
-                    <a href="#" class="social-link" aria-label="YouTube">
-                        <i class="fab fa-youtube"></i>
-                    </a>
-                </div>
+                {# Соцсети скрыты до запуска официальных каналов — пустые ссылки убраны #}
             </div>
 
             <div class="footer-section">
                 <h3>{% trans 'Ученикам' %}</h3>
                 <a href="{% url 'home' %}">{% trans 'Найти учителя' %}</a>
-                <a href="#">{% trans 'Онлайн обучение' %}</a>
-                <a href="#">{% trans 'Популярные предметы' %}</a>
-                <a href="#">{% trans 'Как это работает' %}</a>
+                <a href="{% url 'register_student' %}">{% trans 'Зарегистрироваться' %}</a>
+                <a href="{% url 'login' %}">{% trans 'Войти' %}</a>
             </div>
 
             <div class="footer-section">
                 <h3>{% trans 'Учителям' %}</h3>
                 <a href="{% url 'teacher_register' %}">{% trans 'Стать учителем' %}</a>
-                <a href="#">{% trans 'Преимущества' %}</a>
-                <a href="#">{% trans 'Правила платформы' %}</a>
-                <a href="#">{% trans 'FAQ для учителей' %}</a>
+                <a href="{% url 'login' %}">{% trans 'Войти в кабинет' %}</a>
             </div>
 
             <div class="footer-section">
                 <h3>{% trans 'Поддержка' %}</h3>
-                <a href="mailto:info@ustozhub.uz">info@ustozhubedu.uz</a>
-                <a href="tel:+998901234567">+998 94 218 26 09</a>
-                <a href="#">{% trans 'Центр помощи' %}</a>
-                <a href="#">{% trans 'Связаться с нами' %}</a>
+                <a href="mailto:info@ustozhubedu.uz">info@ustozhubedu.uz</a>
+                <a href="tel:+998942182609">+998 94 218 26 09</a>
             </div>
         </div>
 
         <div class="footer-bottom">
-            <p>&copy; 2025 UstozHub. {% trans 'Все права защищены.' %}</p>
+            <p>&copy; 2026 UstozHub. {% trans 'Все права защищены.' %}</p>
             <div class="footer-links-inline">
-                <a href="#">{% trans 'Политика конфиденциальности' %}</a>
-                <a href="#">{% trans 'Условия использования' %}</a>
-                <a href="#">Cookies</a>
+                <a href="{% url 'privacy' %}">{% trans 'Политика конфиденциальности' %}</a>
+                <a href="{% url 'terms' %}">{% trans 'Условия использования' %}</a>
             </div>
         </div>
     </footer>
