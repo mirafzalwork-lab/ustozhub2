@@ -6,9 +6,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="UstozHub - платформа для поиска квалифицированных преподавателей">
-    <title>{% block title %}UstozHub{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}UstozHub — платформа №1 в Узбекистане для поиска квалифицированных репетиторов. Онлайн-уроки, проверенные преподаватели, удобное бронирование.{% endblock %}">
+    <title>{% block title %}UstozHub — найти репетитора в Узбекистане{% endblock %}</title>
     <link rel="icon" type="image/png" href="{% static 'logo/new_logo.png' %}">
+
+    {# Canonical + hreflang — для корректной индексации многоязычного сайта #}
+    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+    {% with current_path=request.path|cut:"/ru"|cut:"/uz"|cut:"/en" %}
+        <link rel="alternate" hreflang="ru" href="https://ustozhubedu.uz/ru{{ current_path }}">
+        <link rel="alternate" hreflang="uz" href="https://ustozhubedu.uz/uz{{ current_path }}">
+        <link rel="alternate" hreflang="en" href="https://ustozhubedu.uz/en{{ current_path }}">
+        <link rel="alternate" hreflang="x-default" href="https://ustozhubedu.uz/ru{{ current_path }}">
+    {% endwith %}
+
+    {# Open Graph / Twitter Card — для красивых превью при шаринге #}
+    <meta property="og:site_name" content="UstozHub">
+    <meta property="og:locale" content="{% if LANGUAGE_CODE == 'uz' %}uz_UZ{% elif LANGUAGE_CODE == 'en' %}en_US{% else %}ru_RU{% endif %}">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}UstozHub — найти репетитора в Узбекистане{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Платформа онлайн-репетиторов: проверенные учителя, бронирование и видео-уроки в одном месте.{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'logo/new_logo.png' %}{% endblock %}">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}{{ block.super }}{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}{{ block.super }}{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'logo/new_logo.png' %}{% endblock %}">
+
+    {# Accessibility utility: визуально скрытый текст для скринридеров и SEO #}
+    <style>
+        .sr-only {
+            position: absolute !important; width: 1px !important; height: 1px !important;
+            padding: 0 !important; margin: -1px !important; overflow: hidden !important;
+            clip: rect(0,0,0,0) !important; white-space: nowrap !important; border: 0 !important;
+        }
+    </style>
+
+    {# Structured data для всех страниц — название организации #}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "EducationalOrganization",
+      "name": "UstozHub",
+      "url": "https://ustozhubedu.uz/",
+      "logo": "{{ request.scheme }}://{{ request.get_host }}{% static 'logo/new_logo.png' %}",
+      "sameAs": [],
+      "areaServed": {"@type":"Country","name":"Uzbekistan"},
+      "description": "Онлайн-платформа репетиторов в Узбекистане"
+    }
+    </script>
+    {% block extra_head_jsonld %}{% endblock %}
 
     <!-- Preconnect для ускорения загрузки внешних ресурсов -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

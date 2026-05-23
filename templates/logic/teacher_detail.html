@@ -2,7 +2,37 @@
 {% load static %}
 {% load i18n %}
 {% load custom_filters %}
-{% block title %}{{ teacher.user.get_full_name }} - {% trans 'Учитель на UstozHub' %}{% endblock %}
+{% block title %}{{ teacher.user.get_full_name }} — {% trans 'репетитор на UstozHub' %}{% endblock %}
+{% block meta_description %}{{ teacher.user.get_full_name }}. {% trans "Бронируйте онлайн-урок на UstozHub." %} {% if teacher.bio %}{{ teacher.bio|truncatechars:120 }}{% endif %}{% endblock %}
+{% block og_type %}profile{% endblock %}
+{% block og_title %}{{ teacher.user.get_full_name }} — {% trans 'репетитор' %}{% endblock %}
+{% block og_description %}{% if teacher.bio %}{{ teacher.bio|truncatechars:160 }}{% else %}{% trans "Преподаватель на UstozHub" %}{% endif %}{% endblock %}
+{% block og_image %}{% if teacher.user.avatar %}{{ request.scheme }}://{{ request.get_host }}{{ teacher.user.avatar.url }}{% else %}{{ block.super }}{% endif %}{% endblock %}
+
+{% block extra_head_jsonld %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "{{ teacher.user.get_full_name|escapejs }}",
+  "url": "{{ request.build_absolute_uri }}",
+  {% if teacher.user.avatar %}"image": "{{ request.scheme }}://{{ request.get_host }}{{ teacher.user.avatar.url }}",{% endif %}
+  "jobTitle": "{% trans 'Репетитор' %}",
+  {% if teacher.bio %}"description": "{{ teacher.bio|truncatechars:300|escapejs }}",{% endif %}
+  "worksFor": {"@type":"EducationalOrganization","name":"UstozHub","url":"https://ustozhubedu.uz/"}
+  {% if teacher.reviews.count %}
+  ,"aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "{{ teacher.average_rating|default:0|floatformat:1 }}",
+    "reviewCount": "{{ teacher.reviews.count }}",
+    "bestRating": "5",
+    "worstRating": "1"
+  }
+  {% endif %}
+}
+</script>
+{% endblock %}
+
 {% block content %}
 <!-- teacher detail page -->
 <style>

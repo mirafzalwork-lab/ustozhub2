@@ -972,6 +972,25 @@ def terms_view(request):
     return render(request, 'legal/terms.html')
 
 
+def robots_txt(request):
+    """robots.txt — указатель для поисковых роботов на sitemap."""
+    from django.http import HttpResponse
+    content = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /admin/\n"
+        "Disallow: /accounts/\n"
+        "Disallow: /api/\n"
+        "Disallow: /ru/api/\n"
+        "Disallow: /uz/api/\n"
+        "Disallow: /en/api/\n"
+        "Disallow: /admin-dashboard/\n"
+        "\n"
+        "Sitemap: https://ustozhubedu.uz/sitemap.xml\n"
+    )
+    return HttpResponse(content, content_type='text/plain')
+
+
 def register_choose(request):
     """Выбор типа регистрации"""
     if request.user.is_authenticated:

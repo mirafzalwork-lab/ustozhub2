@@ -1,9 +1,31 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load i18n %}
-{% block title %}{% trans "Главная" %} - UstozHub{% endblock %}
+{% block title %}{% trans "UstozHub — найти репетитора в Узбекистане" %}{% endblock %}
+{% block meta_description %}{% trans "Тысячи проверенных репетиторов в Узбекистане. Английский, математика, узбекский, IT, подготовка к ЕГЭ — выбирайте учителя, бронируйте онлайн-урок." %}{% endblock %}
+{% block og_title %}{% trans "UstozHub — найти репетитора в Узбекистане" %}{% endblock %}
+{% block og_description %}{% trans "Тысячи проверенных репетиторов. Английский, математика, узбекский, подготовка к экзаменам." %}{% endblock %}
+
+{% block extra_head_jsonld %}
+{# Главная: расширенный schema.org WebSite + поиск #}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "UstozHub",
+  "url": "https://ustozhubedu.uz/",
+  "inLanguage": ["ru", "uz", "en"],
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://ustozhubedu.uz/ru/?search={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+{% endblock %}
 
 {% block content %}
+<h1 class="sr-only">{% trans "Поиск репетиторов в Узбекистане" %}</h1>
 <style>
     /* ============================================
        🎨 КРИТИЧЕСКИЕ CSS ПЕРЕМЕННЫЕ

@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',  # Требуется для django-allauth
+    'django.contrib.sitemaps',  # SEO: /sitemap.xml
 
     # Third-party apps
     'channels',  # Django Channels для WebSocket support
