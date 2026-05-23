@@ -20,16 +20,18 @@ import logging
 from datetime import datetime
 from functools import wraps
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseForbidden
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_http_methods
 
-from .models import TeacherProfile, TimeSlot, Booking, SlotUnavailable, Subject
+from .models import TeacherProfile, TimeSlot, Booking, SlotUnavailable, Subject, Review
 
 logger = logging.getLogger(__name__)
 
@@ -141,6 +143,60 @@ def _json_error(message: str, status: int = 400):
     return JsonResponse({'error': message}, status=status)
 
 
+_VALID_DAY_KEYS = {'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'}
+
+
+def _validate_hhmm(value: str) -> str | None:
+    """Принимает 'HH:MM'; возвращает нормализованную строку или None при ошибке."""
+    if not isinstance(value, str):
+        return None
+    parts = value.strip().split(':')
+    if len(parts) != 2:
+        return None
+    try:
+        h, m = int(parts[0]), int(parts[1])
+    except ValueError:
+        return None
+    if not (0 <= h <= 23 and 0 <= m <= 59):
+        return None
+    return f'{h:02d}:{m:02d}'
+
+
+def _normalize_schedule_payload(raw: dict) -> tuple[dict | None, str]:
+    """
+    Нормализует пришедший с фронта недельный шаблон.
+
+    Вход: {"monday": [{"from": "09:00", "to": "12:00"}, ...], ...}
+    Выход: (schedule_dict, '') в формате хранения weekly_schedule,
+            либо (None, error_message) при ошибке валидации.
+
+    Пустые/выходные дни просто опускаются. Интервалы проверяются:
+    корректный HH:MM и from < to.
+    """
+    if not isinstance(raw, dict):
+        return None, 'schedule должен быть объектом'
+    result = {}
+    for key, intervals in raw.items():
+        if key not in _VALID_DAY_KEYS:
+            return None, f'Неизвестный день: {key}'
+        if not isinstance(intervals, list):
+            return None, f'{key}: интервалы должны быть списком'
+        clean = []
+        for itv in intervals:
+            if not isinstance(itv, dict):
+                return None, f'{key}: некорректный интервал'
+            f = _validate_hhmm(itv.get('from'))
+            t = _validate_hhmm(itv.get('to'))
+            if not f or not t:
+                return None, f'{key}: время в формате ЧЧ:ММ'
+            if f >= t:
+                return None, f'{key}: начало интервала должно быть раньше конца'
+            clean.append({'from': f, 'to': t})
+        if clean:
+            result[key] = clean
+    return result, ''
+
+
 # --------------------------------------------------------------------------- #
 # UI page
 # --------------------------------------------------------------------------- #
@@ -148,8 +204,16 @@ def _json_error(message: str, status: int = 400):
 @teacher_required
 def teacher_calendar(request):
     """Страница календаря учителя."""
+    # Текущий шаблон недели в формате {day_key: [{"from","to"}, ...]} —
+    # чтобы редактор расписания в модалке генерации был предзаполнен.
+    intervals = request.teacher_profile.get_schedule_intervals()
+    schedule_json = {
+        key: [{'from': f, 'to': t} for f, t in intervals.get(key, [])]
+        for key, _label in TeacherProfile.WEEKDAYS_ORDERED
+    }
     return render(request, 'booking/teacher_calendar.html', {
         'teacher': request.teacher_profile,
+        'schedule_json': json.dumps(schedule_json),
     })
 
 
@@ -333,11 +397,23 @@ def slots_bulk_generate_api(request):
 
     from datetime import datetime, time as dt_time, timedelta
     teacher = request.teacher_profile
-    schedule = teacher.weekly_schedule or {}
-    if not schedule:
+
+    # Если фронт прислал отредактированный шаблон — валидируем, сохраняем в
+    # weekly_schedule (чтобы профиль и календарь были в синхроне) и генерируем
+    # уже из него. Иначе берём сохранённый ранее шаблон.
+    if 'schedule' in data and data.get('schedule') is not None:
+        normalized, err = _normalize_schedule_payload(data['schedule'])
+        if err:
+            return _json_error(err, status=400)
+        teacher.weekly_schedule = normalized
+        teacher.save(update_fields=['weekly_schedule'])
+
+    # Нормализованное расписание: {day_key: [(from, to), ...]} (оба формата хранения)
+    schedule = teacher.get_schedule_intervals()
+    if not any(schedule.values()):
         return _json_error(
-            'У вас не задано шаблонное расписание (weekly_schedule пуст). '
-            'Заполните рабочие дни и часы в профиле, либо создавайте слоты вручную.',
+            'Расписание пустое. Включите хотя бы один рабочий день с интервалом '
+            'времени и попробуйте снова.',
             status=400,
         )
 
@@ -380,13 +456,12 @@ def slots_bulk_generate_api(request):
     current = start_date
     while current < end_date:
         weekday_name = current.strftime('%A').lower()  # 'monday', 'tuesday'...
-        day_cfg = schedule.get(weekday_name)
-        if day_cfg and day_cfg.get('from') and day_cfg.get('to'):
+        # Каждый день может содержать НЕСКОЛЬКО интервалов
+        for from_str, to_str in schedule.get(weekday_name, []):
             try:
-                from_t = dt_time.fromisoformat(day_cfg['from'])
-                to_t = dt_time.fromisoformat(day_cfg['to'])
-            except ValueError:
-                current += timedelta(days=1)
+                from_t = dt_time.fromisoformat(from_str)
+                to_t = dt_time.fromisoformat(to_str)
+            except (ValueError, TypeError):
                 continue
 
             day_start = timezone.make_aware(datetime.combine(current, from_t), tz)
@@ -500,6 +575,13 @@ def _booking_to_dict(b: Booking) -> dict:
         'student_message': b.student_message,
         'teacher_reply': b.teacher_reply,
         'meeting_url': b.meeting_url,
+        # Внутренняя комната (встроенный Jitsi) — для авто-комнат; для кастомных
+        # внешних ссылок meeting_is_jitsi=False и заходим напрямую по meeting_url.
+        'meeting_is_jitsi': b.is_jitsi_meeting(),
+        'lesson_room_url': reverse('lesson_room', args=[b.id]),
+        # Отзыв: ученик может оценить завершённый урок (или обновить отзыв)
+        'review_url': reverse('leave_review', args=[b.id]),
+        'has_review': Review.objects.filter(booking=b).exists(),
         'subject': {
             'id': b.subject.pk,
             'name': b.subject.name,
@@ -663,6 +745,45 @@ def booking_cancel_api(request, booking_id):
     return JsonResponse({'booking': _booking_to_dict(booking)})
 
 
+@student_required
+@require_http_methods(['POST'])
+def booking_reschedule_api(request, booking_id):
+    """
+    Ученик переносит свою активную бронь на другой свободный слот того же учителя.
+    Body: {slot_id}. После переноса бронь снова pending — учитель подтверждает.
+    """
+    try:
+        booking = Booking.objects.select_related('slot__teacher__user', 'student').get(pk=booking_id)
+    except Booking.DoesNotExist:
+        return _json_error('Бронирование не найдено', status=404)
+
+    if booking.student_id != request.user.pk:
+        return _json_error('Доступ запрещён', status=403)
+
+    try:
+        data = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return _json_error('Invalid JSON')
+
+    new_slot_id = data.get('slot_id')
+    if not new_slot_id:
+        return _json_error('slot_id обязателен')
+
+    try:
+        booking.reschedule_by_student(new_slot_id)
+    except SlotUnavailable as e:
+        return _json_error(f'Слот недоступен: {e}', status=409)
+    except TimeSlot.DoesNotExist:
+        return _json_error('Слот не найден', status=404)
+    except ValueError as e:
+        return _json_error(str(e), status=409)
+
+    # Уведомляем учителя о новой заявке на подтверждение
+    _notify_teacher_about_booking(booking)
+    logger.info(f'Booking rescheduled: {booking.pk} → slot={new_slot_id}')
+    return JsonResponse({'booking': _booking_to_dict(booking)})
+
+
 # ---------------------------------------------------------------- TEACHER --
 
 _MEETING_URL_MAX_LEN = 500
@@ -729,7 +850,7 @@ def booking_confirm_api(request, booking_id):
         booking.save(update_fields=['meeting_url', 'updated_at'])
 
     _notify_student_about_decision(booking, decision='confirmed')
-    logger.info(f'Booking confirmed: {booking.pk}, meeting_url={"set" if meeting_url else "empty"}')
+    logger.info(f'Booking confirmed: {booking.pk}, meeting_url={"custom" if meeting_url else "auto-jitsi"}')
     return JsonResponse({'booking': _booking_to_dict(booking)})
 
 
@@ -835,6 +956,72 @@ def my_bookings_page(request):
     })
 
 
+def _ical_escape(text: str) -> str:
+    """Экранирование текста для iCalendar (RFC 5545)."""
+    return (str(text or '')
+            .replace('\\', '\\\\').replace(';', '\\;')
+            .replace(',', '\\,').replace('\n', '\\n'))
+
+
+@authenticated_required
+@require_http_methods(['GET'])
+def booking_ical(request, booking_id):
+    """Экспорт брони в файл .ics (Google Calendar / Apple / Outlook)."""
+    from django.http import HttpResponse
+
+    booking = get_object_or_404(
+        Booking.objects.select_related('slot__teacher__user', 'student', 'subject'),
+        pk=booking_id,
+    )
+    if not _can_view_booking(request.user, booking):
+        return HttpResponseForbidden('Доступ запрещён')
+
+    teacher_name = booking.slot.teacher.user.get_full_name() or booking.slot.teacher.user.username
+    student_name = booking.student.get_full_name() or booking.student.username
+    subject = booking.subject.name if booking.subject else 'Урок'
+    summary = f'{subject}: {teacher_name} ↔ {student_name}'
+
+    desc_lines = [f'Учитель: {teacher_name}', f'Ученик: {student_name}']
+    if booking.meeting_url:
+        desc_lines.append(f'Ссылка на урок: {booking.meeting_url}')
+    description = '\\n'.join(_ical_escape(x) for x in desc_lines)
+
+    from datetime import timezone as _dt_tz
+
+    def fmt(dt):
+        return dt.astimezone(_dt_tz.utc).strftime('%Y%m%dT%H%M%SZ')
+
+    lines = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//UstozHub//Booking//RU',
+        'CALSCALE:GREGORIAN',
+        'METHOD:PUBLISH',
+        'BEGIN:VEVENT',
+        f'UID:booking-{booking.id}@ustozhub',
+        f'DTSTAMP:{fmt(timezone.now())}',
+        f'DTSTART:{fmt(booking.slot.start_at)}',
+        f'DTEND:{fmt(booking.slot.end_at)}',
+        f'SUMMARY:{_ical_escape(summary)}',
+        f'DESCRIPTION:{description}',
+    ]
+    if booking.meeting_url:
+        lines.append(f'URL:{_ical_escape(booking.meeting_url)}')
+    lines += [
+        'BEGIN:VALARM',
+        'TRIGGER:-PT30M',
+        'ACTION:DISPLAY',
+        f'DESCRIPTION:{_ical_escape(summary)}',
+        'END:VALARM',
+        'END:VEVENT',
+        'END:VCALENDAR',
+    ]
+    content = '\r\n'.join(lines) + '\r\n'
+    resp = HttpResponse(content, content_type='text/calendar; charset=utf-8')
+    resp['Content-Disposition'] = f'attachment; filename="lesson-{booking.id}.ics"'
+    return resp
+
+
 def book_teacher_page(request, teacher_id: int):
     """
     Публичная страница 'Забронировать урок' с мини-календарём свободных слотов.
@@ -860,6 +1047,124 @@ def book_teacher_page(request, teacher_id: int):
     })
 
 
+@authenticated_required
+def lesson_room(request, booking_id):
+    """
+    Встроенная видео-комната урока (Jitsi через iframe), внутри платформы.
+
+    Доступ только у учителя и ученика этой брони. Открывается с -15 минут до
+    начала и до +30 минут после конца. Кастомные внешние ссылки (Zoom и т.п.)
+    встроить нельзя — для них просто редиректим на ссылку.
+    """
+    from datetime import timedelta
+
+    booking = get_object_or_404(
+        Booking.objects.select_related('slot__teacher__user', 'student', 'subject'),
+        pk=booking_id,
+    )
+    user = request.user
+    tp = getattr(user, 'teacher_profile', None)
+    is_teacher = bool(tp and booking.slot.teacher_id == tp.pk)
+    is_student = (booking.student_id == user.pk)
+    if not (is_teacher or is_student):
+        return HttpResponseForbidden('Эта комната доступна только участникам урока.')
+
+    # Кастомная внешняя ссылка (не наш Jitsi) — встроить нельзя, ведём напрямую.
+    if booking.meeting_url and not booking.is_jitsi_meeting():
+        return redirect(booking.meeting_url)
+
+    now = timezone.now()
+    open_from = booking.slot.start_at - timedelta(minutes=15)
+    open_until = booking.slot.end_at + timedelta(minutes=30)
+
+    state = 'ok'
+    if booking.status != 'confirmed':
+        state = 'not_confirmed'
+    elif now < open_from:
+        state = 'too_early'
+    elif now > open_until:
+        state = 'too_late'
+
+    jitsi_base = (getattr(settings, 'JITSI_BASE_URL', 'https://meet.jit.si') or '').rstrip('/')
+    # Домен-хост для External API (без схемы)
+    jitsi_domain = jitsi_base.split('://', 1)[-1]
+
+    other = booking.slot.teacher.user if is_student else booking.student
+    other_name = other.get_full_name() or other.username
+
+    return render(request, 'booking/lesson_room.html', {
+        'booking': booking,
+        'state': state,
+        'can_join': state == 'ok',
+        'is_teacher': is_teacher,
+        'jitsi_domain': jitsi_domain,
+        'jitsi_room': booking.jitsi_room_name(),
+        'display_name': user.get_full_name() or user.username,
+        'other_name': other_name,
+        'open_from': open_from,
+    })
+
+
+@authenticated_required
+def leave_review(request, booking_id):
+    """
+    Оставить / обновить отзыв по завершённому уроку.
+
+    Доступно только ученику этой брони и только если урок completed.
+    Уважает unique_together(teacher, student, subject): повторный отзыв
+    тому же учителю по тому же предмету — редактирует существующий.
+    """
+    booking = get_object_or_404(
+        Booking.objects.select_related('slot__teacher__user', 'student', 'subject'),
+        pk=booking_id,
+    )
+    if booking.student_id != request.user.pk:
+        return HttpResponseForbidden('Отзыв может оставить только ученик этого урока.')
+    if booking.status != 'completed':
+        messages.warning(request, 'Оставить отзыв можно только после завершения урока.')
+        return redirect('my_bookings_page')
+
+    teacher = booking.slot.teacher
+    # Существующий отзыв этого ученика этому учителю по этому предмету
+    existing = Review.objects.filter(
+        teacher=teacher, student=request.user, subject=booking.subject,
+    ).first()
+
+    if request.method == 'POST':
+        def _clamp(name, default=5):
+            try:
+                v = int(request.POST.get(name, default))
+            except (TypeError, ValueError):
+                v = default
+            return max(1, min(5, v))
+
+        rating = _clamp('rating')
+        # Детальные оценки опциональны — по умолчанию равны общей
+        knowledge = _clamp('knowledge_rating', rating)
+        communication = _clamp('communication_rating', rating)
+        punctuality = _clamp('punctuality_rating', rating)
+        comment = (request.POST.get('comment') or '').strip()[:1000]
+
+        review = existing or Review(teacher=teacher, student=request.user, subject=booking.subject)
+        review.rating = rating
+        review.knowledge_rating = knowledge
+        review.communication_rating = communication
+        review.punctuality_rating = punctuality
+        review.comment = comment
+        review.booking = booking
+        review.is_verified = True
+        review.save()
+
+        messages.success(request, 'Спасибо! Ваш отзыв сохранён.')
+        return redirect('teacher_detail', id=teacher.pk)
+
+    return render(request, 'booking/leave_review.html', {
+        'booking': booking,
+        'teacher': teacher,
+        'existing': existing,
+    })
+
+
 # ---------------------------------------------------------------- HELPERS --
 
 def _notify_teacher_about_booking(booking: Booking):
@@ -869,19 +1174,21 @@ def _notify_teacher_about_booking(booking: Booking):
         teacher_user = booking.slot.teacher.user
         student_name = booking.student.get_full_name() or booking.student.username
         slot_str = booking.slot.start_at.strftime('%d.%m %H:%M')
+        deadline_str = timezone.localtime(booking.expires_at).strftime('%d.%m %H:%M') if booking.expires_at else slot_str
         Notification.objects.create(
             title='Новое бронирование',
             short_text=f'{student_name} забронировал слот {slot_str}',
             full_text=(
                 f'Ученик {student_name} запросил бронирование на {slot_str}.\n\n'
                 f'Сообщение: {booking.student_message or "—"}\n\n'
-                f'Подтвердите или отклоните в течение 15 минут, иначе слот '
-                f'снова станет свободным.'
+                f'Подтвердите или отклоните до {deadline_str} (за час до начала урока), '
+                f'иначе слот снова станет свободным.'
             ),
             target='specific_user',
             target_user=teacher_user,
             priority=10,
             is_active=True,
+            booking=booking,
         )
         # Notification post_save сигнал сам пушит WS — у нас уже есть push_notification_realtime
     except Exception as e:

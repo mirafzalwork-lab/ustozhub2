@@ -14,6 +14,7 @@ django.setup()
 
 # Импортируем после setup
 from channels.routing import ProtocolTypeRouter, URLRouter
+
 from channels.auth import AuthMiddlewareStack
 from teachers.routing import websocket_urlpatterns
 

@@ -120,6 +120,56 @@
         .bk-card { grid-template-columns: 60px 1fr; gap:12px; padding:14px; }
         .bk-actions { grid-column: 1 / -1; justify-content:flex-end; }
     }
+
+    /* ---- Модалка действий (вместо браузерных prompt/confirm) ---- */
+    .bkm-overlay {
+        position: fixed; inset: 0; z-index: 1000;
+        background: rgba(15,23,42,.45);
+        display: flex; align-items: center; justify-content: center;
+        padding: 16px; opacity: 0; pointer-events: none;
+        transition: opacity .15s;
+    }
+    .bkm-overlay.is-open { opacity: 1; pointer-events: auto; }
+    .bkm-dialog {
+        width: 100%; max-width: 440px;
+        background: #fff; border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(15,23,42,.25);
+        padding: 24px 24px 20px;
+        transform: translateY(8px) scale(.98);
+        transition: transform .15s;
+    }
+    .bkm-overlay.is-open .bkm-dialog { transform: none; }
+    .bkm-title { font-size: 18px; font-weight: 700; margin: 0 0 6px; color:#0f172a; }
+    .bkm-text { font-size: 14px; color:#64748b; margin: 0 0 16px; line-height:1.5; }
+    .bkm-field { margin-bottom: 14px; }
+    .bkm-field label { display:block; font-size:13px; font-weight:600; color:#334155; margin-bottom:6px; }
+    .bkm-field input, .bkm-field textarea, .bkm-field select {
+        width:100%; box-sizing:border-box; font:inherit; font-size:14px;
+        border:1px solid #e2e8f0; border-radius:9px; padding:10px 12px; background:#fff;
+    }
+    .bkm-field textarea { min-height:80px; resize:vertical; }
+    .bkm-field input:focus, .bkm-field textarea:focus, .bkm-field select:focus { outline:none; border-color:#4F46E5; }
+    .bkm-field .bkm-hint { font-size:12px; color:#94a3b8; margin-top:4px; }
+    .bkm-actions { display:flex; gap:10px; margin-top:20px; }
+    .bkm-btn {
+        flex:1; padding:11px 16px; border-radius:10px; border:0;
+        font-size:14.5px; font-weight:600; cursor:pointer;
+    }
+    .bkm-btn.ghost { background:#f1f5f9; color:#475569; }
+    .bkm-btn.primary { background:#4F46E5; color:#fff; }
+    .bkm-btn.primary:hover { background:#4338CA; }
+    .bkm-btn.danger { background:#DC2626; color:#fff; }
+    .bkm-btn.danger:hover { background:#B91C1C; }
+
+    /* ---- Тост для ошибок (вместо alert) ---- */
+    .bk-toast {
+        position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px);
+        background:#0f172a; color:#fff; padding:12px 20px; border-radius:10px;
+        font-size:14px; z-index:1100; opacity:0; pointer-events:none;
+        transition: opacity .2s, transform .2s; max-width:90vw;
+    }
+    .bk-toast.is-open { opacity:1; transform: translateX(-50%) translateY(0); }
+    .bk-toast.error { background:#B91C1C; }
 </style>
 {% endblock %}
 
@@ -147,6 +197,20 @@
     </div>
 </section>
 
+<!-- Модалка действий -->
+<div class="bkm-overlay" id="bkm-overlay" aria-hidden="true">
+    <div class="bkm-dialog" role="dialog" aria-modal="true">
+        <h3 class="bkm-title" id="bkm-title"></h3>
+        <p class="bkm-text" id="bkm-text"></p>
+        <div id="bkm-body"></div>
+        <div class="bkm-actions">
+            <button type="button" class="bkm-btn ghost" id="bkm-cancel">{% trans "Отмена" %}</button>
+            <button type="button" class="bkm-btn primary" id="bkm-ok">{% trans "ОК" %}</button>
+        </div>
+    </div>
+</div>
+<div class="bk-toast" id="bk-toast"></div>
+
 {% csrf_token %}
 {% endblock %}
 
@@ -158,10 +222,13 @@ window.UstozMyBookings = {
     locale: '{{ LANGUAGE_CODE|default:"ru" }}',
     urls: {
         list:    "{% url 'my_bookings_api' %}",
-        confirm: "/api/bookings/__ID__/confirm/",
-        reject:  "/api/bookings/__ID__/reject/",
-        cancel:  "/api/bookings/__ID__/cancel/",
-        setLink: "/api/bookings/__ID__/meeting-url/",
+        confirm: "/{{ LANGUAGE_CODE|default:'ru' }}/api/bookings/__ID__/confirm/",
+        reject:  "/{{ LANGUAGE_CODE|default:'ru' }}/api/bookings/__ID__/reject/",
+        cancel:  "/{{ LANGUAGE_CODE|default:'ru' }}/api/bookings/__ID__/cancel/",
+        setLink: "/{{ LANGUAGE_CODE|default:'ru' }}/api/bookings/__ID__/meeting-url/",
+        reschedule: "/{{ LANGUAGE_CODE|default:'ru' }}/api/bookings/__ID__/reschedule/",
+        publicSlots: "/{{ LANGUAGE_CODE|default:'ru' }}/api/teachers/__TID__/slots/",
+        ical: "/{{ LANGUAGE_CODE|default:'ru' }}/bookings/__ID__/calendar.ics",
     },
     i18n: {
         confirm: "{% trans 'Подтвердить' %}",
@@ -175,7 +242,26 @@ window.UstozMyBookings = {
         joinLesson: "{% trans 'Войти в урок' %}",
         setLink: "{% trans 'Добавить ссылку' %}",
         editLink: "{% trans 'Изменить ссылку' %}",
-        askMeetingUrl: "{% trans 'Ссылка на встречу (Meet/Zoom, оставьте пустой если позже):' %}",
+        askMeetingUrl: "{% trans 'Ссылка на встречу (Meet/Zoom). Оставьте пустым — создадим видео-комнату автоматически:' %}",
+        leaveReview: "{% trans 'Оставить отзыв' %}",
+        editReview: "{% trans 'Изменить отзыв' %}",
+        ok: "{% trans 'ОК' %}",
+        cancelBtn: "{% trans 'Отмена' %}",
+        confirmTitle: "{% trans 'Подтвердить урок' %}",
+        rejectTitle: "{% trans 'Отклонить заявку' %}",
+        cancelTitle: "{% trans 'Отменить бронирование' %}",
+        setLinkTitle: "{% trans 'Ссылка на встречу' %}",
+        meetingUrlLabel: "{% trans 'Ссылка на встречу' %}",
+        meetingUrlHint: "{% trans 'Оставьте пустым — создадим видео-комнату автоматически' %}",
+        replyLabel: "{% trans 'Сообщение ученику (необязательно)' %}",
+        reasonLabel: "{% trans 'Причина отклонения (необязательно)' %}",
+        reschedule: "{% trans 'Перенести' %}",
+        rescheduleTitle: "{% trans 'Перенести урок' %}",
+        rescheduleHint: "{% trans 'Выберите другой свободный слот. После переноса учитель подтвердит новое время.' %}",
+        pickSlot: "{% trans 'Новый слот' %}",
+        noFreeSlots: "{% trans 'У учителя нет свободных слотов на ближайшие 30 дней.' %}",
+        addToCalendar: "{% trans 'Добавить в календарь (.ics)' %}",
+        rescheduled: "{% trans 'Урок перенесён — ждёт подтверждения учителя.' %}",
     },
 };
 </script>

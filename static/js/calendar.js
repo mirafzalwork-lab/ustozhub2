@@ -5,14 +5,19 @@
     'use strict';
 
     const cfg = window.UstozCalendar || {};
+    const i18n = cfg.i18n || {};
     const el = document.getElementById('calendar');
     if (!el) return;
 
-    // ---- Modal helpers --------------------------------------------------
+    const DURATION_PRESETS = [30, 45, 60, 90, 120];
+
+    // ---- Slot modal elements ------------------------------------------
     const modal = document.getElementById('cal-modal');
     const $title = document.getElementById('cal-modal-title');
     const $start = document.getElementById('cal-start');
     const $end = document.getElementById('cal-end');
+    const $endField = document.getElementById('cal-end-field');
+    const $durationChips = document.getElementById('cal-duration-chips');
     const $status = document.getElementById('cal-status');
     const $save = document.getElementById('cal-save');
     const $delete = document.getElementById('cal-delete');
@@ -22,31 +27,87 @@
     const $bkMessage = document.getElementById('cal-bk-message');
     const $error = document.getElementById('cal-error');
 
-    let editingEvent = null; // FullCalendar EventApi
-    let editingId = null;
+    let editingEvent = null;   // FullCalendar EventApi (для edit)
+    let editingId = null;      // id редактируемого слота
+    let durationMode = 60;     // выбранная длительность в минутах или 'custom'
 
-    function openModal({ title, start, end, status, booking, id }) {
-        $title.textContent = title;
-        $start.value = toLocalInput(start);
-        $end.value = toLocalInput(end);
-        $status.value = status || 'free';
-        editingId = id || null;
-        $delete.hidden = !id;
+    // ---- Duration chips -----------------------------------------------
+    function setDurationMode(min) {
+        durationMode = min;
+        Array.from($durationChips.querySelectorAll('.cal-chip')).forEach(chip => {
+            const val = chip.dataset.min === 'custom' ? 'custom' : parseInt(chip.dataset.min, 10);
+            chip.classList.toggle('is-active', val === min);
+        });
+        $endField.hidden = (min !== 'custom');
+        if (min === 'custom' && $start.value && !$end.value) {
+            // подставим +60 мин для удобства
+            $end.value = addMinutes($start.value, 60);
+        }
+    }
+
+    $durationChips.addEventListener('click', (e) => {
+        const chip = e.target.closest('.cal-chip');
+        if (!chip) return;
+        const val = chip.dataset.min === 'custom' ? 'custom' : parseInt(chip.dataset.min, 10);
+        setDurationMode(val);
+    });
+
+    // ---- Modal open/close ---------------------------------------------
+    function openCreateModal(startDate) {
+        editingEvent = null;
+        editingId = null;
+        $title.textContent = i18n.newSlot || 'Новый слот';
+        $start.value = toLocalInput(startDate);
+        $start.disabled = $status.disabled = false;
+        $status.value = 'free';
+        setDurationMode(60);
+        $end.value = '';
+        $bookingInfo.hidden = true;
+        $delete.hidden = true;
+        $save.hidden = false;
         $error.hidden = true;
+        modal.hidden = false;
+    }
+
+    function openEditModal(event) {
+        editingEvent = event;
+        editingId = event.id;
+        const props = event.extendedProps || {};
+        const booking = props.booking;
+
+        $title.textContent = booking ? (i18n.booking || 'Бронирование') : (i18n.slot || 'Слот');
+        $start.value = toLocalInput(event.start);
+        $status.value = props.status || 'free';
+        $error.hidden = true;
+
+        // Определяем длительность → выставляем chip или custom
+        const mins = Math.round((event.end - event.start) / 60000);
+        if (DURATION_PRESETS.indexOf(mins) !== -1) {
+            setDurationMode(mins);
+            $end.value = toLocalInput(event.end);
+        } else {
+            setDurationMode('custom');
+            $end.value = toLocalInput(event.end);
+        }
 
         if (booking) {
             $bookingInfo.hidden = false;
             $bkStudent.textContent = booking.student_name;
             $bkStatus.textContent = booking.status_display + (booking.is_trial ? ' (пробный)' : '');
             $bkMessage.textContent = booking.student_message || '—';
-            // Слот с активной бронью — нельзя редактировать
-            $start.disabled = $end.disabled = $status.disabled = true;
+            // Слот с активной бронью — read-only
+            $start.disabled = $status.disabled = true;
+            $durationChips.style.pointerEvents = 'none';
+            $durationChips.style.opacity = '.5';
             $save.hidden = true;
             $delete.hidden = true;
         } else {
             $bookingInfo.hidden = true;
-            $start.disabled = $end.disabled = $status.disabled = false;
+            $start.disabled = $status.disabled = false;
+            $durationChips.style.pointerEvents = '';
+            $durationChips.style.opacity = '';
             $save.hidden = false;
+            $delete.hidden = false;
         }
         modal.hidden = false;
     }
@@ -61,14 +122,11 @@
         if (e.target.matches('[data-close]')) closeModal();
     });
 
-    // ---- API helpers ----------------------------------------------------
+    // ---- API helper ----------------------------------------------------
     async function api(method, url, body) {
         const opts = {
             method,
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': cfg.csrf,
-            },
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': cfg.csrf },
             credentials: 'same-origin',
         };
         if (body !== undefined) opts.body = JSON.stringify(body);
@@ -84,16 +142,27 @@
         return data;
     }
 
-    function showError(msg) {
-        $error.textContent = msg;
-        $error.hidden = false;
+    function showError($box, msg) {
+        $box.textContent = msg;
+        $box.hidden = false;
     }
 
-    // ---- FullCalendar setup --------------------------------------------
+    // Вычислить end (ISO) из текущего состояния модалки
+    function computeEndIso() {
+        if (durationMode === 'custom') {
+            return $end.value ? fromLocalInput($end.value) : null;
+        }
+        return fromLocalInput(addMinutes($start.value, durationMode));
+    }
+
+    // На узких экранах неделя нечитаема — стартуем с дневного вида.
+    const isNarrow = window.matchMedia('(max-width: 768px)').matches;
+
+    // ---- FullCalendar setup -------------------------------------------
     const calendar = new FullCalendar.Calendar(el, {
-        locale: cfg.locale === 'uz' ? 'en' : (cfg.locale || 'ru'), // uz нет в FullCalendar, fallback на en
-        initialView: 'timeGridWeek',
-        firstDay: 1, // Monday
+        locale: cfg.locale === 'uz' ? 'en' : (cfg.locale || 'ru'),
+        initialView: isNarrow ? 'timeGridDay' : 'timeGridWeek',
+        firstDay: 1,
         nowIndicator: true,
         slotMinTime: '07:00:00',
         slotMaxTime: '23:00:00',
@@ -107,24 +176,24 @@
         editable: true,
         eventResizableFromStart: true,
         dayMaxEvents: true,
-        weekNumbers: false,
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
-            right: 'timeGridDay,timeGridWeek,dayGridMonth',
+            right: 'timeGridDay,timeGridWeek,dayGridMonth,listWeek',
         },
         buttonText: {
             today: cfg.locale === 'ru' ? 'Сегодня' : (cfg.locale === 'uz' ? 'Bugun' : 'Today'),
             day:   cfg.locale === 'ru' ? 'День' : (cfg.locale === 'uz' ? 'Kun' : 'Day'),
             week:  cfg.locale === 'ru' ? 'Неделя' : (cfg.locale === 'uz' ? 'Hafta' : 'Week'),
             month: cfg.locale === 'ru' ? 'Месяц' : (cfg.locale === 'uz' ? 'Oy' : 'Month'),
+            list:  cfg.locale === 'ru' ? 'Список' : (cfg.locale === 'uz' ? 'Roʻyxat' : 'List'),
         },
 
-        // -------- LOAD events from API --------
         events: async (info, success, failure) => {
             try {
                 const url = `${cfg.urls.list}?start=${encodeURIComponent(info.startStr)}&end=${encodeURIComponent(info.endStr)}`;
                 const data = await api('GET', url);
+                renderStats(data.events);
                 success(data.events);
             } catch (e) {
                 console.error('events load failed', e);
@@ -132,7 +201,7 @@
             }
         },
 
-        // -------- CREATE on drag-select --------
+        // Drag-select → мгновенное создание свободного слота
         select: async (info) => {
             try {
                 const data = await api('POST', cfg.urls.create, {
@@ -142,55 +211,114 @@
                 });
                 calendar.addEvent(data.event);
             } catch (e) {
-                alert('Не удалось создать слот: ' + e.message);
+                alert((i18n.createFailed || 'Не удалось создать слот:') + ' ' + e.message);
             } finally {
                 calendar.unselect();
             }
         },
 
-        // -------- CLICK event --------
-        eventClick: (info) => {
-            editingEvent = info.event;
-            const props = info.event.extendedProps;
-            openModal({
-                title: props.booking ? 'Бронирование' : 'Слот',
-                start: info.event.start,
-                end: info.event.end,
-                status: props.status,
-                booking: props.booking,
-                id: info.event.id,
-            });
-        },
+        eventClick: (info) => openEditModal(info.event),
 
-        // -------- DRAG / RESIZE --------
         eventDrop: async (info) => await patchEvent(info),
         eventResize: async (info) => await patchEvent(info),
     });
 
     async function patchEvent(info) {
+        // Запоминаем прежние границы ДО запроса — для возможной отмены.
+        const oldStart = info.oldEvent ? info.oldEvent.startStr : null;
+        const oldEnd = info.oldEvent ? info.oldEvent.endStr : null;
         try {
             const data = await api('PATCH', cfg.urls.detail.replace('__ID__', info.event.id), {
                 start: info.event.startStr,
                 end: info.event.endStr,
             });
-            // Обновим event целиком из ответа сервера
             info.event.setProp('backgroundColor', data.event.backgroundColor);
             info.event.setProp('borderColor', data.event.borderColor);
+            // Двигать можно только свободные слоты, отмена безопасна.
+            if (oldStart && oldEnd) {
+                const id = info.event.id;
+                showUndo(i18n.undoMoved || 'Слот перемещён.', async () => {
+                    await api('PATCH', cfg.urls.detail.replace('__ID__', id), { start: oldStart, end: oldEnd });
+                    calendar.refetchEvents();
+                });
+            }
         } catch (e) {
             info.revert();
-            alert('Не удалось переместить слот: ' + e.message);
+            alert((i18n.moveFailed || 'Не удалось переместить слот:') + ' ' + e.message);
         }
     }
 
-    // -------- MODAL save --------
+    // ---- Бейдж занятости за открытый период ---------------------------
+    const $stats = document.getElementById('cal-stats');
+    function renderStats(events) {
+        if (!$stats) return;
+        const c = { free: 0, held: 0, booked: 0, blocked: 0 };
+        (events || []).forEach(ev => {
+            const s = (ev.extendedProps && ev.extendedProps.status) || 'free';
+            if (c[s] !== undefined) c[s] += 1;
+        });
+        const total = c.free + c.held + c.booked + c.blocked;
+        if (total === 0) {
+            $stats.innerHTML = '<span class="cal-stat cal-stat--muted">' +
+                '<i class="fa-regular fa-calendar-xmark"></i> ' + (i18n.statsEmpty || 'Нет слотов в этом периоде.') + '</span>';
+            $stats.hidden = false;
+            return;
+        }
+        const bookedActive = c.booked + c.held;
+        const parts = [
+            '<span class="cal-stat cal-stat--free"><b>' + c.free + '</b> ' + (i18n.statsFree || 'свободно') + '</span>',
+            '<span class="cal-stat cal-stat--booked"><b>' + bookedActive + '</b> ' + (i18n.statsBooked || 'забронировано') + '</span>',
+        ];
+        if (c.blocked) {
+            parts.push('<span class="cal-stat cal-stat--blocked"><b>' + c.blocked + '</b> ' + (i18n.statsBlocked || 'заблокировано') + '</span>');
+        }
+        $stats.innerHTML = parts.join('');
+        $stats.hidden = false;
+    }
+
+    // ---- Undo-тост -----------------------------------------------------
+    const $undo = document.getElementById('cal-undo');
+    const $undoText = document.getElementById('cal-undo-text');
+    const $undoBtn = document.getElementById('cal-undo-btn');
+    let undoTimer = null;
+    let undoFn = null;
+
+    function showUndo(text, fn) {
+        if (!$undo) return;
+        undoFn = fn;
+        $undoText.textContent = text;
+        $undo.hidden = false;
+        $undo.classList.add('is-visible');
+        clearTimeout(undoTimer);
+        undoTimer = setTimeout(hideUndo, 8000);
+    }
+    function hideUndo() {
+        if (!$undo) return;
+        $undo.classList.remove('is-visible');
+        clearTimeout(undoTimer);
+        undoFn = null;
+        // даём отыграть transition перед скрытием
+        setTimeout(() => { if (!$undo.classList.contains('is-visible')) $undo.hidden = true; }, 250);
+    }
+    if ($undoBtn) {
+        $undoBtn.addEventListener('click', async () => {
+            const fn = undoFn;
+            hideUndo();
+            if (!fn) return;
+            try { await fn(); } catch (e) { alert((i18n.undoFailed || 'Не удалось отменить действие.') + ' ' + e.message); }
+        });
+    }
+
+    // ---- Slot modal save / delete -------------------------------------
     $save.addEventListener('click', async () => {
         $error.hidden = true;
+        const startIso = fromLocalInput($start.value);
+        if (!startIso) { showError($error, i18n.needStart || 'Укажите время начала.'); return; }
+        const endIso = computeEndIso();
+        if (!endIso) { showError($error, i18n.needStart || 'Укажите время конца.'); return; }
+
+        const body = { start: startIso, end: endIso, status: $status.value };
         try {
-            const body = {
-                start: fromLocalInput($start.value),
-                end: fromLocalInput($end.value),
-                status: $status.value,
-            };
             if (editingId) {
                 const data = await api('PATCH', cfg.urls.detail.replace('__ID__', editingId), body);
                 if (editingEvent) {
@@ -206,90 +334,351 @@
             }
             closeModal();
         } catch (e) {
-            showError(e.message);
+            showError($error, e.message);
         }
     });
 
-    // -------- MODAL delete --------
     $delete.addEventListener('click', async () => {
-        if (!editingId || !confirm('Удалить этот слот?')) return;
+        if (!editingId || !confirm(i18n.confirmDeleteSlot || 'Удалить этот слот?')) return;
+        // Сохраняем данные слота, чтобы можно было восстановить.
+        const snapshot = editingEvent ? {
+            start: editingEvent.start.toISOString(),
+            end: editingEvent.end ? editingEvent.end.toISOString() : null,
+            status: (editingEvent.extendedProps || {}).status || 'free',
+        } : null;
         try {
             await api('DELETE', cfg.urls.detail.replace('__ID__', editingId));
             if (editingEvent) editingEvent.remove();
             closeModal();
+            if (snapshot && snapshot.end) {
+                showUndo(i18n.undoDeleted || 'Слот удалён.', async () => {
+                    const data = await api('POST', cfg.urls.create, snapshot);
+                    calendar.addEvent(data.event);
+                    calendar.refetchEvents();
+                });
+            }
         } catch (e) {
-            showError(e.message);
+            showError($error, e.message);
+        }
+    });
+
+    // ---- "Создать слот" button ----------------------------------------
+    const $createBtn = document.getElementById('create-slot-btn');
+    if ($createBtn) {
+        $createBtn.addEventListener('click', () => openCreateModal(nextHalfHour()));
+    }
+
+    // ---- Generate modal (с редактором недельного шаблона) -------------
+    const genModal = document.getElementById('gen-modal');
+    const $genWeeks = document.getElementById('gen-weeks');
+    const $genDuration = document.getElementById('gen-duration');
+    const $genRun = document.getElementById('gen-run');
+    const $genError = document.getElementById('gen-error');
+    const $genResult = document.getElementById('gen-result');
+    const $genPreview = document.getElementById('gen-preview');
+    const $weekEditor = document.getElementById('gen-week-editor');
+    const $presets = document.querySelector('.cal-presets');
+    const $bulkGenerate = document.getElementById('bulk-generate-btn');
+
+    const DAY_LABELS = cfg.dayLabels || [
+        ['monday', 'Пн'], ['tuesday', 'Вт'], ['wednesday', 'Ср'],
+        ['thursday', 'Чт'], ['friday', 'Пт'], ['saturday', 'Сб'], ['sunday', 'Вс'],
+    ];
+    const PRESETS = {
+        weekdays: { days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'], from: '09:00', to: '18:00' },
+        everyday: { days: DAY_LABELS.map(d => d[0]), from: '10:00', to: '20:00' },
+        evenings: { days: DAY_LABELS.map(d => d[0]), from: '18:00', to: '22:00' },
+    };
+
+    // Минуты от 'HH:MM'
+    function hm2min(v) {
+        if (!v || v.indexOf(':') === -1) return null;
+        const [h, m] = v.split(':').map(Number);
+        return h * 60 + m;
+    }
+
+    function makeGenIntervalRow(from, to) {
+        const row = document.createElement('div');
+        row.className = 'cal-week-interval';
+        row.innerHTML =
+            '<input type="time" class="cal-week-from" value="' + (from || '09:00') + '">' +
+            '<span class="cal-week-dash">—</span>' +
+            '<input type="time" class="cal-week-to" value="' + (to || '12:00') + '">' +
+            '<button type="button" class="cal-week-rm" title="Удалить">&times;</button>';
+        row.querySelector('.cal-week-rm').addEventListener('click', () => { row.remove(); refreshPreview(); });
+        row.querySelectorAll('input[type=time]').forEach(i => i.addEventListener('change', refreshPreview));
+        return row;
+    }
+
+    function buildWeekEditor(schedule) {
+        $weekEditor.innerHTML = '';
+        DAY_LABELS.forEach(([key, label]) => {
+            const intervals = (schedule && schedule[key]) || [];
+            const on = intervals.length > 0;
+            const row = document.createElement('div');
+            row.className = 'cal-week-day' + (on ? ' is-on' : '');
+            row.dataset.day = key;
+            row.innerHTML =
+                '<label class="cal-week-toggle">' +
+                    '<input type="checkbox" ' + (on ? 'checked' : '') + '>' +
+                    '<span>' + label + '</span>' +
+                '</label>' +
+                '<div class="cal-week-intervals"></div>' +
+                '<div class="cal-week-actions">' +
+                    '<button type="button" class="cal-week-copy" title="' + (i18n.copyDay || 'Скопировать этот день в другие') + '">' +
+                        '<i class="fa-regular fa-copy"></i></button>' +
+                    '<button type="button" class="cal-week-add"><i class="fa-solid fa-plus"></i> ' +
+                        (i18n.addInterval || 'интервал') + '</button>' +
+                '</div>';
+
+            const list = row.querySelector('.cal-week-intervals');
+            const toggle = row.querySelector('input[type=checkbox]');
+            const addBtn = row.querySelector('.cal-week-add');
+            const copyBtn = row.querySelector('.cal-week-copy');
+
+            intervals.forEach(itv => list.appendChild(makeGenIntervalRow(itv.from, itv.to)));
+
+            toggle.addEventListener('change', () => {
+                if (toggle.checked && list.children.length === 0) {
+                    list.appendChild(makeGenIntervalRow('09:00', '12:00'));
+                }
+                row.classList.toggle('is-on', toggle.checked);
+                refreshPreview();
+            });
+            addBtn.addEventListener('click', () => {
+                if (!toggle.checked) { toggle.checked = true; row.classList.add('is-on'); }
+                list.appendChild(makeGenIntervalRow('', ''));
+                refreshPreview();
+            });
+            copyBtn.addEventListener('click', (e) => { e.stopPropagation(); openCopyMenu(row, key); });
+            $weekEditor.appendChild(row);
+        });
+    }
+
+    // Прочитать интервалы конкретного дня прямо из редактора (даже невалидные пропускаем)
+    function getDayIntervals(key) {
+        const row = $weekEditor.querySelector('.cal-week-day[data-day="' + key + '"]');
+        if (!row || !row.querySelector('input[type=checkbox]').checked) return [];
+        const out = [];
+        row.querySelectorAll('.cal-week-interval').forEach(ir => {
+            const f = ir.querySelector('.cal-week-from').value;
+            const t = ir.querySelector('.cal-week-to').value;
+            if (f && t && hm2min(f) < hm2min(t)) out.push({ from: f, to: t });
+        });
+        return out;
+    }
+
+    // Скопировать интервалы дня source в указанные дни (перезаписывая их)
+    function applyDayTo(sourceKey, targetKeys) {
+        const src = getDayIntervals(sourceKey);
+        if (!src.length) return;
+        const sched = collectSchedule();
+        sched[sourceKey] = src.map(i => ({ ...i }));
+        targetKeys.forEach(k => { if (k !== sourceKey) sched[k] = src.map(i => ({ ...i })); });
+        buildWeekEditor(sched);
+        refreshPreview();
+    }
+
+    // Поповер «скопировать день в…»
+    let $copyMenu = null;
+    function closeCopyMenu() { if ($copyMenu) { $copyMenu.remove(); $copyMenu = null; } }
+    function openCopyMenu(row, sourceKey) {
+        closeCopyMenu();
+        if (!getDayIntervals(sourceKey).length) return; // нечего копировать
+        const weekdayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+        const allKeys = DAY_LABELS.map(d => d[0]);
+        $copyMenu = document.createElement('div');
+        $copyMenu.className = 'cal-week-copy-menu';
+        $copyMenu.innerHTML =
+            '<button type="button" data-target="weekdays">' + (i18n.copyToWeekdays || 'В будни (Пн–Пт)') + '</button>' +
+            '<button type="button" data-target="all">' + (i18n.copyToAll || 'Во все дни') + '</button>';
+        $copyMenu.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            applyDayTo(sourceKey, btn.dataset.target === 'weekdays' ? weekdayKeys : allKeys);
+            closeCopyMenu();
+        });
+        row.querySelector('.cal-week-actions').appendChild($copyMenu);
+        // Закрытие по клику вне меню
+        setTimeout(() => document.addEventListener('click', onDocClickCopy), 0);
+    }
+    function onDocClickCopy(e) {
+        if ($copyMenu && !$copyMenu.contains(e.target) && !e.target.closest('.cal-week-copy')) {
+            closeCopyMenu();
+            document.removeEventListener('click', onDocClickCopy);
+        }
+    }
+
+    // Собрать {day: [{from,to}]} из редактора (только включённые дни с валидными интервалами)
+    function collectSchedule() {
+        const out = {};
+        $weekEditor.querySelectorAll('.cal-week-day').forEach(row => {
+            if (!row.querySelector('input[type=checkbox]').checked) return;
+            const itvs = [];
+            row.querySelectorAll('.cal-week-interval').forEach(ir => {
+                const f = ir.querySelector('.cal-week-from').value;
+                const t = ir.querySelector('.cal-week-to').value;
+                if (f && t && hm2min(f) < hm2min(t)) itvs.push({ from: f, to: t });
+            });
+            if (itvs.length) out[row.dataset.day] = itvs;
+        });
+        return out;
+    }
+
+    // Живой счётчик: ~ (сумма слотов за неделю) × weeks
+    function refreshPreview() {
+        const schedule = collectSchedule();
+        const slotMin = parseInt($genDuration.value, 10);
+        const weeks = parseInt($genWeeks.value, 10);
+        let perWeek = 0;
+        Object.values(schedule).forEach(itvs => {
+            itvs.forEach(itv => {
+                const span = hm2min(itv.to) - hm2min(itv.from);
+                if (span > 0) perWeek += Math.floor(span / slotMin);
+            });
+        });
+        if (perWeek === 0) {
+            $genPreview.innerHTML = '<i class="fa-regular fa-circle-question"></i> ' +
+                (i18n.previewEmpty || 'Включите хотя бы один день.');
+            $genPreview.classList.add('is-empty');
+        } else {
+            $genPreview.classList.remove('is-empty');
+            $genPreview.innerHTML = '<i class="fa-regular fa-calendar-check"></i> ' +
+                (i18n.previewFmt || 'Будет создано примерно') + ' <strong>' + (perWeek * weeks) + '</strong> ' +
+                (i18n.previewSlots || 'слотов') + ' ' + (i18n.previewWeeks || 'за период') + '.';
+        }
+        $genPreview.hidden = false;
+    }
+
+    function applyPreset(name) {
+        if (name === 'clear') { buildWeekEditor({}); refreshPreview(); return; }
+        const p = PRESETS[name];
+        if (!p) return;
+        const sched = {};
+        p.days.forEach(d => { sched[d] = [{ from: p.from, to: p.to }]; });
+        buildWeekEditor(sched);
+        refreshPreview();
+    }
+
+    if ($presets) {
+        $presets.addEventListener('click', (e) => {
+            const btn = e.target.closest('.cal-preset');
+            if (btn) applyPreset(btn.dataset.preset);
+        });
+    }
+    $genWeeks.addEventListener('change', refreshPreview);
+    $genDuration.addEventListener('change', refreshPreview);
+
+    function openGen() {
+        $genError.hidden = true;
+        $genResult.hidden = true;
+        $genRun.disabled = false;
+        buildWeekEditor(cfg.schedule || {});
+        refreshPreview();
+        genModal.hidden = false;
+    }
+    function closeGen() { genModal.hidden = true; }
+    if ($bulkGenerate) $bulkGenerate.addEventListener('click', openGen);
+    genModal.addEventListener('click', (e) => { if (e.target.matches('[data-close-gen]')) closeGen(); });
+
+    $genRun.addEventListener('click', async () => {
+        $genError.hidden = true;
+        $genResult.hidden = true;
+        const schedule = collectSchedule();
+        if (Object.keys(schedule).length === 0) {
+            showError($genError, i18n.previewEmpty || 'Включите хотя бы один рабочий день.');
+            return;
+        }
+        $genRun.disabled = true;
+        try {
+            const data = await api('POST', cfg.urls.bulkGenerate, {
+                weeks: parseInt($genWeeks.value, 10),
+                slot_minutes: parseInt($genDuration.value, 10),
+                schedule: schedule,
+            });
+            cfg.schedule = schedule;  // запоминаем актуальный шаблон
+            $genResult.innerHTML =
+                '<i class="fa-solid fa-circle-check"></i> ' +
+                (i18n.generatedFmt || 'Создано слотов:') + ' <strong>' + data.created + '</strong><br>' +
+                '<span class="cal-muted-line">' + (i18n.skippedFmt || 'Пропущено:') + ' ' + data.skipped + '</span>';
+            $genResult.hidden = false;
+            calendar.refetchEvents();
+        } catch (e) {
+            showError($genError, e.message);
+        } finally {
+            $genRun.disabled = false;
+        }
+    });
+
+    // ---- Delete modal --------------------------------------------------
+    const delModal = document.getElementById('del-modal');
+    const $delRun = document.getElementById('del-run');
+    const $delError = document.getElementById('del-error');
+    const $delRange = document.getElementById('del-range');
+    const $bulkDelete = document.getElementById('bulk-delete-btn');
+
+    function openDel() {
+        $delError.hidden = true;
+        $delRun.disabled = false;
+        const view = calendar.view;
+        $delRange.textContent = formatRange(view.currentStart, view.currentEnd);
+        delModal.hidden = false;
+    }
+    function closeDel() { delModal.hidden = true; }
+    if ($bulkDelete) $bulkDelete.addEventListener('click', openDel);
+    delModal.addEventListener('click', (e) => { if (e.target.matches('[data-close-del]')) closeDel(); });
+
+    $delRun.addEventListener('click', async () => {
+        $delError.hidden = true;
+        $delRun.disabled = true;
+        const view = calendar.view;
+        try {
+            const data = await api('POST', cfg.urls.bulkDelete, {
+                from: view.currentStart.toISOString(),
+                to: view.currentEnd.toISOString(),
+                only_free: true,
+            });
+            calendar.refetchEvents();
+            closeDel();
+            alert((i18n.deletedFmt || 'Удалено свободных слотов:') + ' ' + data.deleted);
+        } catch (e) {
+            showError($delError, e.message);
+        } finally {
+            $delRun.disabled = false;
         }
     });
 
     calendar.render();
 
-    // ---- Bulk actions --------------------------------------------------
-    const $bulkGenerate = document.getElementById('bulk-generate-btn');
-    const $bulkDelete = document.getElementById('bulk-delete-btn');
-
-    if ($bulkGenerate) {
-        $bulkGenerate.addEventListener('click', async () => {
-            const weeksStr = prompt(cfg.i18n.askWeeks, '4');
-            if (weeksStr === null) return;
-            const weeks = parseInt(weeksStr, 10);
-            if (!weeks || weeks < 1 || weeks > 12) {
-                alert('1-12');
-                return;
-            }
-            const slotMinStr = prompt(cfg.i18n.askSlotMinutes, '60');
-            if (slotMinStr === null) return;
-            const slot_minutes = parseInt(slotMinStr, 10);
-            if (![30, 45, 60, 90, 120].includes(slot_minutes)) {
-                alert('30/45/60/90/120');
-                return;
-            }
-            $bulkGenerate.disabled = true;
-            try {
-                const data = await api('POST', cfg.urls.bulkGenerate, { weeks, slot_minutes });
-                alert(`${cfg.i18n.generated} ${data.created}\n(${cfg.i18n.deleted.replace('Удалено', 'Пропущено')} ${data.skipped})`);
-                calendar.refetchEvents();
-            } catch (e) {
-                alert(e.message);
-            } finally {
-                $bulkGenerate.disabled = false;
-            }
-        });
-    }
-
-    if ($bulkDelete) {
-        $bulkDelete.addEventListener('click', async () => {
-            if (!confirm(cfg.i18n.confirmDelete)) return;
-            // Удаляем в видимом диапазоне календаря
-            const view = calendar.view;
-            const fromIso = view.currentStart.toISOString();
-            const toIso = view.currentEnd.toISOString();
-            $bulkDelete.disabled = true;
-            try {
-                const data = await api('POST', cfg.urls.bulkDelete, {
-                    from: fromIso, to: toIso, only_free: true,
-                });
-                alert(`${cfg.i18n.deleted} ${data.deleted}`);
-                calendar.refetchEvents();
-            } catch (e) {
-                alert(e.message);
-            } finally {
-                $bulkDelete.disabled = false;
-            }
-        });
-    }
-
-    // ---- datetime-local helpers ----------------------------------------
+    // ---- datetime helpers ---------------------------------------------
     function toLocalInput(d) {
         if (!d) return '';
         const dt = (d instanceof Date) ? d : new Date(d);
         const pad = n => String(n).padStart(2, '0');
         return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
     }
-
     function fromLocalInput(v) {
         if (!v) return null;
-        // Trust the local input; FullCalendar/server understand ISO
         return new Date(v).toISOString();
+    }
+    function addMinutes(localValue, minutes) {
+        if (!localValue) return '';
+        const dt = new Date(localValue);
+        dt.setMinutes(dt.getMinutes() + minutes);
+        return toLocalInput(dt);
+    }
+    function nextHalfHour() {
+        const dt = new Date();
+        dt.setSeconds(0, 0);
+        const m = dt.getMinutes();
+        dt.setMinutes(m <= 30 ? 30 : 60);
+        if (dt < new Date()) dt.setMinutes(dt.getMinutes() + 30);
+        return dt;
+    }
+    function formatRange(start, end) {
+        const opts = { day: 'numeric', month: 'long' };
+        const loc = cfg.locale === 'uz' ? 'ru' : (cfg.locale || 'ru');
+        const e = new Date(end.getTime() - 1); // end exclusive
+        return start.toLocaleDateString(loc, opts) + ' — ' + e.toLocaleDateString(loc, opts);
     }
 })();

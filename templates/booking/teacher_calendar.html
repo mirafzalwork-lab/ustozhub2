@@ -18,7 +18,7 @@
                 {% trans "Календарь расписания" %}
             </h1>
             <p class="calendar-subtitle">
-                {% trans "Перетащите курсором по сетке, чтобы создать слот. Кликните по слоту для деталей." %}
+                {% trans "Создавайте слоты кнопкой «Создать слот» или перетягиванием по сетке. Кликните по слоту, чтобы изменить или удалить." %}
             </p>
         </div>
         <div class="calendar-legend">
@@ -29,26 +29,40 @@
         </div>
     </header>
 
-    <div class="bulk-actions" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
-        <button type="button" class="btn btn-primary" id="bulk-generate-btn"
-                style="padding:10px 16px; border-radius:10px; background:linear-gradient(135deg,#4F46E5,#4338CA); color:#fff; border:none; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:8px;">
-            <i class="fa-solid fa-magic-wand-sparkles"></i>
+    <div class="cal-toolbar">
+        <button type="button" class="cal-btn cal-btn--primary" id="create-slot-btn">
+            <i class="fa-solid fa-plus"></i>
+            {% trans "Создать слот" %}
+        </button>
+        <button type="button" class="cal-btn cal-btn--ghost" id="bulk-generate-btn">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
             {% trans "Сгенерировать из расписания" %}
         </button>
-        <button type="button" class="btn btn-secondary" id="bulk-delete-btn"
-                style="padding:10px 16px; border-radius:10px; background:#fff; border:1px solid #FEE2E2; color:#B91C1C; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:8px;">
+        <button type="button" class="cal-btn cal-btn--danger-ghost" id="bulk-delete-btn">
             <i class="fa-regular fa-trash-can"></i>
-            {% trans "Очистить свободные слоты" %}
+            {% trans "Очистить свободные" %}
         </button>
-        <span style="margin-left:auto; font-size:13px; color:var(--cal-muted,#64748B);">
-            💡 {% trans "Зажмите и протяните по сетке, чтобы создать слот вручную" %}
+        <span class="cal-toolbar__hint">
+            <i class="fa-regular fa-lightbulb"></i>
+            {% trans "Совет: на компьютере можно зажать и протянуть по сетке, чтобы быстро создать слот." %}
         </span>
     </div>
+
+    {# Бейдж занятости за период, открытый в календаре (заполняется в JS) #}
+    <div class="cal-stats" id="cal-stats" hidden></div>
 
     <div id="calendar" class="calendar-grid"></div>
 </section>
 
-{# Modal: создание/редактирование слота #}
+{# ───────── Тост отмены последнего действия (Undo) ───────── #}
+<div class="cal-undo" id="cal-undo" hidden role="status" aria-live="polite">
+    <span class="cal-undo__text" id="cal-undo-text"></span>
+    <button type="button" class="cal-undo__btn" id="cal-undo-btn">
+        <i class="fa-solid fa-rotate-left"></i> {% trans "Отменить" %}
+    </button>
+</div>
+
+{# ───────── Modal: создание/редактирование слота ───────── #}
 <div class="cal-modal" id="cal-modal" hidden>
     <div class="cal-modal__backdrop" data-close></div>
     <div class="cal-modal__dialog" role="dialog" aria-modal="true">
@@ -58,13 +72,27 @@
         </header>
         <div class="cal-modal__body">
             <div class="cal-field">
-                <label>{% trans "Начало" %}</label>
+                <label>{% trans "Дата и время начала" %}</label>
                 <input type="datetime-local" id="cal-start">
             </div>
-            <div class="cal-field">
-                <label>{% trans "Конец" %}</label>
+
+            <div class="cal-field" id="cal-duration-field">
+                <label>{% trans "Длительность" %}</label>
+                <div class="cal-chips" id="cal-duration-chips">
+                    <button type="button" class="cal-chip" data-min="30">30 {% trans "мин" %}</button>
+                    <button type="button" class="cal-chip" data-min="45">45 {% trans "мин" %}</button>
+                    <button type="button" class="cal-chip is-active" data-min="60">1 {% trans "ч" %}</button>
+                    <button type="button" class="cal-chip" data-min="90">1.5 {% trans "ч" %}</button>
+                    <button type="button" class="cal-chip" data-min="120">2 {% trans "ч" %}</button>
+                    <button type="button" class="cal-chip" data-min="custom">{% trans "Другое" %}</button>
+                </div>
+            </div>
+
+            <div class="cal-field" id="cal-end-field" hidden>
+                <label>{% trans "Дата и время конца" %}</label>
                 <input type="datetime-local" id="cal-end">
             </div>
+
             <div class="cal-field">
                 <label>{% trans "Статус" %}</label>
                 <select id="cal-status">
@@ -72,6 +100,7 @@
                     <option value="blocked">{% trans "Заблокирован (личное время)" %}</option>
                 </select>
             </div>
+
             <div id="cal-booking-info" hidden>
                 <h4 class="cal-section-title">{% trans "Бронирование" %}</h4>
                 <dl class="cal-info">
@@ -93,6 +122,99 @@
     </div>
 </div>
 
+{# ───────── Modal: генерация из расписания ───────── #}
+<div class="cal-modal" id="gen-modal" hidden>
+    <div class="cal-modal__backdrop" data-close-gen></div>
+    <div class="cal-modal__dialog cal-modal__dialog--wide" role="dialog" aria-modal="true">
+        <header class="cal-modal__head">
+            <h3>{% trans "Расписание и генерация слотов" %}</h3>
+            <button type="button" class="cal-modal__close" data-close-gen aria-label="Close">×</button>
+        </header>
+        <div class="cal-modal__body">
+            <p class="cal-modal__lead">
+                {% trans "Отметьте рабочие дни и часы — это ваш недельный шаблон. По кнопке ниже мы нарежем из него свободные слоты. Прошлые и пересекающиеся интервалы пропускаются." %}
+            </p>
+
+            {# Пресеты для быстрого заполнения #}
+            <div class="cal-field">
+                <label>{% trans "Быстрые шаблоны" %}</label>
+                <div class="cal-presets">
+                    <button type="button" class="cal-preset" data-preset="weekdays">{% trans "Будни 9:00–18:00" %}</button>
+                    <button type="button" class="cal-preset" data-preset="everyday">{% trans "Каждый день 10:00–20:00" %}</button>
+                    <button type="button" class="cal-preset" data-preset="evenings">{% trans "Вечера 18:00–22:00" %}</button>
+                    <button type="button" class="cal-preset cal-preset--ghost" data-preset="clear">{% trans "Очистить" %}</button>
+                </div>
+            </div>
+
+            {# Редактор недельного шаблона (строится в JS) #}
+            <div class="cal-week-editor" id="gen-week-editor"></div>
+
+            <div class="cal-field-row">
+                <div class="cal-field">
+                    <label>{% trans "На сколько недель вперёд" %}</label>
+                    <select id="gen-weeks">
+                        <option value="1">1 {% trans "неделя" %}</option>
+                        <option value="2">2 {% trans "недели" %}</option>
+                        <option value="4" selected>4 {% trans "недели" %}</option>
+                        <option value="6">6 {% trans "недель" %}</option>
+                        <option value="8">8 {% trans "недель" %}</option>
+                        <option value="12">12 {% trans "недель" %}</option>
+                    </select>
+                </div>
+                <div class="cal-field">
+                    <label>{% trans "Длительность одного слота" %}</label>
+                    <select id="gen-duration">
+                        <option value="30">30 {% trans "мин" %}</option>
+                        <option value="45">45 {% trans "мин" %}</option>
+                        <option value="60" selected>1 {% trans "ч" %}</option>
+                        <option value="90">1.5 {% trans "ч" %}</option>
+                        <option value="120">2 {% trans "ч" %}</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="cal-preview" id="gen-preview" hidden></div>
+            <div id="gen-error" class="cal-error" hidden></div>
+            <div id="gen-result" class="cal-success-box" hidden></div>
+        </div>
+        <footer class="cal-modal__foot">
+            <div style="flex:1"></div>
+            <button type="button" class="btn btn-secondary" data-close-gen>{% trans "Отмена" %}</button>
+            <button type="button" class="btn btn-primary" id="gen-run">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> {% trans "Сохранить и сгенерировать" %}
+            </button>
+        </footer>
+    </div>
+</div>
+
+{# ───────── Modal: очистка свободных слотов ───────── #}
+<div class="cal-modal" id="del-modal" hidden>
+    <div class="cal-modal__backdrop" data-close-del></div>
+    <div class="cal-modal__dialog" role="dialog" aria-modal="true">
+        <header class="cal-modal__head">
+            <h3>{% trans "Очистить свободные слоты" %}</h3>
+            <button type="button" class="cal-modal__close" data-close-del aria-label="Close">×</button>
+        </header>
+        <div class="cal-modal__body">
+            <p class="cal-modal__lead">
+                {% trans "Будут удалены только СВОБОДНЫЕ слоты за период, который сейчас открыт в календаре." %}
+                <strong>{% trans "Забронированные и удержанные слоты не тронем." %}</strong>
+            </p>
+            <div class="cal-field">
+                <div class="cal-range-box" id="del-range">—</div>
+            </div>
+            <div id="del-error" class="cal-error" hidden></div>
+        </div>
+        <footer class="cal-modal__foot">
+            <div style="flex:1"></div>
+            <button type="button" class="btn btn-secondary" data-close-del>{% trans "Отмена" %}</button>
+            <button type="button" class="btn btn-danger" id="del-run">
+                <i class="fa-regular fa-trash-can"></i> {% trans "Удалить свободные" %}
+            </button>
+        </footer>
+    </div>
+</div>
+
 {# CSRF token для AJAX #}
 {% csrf_token %}
 {% endblock %}
@@ -104,20 +226,49 @@
 window.UstozCalendar = {
     locale: '{{ LANGUAGE_CODE|default:"ru" }}',
     csrf: document.querySelector('[name=csrfmiddlewaretoken]').value,
+    schedule: {{ schedule_json|safe }},
+    dayLabels: [
+        ['monday', "{% trans 'Понедельник' %}"], ['tuesday', "{% trans 'Вторник' %}"],
+        ['wednesday', "{% trans 'Среда' %}"], ['thursday', "{% trans 'Четверг' %}"],
+        ['friday', "{% trans 'Пятница' %}"], ['saturday', "{% trans 'Суббота' %}"],
+        ['sunday', "{% trans 'Воскресенье' %}"],
+    ],
     urls: {
         list:   "{% url 'slots_list_api' %}",
         create: "{% url 'slots_create_api' %}",
-        detail: "/api/calendar/slots/__ID__/",
+        detail: "/{{ LANGUAGE_CODE|default:'ru' }}/api/calendar/slots/__ID__/",
         bulkGenerate: "{% url 'slots_bulk_generate_api' %}",
         bulkDelete:   "{% url 'slots_bulk_delete_api' %}",
     },
     i18n: {
-        askWeeks: "{% trans 'На сколько недель вперёд создать слоты? (1-12)' %}",
-        askSlotMinutes: "{% trans 'Длительность одного слота в минутах? (30/45/60/90/120)' %}",
-        confirmDelete: "{% trans 'Удалить ВСЕ свободные слоты на видимой неделе? (held/booked не тронем)' %}",
-        generated: "{% trans 'Создано слотов:' %}",
-        deleted: "{% trans 'Удалено слотов:' %}",
-        noSchedule: "{% trans 'У вас не задано шаблонное расписание. Создавайте слоты вручную или заполните расписание в профиле.' %}",
+        slot: "{% trans 'Слот' %}",
+        newSlot: "{% trans 'Новый слот' %}",
+        booking: "{% trans 'Бронирование' %}",
+        confirmDeleteSlot: "{% trans 'Удалить этот слот?' %}",
+        generatedFmt: "{% trans 'Создано слотов:' %}",
+        skippedFmt: "{% trans 'Пропущено (прошлые/пересекающиеся):' %}",
+        deletedFmt: "{% trans 'Удалено свободных слотов:' %}",
+        noSchedule: "{% trans 'У вас не задано шаблонное расписание. Заполните рабочие дни и часы в профиле.' %}",
+        addInterval: "{% trans 'интервал' %}",
+        previewFmt: "{% trans 'Будет создано примерно' %}",
+        previewSlots: "{% trans 'слотов' %}",
+        previewEmpty: "{% trans 'Включите хотя бы один день, чтобы сгенерировать слоты.' %}",
+        previewWeeks: "{% trans 'за выбранный период' %}",
+        createFailed: "{% trans 'Не удалось создать слот:' %}",
+        moveFailed: "{% trans 'Не удалось переместить слот:' %}",
+        startInPast: "{% trans 'Время начала не может быть в прошлом.' %}",
+        needStart: "{% trans 'Укажите дату и время начала.' %}",
+        copyDay: "{% trans 'Скопировать этот день в другие' %}",
+        copyToWeekdays: "{% trans 'В будни (Пн–Пт)' %}",
+        copyToAll: "{% trans 'Во все дни' %}",
+        copyApply: "{% trans 'Применить' %}",
+        undoDeleted: "{% trans 'Слот удалён.' %}",
+        undoMoved: "{% trans 'Слот перемещён.' %}",
+        undoFailed: "{% trans 'Не удалось отменить действие.' %}",
+        statsFree: "{% trans 'свободно' %}",
+        statsBooked: "{% trans 'забронировано' %}",
+        statsBlocked: "{% trans 'заблокировано' %}",
+        statsEmpty: "{% trans 'Нет слотов в этом периоде.' %}",
     },
 };
 </script>

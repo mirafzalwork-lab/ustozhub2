@@ -256,6 +256,122 @@
         box-shadow: none;
     }
 
+    /* ---------- Booking action panel ---------- */
+    .booking-panel {
+        margin-top: clamp(18px, 2.4vw, 26px);
+        padding: clamp(16px, 2.4vw, 22px);
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-lg);
+        background: var(--bg-secondary, #f8fafc);
+    }
+
+    .bp-title {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+        margin: 0 0 14px;
+    }
+
+    .bp-grid {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 8px 16px;
+        font-size: 14.5px;
+        margin-bottom: 18px;
+    }
+    .bp-grid dt { color: var(--text-tertiary); font-weight: 500; }
+    .bp-grid dd { margin: 0; color: var(--text-primary); font-weight: 600; }
+
+    .bp-field { margin-bottom: 14px; }
+    .bp-field label {
+        display: block;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+    }
+    .bp-field input, .bp-field textarea {
+        width: 100%;
+        padding: 11px 13px;
+        border: 1px solid var(--border-color, #d1d5db);
+        border-radius: var(--radius-md);
+        font-size: 14.5px;
+        font-family: inherit;
+        color: var(--text-primary);
+        background: var(--bg-primary, #fff);
+        box-sizing: border-box;
+    }
+    .bp-field input:focus, .bp-field textarea:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+    .bp-field textarea { resize: vertical; min-height: 64px; }
+
+    .bp-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+    }
+    .bp-btn {
+        flex: 1 1 160px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 13px 20px;
+        border-radius: var(--radius-md);
+        font-size: 15px;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+        transition: background var(--transition-base), transform var(--transition-base), box-shadow var(--transition-base);
+    }
+    .bp-btn--confirm { background: var(--success-color, #10b981); color: #fff; }
+    .bp-btn--confirm:hover { background: var(--success-hover, #059669); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(16,185,129,.28); }
+    .bp-btn--reject { background: #fff; color: #b91c1c; border: 1px solid #fecaca; }
+    .bp-btn--reject:hover { background: #fef2f2; }
+    .bp-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .bp-expiry {
+        margin-top: 14px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--warning-color, #d97706);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .bp-expiry.expired { color: var(--text-tertiary); }
+
+    .bp-error {
+        margin-top: 12px;
+        padding: 10px 13px;
+        background: #fef2f2;
+        border: 1px solid #fca5a5;
+        color: #b91c1c;
+        border-radius: var(--radius-md);
+        font-size: 13.5px;
+    }
+
+    .bp-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        border-radius: 999px;
+        font-size: 14px;
+        font-weight: 700;
+    }
+    .bp-status--confirmed { background: rgba(16,185,129,.12); color: #047857; }
+    .bp-status--completed { background: rgba(16,185,129,.12); color: #047857; }
+    .bp-status--expired,
+    .bp-status--cancelled_by_student,
+    .bp-status--cancelled_by_teacher { background: var(--border-light); color: var(--text-secondary); }
+
     /* ---------- Dark mode ---------- */
     @media (prefers-color-scheme: dark) {
         .meta-badge.date { background: rgba(255, 255, 255, 0.06); }
@@ -365,7 +481,69 @@
                 {{ notification.full_text|linebreaks }}
             </div>
         </div>
-        
+
+        {% if booking_panel %}
+        {% with b=booking_panel.booking %}
+        <div class="booking-panel" id="bookingPanel" data-booking-id="{{ b.id }}">
+            <p class="bp-title">{% trans 'Детали бронирования' %}</p>
+            <dl class="bp-grid">
+                <dt>{% trans 'Ученик' %}</dt>
+                <dd>{{ b.student.get_full_name|default:b.student.username }}</dd>
+                <dt>{% trans 'Время' %}</dt>
+                <dd>{{ b.slot.start_at|date:"d.m.Y H:i" }}–{{ b.slot.end_at|date:"H:i" }} ({{ b.slot.duration_minutes }} {% trans 'мин' %})</dd>
+                {% if b.subject %}
+                <dt>{% trans 'Предмет' %}</dt>
+                <dd>{{ b.subject.name }}</dd>
+                {% endif %}
+                {% if b.is_trial %}
+                <dt>{% trans 'Тип' %}</dt>
+                <dd>{% trans 'Пробный урок' %}</dd>
+                {% endif %}
+                {% if b.student_message %}
+                <dt>{% trans 'Сообщение' %}</dt>
+                <dd>{{ b.student_message }}</dd>
+                {% endif %}
+            </dl>
+
+            {% if booking_panel.can_act %}
+                <div class="bp-field">
+                    <label for="bpMeetingUrl">{% trans 'Ссылка на урок' %}</label>
+                    <input type="url" id="bpMeetingUrl" placeholder="https://meet.google.com/... — или оставьте пустым">
+                    <small style="display:block;margin-top:6px;color:var(--text-tertiary);font-size:12.5px;">
+                        {% trans 'Оставьте пустым — мы автоматически создадим видео-комнату для урока.' %}
+                    </small>
+                </div>
+                <div class="bp-field">
+                    <label for="bpReply">{% trans 'Сообщение ученику (необязательно)' %}</label>
+                    <textarea id="bpReply" placeholder="{% trans 'Например: жду вас на уроке!' %}"></textarea>
+                </div>
+                <div class="bp-actions">
+                    <button type="button" class="bp-btn bp-btn--reject" id="bpReject">
+                        <i class="fas fa-xmark"></i> {% trans 'Отклонить' %}
+                    </button>
+                    <button type="button" class="bp-btn bp-btn--confirm" id="bpConfirm">
+                        <i class="fas fa-check"></i> {% trans 'Подтвердить урок' %}
+                    </button>
+                </div>
+                <div class="bp-expiry" id="bpExpiry" data-expires="{{ b.expires_at|date:'c' }}"></div>
+                <div class="bp-error" id="bpError" hidden></div>
+                <script>
+                    window.UstozBooking = {
+                        confirmUrl: "{% url 'booking_confirm_api' b.id %}",
+                        rejectUrl: "{% url 'booking_reject_api' b.id %}",
+                        csrf: "{{ csrf_token }}",
+                    };
+                </script>
+            {% else %}
+                <span class="bp-status bp-status--{{ b.status }}">
+                    <i class="fas fa-circle-info"></i>
+                    {% trans 'Текущий статус' %}: {{ b.get_status_display }}
+                </span>
+            {% endif %}
+        </div>
+        {% endwith %}
+        {% endif %}
+
         <!-- Action URL (если есть) -->
         {% if notification.action_url %}
         <div class="action-button-wrapper">
@@ -432,5 +610,86 @@
             }
         });
     }
+
+    // ── Подтверждение/отклонение бронирования ──────────────────────
+    (function () {
+        const cfg = window.UstozBooking;
+        const panel = document.getElementById('bookingPanel');
+        if (!cfg || !panel) return;
+
+        const $confirm = document.getElementById('bpConfirm');
+        const $reject = document.getElementById('bpReject');
+        const $url = document.getElementById('bpMeetingUrl');
+        const $reply = document.getElementById('bpReply');
+        const $error = document.getElementById('bpError');
+        const $expiry = document.getElementById('bpExpiry');
+
+        function showError(msg) { $error.textContent = msg; $error.hidden = false; }
+
+        async function act(url, body, btn) {
+            $error.hidden = true;
+            $confirm.disabled = $reject.disabled = true;
+            const original = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обработка...';
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': cfg.csrf },
+                    credentials: 'same-origin',
+                    body: JSON.stringify(body),
+                });
+                const text = await res.text();
+                let data; try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
+                if (!res.ok) {
+                    showError(data.error || ('Ошибка ' + res.status));
+                    $confirm.disabled = $reject.disabled = false;
+                    btn.innerHTML = original;
+                    return;
+                }
+                window.location.reload();
+            } catch (e) {
+                showError('Ошибка сети. Попробуйте ещё раз.');
+                $confirm.disabled = $reject.disabled = false;
+                btn.innerHTML = original;
+            }
+        }
+
+        if ($confirm) $confirm.addEventListener('click', () => {
+            act(cfg.confirmUrl, { reply: $reply.value.trim(), meeting_url: $url.value.trim() }, $confirm);
+        });
+        if ($reject) $reject.addEventListener('click', () => {
+            if (!confirm('Отклонить эту заявку? Слот снова станет свободным.')) return;
+            act(cfg.rejectUrl, { reply: $reply.value.trim() }, $reject);
+        });
+
+        // Дедлайн подтверждения — за час до урока. Показываем дату,
+        // а в последний час — живой обратный отсчёт.
+        if ($expiry && $expiry.dataset.expires) {
+            const expires = new Date($expiry.dataset.expires);
+            const deadlineStr = isNaN(expires) ? '' : expires.toLocaleString('ru', {
+                day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
+            });
+            function tick() {
+                const diff = Math.floor((expires - new Date()) / 1000);
+                if (isNaN(diff)) { $expiry.hidden = true; return; }
+                if (diff <= 0) {
+                    $expiry.classList.add('expired');
+                    $expiry.innerHTML = '<i class="far fa-clock"></i> Время на подтверждение истекло — слот мог освободиться. Обновите страницу.';
+                    if ($confirm) $confirm.disabled = true;
+                    if ($reject) $reject.disabled = true;
+                    clearInterval(timer);
+                    return;
+                }
+                let txt = '<i class="far fa-clock"></i> Подтвердите до ' + deadlineStr;
+                if (diff <= 3600) {
+                    const m = Math.floor(diff / 60), s = diff % 60;
+                    txt += ' — осталось ' + m + ':' + String(s).padStart(2, '0');
+                }
+                $expiry.innerHTML = txt;
+            }
+            tick();
+            const timer = setInterval(tick, 1000);
+        }
+    })();
 </script>
 {% endblock %}

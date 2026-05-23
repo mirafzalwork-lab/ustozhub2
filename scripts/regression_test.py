@@ -475,15 +475,30 @@ with section('Phase 2: Calendar API (Django Client)'):
                json.dumps({'weeks': 1, 'slot_minutes': 60}), 'application/json')
     check('bulk_generate без weekly_schedule → 400', r.status_code == 400)
 
-    # bulk_generate с шаблоном — должны создаться слоты
+    # bulk_generate со СТАРЫМ форматом (обратная совместимость) — должны создаться слоты
     TeacherProfile.objects.filter(pk=tp.pk).update(weekly_schedule={
         'monday': {'from': '10:00', 'to': '12:00'},
         'wednesday': {'from': '14:00', 'to': '15:00'},
     })
     r = c.post(reverse('slots_bulk_generate_api'),
                json.dumps({'weeks': 2, 'slot_minutes': 60}), 'application/json')
-    check('bulk_generate с шаблоном → 201', r.status_code == 201)
+    check('bulk_generate (старый формат) → 201', r.status_code == 201)
     check('bulk_generate created > 0', r.json()['created'] > 0)
+    TimeSlot.objects.filter(teacher=tp, start_at__gte=timezone.now()).delete()
+
+    # bulk_generate с НОВЫМ форматом (мультиинтервалы в один день)
+    TeacherProfile.objects.filter(pk=tp.pk).update(weekly_schedule={
+        'monday': [{'from': '10:00', 'to': '12:00'}, {'from': '15:00', 'to': '17:00'}],
+        'wednesday': [{'from': '14:00', 'to': '15:00'}],
+    })
+    r = c.post(reverse('slots_bulk_generate_api'),
+               json.dumps({'weeks': 2, 'slot_minutes': 60}), 'application/json')
+    check('bulk_generate (мультиинтервалы) → 201', r.status_code == 201)
+    # понедельник: 10:00–12:00 и 15:00–17:00 → проверяем, что оба интервала отработали
+    gen_slots = list(TimeSlot.objects.filter(teacher=tp, start_at__gte=timezone.now()))
+    local_hours = {timezone.localtime(s.start_at).hour for s in gen_slots}
+    check('мультиинтервал: утренний слот создан (10:00)', 10 in local_hours)
+    check('мультиинтервал: вечерний слот создан (15:00)', 15 in local_hours)
 
     # bulk_generate валидация
     r = c.post(reverse('slots_bulk_generate_api'),
@@ -736,11 +751,16 @@ with section('Phase 5: meeting_url для videos'):
                json.dumps({'meeting_url': 'not a url'}),
                'application/json')
     check('Confirm с мусорным meeting_url → 400', r.status_code == 400)
-    # Confirm без meeting_url — должен пройти (URL опционален)
+    # Confirm без meeting_url — должен пройти и АВТОМАТИЧЕСКИ создать Jitsi-комнату
     r = c.post(reverse('booking_confirm_api', args=[bk_id2]),
                json.dumps({}), 'application/json')
     check('Confirm без meeting_url → 200', r.status_code == 200)
-    check('booking.meeting_url пустой', r.json()['booking']['meeting_url'] == '')
+    auto_url = r.json()['booking']['meeting_url']
+    # Не хардкодим домен — берём из настроек (может быть свой self-hosted Jitsi)
+    from django.conf import settings as _s
+    check('booking.meeting_url авто-Jitsi создан',
+          auto_url.startswith(_s.JITSI_BASE_URL + '/'))
+    check('авто-комната содержит booking id', str(bk_id2) in auto_url)
 
     # Учитель может задать URL после confirm через отдельный endpoint
     url_endpoint = reverse('booking_set_meeting_url_api', args=[bk_id2])

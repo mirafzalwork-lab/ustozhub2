@@ -31,6 +31,54 @@
         font-size: 14px; transition: all .15s;
     }
     .book-hero__back:hover { background: var(--cal-bg, #F8FAFC); }
+
+    /* Панель фильтра */
+    .book-filters {
+        display: flex; align-items: center; flex-wrap: wrap; gap: 16px;
+        padding: 14px 18px; margin-bottom: 16px;
+        background: var(--cal-surface, #fff);
+        border: 1px solid var(--cal-border, #E2E8F0);
+        border-radius: 12px;
+    }
+    .book-filter { display: flex; align-items: center; gap: 10px; }
+    .book-filter__label { font-size: 13px; font-weight: 600; color: var(--cal-muted, #64748B); }
+    .book-time-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .book-time-chip {
+        padding: 6px 12px; border-radius: 999px;
+        border: 1px solid var(--cal-border, #E2E8F0);
+        background: var(--cal-surface, #fff); color: var(--cal-text, #0F172A);
+        font-size: 13px; cursor: pointer; transition: all .15s;
+    }
+    .book-time-chip small { color: var(--cal-muted, #64748B); font-size: 11px; }
+    .book-time-chip:hover { border-color: #C7D2FE; }
+    .book-time-chip.is-active {
+        background: var(--cal-primary, #4F46E5); border-color: var(--cal-primary, #4F46E5); color: #fff;
+    }
+    .book-time-chip.is-active small { color: rgba(255,255,255,.8); }
+    .book-filter__hint { margin-left: auto; font-size: 13px; color: var(--cal-muted, #64748B); }
+    .book-filter__hint strong { color: var(--cal-text, #0F172A); }
+
+    /* Стоимость урока в модалке */
+    .book-price {
+        margin: -4px 0 16px; padding: 10px 14px;
+        background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px;
+        color: #065F46; font-size: 14px;
+    }
+    .book-price.is-free { background: #FEF3C7; border-color: #FDE68A; color: #92400E; }
+    .book-price strong { font-weight: 700; }
+    .book-price__rate { color: var(--cal-muted, #64748B); font-size: 12.5px; }
+
+    /* Экран подтверждения */
+    .book-success { text-align: center; padding: 12px 8px 4px; }
+    .book-success__icon { font-size: 48px; color: var(--cal-success, #10B981); margin-bottom: 10px; }
+    .book-success h4 { margin: 0 0 8px; font-size: 19px; font-weight: 700; }
+    .book-success__lead { margin: 0 0 12px; font-weight: 600; color: var(--cal-text, #0F172A); }
+    .book-success__note { margin: 0; font-size: 13.5px; color: var(--cal-muted, #64748B); line-height: 1.55; }
+
+    @media (max-width: 560px) {
+        .book-filters { flex-direction: column; align-items: stretch; }
+        .book-filter__hint { margin-left: 0; }
+    }
 </style>
 {% endblock %}
 
@@ -54,6 +102,20 @@
         </a>
     </header>
 
+    {# Панель фильтра: время дня #}
+    <div class="book-filters">
+        <div class="book-filter">
+            <span class="book-filter__label">{% trans "Время дня" %}</span>
+            <div class="book-time-chips" id="book-time-chips">
+                <button type="button" class="book-time-chip is-active" data-window="any">{% trans "Любое" %}</button>
+                <button type="button" class="book-time-chip" data-window="morning">{% trans "Утро" %} <small>&lt;12:00</small></button>
+                <button type="button" class="book-time-chip" data-window="day">{% trans "День" %} <small>12–17</small></button>
+                <button type="button" class="book-time-chip" data-window="evening">{% trans "Вечер" %} <small>17:00+</small></button>
+            </div>
+        </div>
+        <div class="book-filter__hint" id="book-filter-hint"></div>
+    </div>
+
     <div class="calendar-grid">
         <div id="calendar"></div>
     </div>
@@ -68,48 +130,74 @@
             <button type="button" class="cal-modal__close" data-close>×</button>
         </header>
         <div class="cal-modal__body">
-            <dl class="cal-info" id="book-slot-info" style="margin-bottom:16px;">
-                <dt>{% trans "Когда" %}</dt><dd id="book-when">—</dd>
-                <dt>{% trans "Длительность" %}</dt><dd id="book-duration">—</dd>
-            </dl>
+            {# ── Форма заявки ── #}
+            <div id="book-form-region">
+                <dl class="cal-info" id="book-slot-info" style="margin-bottom:16px;">
+                    <dt>{% trans "Когда" %}</dt><dd id="book-when">—</dd>
+                    <dt>{% trans "Длительность" %}</dt><dd id="book-duration">—</dd>
+                </dl>
 
-            {% if teacher_subjects %}
-            <div class="cal-field">
-                <label>{% trans "Предмет" %}</label>
-                <select id="book-subject">
-                    <option value="">{% trans "— выберите —" %}</option>
-                    {% for ts in teacher_subjects %}
-                        <option value="{{ ts.subject__id }}" data-free-trial="{{ ts.is_free_trial|yesno:'1,0' }}">
-                            {{ ts.subject__name }} · {{ ts.hourly_rate|floatformat:0 }} {% trans "сум/час" %}
-                            {% if ts.is_free_trial %} · 🎁 {% trans "пробный бесплатно" %}{% endif %}
-                        </option>
-                    {% endfor %}
-                </select>
+                {% if teacher_subjects %}
+                <div class="cal-field">
+                    <label>{% trans "Предмет" %}</label>
+                    <select id="book-subject">
+                        <option value="">{% trans "— выберите —" %}</option>
+                        {% for ts in teacher_subjects %}
+                            <option value="{{ ts.subject__id }}"
+                                    data-free-trial="{{ ts.is_free_trial|yesno:'1,0' }}"
+                                    data-rate="{{ ts.hourly_rate|floatformat:0 }}">
+                                {{ ts.subject__name }} · {{ ts.hourly_rate|floatformat:0 }} {% trans "сум/час" %}
+                                {% if ts.is_free_trial %} · 🎁 {% trans "пробный бесплатно" %}{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                {# Стоимость урока (считается из выбранного предмета) #}
+                <div class="book-price" id="book-price" hidden></div>
+
+                <div class="cal-field">
+                    <label>
+                        <input type="checkbox" id="book-trial" style="width:auto; margin-right:6px;">
+                        {% trans "Это пробный урок" %}
+                    </label>
+                </div>
+
+                <div class="cal-field">
+                    <label>{% trans "Сообщение учителю (необязательно)" %}</label>
+                    <textarea id="book-message" rows="3" style="width:100%; padding:10px 12px; border:1px solid var(--cal-border,#E2E8F0); border-radius:8px; font:inherit; resize:vertical;" maxlength="500" placeholder="{% trans 'Расскажите немного о ваших целях обучения...' %}"></textarea>
+                </div>
+
+                <div id="book-error" class="cal-error" hidden></div>
             </div>
-            {% endif %}
 
-            <div class="cal-field">
-                <label>
-                    <input type="checkbox" id="book-trial" style="width:auto; margin-right:6px;">
-                    {% trans "Это пробный урок" %}
-                </label>
+            {# ── Экран подтверждения после отправки ── #}
+            <div id="book-success" class="book-success" hidden>
+                <div class="book-success__icon"><i class="fa-solid fa-circle-check"></i></div>
+                <h4>{% trans "Заявка отправлена!" %}</h4>
+                <p class="book-success__lead" id="book-success-when">—</p>
+                <p class="book-success__note">
+                    {% trans "Учитель подтвердит урок в течение 15 минут. Вы получите уведомление, а урок появится в разделе «Мои уроки»." %}
+                </p>
             </div>
-
-            <div class="cal-field">
-                <label>{% trans "Сообщение учителю (необязательно)" %}</label>
-                <textarea id="book-message" rows="3" style="width:100%; padding:10px 12px; border:1px solid var(--cal-border,#E2E8F0); border-radius:8px; font:inherit; resize:vertical;" maxlength="500" placeholder="{% trans 'Расскажите немного о ваших целях обучения...' %}"></textarea>
-            </div>
-
-            <div id="book-error" class="cal-error" hidden></div>
         </div>
-        <footer class="cal-modal__foot">
-            <div style="flex:1; font-size:12px; color:var(--cal-muted,#64748B);">
+        <footer class="cal-modal__foot" id="book-foot">
+            <div style="flex:1; font-size:12px; color:var(--cal-muted,#64748B);" id="book-foot-hint">
                 {% trans "У учителя будет 15 минут для подтверждения" %}
             </div>
-            <button type="button" class="btn btn-secondary" data-close>{% trans "Отмена" %}</button>
+            <button type="button" class="btn btn-secondary" data-close id="book-cancel">{% trans "Отмена" %}</button>
             <button type="button" class="btn btn-primary" id="book-confirm">
                 <i class="fa fa-calendar-check"></i> {% trans "Запросить урок" %}
             </button>
+        </footer>
+        {# Футер экрана подтверждения #}
+        <footer class="cal-modal__foot" id="book-success-foot" hidden>
+            <div style="flex:1"></div>
+            <button type="button" class="btn btn-secondary" id="book-another">{% trans "Забронировать ещё" %}</button>
+            <a href="{% url 'my_bookings_page' %}" class="btn btn-primary">
+                <i class="fa fa-list-check"></i> {% trans "К моим урокам" %}
+            </a>
         </footer>
     </div>
 </div>
@@ -137,6 +225,14 @@ window.UstozBook = {
         loginRequired: "{% trans 'Войдите в систему, чтобы забронировать урок' %}",
         teachersCantBook: "{% trans 'Учителя не могут бронировать уроки' %}",
         success: "{% trans 'Заявка отправлена! Учителю даётся 15 минут.' %}",
+        minutes: "{% trans 'мин' %}",
+        priceFree: "{% trans 'Пробный урок — бесплатно' %}",
+        priceFmt: "{% trans 'Стоимость урока:' %}",
+        pricePerHour: "{% trans 'сум/час' %}",
+        priceApprox: "{% trans '≈' %}",
+        priceSum: "{% trans 'сум' %}",
+        filterNone: "{% trans 'Нет свободных слотов в выбранное время дня.' %}",
+        filterCount: "{% trans 'слотов в этом периоде' %}",
     },
 };
 </script>

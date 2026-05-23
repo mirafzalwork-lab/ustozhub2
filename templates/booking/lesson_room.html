@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "Урок" %} — UstozHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .lesson-room {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px 16px 40px;
+    }
+    .lr-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    .lr-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-primary, #0f172a);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .lr-title i { color: #4F46E5; }
+    .lr-sub {
+        font-size: 13.5px;
+        color: var(--text-tertiary, #64748b);
+        margin: 4px 0 0;
+    }
+    .lr-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 16px;
+        border-radius: 10px;
+        border: 1px solid var(--border-light, #e2e8f0);
+        background: #fff;
+        color: var(--text-secondary, #475569);
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+    }
+    .lr-back:hover { background: #f8fafc; }
+
+    #jitsi-container {
+        width: 100%;
+        height: 75vh;
+        min-height: 480px;
+        border-radius: 14px;
+        overflow: hidden;
+        background: #0b0b0f;
+        box-shadow: 0 10px 40px rgba(15, 23, 42, .15);
+    }
+    #jitsi-container iframe { border: 0; }
+
+    .lr-state {
+        text-align: center;
+        padding: 60px 24px;
+        background: #fff;
+        border: 1px solid var(--border-light, #e2e8f0);
+        border-radius: 14px;
+    }
+    .lr-state i { font-size: 44px; color: #94a3b8; margin-bottom: 16px; }
+    .lr-state h2 { font-size: 20px; margin: 0 0 8px; color: var(--text-primary, #0f172a); }
+    .lr-state p { color: var(--text-tertiary, #64748b); margin: 0 0 20px; font-size: 15px; }
+    .lr-state .lr-back { background: #4F46E5; color: #fff; border-color: #4F46E5; }
+    .lr-state .lr-back:hover { background: #4338CA; }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="lesson-room">
+    <div class="lr-head">
+        <div>
+            <h1 class="lr-title">
+                <i class="fa-solid fa-video"></i>
+                {% trans "Урок с" %} {{ other_name }}
+            </h1>
+            <p class="lr-sub">
+                {% if booking.subject %}{{ booking.subject.name }} · {% endif %}
+                {{ booking.slot.start_at|date:"d.m.Y H:i" }}–{{ booking.slot.end_at|date:"H:i" }}
+            </p>
+        </div>
+        <a href="{% url 'my_bookings_page' %}" class="lr-back">
+            <i class="fa-solid fa-arrow-left"></i> {% trans "К моим урокам" %}
+        </a>
+    </div>
+
+    {% if can_join %}
+        <div id="jitsi-container"></div>
+    {% else %}
+        <div class="lr-state">
+            {% if state == 'too_early' %}
+                <i class="fa-regular fa-clock"></i>
+                <h2>{% trans "Комната ещё закрыта" %}</h2>
+                <p>{% trans "Вы сможете войти за 15 минут до начала урока" %} — {{ open_from|date:"d.m.Y H:i" }}.</p>
+            {% elif state == 'too_late' %}
+                <i class="fa-regular fa-circle-check"></i>
+                <h2>{% trans "Урок завершён" %}</h2>
+                <p>{% trans "Время этого урока уже прошло." %}</p>
+            {% else %}
+                <i class="fa-regular fa-hourglass-half"></i>
+                <h2>{% trans "Урок ещё не подтверждён" %}</h2>
+                <p>{% trans "Комната станет доступной после подтверждения брони учителем." %}</p>
+            {% endif %}
+            <a href="{% url 'my_bookings_page' %}" class="lr-back">
+                <i class="fa-solid fa-arrow-left"></i> {% trans "К моим урокам" %}
+            </a>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{% if can_join %}
+<script src="https://{{ jitsi_domain }}/external_api.js"></script>
+<script>
+(function () {
+    const domain = "{{ jitsi_domain|escapejs }}";
+    const room = "{{ jitsi_room|escapejs }}";
+    const container = document.getElementById('jitsi-container');
+    if (!container || typeof JitsiMeetExternalAPI === 'undefined') {
+        if (container) {
+            container.innerHTML = '<div style="color:#fff;padding:40px;text-align:center">' +
+                'Не удалось загрузить видео-модуль. Обновите страницу.</div>';
+        }
+        return;
+    }
+
+    const api = new JitsiMeetExternalAPI(domain, {
+        roomName: room,
+        parentNode: container,
+        width: '100%',
+        height: '100%',
+        userInfo: { displayName: "{{ display_name|escapejs }}" },
+        configOverwrite: {
+            prejoinPageEnabled: true,
+            disableDeepLinking: true,
+            startWithAudioMuted: false,
+            startWithVideoMuted: false,
+        },
+        interfaceConfigOverwrite: {
+            SHOW_JITSI_WATERMARK: false,
+            SHOW_WATERMARK_FOR_GUESTS: false,
+            DEFAULT_BACKGROUND: '#0b0b0f',
+            TOOLBAR_BUTTONS: [
+                'microphone', 'camera', 'desktop', 'chat', 'raisehand',
+                'tileview', 'fullscreen', 'settings', 'hangup',
+            ],
+        },
+    });
+
+    // По завершению — возвращаем к списку уроков
+    const back = "{% url 'my_bookings_page' %}";
+    api.addEventListener('readyToClose', function () {
+        window.location.href = back;
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

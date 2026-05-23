@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "Оцените урок" %} — UstozHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .review-page { max-width: 640px; margin: 0 auto; padding: 28px 16px 48px; }
+    .rv-card {
+        background: #fff;
+        border: 1px solid var(--border-light, #e2e8f0);
+        border-radius: 16px;
+        padding: 28px 26px;
+        box-shadow: 0 6px 28px rgba(15, 23, 42, .06);
+    }
+    .rv-teacher { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+    .rv-avatar {
+        width: 56px; height: 56px; border-radius: 50%;
+        object-fit: cover; background: #eef2ff;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px; color: #4F46E5; font-weight: 700;
+    }
+    .rv-teacher h1 { font-size: 19px; margin: 0; color: var(--text-primary, #0f172a); }
+    .rv-teacher p { margin: 2px 0 0; font-size: 13.5px; color: var(--text-tertiary, #64748b); }
+
+    .rv-block { margin-top: 22px; }
+    .rv-label { font-size: 14px; font-weight: 600; color: var(--text-secondary, #334155); margin-bottom: 8px; }
+
+    /* Звёзды */
+    .stars { display: inline-flex; flex-direction: row-reverse; gap: 4px; }
+    .stars input { display: none; }
+    .stars label {
+        font-size: 30px; color: #d8dee9; cursor: pointer;
+        transition: color .12s, transform .12s;
+    }
+    .stars label:hover, .stars label:hover ~ label,
+    .stars input:checked ~ label { color: #f59e0b; }
+    .stars label:hover { transform: scale(1.12); }
+
+    .rv-detail-row {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 0; border-top: 1px solid #f1f5f9;
+    }
+    .rv-detail-row .stars label { font-size: 20px; }
+    .rv-detail-name { font-size: 14px; color: var(--text-secondary, #475569); }
+
+    textarea.rv-comment {
+        width: 100%; min-height: 110px; resize: vertical;
+        border: 1px solid var(--border-light, #e2e8f0); border-radius: 10px;
+        padding: 12px 14px; font: inherit; font-size: 14.5px;
+        box-sizing: border-box;
+    }
+    textarea.rv-comment:focus { outline: none; border-color: #4F46E5; }
+
+    .rv-actions { display: flex; gap: 12px; margin-top: 24px; }
+    .rv-btn {
+        flex: 1; padding: 13px 18px; border-radius: 11px; border: 0;
+        font-size: 15px; font-weight: 600; cursor: pointer; text-align: center;
+        text-decoration: none;
+    }
+    .rv-btn.primary { background: #4F46E5; color: #fff; }
+    .rv-btn.primary:hover { background: #4338CA; }
+    .rv-btn.ghost { background: #f1f5f9; color: var(--text-secondary, #475569); flex: 0 0 auto; }
+    .rv-hint { font-size: 12.5px; color: #94a3b8; margin-top: 6px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="review-page">
+    <div class="rv-card">
+        <div class="rv-teacher">
+            {% if teacher.user.avatar %}
+                <img class="rv-avatar" src="{{ teacher.user.avatar.url }}" alt="">
+            {% else %}
+                <div class="rv-avatar">{{ teacher.user.get_full_name|default:teacher.user.username|first|upper }}</div>
+            {% endif %}
+            <div>
+                <h1>{% trans "Оцените урок с" %} {{ teacher.user.get_full_name|default:teacher.user.username }}</h1>
+                <p>
+                    {% if booking.subject %}{{ booking.subject.name }} · {% endif %}
+                    {{ booking.slot.start_at|date:"d.m.Y H:i" }}
+                </p>
+            </div>
+        </div>
+
+        {% if existing %}
+            <p class="rv-hint">{% trans "Вы уже оставляли отзыв — его можно обновить." %}</p>
+        {% endif %}
+
+        <form method="post" id="reviewForm">
+            {% csrf_token %}
+
+            <div class="rv-block">
+                <div class="rv-label">{% trans "Общая оценка" %}</div>
+                <div class="stars" data-name="rating">
+                    {% for i in "54321" %}
+                        <input type="radio" id="r{{ i }}" name="rating" value="{{ i }}"
+                               {% if existing and existing.rating|stringformat:"s" == i %}checked{% endif %}>
+                        <label for="r{{ i }}" title="{{ i }}">★</label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="rv-block">
+                <div class="rv-label">{% trans "Подробнее (необязательно)" %}</div>
+                <div class="rv-detail-row">
+                    <span class="rv-detail-name">{% trans "Знание предмета" %}</span>
+                    <div class="stars" data-name="knowledge_rating">
+                        {% for i in "54321" %}
+                            <input type="radio" id="k{{ i }}" name="knowledge_rating" value="{{ i }}"
+                                   {% if existing and existing.knowledge_rating|stringformat:"s" == i %}checked{% endif %}>
+                            <label for="k{{ i }}">★</label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="rv-detail-row">
+                    <span class="rv-detail-name">{% trans "Общение" %}</span>
+                    <div class="stars" data-name="communication_rating">
+                        {% for i in "54321" %}
+                            <input type="radio" id="c{{ i }}" name="communication_rating" value="{{ i }}"
+                                   {% if existing and existing.communication_rating|stringformat:"s" == i %}checked{% endif %}>
+                            <label for="c{{ i }}">★</label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="rv-detail-row">
+                    <span class="rv-detail-name">{% trans "Пунктуальность" %}</span>
+                    <div class="stars" data-name="punctuality_rating">
+                        {% for i in "54321" %}
+                            <input type="radio" id="p{{ i }}" name="punctuality_rating" value="{{ i }}"
+                                   {% if existing and existing.punctuality_rating|stringformat:"s" == i %}checked{% endif %}>
+                            <label for="p{{ i }}">★</label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="rv-block">
+                <div class="rv-label">{% trans "Комментарий" %}</div>
+                <textarea class="rv-comment" name="comment" maxlength="1000"
+                          placeholder="{% trans 'Что понравилось? Что можно улучшить?' %}">{% if existing %}{{ existing.comment }}{% endif %}</textarea>
+            </div>
+
+            <div class="rv-actions">
+                <a href="{% url 'my_bookings_page' %}" class="rv-btn ghost">{% trans "Позже" %}</a>
+                <button type="submit" class="rv-btn primary">{% trans "Отправить отзыв" %}</button>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    // Не дать отправить без общей оценки
+    var form = document.getElementById('reviewForm');
+    form.addEventListener('submit', function (e) {
+        if (!form.querySelector('input[name="rating"]:checked')) {
+            e.preventDefault();
+            alert('{% trans "Поставьте, пожалуйста, общую оценку." %}');
+        }
+    });
+})();
+</script>
+{% endblock %}

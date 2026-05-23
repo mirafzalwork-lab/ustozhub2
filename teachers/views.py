@@ -2196,9 +2196,23 @@ def notification_detail(request, notification_id):
     
     notification.mark_as_read(request.user)
 
+    # Если уведомление связано с бронированием — даём учителю-владельцу
+    # возможность подтвердить/отклонить прямо здесь.
+    booking = notification.booking
+    booking_panel = None
+    if booking:
+        tp = getattr(request.user, 'teacher_profile', None)
+        is_owner_teacher = bool(tp and booking.slot.teacher_id == tp.pk)
+        booking_panel = {
+            'booking': booking,
+            'is_owner_teacher': is_owner_teacher,
+            'can_act': is_owner_teacher and booking.status == 'pending',
+        }
+
     context = {
         'notification': notification,
         'is_read': True,
+        'booking_panel': booking_panel,
     }
 
     return render(request, 'notifications/detail.html', context)

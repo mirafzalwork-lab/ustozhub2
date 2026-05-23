@@ -84,162 +84,16 @@
 
 <div class="form-section">
     <h3 class="section-title">Ваше расписание</h3>
-    <p class="section-description">Выберите дни недели и укажите время, когда вы доступны для занятий. Для каждого дня можно установить индивидуальное время.</p>
-    
-    <!-- Скрытые поля для обратной совместимости -->
+    <p class="section-description">Включите рабочие дни и добавьте интервалы времени. В один день можно задать несколько интервалов — например, 09:00–12:00 и 15:00–18:00.</p>
+
+    <!-- Скрытые поля -->
+    {{ wizard.form.schedule_data }}
     {{ wizard.form.available_weekdays }}
     {{ wizard.form.available_from }}
     {{ wizard.form.available_to }}
-    
-    <div class="schedule-container">
-        <!-- Понедельник -->
-        <div class="schedule-day-card">
-            <div class="schedule-day-header">
-                <label class="schedule-checkbox-label">
-                    {{ wizard.form.monday_enabled }}
-                    <span class="schedule-day-name">Понедельник</span>
-                </label>
-            </div>
-            <div class="schedule-time-inputs" data-day="monday">
-                <div class="time-input-group">
-                    <label for="{{ wizard.form.monday_from.id_for_label }}">С</label>
-                    {{ wizard.form.monday_from }}
-                </div>
-                <div class="time-separator">—</div>
-                <div class="time-input-group">
-                    <label for="{{ wizard.form.monday_to.id_for_label }}">До</label>
-                    {{ wizard.form.monday_to }}
-                </div>
-            </div>
-        </div>
 
-        <!-- Вторник -->
-        <div class="schedule-day-card">
-            <div class="schedule-day-header">
-                <label class="schedule-checkbox-label">
-                    {{ wizard.form.tuesday_enabled }}
-                    <span class="schedule-day-name">Вторник</span>
-                </label>
-            </div>
-            <div class="schedule-time-inputs" data-day="tuesday">
-                <div class="time-input-group">
-                    <label for="{{ wizard.form.tuesday_from.id_for_label }}">С</label>
-                    {{ wizard.form.tuesday_from }}
-                </div>
-                <div class="time-separator">—</div>
-                <div class="time-input-group">
-                    <label for="{{ wizard.form.tuesday_to.id_for_label }}">До</label>
-                    {{ wizard.form.tuesday_to }}
-                </div>
-            </div>
-        </div>
+    <div class="schedule-container" id="schedule-container"></div>
 
-        <!-- Среда -->
-        <div class="schedule-day-card">
-            <div class="schedule-day-header">
-                <label class="schedule-checkbox-label">
-                    {{ wizard.form.wednesday_enabled }}
-                    <span class="schedule-day-name">Среда</span>
-                </label>
-            </div>
-            <div class="schedule-time-inputs" data-day="wednesday">
-                <div class="time-input-group">
-                    <label for="{{ wizard.form.wednesday_from.id_for_label }}">С</label>
-                    {{ wizard.form.wednesday_from }}
-                </div>
-                <div class="time-separator">—</div>
-                <div class="time-input-group">
-                    <label for="{{ wizard.form.wednesday_to.id_for_label }}">До</label>
-                    {{ wizard.form.wednesday_to }}
-                </div>
-            </div>
-        </div>
-
-        <!-- Четверг -->
-        <div class="schedule-day-card">
-            <div class="schedule-day-header">
-                <label class="schedule-checkbox-label">
-                    {{ wizard.form.thursday_enabled }}
-                    <span class="schedule-day-name">Четверг</span>
-                </label>
-            </div>
-            <div class="schedule-time-inputs" data-day="thursday">
-                <div class="time-input-group">
-                    <label for="{{ wizard.form.thursday_from.id_for_label }}">С</label>
-                    {{ wizard.form.thursday_from }}
-                </div>
-                <div class="time-separator">—</div>
-                <div class="time-input-group">
-                    <label for="{{ wizard.form.thursday_to.id_for_label }}">До</label>
-                    {{ wizard.form.thursday_to }}
-                </div>
-            </div>
-        </div>
-
-        <!-- Пятница -->
-        <div class="schedule-day-card">
-            <div class="schedule-day-header">
-                <label class="schedule-checkbox-label">
-                    {{ wizard.form.friday_enabled }}
-                    <span class="schedule-day-name">Пятница</span>
-                </label>
-            </div>
-            <div class="schedule-time-inputs" data-day="friday">
-                <div class="time-input-group">
-                    <label for="{{ wizard.form.friday_from.id_for_label }}">С</label>
-                    {{ wizard.form.friday_from }}
-                </div>
-                <div class="time-separator">—</div>
-                <div class="time-input-group">
-                    <label for="{{ wizard.form.friday_to.id_for_label }}">До</label>
-                    {{ wizard.form.friday_to }}
-                </div>
-            </div>
-        </div>
-
-        <!-- Суббота -->
-        <div class="schedule-day-card">
-            <div class="schedule-day-header">
-                <label class="schedule-checkbox-label">
-                    {{ wizard.form.saturday_enabled }}
-                    <span class="schedule-day-name">Суббота</span>
-                </label>
-            </div>
-            <div class="schedule-time-inputs" data-day="saturday">
-                <div class="time-input-group">
-                    <label for="{{ wizard.form.saturday_from.id_for_label }}">С</label>
-                    {{ wizard.form.saturday_from }}
-                </div>
-                <div class="time-separator">—</div>
-                <div class="time-input-group">
-                    <label for="{{ wizard.form.saturday_to.id_for_label }}">До</label>
-                    {{ wizard.form.saturday_to }}
-                </div>
-            </div>
-        </div>
-
-        <!-- Воскресенье -->
-        <div class="schedule-day-card">
-            <div class="schedule-day-header">
-                <label class="schedule-checkbox-label">
-                    {{ wizard.form.sunday_enabled }}
-                    <span class="schedule-day-name">Воскресенье</span>
-                </label>
-            </div>
-            <div class="schedule-time-inputs" data-day="sunday">
-                <div class="time-input-group">
-                    <label for="{{ wizard.form.sunday_from.id_for_label }}">С</label>
-                    {{ wizard.form.sunday_from }}
-                </div>
-                <div class="time-separator">—</div>
-                <div class="time-input-group">
-                    <label for="{{ wizard.form.sunday_to.id_for_label }}">До</label>
-                    {{ wizard.form.sunday_to }}
-                </div>
-            </div>
-        </div>
-    </div>
-    
     {% if wizard.form.non_field_errors %}
     <div class="field-errors">
         {% for error in wizard.form.non_field_errors %}
@@ -250,46 +104,122 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Получаем все чекбоксы дней
-    const dayCheckboxes = document.querySelectorAll('.schedule-day-card input[type="checkbox"]');
-    
-    dayCheckboxes.forEach(checkbox => {
-        const card = checkbox.closest('.schedule-day-card');
-        const timeInputs = card.querySelector('.schedule-time-inputs');
-        const timeFields = timeInputs.querySelectorAll('input[type="time"]');
-        
-        // Функция обновления состояния
-        function updateTimeInputsState() {
-            if (checkbox.checked) {
-                timeInputs.classList.add('active');
-                timeFields.forEach(field => field.disabled = false);
-                
-                // Устанавливаем значения по умолчанию если пустые
-                timeFields.forEach(field => {
-                    if (!field.value) {
-                        if (field.name.includes('_from')) {
-                            field.value = '09:00';
-                        } else {
-                            field.value = '18:00';
-                        }
-                    }
-                });
-            } else {
-                timeInputs.classList.remove('active');
-                timeFields.forEach(field => {
-                    field.disabled = true;
-                    field.value = '';
-                });
-            }
+document.addEventListener('DOMContentLoaded', function () {
+    const DAYS = [
+        ['monday', 'Понедельник'], ['tuesday', 'Вторник'], ['wednesday', 'Среда'],
+        ['thursday', 'Четверг'], ['friday', 'Пятница'], ['saturday', 'Суббота'],
+        ['sunday', 'Воскресенье'],
+    ];
+    const container = document.getElementById('schedule-container');
+    const hidden = document.getElementById('{{ wizard.form.schedule_data.id_for_label }}');
+    const form = hidden.closest('form');
+
+    // Восстанавливаем сохранённое значение (черновик / возврат на шаг)
+    let initial = {};
+    try { initial = JSON.parse(hidden.value || '{}') || {}; } catch (e) { initial = {}; }
+
+    function normalizeIntervals(raw) {
+        // Приводим оба формата к [["09:00","12:00"], ...]
+        if (!Array.isArray(raw)) return [];
+        return raw.map(function (itv) {
+            if (Array.isArray(itv) && itv.length === 2) return [itv[0], itv[1]];
+            if (itv && typeof itv === 'object') return [itv.from || '', itv.to || ''];
+            return null;
+        }).filter(Boolean);
+    }
+
+    function makeIntervalRow(from, to) {
+        const row = document.createElement('div');
+        row.className = 'interval-row';
+        row.innerHTML =
+            '<div class="time-input-group"><label>С</label>' +
+            '<input type="time" class="interval-from form-input" value="' + (from || '09:00') + '"></div>' +
+            '<span class="time-separator">—</span>' +
+            '<div class="time-input-group"><label>До</label>' +
+            '<input type="time" class="interval-to form-input" value="' + (to || '12:00') + '"></div>' +
+            '<button type="button" class="interval-remove" title="Удалить интервал">&times;</button>';
+        row.querySelector('.interval-remove').addEventListener('click', function () {
+            row.remove();
+            syncHidden();
+        });
+        row.querySelectorAll('input[type="time"]').forEach(function (inp) {
+            inp.addEventListener('change', syncHidden);
+        });
+        return row;
+    }
+
+    function buildDayCard(key, label) {
+        const intervals = normalizeIntervals(initial[key]);
+        const enabled = intervals.length > 0;
+
+        const card = document.createElement('div');
+        card.className = 'schedule-day-card';
+        card.dataset.day = key;
+
+        card.innerHTML =
+            '<div class="schedule-day-header">' +
+                '<label class="schedule-checkbox-label">' +
+                    '<input type="checkbox" class="day-toggle" ' + (enabled ? 'checked' : '') + '>' +
+                    '<span class="schedule-day-name">' + label + '</span>' +
+                '</label>' +
+                '<button type="button" class="interval-add" title="Добавить интервал">' +
+                    '<i class="fas fa-plus"></i> интервал</button>' +
+            '</div>' +
+            '<div class="intervals-list"></div>';
+
+        const list = card.querySelector('.intervals-list');
+        const toggle = card.querySelector('.day-toggle');
+        const addBtn = card.querySelector('.interval-add');
+
+        function refreshState() {
+            const on = toggle.checked;
+            card.classList.toggle('day-on', on);
+            addBtn.style.display = on ? '' : 'none';
+            list.style.display = on ? '' : 'none';
         }
-        
-        // Инициализация при загрузке страницы
-        updateTimeInputsState();
-        
-        // Обработчик изменения чекбокса
-        checkbox.addEventListener('change', updateTimeInputsState);
-    });
+
+        (enabled ? intervals : []).forEach(function (itv) {
+            list.appendChild(makeIntervalRow(itv[0], itv[1]));
+        });
+
+        toggle.addEventListener('change', function () {
+            if (toggle.checked && list.children.length === 0) {
+                list.appendChild(makeIntervalRow('09:00', '12:00'));
+            }
+            refreshState();
+            syncHidden();
+        });
+
+        addBtn.addEventListener('click', function () {
+            list.appendChild(makeIntervalRow('', ''));
+            syncHidden();
+        });
+
+        refreshState();
+        return card;
+    }
+
+    function syncHidden() {
+        const result = {};
+        container.querySelectorAll('.schedule-day-card').forEach(function (card) {
+            const toggle = card.querySelector('.day-toggle');
+            if (!toggle.checked) return;
+            const rows = [];
+            card.querySelectorAll('.interval-row').forEach(function (row) {
+                const f = row.querySelector('.interval-from').value;
+                const t = row.querySelector('.interval-to').value;
+                if (f && t) rows.push([f, t]);
+            });
+            if (rows.length) result[card.dataset.day] = rows;
+        });
+        hidden.value = JSON.stringify(result);
+    }
+
+    DAYS.forEach(function (d) { container.appendChild(buildDayCard(d[0], d[1])); });
+    syncHidden();
+
+    // Гарантируем актуальное значение перед отправкой формы
+    if (form) form.addEventListener('submit', syncHidden);
 });
 </script>
 
@@ -315,6 +245,14 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 .schedule-day-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 0;
+}
+
+.schedule-day-card.day-on .schedule-day-header {
     margin-bottom: 12px;
 }
 
@@ -339,19 +277,51 @@ document.addEventListener('DOMContentLoaded', function() {
     user-select: none;
 }
 
-.schedule-time-inputs {
+.interval-add {
+    background: #eef2ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.interval-add:hover {
+    background: #e0e7ff;
+}
+
+.intervals-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-left: 30px;
+}
+
+.interval-row {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding-left: 30px;
-    opacity: 0.4;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
+    flex-wrap: wrap;
 }
 
-.schedule-time-inputs.active {
-    opacity: 1;
-    pointer-events: all;
+.interval-remove {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.interval-remove:hover {
+    background: #fee2e2;
 }
 
 .time-input-group {

@@ -52,6 +52,20 @@
                 <p class="form-description">{{ step_description }}</p>
             </div>
 
+            <!-- Draft restore notice: фото и пароль не сохраняются в черновике (безопасность) -->
+            {% if has_draft and wizard.steps.current == 'basic_profile' %}
+            <div class="draft-notice">
+                <i class="fas fa-circle-info"></i>
+                <span>Мы восстановили ваш черновик. <strong>Фото профиля</strong> в целях безопасности не сохраняется — при желании загрузите его заново.</span>
+            </div>
+            {% endif %}
+            {% if has_draft and wizard.steps.current == 'account_security' %}
+            <div class="draft-notice">
+                <i class="fas fa-circle-info"></i>
+                <span>В целях безопасности <strong>пароль</strong> не сохраняется в черновике — введите его заново.</span>
+            </div>
+            {% endif %}
+
             <!-- Messages -->
             {% if messages %}
             <div class="messages-container">

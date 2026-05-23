@@ -1859,6 +1859,10 @@
                     var data = JSON.parse(e.data);
                 } catch(err) { return; }
 
+                // Прокидываем любое WS-событие в DOM, чтобы страницы (напр. «Мои уроки»)
+                // могли реагировать без отдельного сокета.
+                try { window.dispatchEvent(new CustomEvent('ustoz:ws', { detail: data })); } catch(_) {}
+
                 if (data.type === 'badge_update') {
                     applyBadges(data.payload);
                 }

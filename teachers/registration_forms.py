@@ -220,7 +220,7 @@ class Step2AccountSecurityForm(UserCreationForm):
             'placeholder': 'your.email@example.com',
             'autocomplete': 'email'
         }),
-        help_text='Мы отправим подтверждение на этот адрес'
+        help_text='Используется для входа и восстановления доступа к аккаунту'
     )
     
     class Meta:
@@ -345,11 +345,11 @@ class Step3EducationExperienceForm(forms.Form):
             'rows': 6,
             'maxlength': '1000'
         }),
-        help_text='От 100 до 1000 символов. Это первое, что увидят ученики.',
-        min_length=100,
+        help_text='От 40 до 1000 символов. Это первое, что увидят ученики.',
+        min_length=40,
         max_length=1000
     )
-    
+
     def clean_bio(self):
         """✅ Валидация bio с проверкой длины"""
         bio = self.cleaned_data.get('bio')
@@ -357,10 +357,10 @@ class Step3EducationExperienceForm(forms.Form):
             try:
                 bio = bio.strip()
                 bio_len = len(bio)
-                
-                if bio_len < 100:
+
+                if bio_len < 40:
                     raise ValidationError(
-                        f'Описание слишком короткое. Минимум 100 символов (сейчас: {bio_len})'
+                        f'Описание слишком короткое. Минимум 40 символов (сейчас: {bio_len})'
                     )
                 if bio_len > 1000:
                     raise ValidationError(
@@ -433,47 +433,16 @@ class Step4AvailabilityFormatForm(forms.Form):
         help_text='Дополнительный способ связи'
     )
     
-    # Расписание для каждого дня недели (отдельные поля)
-    # Понедельник
-    monday_enabled = forms.BooleanField(required=False, label='Понедельник')
-    monday_from = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}))
-    monday_to = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}))
-    
-    # Вторник
-    tuesday_enabled = forms.BooleanField(required=False, label='Вторник')
-    tuesday_from = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}))
-    tuesday_to = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}))
-    
-    # Среда
-    wednesday_enabled = forms.BooleanField(required=False, label='Среда')
-    wednesday_from = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}))
-    wednesday_to = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}))
-    
-    # Четверг
-    thursday_enabled = forms.BooleanField(required=False, label='Четверг')
-    thursday_from = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}))
-    thursday_to = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}))
-    
-    # Пятница
-    friday_enabled = forms.BooleanField(required=False, label='Пятница')
-    friday_from = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}))
-    friday_to = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}))
-    
-    # Суббота
-    saturday_enabled = forms.BooleanField(required=False, label='Суббота')
-    saturday_from = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}))
-    saturday_to = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}))
-    
-    # Воскресенье
-    sunday_enabled = forms.BooleanField(required=False, label='Воскресенье')
-    sunday_from = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}))
-    sunday_to = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}))
-    
-    # Скрытое поле для хранения всех дней (для обратной совместимости с моделью)
+    # Расписание хранится в одном скрытом JSON-поле, которым управляет JS на шаге.
+    # Формат: {"monday": [["09:00","12:00"], ["15:00","18:00"]], "tuesday": [...], ...}
+    # Это позволяет задавать НЕСКОЛЬКО интервалов в день.
+    schedule_data = forms.CharField(required=False, widget=forms.HiddenInput())
+
+    # Скрытые поля для обратной совместимости с моделью (заполняются в clean()).
     available_weekdays = forms.CharField(required=False, widget=forms.HiddenInput())
     available_from = forms.TimeField(required=False, widget=forms.HiddenInput())
     available_to = forms.TimeField(required=False, widget=forms.HiddenInput())
-    
+
     def clean_telegram(self):
         """✅ Валидация Telegram с проверкой формата"""
         telegram = self.cleaned_data.get('telegram')
@@ -494,59 +463,82 @@ class Step4AvailabilityFormatForm(forms.Form):
                 raise ValidationError('Ошибка при проверке Telegram')
         return telegram
     
+    DAY_NUMBER = {
+        'monday': '1', 'tuesday': '2', 'wednesday': '3', 'thursday': '4',
+        'friday': '5', 'saturday': '6', 'sunday': '7',
+    }
+
+    @staticmethod
+    def _parse_hhmm(value):
+        """Парсит 'HH:MM' → (часы, минуты в сутках). Возвращает int минут или None."""
+        if not isinstance(value, str):
+            return None
+        m = re.match(r'^([01]?\d|2[0-3]):([0-5]\d)$', value.strip())
+        if not m:
+            return None
+        return int(m.group(1)) * 60 + int(m.group(2))
+
     def clean(self):
-        """✅ Валидация расписания с проверкой дней и времени"""
+        """Валидация расписания (мультиинтервалы) из JSON-поля schedule_data."""
         try:
             cleaned_data = super().clean()
-            
-            # ✅ Проверяем, что выбран хотя бы один день
-            days = list(self.DAYS_OF_WEEK.keys())
-            has_any_day = False
-            
-            for day in days:
-                enabled = cleaned_data.get(f'{day}_enabled')
-                time_from = cleaned_data.get(f'{day}_from')
-                time_to = cleaned_data.get(f'{day}_to')
-                
-                if enabled:
-                    has_any_day = True
-                    day_name_ru = self.DAYS_OF_WEEK[day]
-                    
-                    # ✅ Проверяем, что если день выбран, то указаны оба времени
-                    if not time_from or not time_to:
-                        raise ValidationError(
-                            f'{day_name_ru}: укажите время начала и окончания'
-                        )
-                    
-                    # ✅ Проверяем, что время начала раньше времени окончания
-                    if time_from >= time_to:
-                        raise ValidationError(
-                            f'{day_name_ru}: время начала должно быть раньше времени окончания'
-                        )
-            
-            if not has_any_day:
-                raise ValidationError('Выберите хотя бы один рабочий день')
-            
-            # ✅ Формируем данные для обратной совместимости
+            import json
+
+            raw = (cleaned_data.get('schedule_data') or '').strip()
+            try:
+                parsed = json.loads(raw) if raw else {}
+            except (ValueError, TypeError):
+                raise ValidationError('Не удалось прочитать расписание. Попробуйте ещё раз.')
+
+            if not isinstance(parsed, dict):
+                raise ValidationError('Некорректный формат расписания.')
+
+            weekly_schedule = {}
             enabled_days = []
-            day_mapping = {
-                'monday': '1',
-                'tuesday': '2',
-                'wednesday': '3',
-                'thursday': '4',
-                'friday': '5',
-                'saturday': '6',
-                'sunday': '7'
-            }
-            
-            for day in days:
-                if cleaned_data.get(f'{day}_enabled'):
-                    enabled_days.append(day_mapping[day])
-            
+
+            for day, day_name_ru in self.DAYS_OF_WEEK.items():
+                intervals = parsed.get(day) or []
+                if not isinstance(intervals, list) or not intervals:
+                    continue
+
+                normalized = []  # [(start_min, end_min, from_str, to_str), ...]
+                for itv in intervals:
+                    # Поддерживаем форматы ["09:00","12:00"] и {"from":..,"to":..}
+                    if isinstance(itv, dict):
+                        f_str, t_str = itv.get('from'), itv.get('to')
+                    elif isinstance(itv, (list, tuple)) and len(itv) == 2:
+                        f_str, t_str = itv[0], itv[1]
+                    else:
+                        raise ValidationError(f'{day_name_ru}: некорректный интервал.')
+
+                    f_min = self._parse_hhmm(f_str)
+                    t_min = self._parse_hhmm(t_str)
+                    if f_min is None or t_min is None:
+                        raise ValidationError(f'{day_name_ru}: укажите корректное время (ЧЧ:ММ).')
+                    if f_min >= t_min:
+                        raise ValidationError(
+                            f'{day_name_ru}: время начала должно быть раньше окончания ({f_str}–{t_str}).'
+                        )
+                    normalized.append((f_min, t_min, f_str.strip(), t_str.strip()))
+
+                # Проверка пересечений интервалов внутри дня
+                normalized.sort(key=lambda x: x[0])
+                for prev, curr in zip(normalized, normalized[1:]):
+                    if curr[0] < prev[1]:
+                        raise ValidationError(
+                            f'{day_name_ru}: интервалы пересекаются ({prev[2]}–{prev[3]} и {curr[2]}–{curr[3]}).'
+                        )
+
+                weekly_schedule[day] = [{'from': f, 'to': t} for _s, _e, f, t in normalized]
+                enabled_days.append(self.DAY_NUMBER[day])
+
+            if not weekly_schedule:
+                raise ValidationError('Добавьте хотя бы один рабочий интервал.')
+
+            cleaned_data['weekly_schedule'] = weekly_schedule
             cleaned_data['available_weekdays'] = enabled_days
-            
             return cleaned_data
-            
+
         except ValidationError:
             raise
         except Exception as e:
@@ -661,9 +653,15 @@ class Step5SubjectsPricingForm(forms.Form):
 
 class Step6CertificatesForm(forms.ModelForm):
     """
-    STEP 5: Certificates (Optional)
-    Upload certificates/diplomas
+    STEP 6: Certificates + Video (both optional, объединённый шаг)
+    Сертификаты/дипломы + видео-визитка (загружается на S3 через presigned URL).
     """
+    video_url = forms.URLField(
+        max_length=500,
+        required=False,
+        widget=forms.HiddenInput(attrs={'id': 'id_video_url'}),
+    )
+
     name = forms.CharField(
         max_length=200,
         required=False,
@@ -760,18 +758,5 @@ class Step6CertificatesForm(forms.ModelForm):
             except Exception as e:
                 logger.error(f"Certificate file validation error: {e}", exc_info=True)
                 raise ValidationError('Ошибка при проверке файла сертификата')
-        
+
         return file
-
-
-class Step7VideoForm(forms.Form):
-    """
-    STEP 7: Video Business Card (Optional)
-    Video is uploaded directly to S3/R2 via presigned URL from the frontend.
-    This form only captures the resulting public URL.
-    """
-    video_url = forms.URLField(
-        max_length=500,
-        required=False,
-        widget=forms.HiddenInput(attrs={'id': 'id_video_url'}),
-    )

@@ -229,7 +229,45 @@ def _send_reminder_for_booking(booking, kind):
             except Exception as e:
                 logger.warning(f'reminder in-app failed for {recipient_user.pk}: {e}')
 
+            # Telegram (если пользователь привязал аккаунт и не отключил уведомления)
+            try:
+                if _send_telegram_reminder(recipient_user, subject_line, ctx):
+                    channels_used.append(f'telegram:{role}')
+            except Exception as e:
+                logger.warning(f'reminder telegram failed for {recipient_user.pk}: {e}')
+
     return channels_used
+
+
+def _send_telegram_reminder(recipient_user, subject_line, ctx) -> bool:
+    """Шлёт напоминание в Telegram привязанному пользователю. Возвращает True при успехе.
+
+    Не зависит от настройки SMTP — нужен только запущенный бот и привязка.
+    """
+    from html import escape
+    from .models import TelegramUser
+    from .admin_telegram_service import admin_telegram_service
+
+    tg = TelegramUser.objects.filter(
+        user=recipient_user, started_bot=True, notifications_enabled=True,
+    ).first()
+    if not tg:
+        return False
+
+    lines = [f'⏰ <b>{escape(subject_line)}</b>', '']
+    if ctx.get('subject_name'):
+        lines.append(f'📚 {escape(ctx["subject_name"])}')
+    lines.append(f'👤 {escape(ctx["teacher_name"])} ↔ {escape(ctx["student_name"])}')
+    lines.append(f'🕒 {escape(ctx["start_at"])} ({ctx["duration_minutes"]} мин)')
+    if ctx.get('meeting_url'):
+        lines.append(f'🎥 {escape(ctx["meeting_url"])}')
+    lines.append('')
+    lines.append(f'{escape(ctx["site_url"])}{ctx["bookings_url"]}')
+    text = '\n'.join(lines)
+
+    return admin_telegram_service.send_message_simple(
+        telegram_id=tg.telegram_id, text=text, parse_mode='HTML',
+    )
 
 
 @shared_task(name='teachers.mark_completed_lessons')

@@ -38,8 +38,9 @@ from .booking_views import (
     public_teacher_slots,
     booking_create_api, booking_cancel_api,
     booking_confirm_api, booking_reject_api,
-    booking_set_meeting_url_api,
+    booking_set_meeting_url_api, booking_reschedule_api,
     my_bookings_api, my_bookings_page, book_teacher_page,
+    lesson_room, leave_review, booking_ical,
 )
 
 urlpatterns = [
@@ -143,8 +144,12 @@ urlpatterns = [
     path('api/bookings/<uuid:booking_id>/reject/', booking_reject_api, name='booking_reject_api'),
     path('api/bookings/<uuid:booking_id>/cancel/', booking_cancel_api, name='booking_cancel_api'),
     path('api/bookings/<uuid:booking_id>/meeting-url/', booking_set_meeting_url_api, name='booking_set_meeting_url_api'),
+    path('api/bookings/<uuid:booking_id>/reschedule/', booking_reschedule_api, name='booking_reschedule_api'),
     path('api/bookings/my/', my_bookings_api, name='my_bookings_api'),
     path('my/bookings/', my_bookings_page, name='my_bookings_page'),
+    path('bookings/<uuid:booking_id>/calendar.ics', booking_ical, name='booking_ical'),
+    path('lesson/<uuid:booking_id>/', lesson_room, name='lesson_room'),
+    path('review/<uuid:booking_id>/', leave_review, name='leave_review'),
 
     # Google OAuth2
     path('auth/google/', google_login_view, name='google_login'),

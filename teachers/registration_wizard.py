@@ -6,6 +6,8 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login
 from django.contrib import messages
 from django.conf import settings
+from django.db import transaction
+from django.urls import reverse
 from django.core.files.storage import FileSystemStorage
 from formtools.wizard.views import SessionWizardView
 import logging
@@ -20,9 +22,8 @@ from .registration_forms import (
     Step4AvailabilityFormatForm,
     Step5SubjectsPricingForm,
     Step6CertificatesForm,
-    Step7VideoForm,
 )
-from .models import User, TeacherProfile, TeacherSubject, Certificate, WizardDraft
+from .models import User, TeacherProfile, TeacherSubject, Certificate, WizardDraft, Notification
 
 
 # Поля, которые НЕ имеет смысла сохранять в черновик: пароли (нельзя в plaintext)
@@ -62,7 +63,7 @@ class TeacherRegistrationWizard(SessionWizardView):
     6. Certificates (optional)
     """
     
-    # Define form list
+    # Define form list (6 шагов: сертификаты и видео объединены в один)
     form_list = [
         ('basic_profile', Step1BasicProfileForm),
         ('account_security', Step2AccountSecurityForm),
@@ -70,7 +71,6 @@ class TeacherRegistrationWizard(SessionWizardView):
         ('availability', Step4AvailabilityFormatForm),
         ('subjects', Step5SubjectsPricingForm),
         ('certificates', Step6CertificatesForm),
-        ('video', Step7VideoForm),
     ]
 
     # Templates for each step
@@ -81,7 +81,6 @@ class TeacherRegistrationWizard(SessionWizardView):
         'availability': 'registration/step4_availability.html',
         'subjects': 'registration/step5_subjects.html',
         'certificates': 'registration/step6_certificates.html',
-        'video': 'registration/step7_video.html',
     }
     
     # File storage for uploaded files during the wizard
@@ -242,8 +241,7 @@ class TeacherRegistrationWizard(SessionWizardView):
             'education': 'Образование и опыт',
             'availability': 'Доступность и формат',
             'subjects': 'Предметы и цены',
-            'certificates': 'Сертификаты',
-            'video': 'Видео-визитка',
+            'certificates': 'Сертификаты и видео',
         }
 
         step_descriptions = {
@@ -252,8 +250,7 @@ class TeacherRegistrationWizard(SessionWizardView):
             'education': 'Укажите ваше образование и опыт преподавания.',
             'availability': 'Когда и как ученики могут с вами связаться?',
             'subjects': 'Какие предметы вы преподаете и по какой цене?',
-            'certificates': 'Загрузите ваши сертификаты и дипломы (желательно).',
-            'video': 'Загрузите короткое видео о себе (необязательно).',
+            'certificates': 'Загрузите сертификаты и короткое видео о себе (всё необязательно).',
         }
         
         session_key = self.request.session.session_key
@@ -288,24 +285,30 @@ class TeacherRegistrationWizard(SessionWizardView):
             form_data.update(form.cleaned_data)
         
         try:
-            # Create User
-            user = self._create_user(form_data)
-            
-            # Create Teacher Profile
-            teacher_profile = self._create_teacher_profile(user, form_data)
-            
-            # Add Subjects
-            self._add_subjects(teacher_profile, form_data)
-            
-            # Add Certificates (if any were uploaded during the wizard)
-            self._add_certificates(teacher_profile, form_data)
+            # ВСЁ создание — в одной транзакции. Если упадёт любой шаг после
+            # создания User, откатывается всё, и осиротевших аккаунтов не остаётся.
+            with transaction.atomic():
+                # Create User
+                user = self._create_user(form_data)
 
-            # Save video URL (if uploaded via presigned URL)
-            video_url = form_data.get('video_url', '').strip()
-            if video_url and video_url.startswith(settings.S3_PUBLIC_URL.rstrip('/')):
-                teacher_profile.video_url = video_url
-                teacher_profile.save(update_fields=['video_url'])
-            
+                # Create Teacher Profile
+                teacher_profile = self._create_teacher_profile(user, form_data)
+
+                # Add Subjects
+                self._add_subjects(teacher_profile, form_data)
+
+                # Add Certificates (if any were uploaded during the wizard)
+                self._add_certificates(teacher_profile, form_data)
+
+                # Save video URL (if uploaded via presigned URL)
+                video_url = form_data.get('video_url', '').strip()
+                if video_url and video_url.startswith(settings.S3_PUBLIC_URL.rstrip('/')):
+                    teacher_profile.video_url = video_url
+                    teacher_profile.save(update_fields=['video_url'])
+
+            # Уведомляем модераторов о новой заявке (вне транзакции — не критично)
+            self._notify_moderators(teacher_profile)
+
             # Log the user in
             login(self.request, user, backend='django.contrib.auth.backends.ModelBackend')
 
@@ -367,38 +370,32 @@ class TeacherRegistrationWizard(SessionWizardView):
         # Convert teaching languages list to comma-separated string
         teaching_languages = ','.join(form_data['teaching_languages'])
         
-        # Convert weekdays list to comma-separated string (для обратной совместимости)
-        available_weekdays = ','.join(form_data['available_weekdays'])
-        
-        # Построить индивидуальное расписание из данных формы
-        weekly_schedule = {}
+        # Новый формат расписания (мультиинтервалы) приходит уже собранным в clean()
+        # формы шага 4 как form_data['weekly_schedule'] = {"monday": [{"from","to"},...], ...}
+        weekly_schedule = form_data.get('weekly_schedule') or {}
+
+        # available_weekdays — список номеров дней ('1'..'7'), собран в clean()
+        available_weekdays = ','.join(form_data.get('available_weekdays') or [])
+
         days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-        
+
+        # available_from / available_to — берём из самого раннего/позднего интервала
+        # (для обратной совместимости со старыми полями модели).
+        from datetime import time as _time
+        first_available_from = None
+        first_available_to = None
         for day in days:
-            if form_data.get(f'{day}_enabled'):
-                time_from = form_data.get(f'{day}_from')
-                time_to = form_data.get(f'{day}_to')
-                
-                if time_from and time_to:
-                    weekly_schedule[day] = {
-                        'from': time_from.strftime('%H:%M'),
-                        'to': time_to.strftime('%H:%M')
-                    }
-        
-        # Определить общие available_from и available_to (берем из первого дня или значения по умолчанию)
-        first_available_from = form_data.get('available_from')
-        first_available_to = form_data.get('available_to')
-        
-        # Если не установлены, ищем первый день с временем
-        if not first_available_from or not first_available_to:
-            for day in days:
-                if form_data.get(f'{day}_enabled'):
-                    time_from = form_data.get(f'{day}_from')
-                    time_to = form_data.get(f'{day}_to')
-                    if time_from and time_to:
-                        first_available_from = time_from
-                        first_available_to = time_to
-                        break
+            intervals = weekly_schedule.get(day) or []
+            for itv in intervals:
+                try:
+                    f = _time.fromisoformat(itv['from'])
+                    t = _time.fromisoformat(itv['to'])
+                except (ValueError, KeyError, TypeError):
+                    continue
+                if first_available_from is None or f < first_available_from:
+                    first_available_from = f
+                if first_available_to is None or t > first_available_to:
+                    first_available_to = t
         
         teacher_profile = TeacherProfile.objects.create(
             user=user,
@@ -460,6 +457,32 @@ class TeacherRegistrationWizard(SessionWizardView):
                 except Exception as e:
                     # Логируем ошибку, но не прерываем регистрацию
                     logger.error(f"Error adding certificate: {e}", exc_info=True)
+
+    def _notify_moderators(self, teacher_profile):
+        """Создаёт уведомление для администраторов о новой заявке на модерацию."""
+        try:
+            user = teacher_profile.user
+            teacher_name = user.get_full_name() or user.username
+            try:
+                action_url = self.request.build_absolute_uri(reverse('admin_dashboard'))
+            except Exception:
+                action_url = ''
+            Notification.objects.create(
+                title="🆕 Новая заявка учителя на модерацию",
+                short_text=f"{teacher_name} зарегистрировался и ожидает проверки профиля.",
+                full_text=(
+                    f"Новый преподаватель {teacher_name} (@{user.username}) "
+                    f"завершил регистрацию и ожидает модерации.\n\n"
+                    f"Проверьте профиль в панели администратора и одобрите либо отклоните заявку."
+                ),
+                target='admins',
+                is_active=True,
+                priority=5,
+                action_url=action_url or None,
+            )
+            logger.info(f"Moderator notification created for new teacher: {user.username}")
+        except Exception as e:
+            logger.error(f"Failed to create moderator notification: {e}", exc_info=True)
 
 
 def teacher_register_complete(request):

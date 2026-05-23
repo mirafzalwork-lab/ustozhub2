@@ -2,6 +2,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
+from django.db.models.functions import Lower
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.urls import reverse
 from django.utils import timezone
@@ -58,6 +59,17 @@ class User(AbstractUser):
     is_verified = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta(AbstractUser.Meta):
+        constraints = [
+            # Case-insensitive уникальность email для НЕпустых значений.
+            # Пустой email ('') разрешён множеству пользователей — он исключён условием.
+            models.UniqueConstraint(
+                Lower('email'),
+                condition=~Q(email=''),
+                name='uniq_user_email_ci',
+            ),
+        ]
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -255,7 +267,8 @@ class TeacherProfile(models.Model):
                                         help_text="Дни недели через запятую (1-7)")
     
     # Индивидуальное расписание для каждого дня (JSON)
-    # Формат: {"monday": {"from": "09:00", "to": "18:00"}, "tuesday": {...}, ...}
+    # Новый формат (мультиинтервалы): {"monday": [{"from": "09:00", "to": "12:00"}, {"from": "15:00", "to": "18:00"}], ...}
+    # Старый формат (один интервал, поддерживается на чтение): {"monday": {"from": "09:00", "to": "18:00"}, ...}
     weekly_schedule = models.JSONField(
         null=True,
         blank=True,
@@ -552,6 +565,55 @@ class TeacherProfile(models.Model):
     def get_available_weekdays_display(self):
         days = self.available_weekdays.split(',')
         return ', '.join([WEEKDAYS_MAP.get(day.strip(), day) for day in days])
+
+    # Порядок дней недели для отображения и нормализации расписания
+    WEEKDAYS_ORDERED = [
+        ('monday', 'Понедельник'), ('tuesday', 'Вторник'), ('wednesday', 'Среда'),
+        ('thursday', 'Четверг'), ('friday', 'Пятница'), ('saturday', 'Суббота'),
+        ('sunday', 'Воскресенье'),
+    ]
+
+    def get_schedule_intervals(self):
+        """Нормализует weekly_schedule в {day_key: [(from, to), ...]}.
+
+        Поддерживает оба формата хранения:
+          новый: {"monday": [{"from": "09:00", "to": "12:00"}, ...]}
+          старый: {"monday": {"from": "09:00", "to": "18:00"}}
+        """
+        raw = self.weekly_schedule or {}
+        out = {}
+        for key, _label in self.WEEKDAYS_ORDERED:
+            day = raw.get(key)
+            intervals = []
+            if isinstance(day, dict):
+                if day.get('from') and day.get('to'):
+                    intervals.append((day['from'], day['to']))
+            elif isinstance(day, list):
+                for itv in day:
+                    if isinstance(itv, dict) and itv.get('from') and itv.get('to'):
+                        intervals.append((itv['from'], itv['to']))
+            out[key] = intervals
+        return out
+
+    WEEKDAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+
+    def get_schedule_display(self):
+        """[(day_label, [(from, to), ...]), ...] по всем 7 дням — для шаблонов.
+        Пустой список интервалов = выходной день."""
+        intervals = self.get_schedule_intervals()
+        return [(label, intervals[key]) for key, label in self.WEEKDAYS_ORDERED]
+
+    def get_schedule_display_short(self):
+        """То же, что get_schedule_display, но с короткими именами дней (Пн, Вт, ...)."""
+        intervals = self.get_schedule_intervals()
+        return [
+            (self.WEEKDAYS_SHORT[i], intervals[key])
+            for i, (key, _label) in enumerate(self.WEEKDAYS_ORDERED)
+        ]
+
+    def has_schedule(self):
+        """True, если задан хотя бы один рабочий интервал."""
+        return any(self.get_schedule_intervals().values())
 
     def get_absolute_url(self):
         return reverse('teacher_detail', kwargs={'pk': self.pk})
@@ -892,20 +954,29 @@ class Review(models.Model):
     teacher = models.ForeignKey(TeacherProfile, on_delete=models.CASCADE, related_name='reviews')
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='given_reviews')
     subject = models.ForeignKey(Subject, on_delete=models.SET_NULL, null=True)
-    
+
+    # Бронь, по итогам которой оставлен отзыв (если отзыв «проверенный»).
+    # OneToOne: одна завершённая бронь → максимум один отзыв.
+    booking = models.OneToOneField(
+        'Booking', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='review',
+        help_text="Урок, после которого оставлен отзыв",
+    )
+
     rating = models.PositiveIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(5)],
         help_text="Оценка от 1 до 5"
     )
     comment = models.TextField(max_length=1000, blank=True)
-    
+
     # Детальные оценки
     knowledge_rating = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     communication_rating = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     punctuality_rating = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
-    
-    is_verified = models.BooleanField(default=False, help_text="Проверенный отзыв")
+
+    is_verified = models.BooleanField(default=False, help_text="Проверенный отзыв (был реальный урок)")
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ['teacher', 'student', 'subject']
@@ -1493,6 +1564,18 @@ class Notification(models.Model):
         help_text='Если указан, уведомление будет видно только этому пользователю'
     )
 
+    # Связанное бронирование — позволяет действовать (подтвердить/отклонить)
+    # прямо со страницы уведомления.
+    booking = models.ForeignKey(
+        'Booking',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='notifications',
+        verbose_name='Связанное бронирование',
+        help_text='Если уведомление о брони — позволяет подтвердить/отклонить прямо из уведомления'
+    )
+
     class Meta:
         verbose_name = 'Уведомление'
         verbose_name_plural = 'Уведомления'
@@ -1822,7 +1905,7 @@ class TimeSlot(models.Model):
         db_index=True,
         verbose_name='Статус',
     )
-    # Время истечения 15-мин hold. Заполнено только когда status='held'.
+    # Дедлайн удержания слота (до 1ч до урока). Заполнено когда status='held'.
     hold_expires_at = models.DateTimeField(null=True, blank=True, db_index=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -1881,7 +1964,7 @@ class Booking(models.Model):
         ('cancelled_by_student', 'Отменено учеником'),
         ('cancelled_by_teacher', 'Отменено учителем'),
         ('rescheduled', 'Перенесено'),
-        ('expired', 'Hold истёк (не подтверждено в 15 мин)'),
+        ('expired', 'Заявка истекла (не подтверждена до начала урока)'),
         ('no_show_student', 'Ученик не пришёл'),
         ('no_show_teacher', 'Учитель не пришёл'),
     ]
@@ -1919,7 +2002,7 @@ class Booking(models.Model):
         db_index=True,
     )
 
-    # 15-минутный hold expires (только пока status='pending')
+    # Дедлайн подтверждения (до 1ч до урока). Заполнено только пока status='pending'.
     expires_at = models.DateTimeField(null=True, blank=True, db_index=True)
 
     student_message = models.TextField(
@@ -1972,13 +2055,33 @@ class Booking(models.Model):
 
     # ---------- Lifecycle методы ----------
 
+    # За сколько часов до начала урока истекает окно подтверждения.
+    CONFIRM_LEAD_HOURS = 1
+
+    @classmethod
+    def compute_hold_expiry(cls, slot, now=None):
+        """Дедлайн подтверждения брони: за CONFIRM_LEAD_HOURS до начала урока.
+
+        Если до урока осталось меньше часа — даём учителю подтвердить
+        вплоть до самого начала (иначе заявка истекла бы сразу).
+        """
+        now = now or timezone.now()
+        deadline = slot.start_at - timedelta(hours=cls.CONFIRM_LEAD_HOURS)
+        if deadline <= now:
+            deadline = slot.start_at
+        return deadline
+
     @classmethod
     def create_hold(cls, slot_id, student, subject=None, message='',
-                    is_trial=False, hold_minutes=15):
+                    is_trial=False, hold_minutes=None):
         """
         Атомарно: помечаем slot 'held' и создаём Booking 'pending'.
         Если slot уже занят — SlotUnavailable.
         Race-safe: select_for_update + UNIQUE на slot.
+
+        Окно подтверждения: по умолчанию до 1 часа до начала урока
+        (см. compute_hold_expiry). Параметр hold_minutes оставлен для
+        явного фиксированного hold (используется в тестах).
         """
         from django.db import transaction
         with transaction.atomic():
@@ -1987,7 +2090,10 @@ class Booking(models.Model):
                 raise SlotUnavailable(f'Slot {slot_id} is {slot.status}, not free')
             if slot.is_in_past:
                 raise SlotUnavailable(f'Slot {slot_id} is in the past')
-            expires = timezone.now() + timedelta(minutes=hold_minutes)
+            if hold_minutes is not None:
+                expires = timezone.now() + timedelta(minutes=hold_minutes)
+            else:
+                expires = cls.compute_hold_expiry(slot)
             slot.status = 'held'
             slot.hold_expires_at = expires
             slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
@@ -2002,8 +2108,34 @@ class Booking(models.Model):
             )
             return booking
 
+    def jitsi_room_name(self):
+        """Имя видео-комнаты Jitsi, уникальное для этой брони (UUID → приватно)."""
+        from django.conf import settings
+        prefix = getattr(settings, 'JITSI_ROOM_PREFIX', 'UstozHub')
+        return f'{prefix}-{self.id}'
+
+    def build_meeting_url(self):
+        """Авто-ссылка на видео-комнату Jitsi, уникальная для этой брони.
+
+        Учитель может заменить на свою ссылку (Zoom/Meet) — тогда не трогаем.
+        """
+        from django.conf import settings
+        base = getattr(settings, 'JITSI_BASE_URL', 'https://meet.jit.si').rstrip('/')
+        return f'{base}/{self.jitsi_room_name()}'
+
+    def is_jitsi_meeting(self):
+        """True, если meeting_url ведёт на наш Jitsi (встраиваем в комнату).
+        Кастомные внешние ссылки (Zoom и т.п.) открываем напрямую."""
+        from django.conf import settings
+        base = (getattr(settings, 'JITSI_BASE_URL', '') or '').rstrip('/')
+        return bool(self.meeting_url) and bool(base) and self.meeting_url.startswith(base)
+
     def confirm(self, teacher_reply=''):
-        """Учитель подтверждает: status→confirmed, slot→booked, hold снимается."""
+        """Учитель подтверждает: status→confirmed, slot→booked, hold снимается.
+
+        Если ссылка на встречу не задана — автоматически создаём
+        видео-комнату Jitsi, чтобы кнопка «Войти в урок» всегда работала.
+        """
         from django.db import transaction
         with transaction.atomic():
             if self.status not in ('pending',):
@@ -2011,7 +2143,9 @@ class Booking(models.Model):
             self.status = 'confirmed'
             self.expires_at = None
             self.teacher_reply = (teacher_reply or '')[:1000]
-            self.save(update_fields=['status', 'expires_at', 'teacher_reply', 'updated_at'])
+            if not (self.meeting_url or '').strip():
+                self.meeting_url = self.build_meeting_url()
+            self.save(update_fields=['status', 'expires_at', 'teacher_reply', 'meeting_url', 'updated_at'])
             self.slot.status = 'booked'
             self.slot.hold_expires_at = None
             self.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
@@ -2043,6 +2177,43 @@ class Booking(models.Model):
             self.slot.hold_expires_at = None
             self.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
 
+    def reschedule_by_student(self, new_slot_id):
+        """Ученик переносит активную бронь на другой свободный слот того же учителя.
+
+        Старый слот освобождается, новый берётся в hold, бронь возвращается в
+        статус pending (учитель должен заново подтвердить новое время).
+        Race-safe: select_for_update на обоих слотах.
+        """
+        from django.db import transaction
+        with transaction.atomic():
+            if self.status not in ('pending', 'confirmed'):
+                raise ValueError(f'Нельзя перенести бронь в статусе {self.get_status_display()}')
+            if str(new_slot_id) == str(self.slot_id):
+                raise ValueError('Это тот же самый слот')
+
+            new_slot = TimeSlot.objects.select_for_update().get(pk=new_slot_id)
+            if new_slot.teacher_id != self.slot.teacher_id:
+                raise ValueError('Новый слот принадлежит другому учителю')
+            if new_slot.status != 'free':
+                raise SlotUnavailable(f'Слот {new_slot_id} уже занят')
+            if new_slot.is_in_past:
+                raise SlotUnavailable(f'Слот {new_slot_id} в прошлом')
+
+            old_slot = TimeSlot.objects.select_for_update().get(pk=self.slot_id)
+            old_slot.status = 'free'
+            old_slot.hold_expires_at = None
+            old_slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+
+            expires = self.compute_hold_expiry(new_slot)
+            new_slot.status = 'held'
+            new_slot.hold_expires_at = expires
+            new_slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+
+            self.slot = new_slot
+            self.status = 'pending'
+            self.expires_at = expires
+            self.save(update_fields=['slot', 'status', 'expires_at', 'updated_at'])
+
     def expire(self):
         """Hold протух (вызывается Celery задачей). slot снова free."""
         from django.db import transaction
@@ -2058,12 +2229,53 @@ class Booking(models.Model):
                 self.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
 
     def mark_completed(self):
-        """Урок прошёл (вызывается Celery после end_at)."""
+        """Урок прошёл (вызывается Celery после end_at).
+
+        После завершения просим ученика оставить отзыв (если он ещё не оставлен
+        по этой броне) — ключевой шаг для маркетплейса.
+        """
         if self.status != 'confirmed':
             return
         self.status = 'completed'
         self.ended_at = timezone.now()
         self.save(update_fields=['status', 'ended_at', 'updated_at'])
+        try:
+            self.request_review()
+        except Exception:
+            logger.warning('request_review failed for booking %s', self.pk, exc_info=True)
+
+    def request_review(self):
+        """Создаёт уведомление ученику с просьбой оценить прошедший урок.
+
+        Идемпотентно: не дублирует, если по этой броне уже есть отзыв
+        или уже отправляли запрос-уведомление.
+        """
+        from django.urls import reverse
+        # Уже оставлен отзыв по этой броне — не просим
+        if Review.objects.filter(booking=self).exists():
+            return
+        # Не дублируем запрос на один и тот же урок
+        if Notification.objects.filter(booking=self, title='Оцените урок').exists():
+            return
+        teacher_name = self.slot.teacher.user.get_full_name() or self.slot.teacher.user.username
+        try:
+            action_url = reverse('leave_review', args=[self.id])
+        except Exception:
+            action_url = ''
+        Notification.objects.create(
+            title='Оцените урок',
+            short_text=f'Как прошёл урок с {teacher_name}?',
+            full_text=(
+                f'Урок с {teacher_name} завершён. '
+                f'Пожалуйста, оцените его — это поможет другим ученикам выбрать преподавателя.'
+            ),
+            target='specific_user',
+            target_user=self.student,
+            action_url=action_url,
+            priority=5,
+            is_active=True,
+            booking=self,
+        )
 
 
 class LessonReminderSent(models.Model):

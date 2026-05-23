@@ -1168,245 +1168,42 @@
             {% trans 'Расписание по дням' %}
         </h2>
         
-        {% if teacher.weekly_schedule %}
+        {% if teacher.has_schedule %}
             <div class="schedule-grid">
-                <!-- Понедельник -->
-                {% if teacher.weekly_schedule.monday %}
-                    <div class="schedule-day-card">
-                        <div class="schedule-day-name">
-                            <i class="fas fa-sun"></i>
-                            {% trans 'Понедельник' %}
+                {% for day_label, intervals in teacher.get_schedule_display %}
+                    {% if intervals %}
+                        <div class="schedule-day-card">
+                            <div class="schedule-day-name">
+                                <i class="fas fa-sun"></i>
+                                {{ day_label }}
+                            </div>
+                            {% for from_time, to_time in intervals %}
+                            <div class="schedule-interval"{% if not forloop.first %} style="margin-top:14px;border-top:1px solid #eef2f7;padding-top:14px;"{% endif %}>
+                                <div class="schedule-time-block">
+                                    <div class="schedule-time-icon"><i class="fas fa-play"></i></div>
+                                    <div class="schedule-time-info">
+                                        <div class="schedule-time-label">{% trans 'Начало' %}</div>
+                                        <div class="schedule-time-value">{{ from_time }}</div>
+                                    </div>
+                                </div>
+                                <div class="schedule-time-block" style="margin-top: 12px;">
+                                    <div class="schedule-time-icon"><i class="fas fa-stop"></i></div>
+                                    <div class="schedule-time-info">
+                                        <div class="schedule-time-label">{% trans 'Конец' %}</div>
+                                        <div class="schedule-time-value">{{ to_time }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
-                        <div class="schedule-time-block">
-                            <div class="schedule-time-icon">
-                                <i class="fas fa-play"></i>
-                            </div>
-                            <div class="schedule-time-info">
-                                <div class="schedule-time-label">{% trans 'Начало' %}</div>
-                                <div class="schedule-time-value">{{ teacher.weekly_schedule.monday.from }}</div>
-                            </div>
+                    {% else %}
+                        <div class="schedule-day-closed">
+                            <i class="fas fa-ban"></i>
+                            <span>{{ day_label }}</span>
+                            <small>{% trans 'День не рабочий' %}</small>
                         </div>
-                        <div class="schedule-time-block" style="margin-top: 12px;">
-                            <div class="schedule-time-icon">
-                                <i class="fas fa-stop"></i>
-                            </div>
-                            <div class="schedule-time-info">
-                                <div class="schedule-time-label">{% trans 'Конец' %}</div>
-                                <div class="schedule-time-value">{{ teacher.weekly_schedule.monday.to }}</div>
-                            </div>
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="schedule-day-closed">
-                        <i class="fas fa-ban"></i>
-                        <span>{% trans 'Понедельник' %}</span>
-                        <small>{% trans 'День не рабочий' %}</small>
-                    </div>
-                {% endif %}
-
-                <!-- Вторник -->
-                {% if teacher.weekly_schedule.tuesday %}
-                    <div class="schedule-day-card">
-                        <div class="schedule-day-name">
-                            <i class="fas fa-sun"></i>
-                            {% trans 'Вторник' %}
-                        </div>
-                        <div class="schedule-time-block">
-                            <div class="schedule-time-icon">
-                                <i class="fas fa-play"></i>
-                            </div>
-                            <div class="schedule-time-info">
-                                <div class="schedule-time-label">{% trans 'Начало' %}</div>
-                                <div class="schedule-time-value">{{ teacher.weekly_schedule.tuesday.from }}</div>
-                            </div>
-                        </div>
-                        <div class="schedule-time-block" style="margin-top: 12px;">
-                            <div class="schedule-time-icon">
-                                <i class="fas fa-stop"></i>
-                            </div>
-                            <div class="schedule-time-info">
-                                <div class="schedule-time-label">{% trans 'Конец' %}</div>
-                                <div class="schedule-time-value">{{ teacher.weekly_schedule.tuesday.to }}</div>
-                            </div>
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="schedule-day-closed">
-                        <i class="fas fa-ban"></i>
-                        <span>{% trans 'Вторник' %}</span>
-                        <small>{% trans 'День не рабочий' %}</small>
-                    </div>
-                {% endif %}
-
-                <!-- Среда -->
-                {% if teacher.weekly_schedule.wednesday %}
-                    <div class="schedule-day-card">
-                        <div class="schedule-day-name">
-                            <i class="fas fa-sun"></i>
-                            {% trans 'Среда' %}
-                        </div>
-                        <div class="schedule-time-block">
-                            <div class="schedule-time-icon">
-                                <i class="fas fa-play"></i>
-                            </div>
-                            <div class="schedule-time-info">
-                                <div class="schedule-time-label">{% trans 'Начало' %}</div>
-                                <div class="schedule-time-value">{{ teacher.weekly_schedule.wednesday.from }}</div>
-                            </div>
-                        </div>
-                        <div class="schedule-time-block" style="margin-top: 12px;">
-                            <div class="schedule-time-icon">
-                                <i class="fas fa-stop"></i>
-                            </div>
-                            <div class="schedule-time-info">
-                                <div class="schedule-time-label">{% trans 'Конец' %}</div>
-                                <div class="schedule-time-value">{{ teacher.weekly_schedule.wednesday.to }}</div>
-                            </div>
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="schedule-day-closed">
-                        <i class="fas fa-ban"></i>
-                        <span>{% trans 'Среда' %}</span>
-                        <small>{% trans 'День не рабочий' %}</small>
-                    </div>
-                {% endif %}
-
-                <!-- Четверг -->
-                {% if teacher.weekly_schedule.thursday %}
-                    <div class="schedule-day-card">
-                        <div class="schedule-day-name">
-                            <i class="fas fa-sun"></i>
-                            {% trans 'Четверг' %}
-                        </div>
-                        <div class="schedule-time-block">
-                            <div class="schedule-time-icon">
-                                <i class="fas fa-play"></i>
-                            </div>
-                            <div class="schedule-time-info">
-                                <div class="schedule-time-label">{% trans 'Начало' %}</div>
-                                <div class="schedule-time-value">{{ teacher.weekly_schedule.thursday.from }}</div>
-                            </div>
-                        </div>
-                        <div class="schedule-time-block" style="margin-top: 12px;">
-                            <div class="schedule-time-icon">
-                                <i class="fas fa-stop"></i>
-                            </div>
-                            <div class="schedule-time-info">
-                                <div class="schedule-time-label">{% trans 'Конец' %}</div>
-                                <div class="schedule-time-value">{{ teacher.weekly_schedule.thursday.to }}</div>
-                            </div>
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="schedule-day-closed">
-                        <i class="fas fa-ban"></i>
-                        <span>{% trans 'Четверг' %}</span>
-                        <small>{% trans 'День не рабочий' %}</small>
-                    </div>
-                {% endif %}
-
-                <!-- Пятница -->
-                {% if teacher.weekly_schedule.friday %}
-                    <div class="schedule-day-card">
-                        <div class="schedule-day-name">
-                            <i class="fas fa-sun"></i>
-                            {% trans 'Пятница' %}
-                        </div>
-                        <div class="schedule-time-block">
-                            <div class="schedule-time-icon">
-                                <i class="fas fa-play"></i>
-                            </div>
-                            <div class="schedule-time-info">
-                                <div class="schedule-time-label">{% trans 'Начало' %}</div>
-                                <div class="schedule-time-value">{{ teacher.weekly_schedule.friday.from }}</div>
-                            </div>
-                        </div>
-                        <div class="schedule-time-block" style="margin-top: 12px;">
-                            <div class="schedule-time-icon">
-                                <i class="fas fa-stop"></i>
-                            </div>
-                            <div class="schedule-time-info">
-                                <div class="schedule-time-label">{% trans 'Конец' %}</div>
-                                <div class="schedule-time-value">{{ teacher.weekly_schedule.friday.to }}</div>
-                            </div>
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="schedule-day-closed">
-                        <i class="fas fa-ban"></i>
-                        <span>{% trans 'Пятница' %}</span>
-                        <small>{% trans 'День не рабочий' %}</small>
-                    </div>
-                {% endif %}
-
-                <!-- Суббота -->
-                {% if teacher.weekly_schedule.saturday %}
-                    <div class="schedule-day-card">
-                        <div class="schedule-day-name">
-                            <i class="fas fa-sun"></i>
-                            {% trans 'Суббота' %}
-                        </div>
-                        <div class="schedule-time-block">
-                            <div class="schedule-time-icon">
-                                <i class="fas fa-play"></i>
-                            </div>
-                            <div class="schedule-time-info">
-                                <div class="schedule-time-label">{% trans 'Начало' %}</div>
-                                <div class="schedule-time-value">{{ teacher.weekly_schedule.saturday.from }}</div>
-                            </div>
-                        </div>
-                        <div class="schedule-time-block" style="margin-top: 12px;">
-                            <div class="schedule-time-icon">
-                                <i class="fas fa-stop"></i>
-                            </div>
-                            <div class="schedule-time-info">
-                                <div class="schedule-time-label">{% trans 'Конец' %}</div>
-                                <div class="schedule-time-value">{{ teacher.weekly_schedule.saturday.to }}</div>
-                            </div>
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="schedule-day-closed">
-                        <i class="fas fa-ban"></i>
-                        <span>{% trans 'Суббота' %}</span>
-                        <small>{% trans 'День не рабочий' %}</small>
-                    </div>
-                {% endif %}
-
-                <!-- Воскресенье -->
-                {% if teacher.weekly_schedule.sunday %}
-                    <div class="schedule-day-card">
-                        <div class="schedule-day-name">
-                            <i class="fas fa-sun"></i>
-                            {% trans 'Воскресенье' %}
-                        </div>
-                        <div class="schedule-time-block">
-                            <div class="schedule-time-icon">
-                                <i class="fas fa-play"></i>
-                            </div>
-                            <div class="schedule-time-info">
-                                <div class="schedule-time-label">{% trans 'Начало' %}</div>
-                                <div class="schedule-time-value">{{ teacher.weekly_schedule.sunday.from }}</div>
-                            </div>
-                        </div>
-                        <div class="schedule-time-block" style="margin-top: 12px;">
-                            <div class="schedule-time-icon">
-                                <i class="fas fa-stop"></i>
-                            </div>
-                            <div class="schedule-time-info">
-                                <div class="schedule-time-label">{% trans 'Конец' %}</div>
-                                <div class="schedule-time-value">{{ teacher.weekly_schedule.sunday.to }}</div>
-                            </div>
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="schedule-day-closed">
-                        <i class="fas fa-ban"></i>
-                        <span>{% trans 'Воскресенье' %}</span>
-                        <small>{% trans 'День не рабочий' %}</small>
-                    </div>
-                {% endif %}
+                    {% endif %}
+                {% endfor %}
             </div>
         {% else %}
             <div class="empty-state">

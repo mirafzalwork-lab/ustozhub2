@@ -38,11 +38,17 @@
 
     function renderCountdown(expiresAt) {
         if (!expiresAt) return '';
-        const ms = new Date(expiresAt) - new Date();
+        const d = new Date(expiresAt);
+        const ms = d - new Date();
         if (ms <= 0) return '<span class="bk-countdown">истекло</span>';
-        const m = Math.floor(ms / 60000);
-        const s = Math.floor((ms % 60000) / 1000);
-        return `<span class="bk-countdown">⏱ ${m}:${String(s).padStart(2,'0')}</span>`;
+        // В последний час — живой отсчёт, иначе дата дедлайна (за час до урока)
+        if (ms <= 3600000) {
+            const m = Math.floor(ms / 60000);
+            const s = Math.floor((ms % 60000) / 1000);
+            return `<span class="bk-countdown">⏱ осталось ${m}:${String(s).padStart(2,'0')}</span>`;
+        }
+        const str = d.toLocaleString('ru', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+        return `<span class="bk-countdown">⏱ подтвердить до ${str}</span>`;
     }
 
     function renderCard(b) {
@@ -69,7 +75,7 @@
             ? `<div class="msg" style="background:#EEF2FF; color:#3730A3;">🎥 ${escapeHtml(b.meeting_url)}</div>` : '';
 
         return `
-            <div class="bk-card" data-id="${b.id}" data-meeting-url="${escapeHtml(b.meeting_url || '')}">
+            <div class="bk-card" data-id="${b.id}" data-teacher-id="${b.teacher.id}" data-meeting-url="${escapeHtml(b.meeting_url || '')}">
                 <div class="bk-date">
                     <div class="day">${start.getDate()}</div>
                     <div class="month">${monthName}</div>
@@ -98,9 +104,12 @@
     function renderActions(b) {
         const buttons = [];
 
-        // Join Lesson — приоритет для confirmed с meeting_url в окне [-15min, end]
+        // Join Lesson — приоритет для confirmed с meeting_url в окне [-15min, end].
+        // Наш Jitsi открываем во встроенной комнате внутри сайта,
+        // кастомные внешние ссылки (Zoom и т.п.) — напрямую.
         if (b.status === 'confirmed' && b.meeting_url && isJoinable(b)) {
-            buttons.push(`<a class="bk-btn join" href="${b.meeting_url}" target="_blank" rel="noopener">
+            const href = (b.meeting_is_jitsi && b.lesson_room_url) ? b.lesson_room_url : b.meeting_url;
+            buttons.push(`<a class="bk-btn join" href="${href}" target="_blank" rel="noopener">
                 <i class="fa-solid fa-video"></i> ${cfg.i18n.joinLesson}
             </a>`);
         }
@@ -109,6 +118,12 @@
             buttons.push(`<button class="bk-btn primary" data-action="confirm">${cfg.i18n.confirm}</button>`);
             buttons.push(`<button class="bk-btn danger" data-action="reject">${cfg.i18n.reject}</button>`);
         }
+        // Добавить в календарь (.ics) — для активных уроков, обе роли
+        if ((b.status === 'pending' || b.status === 'confirmed') && cfg.urls.ical) {
+            buttons.push(`<a class="bk-btn secondary" href="${cfg.urls.ical.replace('__ID__', b.id)}"
+                title="${cfg.i18n.addToCalendar}" aria-label="${cfg.i18n.addToCalendar}">
+                <i class="fa-regular fa-calendar-plus"></i></a>`);
+        }
         if (cfg.role === 'teacher' && b.status === 'confirmed') {
             // Учитель может задать/изменить ссылку
             const lbl = b.meeting_url ? cfg.i18n.editLink : cfg.i18n.setLink;
@@ -116,7 +131,18 @@
             buttons.push(`<button class="bk-btn danger" data-action="cancel">${cfg.i18n.cancel}</button>`);
         }
         if (cfg.role === 'student' && (b.status === 'pending' || b.status === 'confirmed')) {
+            // Перенос на другой свободный слот
+            buttons.push(`<button class="bk-btn secondary" data-action="reschedule">
+                <i class="fa-regular fa-clock"></i> ${cfg.i18n.reschedule || 'Перенести'}</button>`);
             buttons.push(`<button class="bk-btn danger" data-action="cancel">${cfg.i18n.cancel}</button>`);
+        }
+        // Завершённый урок — ученик может оставить/обновить отзыв
+        if (cfg.role === 'student' && b.status === 'completed' && b.review_url) {
+            const lbl = b.has_review ? (cfg.i18n.editReview || 'Изменить отзыв')
+                                     : (cfg.i18n.leaveReview || 'Оставить отзыв');
+            buttons.push(`<a class="bk-btn ${b.has_review ? 'secondary' : 'primary'}" href="${b.review_url}">
+                <i class="fa-solid fa-star"></i> ${lbl}
+            </a>`);
         }
         return buttons.join('');
     }
@@ -133,6 +159,81 @@
         return String(s || '').replace(/[&<>"']/g, c => ({
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
         }[c]));
+    }
+
+    // ---- modal / toast (замена браузерных prompt/confirm/alert) ----
+    const $overlay = document.getElementById('bkm-overlay');
+    const $mTitle = document.getElementById('bkm-title');
+    const $mText = document.getElementById('bkm-text');
+    const $mBody = document.getElementById('bkm-body');
+    const $mOk = document.getElementById('bkm-ok');
+    const $mCancel = document.getElementById('bkm-cancel');
+    let _modalResolve = null;
+
+    function closeModal(result) {
+        $overlay.classList.remove('is-open');
+        $overlay.setAttribute('aria-hidden', 'true');
+        const r = _modalResolve; _modalResolve = null;
+        if (r) r(result);
+    }
+
+    /**
+     * Открывает модалку. opts: { title, text, fields:[{name,label,hint,type,value,placeholder}],
+     * okText, okClass, danger }. Возвращает Promise: объект значений полей или null (отмена).
+     */
+    function modal(opts) {
+        return new Promise(resolve => {
+            _modalResolve = resolve;
+            $mTitle.textContent = opts.title || '';
+            $mText.textContent = opts.text || '';
+            $mText.style.display = opts.text ? '' : 'none';
+            $mBody.innerHTML = (opts.fields || []).map(f => {
+                let ctrl;
+                if (f.type === 'textarea') {
+                    ctrl = `<textarea data-field="${f.name}" placeholder="${escapeHtml(f.placeholder||'')}">${escapeHtml(f.value||'')}</textarea>`;
+                } else if (f.type === 'select') {
+                    const opts2 = (f.options || []).map(o =>
+                        `<option value="${escapeHtml(String(o.value))}">${escapeHtml(o.label)}</option>`).join('');
+                    ctrl = `<select data-field="${f.name}">${opts2}</select>`;
+                } else {
+                    ctrl = `<input type="text" data-field="${f.name}" value="${escapeHtml(f.value||'')}" placeholder="${escapeHtml(f.placeholder||'')}">`;
+                }
+                return `<div class="bkm-field">
+                    ${f.label ? `<label>${escapeHtml(f.label)}</label>` : ''}
+                    ${ctrl}
+                    ${f.hint ? `<div class="bkm-hint">${escapeHtml(f.hint)}</div>` : ''}
+                </div>`;
+            }).join('');
+            $mOk.textContent = opts.okText || cfg.i18n.ok || 'OK';
+            $mOk.className = 'bkm-btn ' + (opts.okClass || 'primary');
+            $mCancel.textContent = cfg.i18n.cancelBtn || 'Cancel';
+            $overlay.classList.add('is-open');
+            $overlay.setAttribute('aria-hidden', 'false');
+            const first = $mBody.querySelector('[data-field]');
+            if (first) first.focus();
+        });
+    }
+
+    $mOk.addEventListener('click', () => {
+        const values = {};
+        $mBody.querySelectorAll('[data-field]').forEach(el => {
+            values[el.dataset.field] = el.value.trim();
+        });
+        closeModal(values);
+    });
+    $mCancel.addEventListener('click', () => closeModal(null));
+    $overlay.addEventListener('click', e => { if (e.target === $overlay) closeModal(null); });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && $overlay.classList.contains('is-open')) closeModal(null);
+    });
+
+    let _toastTimer = null;
+    function toast(msg, isError) {
+        const $t = document.getElementById('bk-toast');
+        $t.textContent = msg;
+        $t.className = 'bk-toast is-open' + (isError ? ' error' : '');
+        clearTimeout(_toastTimer);
+        _toastTimer = setTimeout(() => { $t.className = 'bk-toast'; }, 3500);
     }
 
     async function loadList() {
@@ -169,27 +270,86 @@
 
         let url, body;
         if (action === 'confirm') {
-            const meetingUrl = prompt(cfg.i18n.askMeetingUrl, '');
-            if (meetingUrl === null) return; // отмена
-            const reply = prompt(cfg.i18n.confirmReply, '');
-            if (reply === null) return;
+            const res = await modal({
+                title: cfg.i18n.confirmTitle,
+                okText: cfg.i18n.confirm,
+                okClass: 'primary',
+                fields: [
+                    { name: 'meeting_url', label: cfg.i18n.meetingUrlLabel, hint: cfg.i18n.meetingUrlHint, type: 'text', placeholder: 'https://…' },
+                    { name: 'reply', label: cfg.i18n.replyLabel, type: 'textarea' },
+                ],
+            });
+            if (res === null) return;
             url = cfg.urls.confirm.replace('__ID__', id);
-            body = { reply, meeting_url: (meetingUrl || '').trim() };
+            body = { reply: res.reply || '', meeting_url: res.meeting_url || '' };
         } else if (action === 'reject') {
-            const reply = prompt(cfg.i18n.rejectReason, '');
-            if (reply === null) return;
+            const res = await modal({
+                title: cfg.i18n.rejectTitle,
+                okText: cfg.i18n.reject,
+                okClass: 'danger',
+                fields: [{ name: 'reply', label: cfg.i18n.reasonLabel, type: 'textarea' }],
+            });
+            if (res === null) return;
             url = cfg.urls.reject.replace('__ID__', id);
-            body = { reply };
+            body = { reply: res.reply || '' };
         } else if (action === 'cancel') {
-            if (!confirm(cfg.i18n.confirmCancel)) return;
+            const res = await modal({
+                title: cfg.i18n.cancelTitle,
+                text: cfg.i18n.confirmCancel,
+                okText: cfg.i18n.cancel,
+                okClass: 'danger',
+            });
+            if (res === null) return;
             url = cfg.urls.cancel.replace('__ID__', id);
             body = {};
         } else if (action === 'set-link') {
             const current = card.dataset.meetingUrl || '';
-            const next = prompt(cfg.i18n.askMeetingUrl, current);
-            if (next === null) return;
+            const res = await modal({
+                title: cfg.i18n.setLinkTitle,
+                okText: cfg.i18n.ok,
+                fields: [{ name: 'meeting_url', label: cfg.i18n.meetingUrlLabel, hint: cfg.i18n.meetingUrlHint, type: 'text', value: current, placeholder: 'https://…' }],
+            });
+            if (res === null) return;
             url = cfg.urls.setLink.replace('__ID__', id);
-            body = { meeting_url: (next || '').trim() };
+            body = { meeting_url: res.meeting_url || '' };
+        } else if (action === 'reschedule') {
+            // Перенос: грузим свободные слоты учителя → выбор → POST reschedule
+            const teacherId = card.dataset.teacherId;
+            btn.disabled = true;
+            let slots = [];
+            try {
+                const now = new Date();
+                const end = new Date(now.getTime() + 30 * 24 * 3600 * 1000);
+                const u = cfg.urls.publicSlots.replace('__TID__', teacherId) +
+                    `?start=${encodeURIComponent(now.toISOString())}&end=${encodeURIComponent(end.toISOString())}`;
+                const data = await api('GET', u);
+                slots = data.events || [];
+            } catch (err) {
+                toast('Ошибка: ' + err.message, true); btn.disabled = false; return;
+            }
+            btn.disabled = false;
+            if (!slots.length) { toast(cfg.i18n.noFreeSlots, true); return; }
+            const fmt = s => new Date(s.start).toLocaleString(cfg.locale,
+                { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+            const res = await modal({
+                title: cfg.i18n.rescheduleTitle,
+                text: cfg.i18n.rescheduleHint,
+                okText: cfg.i18n.reschedule,
+                fields: [{
+                    name: 'slot_id', label: cfg.i18n.pickSlot, type: 'select',
+                    options: slots.map(s => ({ value: s.id, label: fmt(s) })),
+                }],
+            });
+            if (res === null) return;
+            try {
+                await api('POST', cfg.urls.reschedule.replace('__ID__', id),
+                    { slot_id: parseInt(res.slot_id, 10) });
+                toast(cfg.i18n.rescheduled);
+                await loadList();
+            } catch (err) {
+                toast('Ошибка: ' + err.message, true);
+            }
+            return;
         } else {
             return;
         }
@@ -199,20 +359,26 @@
             await api('POST', url, body);
             await loadList();
         } catch (e) {
-            alert('Ошибка: ' + e.message);
+            toast('Ошибка: ' + e.message, true);
             btn.disabled = false;
         }
     });
 
-    // Обновление таймеров hold
-    setInterval(() => {
-        document.querySelectorAll('.bk-card').forEach(card => {
-            const cd = card.querySelector('.bk-countdown');
-            if (!cd) return;
-            // Полная перезагрузка раз в 30 сек — проще чем парсить из DOM
-        });
-    }, 30000);
-    setInterval(loadList, 30000); // refresh раз в 30 сек
+    // ---- realtime: обновляемся по WS-пушу (см. base.html → 'ustoz:ws') ----
+    let _refreshTimer = null;
+    function refreshSoon() {
+        clearTimeout(_refreshTimer);
+        _refreshTimer = setTimeout(loadList, 400); // дебаунс пачки событий
+    }
+    window.addEventListener('ustoz:ws', e => {
+        const t = (e.detail || {}).type;
+        if (t === 'new_notification' || t === 'booking_update') refreshSoon();
+    });
+
+    // Фолбэк-поллинг (на случай если WS недоступен) — реже, чем раньше
+    setInterval(loadList, 60000);
+    // Обновляемся при возврате на вкладку
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) loadList(); });
 
     loadList();
 })();
