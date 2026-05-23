@@ -169,12 +169,38 @@
     const $mOk = document.getElementById('bkm-ok');
     const $mCancel = document.getElementById('bkm-cancel');
     let _modalResolve = null;
+    let _previousFocus = null;   // a11y: куда вернуть фокус после закрытия
+
+    function _focusables(root) {
+        return root.querySelectorAll(
+            'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), ' +
+            'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+    }
+
+    function _trapTab(e) {
+        if (e.key !== 'Tab' || !$overlay.classList.contains('is-open')) return;
+        const f = _focusables($overlay);
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault(); last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault(); first.focus();
+        }
+    }
 
     function closeModal(result) {
         $overlay.classList.remove('is-open');
         $overlay.setAttribute('aria-hidden', 'true');
+        document.removeEventListener('keydown', _trapTab, true);
         const r = _modalResolve; _modalResolve = null;
         if (r) r(result);
+        // a11y: возвращаем фокус на элемент, открывший модалку
+        if (_previousFocus && typeof _previousFocus.focus === 'function') {
+            try { _previousFocus.focus(); } catch (_) {}
+        }
+        _previousFocus = null;
     }
 
     /**
@@ -207,9 +233,14 @@
             $mOk.textContent = opts.okText || cfg.i18n.ok || 'OK';
             $mOk.className = 'bkm-btn ' + (opts.okClass || 'primary');
             $mCancel.textContent = cfg.i18n.cancelBtn || 'Cancel';
+            // a11y: запоминаем активный элемент, чтобы вернуть фокус при закрытии
+            _previousFocus = document.activeElement;
             $overlay.classList.add('is-open');
             $overlay.setAttribute('aria-hidden', 'false');
-            const first = $mBody.querySelector('[data-field]');
+            // Перехватываем Tab внутри модалки (focus trap)
+            document.addEventListener('keydown', _trapTab, true);
+            // Фокусируем первое интерактивное поле; если нет — OK-кнопку
+            const first = $mBody.querySelector('[data-field]') || $mOk;
             if (first) first.focus();
         });
     }

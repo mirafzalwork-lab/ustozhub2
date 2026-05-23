@@ -89,6 +89,26 @@
         $price.hidden = false;
     }
 
+    // ---- a11y: focus trap ----
+    let _btPrevFocus = null;
+    function _btFocusables() {
+        return modal.querySelectorAll(
+            'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), ' +
+            'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+    }
+    function _btTrapTab(e) {
+        if (e.key !== 'Tab' || modal.hidden) return;
+        const f = _btFocusables();
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+    function _btTrapEsc(e) {
+        if (e.key === 'Escape' && !modal.hidden) closeModal();
+    }
+
     function openModal(slot) {
         selectedSlot = slot;
         $when.textContent = fmtWhen(slot);
@@ -104,11 +124,23 @@
         $successFoot.hidden = true;
         refreshPrice();
         modal.hidden = false;
+        // a11y: trap + restore focus
+        _btPrevFocus = document.activeElement;
+        document.addEventListener('keydown', _btTrapTab, true);
+        document.addEventListener('keydown', _btTrapEsc);
+        const f = _btFocusables();
+        if (f.length) f[0].focus();
     }
 
     function closeModal() {
         modal.hidden = true;
         selectedSlot = null;
+        document.removeEventListener('keydown', _btTrapTab, true);
+        document.removeEventListener('keydown', _btTrapEsc);
+        if (_btPrevFocus && typeof _btPrevFocus.focus === 'function') {
+            try { _btPrevFocus.focus(); } catch (_) {}
+        }
+        _btPrevFocus = null;
     }
 
     modal.addEventListener('click', e => {

@@ -39,6 +39,13 @@
             padding: 0 !important; margin: -1px !important; overflow: hidden !important;
             clip: rect(0,0,0,0) !important; white-space: nowrap !important; border: 0 !important;
         }
+        /* Skip-to-content: визуально скрыт, видимым становится на фокус Tab */
+        .skip-link {
+            position: absolute; left: -9999px; top: 0; z-index: 10001;
+            background: #4F46E5; color: #fff; padding: 10px 16px; border-radius: 0 0 8px 0;
+            text-decoration: none; font-weight: 600;
+        }
+        .skip-link:focus { left: 0; outline: 3px solid #fbbf24; outline-offset: 2px; }
     </style>
 
     {# Structured data для всех страниц — название организации #}
@@ -1242,6 +1249,9 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    {# A11y: skip-to-content для скринридеров и клавиатурной навигации #}
+    <a href="#main-content" class="skip-link">{% trans "Перейти к контенту" %}</a>
+
     <!-- Navbar -->
     <nav class="navbar" id="navbar">
         <div class="nav-container">
@@ -1524,7 +1534,7 @@
     <div class="filters-backdrop" id="filtersBackdrop" onclick="closeFilters()"></div>
 
     <!-- Main Content -->
-    <main>
+    <main id="main-content" tabindex="-1">
         {% block content %}{% endblock %}
     </main>
 

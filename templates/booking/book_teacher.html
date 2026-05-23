@@ -124,10 +124,10 @@
 {# Modal: confirm booking #}
 <div class="cal-modal" id="book-modal" hidden>
     <div class="cal-modal__backdrop" data-close></div>
-    <div class="cal-modal__dialog" role="dialog">
+    <div class="cal-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="book-modal-title">
         <header class="cal-modal__head">
-            <h3>{% trans "Забронировать урок" %}</h3>
-            <button type="button" class="cal-modal__close" data-close>×</button>
+            <h3 id="book-modal-title">{% trans "Забронировать урок" %}</h3>
+            <button type="button" class="cal-modal__close" data-close aria-label="{% trans 'Закрыть' %}">×</button>
         </header>
         <div class="cal-modal__body">
             {# ── Форма заявки ── #}

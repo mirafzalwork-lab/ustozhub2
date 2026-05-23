@@ -90,6 +90,7 @@
         $save.hidden = false;
         $error.hidden = true;
         modal.hidden = false;
+        _calActivateTrap($start);
     }
 
     function openEditModal(event) {
@@ -133,12 +134,46 @@
             $delete.hidden = false;
         }
         modal.hidden = false;
+        _calActivateTrap();
     }
 
     function closeModal() {
         modal.hidden = true;
         editingEvent = null;
         editingId = null;
+        document.removeEventListener('keydown', _calTrapTab, true);
+        if (_calPrevFocus && typeof _calPrevFocus.focus === 'function') {
+            try { _calPrevFocus.focus(); } catch (_) {}
+        }
+        _calPrevFocus = null;
+    }
+
+    // ---- a11y: focus trap для модалки слота ---------------------------
+    let _calPrevFocus = null;
+    function _calFocusables(root) {
+        return root.querySelectorAll(
+            'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), ' +
+            'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+    }
+    function _calTrapTab(e) {
+        if (e.key !== 'Tab' || modal.hidden) return;
+        const f = _calFocusables(modal);
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+    function _calActivateTrap(targetEl) {
+        _calPrevFocus = document.activeElement;
+        document.addEventListener('keydown', _calTrapTab, true);
+        const f = _calFocusables(modal);
+        if (targetEl) targetEl.focus(); else if (f.length) f[0].focus();
+        // Esc для закрытия
+        const onEsc = (e) => {
+            if (e.key === 'Escape' && !modal.hidden) { closeModal(); document.removeEventListener('keydown', onEsc); }
+        };
+        document.addEventListener('keydown', onEsc);
     }
 
     modal.addEventListener('click', (e) => {
