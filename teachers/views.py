@@ -919,28 +919,29 @@ def login_view(request):
             user = authenticate(username=username, password=password)
             
             if user is None:
-                # Fallback: try to authenticate by email
+                # Поле формы называется "Email", но мы поддерживаем и username для
+                # совместимости. Пытаемся найти пользователя по email (case-insensitive).
                 try:
-                    user_obj = User.objects.get(email=username)
+                    user_obj = User.objects.get(email__iexact=username)
                     user = authenticate(username=user_obj.username, password=password)
                 except (User.DoesNotExist, User.MultipleObjectsReturned):
                     pass
-            
+
             if user is not None:
                 login(request, user, backend='django.contrib.auth.backends.ModelBackend')
 
                 if not remember_me:
                     request.session.set_expiry(0)
-                
+
                 messages.success(request, f'Добро пожаловать, {user.get_full_name()}!')
-                
+
                 next_url = request.GET.get('next')
                 if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
                     return redirect(next_url)
-                
+
                 return redirect('profile')
             else:
-                messages.error(request, 'Неверное имя пользователя или пароль')
+                messages.error(request, 'Неверный email или пароль')
     else:
         form = LoginForm()
     

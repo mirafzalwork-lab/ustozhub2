@@ -83,8 +83,16 @@
 </div>
 
 <div class="form-section">
-    <h3 class="section-title">Ваше расписание</h3>
-    <p class="section-description">Включите рабочие дни и добавьте интервалы времени. В один день можно задать несколько интервалов — например, 09:00–12:00 и 15:00–18:00.</p>
+    <h3 class="section-title">
+        Ваше расписание
+        <span class="optional-badge">необязательно</span>
+    </h3>
+    <p class="section-description">
+        Включите рабочие дни и добавьте интервалы времени. В один день можно задать
+        несколько интервалов — например, 09:00–10:00 и 15:00–16:00.
+        <br>
+        <strong>Можно пропустить</strong> и заполнить позже в календаре после регистрации.
+    </p>
 
     <!-- Скрытые поля -->
     {{ wizard.form.schedule_data }}
@@ -102,6 +110,20 @@
     </div>
     {% endif %}
 </div>
+
+<style>
+.optional-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+    background: #f3f4f6;
+    border-radius: 10px;
+    vertical-align: middle;
+}
+</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -128,6 +150,21 @@ document.addEventListener('DOMContentLoaded', function () {
         }).filter(Boolean);
     }
 
+    // --- Утилиты для работы со временем (HH:MM <-> минуты) ---
+    function toMinutes(hhmm) {
+        if (typeof hhmm !== 'string') return null;
+        var m = /^(\d{1,2}):(\d{2})$/.exec(hhmm.trim());
+        if (!m) return null;
+        var h = parseInt(m[1], 10), mm = parseInt(m[2], 10);
+        if (h < 0 || h > 23 || mm < 0 || mm > 59) return null;
+        return h * 60 + mm;
+    }
+    function fromMinutes(total) {
+        total = Math.max(0, Math.min(24 * 60, total));
+        var h = Math.floor(total / 60), m = total % 60;
+        return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+    }
+
     function makeIntervalRow(from, to) {
         const row = document.createElement('div');
         row.className = 'interval-row';
@@ -136,16 +173,42 @@ document.addEventListener('DOMContentLoaded', function () {
             '<input type="time" class="interval-from form-input" value="' + (from || '09:00') + '"></div>' +
             '<span class="time-separator">—</span>' +
             '<div class="time-input-group"><label>До</label>' +
-            '<input type="time" class="interval-to form-input" value="' + (to || '12:00') + '"></div>' +
+            '<input type="time" class="interval-to form-input" value="' + (to || '10:00') + '"></div>' +
             '<button type="button" class="interval-remove" title="Удалить интервал">&times;</button>';
         row.querySelector('.interval-remove').addEventListener('click', function () {
             row.remove();
             syncHidden();
         });
-        row.querySelectorAll('input[type="time"]').forEach(function (inp) {
-            inp.addEventListener('change', syncHidden);
+        // Авто-доводка «До» до 1 часа после «С», если пользователь поменял начало
+        var fromInp = row.querySelector('.interval-from');
+        var toInp = row.querySelector('.interval-to');
+        fromInp.addEventListener('change', function () {
+            var fMin = toMinutes(fromInp.value);
+            var tMin = toMinutes(toInp.value);
+            if (fMin !== null && (tMin === null || tMin <= fMin)) {
+                toInp.value = fromMinutes(Math.min(fMin + 60, 24 * 60));
+            }
+            syncHidden();
         });
+        toInp.addEventListener('change', syncHidden);
         return row;
+    }
+
+    // Вычисляет следующий 1ч-слот, идущий сразу за последним интервалом дня.
+    // Если интервалов нет — возвращает 09:00–10:00. Если день уже заканчивается
+    // близко к 23:59 — возвращает 23:00–23:59 (чтобы не уходить за сутки).
+    function nextDefaultInterval(list) {
+        var rows = list.querySelectorAll('.interval-row');
+        if (rows.length === 0) return { from: '09:00', to: '10:00' };
+        var last = rows[rows.length - 1];
+        var lastTo = toMinutes(last.querySelector('.interval-to').value);
+        if (lastTo === null) return { from: '09:00', to: '10:00' };
+        var start = Math.min(lastTo, 23 * 60);
+        var end = Math.min(start + 60, 24 * 60);
+        if (end <= start) {  // некуда добавлять — сутки кончились
+            return { from: '22:00', to: '23:00' };
+        }
+        return { from: fromMinutes(start), to: fromMinutes(end) };
     }
 
     function buildDayCard(key, label) {
@@ -184,14 +247,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
         toggle.addEventListener('change', function () {
             if (toggle.checked && list.children.length === 0) {
-                list.appendChild(makeIntervalRow('09:00', '12:00'));
+                // Default-интервал: 09:00–10:00 (1 час)
+                list.appendChild(makeIntervalRow('09:00', '10:00'));
             }
             refreshState();
             syncHidden();
         });
 
         addBtn.addEventListener('click', function () {
-            list.appendChild(makeIntervalRow('', ''));
+            // Каждый новый интервал — длительностью 1 час, начиная сразу за последним.
+            var next = nextDefaultInterval(list);
+            list.appendChild(makeIntervalRow(next.from, next.to));
             syncHidden();
         });
 

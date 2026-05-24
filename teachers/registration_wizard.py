@@ -9,9 +9,12 @@ from django.conf import settings
 from django.db import transaction
 from django.urls import reverse
 from django.core.files.storage import FileSystemStorage
+from django import forms as dj_forms
 from formtools.wizard.views import SessionWizardView
 import logging
 import os
+import re
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -131,28 +134,37 @@ class TeacherRegistrationWizard(SessionWizardView):
             logger.warning(f"Не удалось сохранить черновик wizard: {e}")
 
     def _restore_draft(self):
-        """Восстанавливает данные из БД в storage, если в сессии пусто, а draft есть."""
+        """Восстанавливает данные из БД в storage, если в сессии пусто, а draft есть.
+
+        Вызывается из get(), когда self.storage уже инициализирован.
+        Возвращает True, если что-то восстановили (для get() это сигнал не
+        вызывать super().get(), который зачистит storage.reset()).
+        """
         try:
             session = self.request.session
             session_key = session.session_key
             if not session_key:
-                return
+                return False
             # Восстанавливаем ТОЛЬКО если в текущей сессии нет своих данных wizard
-            # (т.е. пользователь начал с чистого листа).
             if self.storage.data and self.storage.data.get(self.storage.step_data_key):
-                return
+                return False
             draft = WizardDraft.objects.filter(
                 session_key=session_key,
                 wizard_name='teacher_registration',
             ).first()
             if not draft or not draft.data:
-                return
+                return False
+            # Полностью перезаписываем storage.data из draft.data
+            new_data = dict(self.storage.data or {})
             for key, value in draft.data.items():
-                self.storage.data[key] = value
+                new_data[key] = value
+            self.storage.data = new_data
             if draft.current_step:
                 self.storage.current_step = draft.current_step
+            return True
         except Exception as e:
             logger.warning(f"Не удалось восстановить черновик wizard: {e}")
+            return False
 
     def _delete_draft(self):
         """Удаляет draft после успешного завершения регистрации."""
@@ -164,20 +176,33 @@ class TeacherRegistrationWizard(SessionWizardView):
             logger.warning(f"Не удалось удалить черновик wizard: {e}")
 
     def dispatch(self, request, *args, **kwargs):
-        """На каждый GET — пытаемся восстановить draft перед обработкой."""
+        """Гарантируем session_key, чтобы потом привязать к нему draft."""
         if request.method == 'GET':
-            # ensure session_key, иначе session.session_key=None и draft не найдём
             self._get_or_create_session_key()
-            # storage инициализируется в super().dispatch — сначала вызовем,
-            # но восстановление должно быть ДО построения формы.
-            # SessionWizardView создаёт storage в __init__/dispatch.
-            try:
-                # Доступ к self.storage активирует ленивую инициализацию.
-                _ = self.storage.data
-                self._restore_draft()
-            except Exception as e:
-                logger.warning(f"Wizard draft restore skipped: {e}")
         return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        """Переопределяем get() чтобы сохранить прогресс на GET.
+
+        Базовый SessionWizardView.get() вызывает storage.reset() — это удаляет
+        весь прогресс при любом GET (даже простой refresh страницы). Здесь мы:
+        1. Если в БД есть draft → восстанавливаем его в storage и рендерим
+           текущий шаг (минуя reset).
+        2. Если в session уже есть промежуточные данные шагов → рендерим
+           текущий шаг (минуя reset). Это покрывает обычный refresh.
+        3. Иначе — fallback к стандартному поведению (start from step 1).
+        """
+        # 1) попытка восстановить из БД
+        restored = self._restore_draft()
+
+        # 2) если сейчас в storage уже что-то есть (либо из БД, либо из session)
+        step_data = (self.storage.data or {}).get(self.storage.step_data_key) or {}
+        if restored or step_data:
+            # Выставим текущий шаг и срендерим, не сбрасывая storage.
+            return self.render(self.get_form())
+
+        # 3) стандартное поведение для свежего входа
+        return super().get(request, *args, **kwargs)
 
     def render_next_step(self, form, **kwargs):
         """Сохраняем draft после успешного шага."""
@@ -190,9 +215,17 @@ class TeacherRegistrationWizard(SessionWizardView):
         return self.request.session.get('is_google_teacher', False)
 
     def get_form_initial(self, step):
-        """Pre-fill form data from Google session for Google users."""
+        """Pre-fill form data. Для Google — поля из сессии.
+        Для всех — placeholder-username (мы его всё равно перепишем в _create_user)."""
         initial = super().get_form_initial(step)
         session = self.request.session
+
+        if step == 'account_security':
+            # Username скрыт для всех. Кладём уникальный placeholder, чтобы пройти
+            # уникальность/regex в clean_username; финальный username сгенерим из
+            # first_name в _create_user(). Прификс _g_ отличает от пользовательских.
+            if not initial.get('username'):
+                initial['username'] = f"_g_{uuid.uuid4().hex[:16]}"
 
         if not self._is_google_registration():
             return initial
@@ -202,22 +235,57 @@ class TeacherRegistrationWizard(SessionWizardView):
                 initial['first_name'] = session['google_first_name']
             if session.get('google_last_name'):
                 initial['last_name'] = session['google_last_name']
-
         elif step == 'account_security':
             if session.get('google_email'):
                 initial['email'] = session['google_email']
 
         return initial
 
-    def get_form(self, step=None, data=None, files=None):
-        """Customize form for Google users (make password optional)."""
-        form = super().get_form(step, data, files)
+    @staticmethod
+    def _generate_unique_username(seed):
+        """Делает уникальный username вида '<имя>_<8hex>'. Не больше 150 символов."""
+        base = re.sub(r'[^\w]+', '', (seed or 'user').lower())[:20] or 'user'
+        for _ in range(10):
+            candidate = f"{base}_{uuid.uuid4().hex[:8]}"
+            if not User.objects.filter(username__iexact=candidate).exists():
+                return candidate
+        # Запасной вариант: гарантированно уникальный длинный UUID.
+        return f"user_{uuid.uuid4().hex}"
 
-        if self._is_google_registration() and (step or self.steps.current) == 'account_security':
+    def get_form(self, step=None, data=None, files=None):
+        """Кастомизация формы.
+
+        Общая логика (для всех):
+        - username скрыт всегда — генерируем в _create_user() из first_name.
+
+        Google-flow дополнительно скрывает то, что уже знаем из Google-сессии:
+        - first_name, last_name, gender → hidden (значения из сессии)
+        - email → hidden (из Google)
+        - password1, password2 → hidden + optional (вход через Google)
+        """
+        form = super().get_form(step, data, files)
+        current_step = step or self.steps.current
+        is_google = self._is_google_registration()
+
+        # Universal: username скрываем всегда, генерим в done().
+        if current_step == 'account_security':
+            form.fields['username'].required = False
+            form.fields['username'].widget = dj_forms.HiddenInput()
+
+        if not is_google:
+            return form
+
+        if current_step == 'basic_profile':
+            form.fields['first_name'].widget = dj_forms.HiddenInput()
+            form.fields['last_name'].widget = dj_forms.HiddenInput()
+            form.fields['gender'].widget = dj_forms.HiddenInput()
+
+        elif current_step == 'account_security':
+            form.fields['email'].widget = dj_forms.HiddenInput()
             form.fields['password1'].required = False
             form.fields['password2'].required = False
-            form.fields['password1'].help_text = 'Необязательно для Google-аккаунта. Оставьте пустым, если хотите входить только через Google.'
-            form.fields['email'].widget.attrs['readonly'] = True
+            form.fields['password1'].widget = dj_forms.HiddenInput()
+            form.fields['password2'].widget = dj_forms.HiddenInput()
 
         return form
 
@@ -306,6 +374,20 @@ class TeacherRegistrationWizard(SessionWizardView):
                     teacher_profile.video_url = video_url
                     teacher_profile.save(update_fields=['video_url'])
 
+                # Сразу нарезаем TimeSlot из шаблона расписания на 4 недели вперёд,
+                # чтобы календарь учителя не был пустым после регистрации.
+                # Если в расписании нет ни одного интервала — метод вернёт нули.
+                try:
+                    result = teacher_profile.generate_slots_from_template(weeks=4, slot_minutes=60)
+                    logger.info(
+                        f"Auto-generated slots after registration: teacher={teacher_profile.pk} "
+                        f"created={result['created']} skipped={result['skipped']}"
+                    )
+                except Exception as e:
+                    # Сгенерировать слоты не критично для регистрации — учитель сможет
+                    # сделать это вручную из календаря. Логируем и идём дальше.
+                    logger.warning(f"Slot auto-generation failed: {e}", exc_info=True)
+
             # Уведомляем модераторов о новой заявке (вне транзакции — не критично)
             self._notify_moderators(teacher_profile)
 
@@ -341,14 +423,23 @@ class TeacherRegistrationWizard(SessionWizardView):
         is_google = self._is_google_registration()
         password = form_data.get('password1') or None
 
+        # Username мы больше не спрашиваем у пользователя — генерим из first_name.
+        # На форме лежит placeholder вида "_g_<hex>", который заменяем на стабильный.
+        username = (form_data.get('username') or '').strip()
+        if not username or username.startswith('_g_'):
+            username = self._generate_unique_username(form_data.get('first_name', ''))
+
+        # gender может быть пустым для Google-учителей (мы не запрашиваем его)
+        gender = form_data.get('gender') or None
+
         user = User.objects.create_user(
-            username=form_data['username'],
+            username=username,
             email=form_data['email'],
             password=password,
             first_name=form_data['first_name'],
             last_name=form_data['last_name'],
             phone=form_data['phone'],
-            gender=form_data.get('gender'),
+            gender=gender,
             user_type='teacher',
             is_verified=is_google,  # Google email already verified
         )
@@ -397,7 +488,10 @@ class TeacherRegistrationWizard(SessionWizardView):
                 if first_available_to is None or t > first_available_to:
                     first_available_to = t
         
-        teacher_profile = TeacherProfile.objects.create(
+        # Поля available_from/available_to/available_weekdays — не nullable, у них
+        # есть БД-дефолты. Если расписание не задано, оставляем дефолты модели,
+        # не передавая None — учитель заполнит позже в календаре.
+        profile_kwargs = dict(
             user=user,
             bio=form_data['bio'],
             education_level=form_data.get('education_level'),
@@ -409,54 +503,67 @@ class TeacherRegistrationWizard(SessionWizardView):
             telegram=form_data['telegram'],
             whatsapp=form_data.get('whatsapp', ''),
             teaching_languages=teaching_languages,
-            available_from=first_available_from,
-            available_to=first_available_to,
-            available_weekdays=available_weekdays,
-            weekly_schedule=weekly_schedule,  # Добавляем индивидуальное расписание
+            weekly_schedule=weekly_schedule,
             moderation_status='pending',
-            is_active=False  # Will be activated after moderation
+            is_active=False,  # Will be activated after moderation
         )
-        
+        if first_available_from is not None:
+            profile_kwargs['available_from'] = first_available_from
+        if first_available_to is not None:
+            profile_kwargs['available_to'] = first_available_to
+        if available_weekdays:
+            profile_kwargs['available_weekdays'] = available_weekdays
+
+        teacher_profile = TeacherProfile.objects.create(**profile_kwargs)
+
         return teacher_profile
     
     def _add_subjects(self, teacher_profile, form_data):
-        """Add teacher subjects with pricing"""
+        """Add teacher subjects with pricing + trial lesson settings."""
         for i in range(1, 5):
             subject = form_data.get(f'subject_{i}')
             hourly_rate = form_data.get(f'hourly_rate_{i}')
-            
+
             if subject and hourly_rate:
+                is_free_trial = bool(form_data.get(f'is_free_trial_{i}', True))
+                # Длительность приходит строкой ('30'/'60'), приводим к int.
+                try:
+                    trial_duration = int(form_data.get(f'trial_duration_{i}') or 60)
+                except (TypeError, ValueError):
+                    trial_duration = 60
+                if trial_duration not in (30, 60):
+                    trial_duration = 60
+
+                trial_price = form_data.get(f'trial_price_{i}') if not is_free_trial else None
+
                 TeacherSubject.objects.create(
                     teacher=teacher_profile,
                     subject=subject,
                     hourly_rate=hourly_rate,
-                    is_free_trial=form_data.get(f'is_free_trial_{i}', False),
-                    description=form_data.get(f'description_{i}', '')
+                    is_free_trial=is_free_trial,
+                    trial_duration_minutes=trial_duration,
+                    trial_price=trial_price,
+                    description=form_data.get(f'description_{i}', ''),
                 )
     
     def _add_certificates(self, teacher_profile, form_data):
-        """
-        Add certificates uploaded during the wizard
-        Note: Certificates are optional. Only add if all required fields are filled.
-        """
-        # Only create certificate if file is provided
-        if form_data.get('file'):
-            # Проверяем, что заполнены name и issuer
-            name = form_data.get('name')
-            issuer = form_data.get('issuer')
-            file = form_data.get('file')
-            
-            if name and issuer and file:
-                try:
-                    certificate = Certificate.objects.create(
-                        name=name,
-                        issuer=issuer,
-                        file=file
-                    )
-                    teacher_profile.certificates.add(certificate)
-                except Exception as e:
-                    # Логируем ошибку, но не прерываем регистрацию
-                    logger.error(f"Error adding certificate: {e}", exc_info=True)
+        """Сохраняем все сертификаты из шага 6 (до 4 шт.).
+        Все поля опциональны; пара (name+issuer+file) либо целиком заполнена, либо
+        целиком пустая (валидируется формой). Ошибка одного сертификата не валит
+        регистрацию — мы её логируем и продолжаем."""
+        for i in range(1, 5):
+            name = (form_data.get(f'cert_name_{i}') or '').strip()
+            issuer = (form_data.get(f'cert_issuer_{i}') or '').strip()
+            file = form_data.get(f'cert_file_{i}')
+            if not (name and issuer and file):
+                continue
+            try:
+                certificate = Certificate.objects.create(
+                    name=name, issuer=issuer, file=file,
+                )
+                teacher_profile.certificates.add(certificate)
+            except Exception as e:
+                logger.error(f"Error adding certificate #{i}: {e}", exc_info=True)
 
     def _notify_moderators(self, teacher_profile):
         """Создаёт уведомление для администраторов о новой заявке на модерацию."""

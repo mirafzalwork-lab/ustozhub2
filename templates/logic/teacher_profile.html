@@ -1229,19 +1229,26 @@
                 <div class="info-label">{% trans 'Город' %}</div>
                 <div class="info-value">{{ teacher.city|default:"Не указан" }}</div>
             </div>
-            <div class="info-item">
-                <div class="info-label">{% trans 'Общее время работы' %}</div>
-                <div class="info-value">
-                    {{ teacher.available_from|time:"H:i" }} - {{ teacher.available_to|time:"H:i" }}
-                </div>
-            </div>
             <div class="info-item full-width">
-                <div class="info-label">{% trans 'Рабочие дни (генерально)' %}</div>
-                <div class="weekdays-list">
-                    {% for day in teacher.get_available_weekdays_display|split:", " %}
-                        <span class="weekday-badge">{{ day }}</span>
+                <div class="info-label">{% trans 'Расписание' %}</div>
+                {% if teacher.has_schedule %}
+                <div class="schedule-list">
+                    {% for day_label, intervals in teacher.get_schedule_display %}
+                        {% if intervals %}
+                        <div class="schedule-row">
+                            <span class="weekday-badge">{{ day_label }}</span>
+                            <span class="schedule-times">
+                                {% for from_t, to_t in intervals %}
+                                    {{ from_t }}–{{ to_t }}{% if not forloop.last %},{% endif %}
+                                {% endfor %}
+                            </span>
+                        </div>
+                        {% endif %}
                     {% endfor %}
                 </div>
+                {% else %}
+                <div class="info-value text-muted">{% trans 'Расписание не указано' %}</div>
+                {% endif %}
             </div>
         </div>
     </div>

@@ -1888,7 +1888,15 @@
                             </div>
                             <div class="stat-item">
                                 <i class="fas fa-clock"></i>
-                                <span>{{ teacher.get_available_weekdays_display }}</span>
+                                <span>
+                                    {% if teacher.has_schedule %}
+                                        {% with disp=teacher.get_schedule_display_short %}
+                                            {% for day_label, intervals in disp %}{% if intervals %}{{ day_label }}{% if not forloop.last %} {% endif %}{% endif %}{% endfor %}
+                                        {% endwith %}
+                                    {% else %}
+                                        {% trans 'По договорённости' %}
+                                    {% endif %}
+                                </span>
                             </div>
                             <div class="stat-item">
                                 <i class="fas fa-language"></i>
@@ -2229,16 +2237,25 @@
 
                 <!-- Availability -->
                 <div class="availability-card">
-                    <h3 class="contact-title">{% trans 'Доступность' %}</h3>
+                    <h3 class="contact-title">{% trans 'Расписание' %}</h3>
                     <div class="availability-info">
+                        {% if teacher.has_schedule %}
+                            {% for day_label, intervals in teacher.get_schedule_display %}
+                                {% if intervals %}
+                                <div class="availability-item">
+                                    <i class="fas fa-calendar-day"></i>
+                                    <span><strong>{{ day_label }}:</strong>
+                                        {% for from_t, to_t in intervals %}{{ from_t }}–{{ to_t }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                                    </span>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
                         <div class="availability-item">
                             <i class="fas fa-calendar"></i>
-                            <span>{{ teacher.get_available_weekdays_display }}</span>
+                            <span>{% trans 'Расписание не указано — свяжитесь с учителем' %}</span>
                         </div>
-                        <div class="availability-item">
-                            <i class="fas fa-clock"></i>
-                            <span>{{ teacher.available_from|time:"H:i" }} - {{ teacher.available_to|time:"H:i" }}</span>
-                        </div>
+                        {% endif %}
                         <div class="availability-item">
                             <i class="fas fa-desktop"></i>
                             <span>{{ teacher.get_teaching_format_display }}</span>

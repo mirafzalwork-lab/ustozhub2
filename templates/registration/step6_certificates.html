@@ -3,9 +3,12 @@
 
 {% block step_content %}
 <div class="form-section">
-    <h3 class="section-title">Сертификаты и дипломы</h3>
-    <p class="section-description">Этот шаг необязательный. Вы можете добавить сертификаты сейчас или позже в профиле.</p>
-    
+    <h3 class="section-title">
+        Сертификаты и дипломы
+        <span class="optional-badge">необязательно</span>
+    </h3>
+    <p class="section-description">Вы можете добавить до 4 сертификатов сейчас или позже в профиле.</p>
+
     <div class="optional-notice">
         <svg class="notice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"></circle>
@@ -16,60 +19,65 @@
     </div>
 </div>
 
-<div class="form-section">
-    <div class="form-group">
-        <label class="form-label" for="{{ wizard.form.name.id_for_label }}">
-            {{ wizard.form.name.label }}
-        </label>
-        {{ wizard.form.name }}
-        <div class="field-help">{{ wizard.form.name.help_text }}</div>
-        {% if wizard.form.name.errors %}
-        <div class="field-errors">
-            {% for error in wizard.form.name.errors %}
-            <p class="error-text">{{ error }}</p>
-            {% endfor %}
+<div id="certsContainer">
+    {% for i in "1234" %}
+    <div class="cert-card" data-cert-num="{{ i }}" {% if not forloop.first %}style="display: none;"{% endif %}>
+        <div class="cert-header">
+            <h4>Сертификат {{ i }}</h4>
+            {% if not forloop.first %}
+            <button type="button" class="remove-cert-btn" data-num="{{ i }}" aria-label="Удалить сертификат {{ i }}">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+            {% endif %}
         </div>
-        {% endif %}
-    </div>
 
-    <div class="form-group">
-        <label class="form-label" for="{{ wizard.form.issuer.id_for_label }}">
-            {{ wizard.form.issuer.label }}
-        </label>
-        {{ wizard.form.issuer }}
-        <div class="field-help">{{ wizard.form.issuer.help_text }}</div>
-        {% if wizard.form.issuer.errors %}
-        <div class="field-errors">
-            {% for error in wizard.form.issuer.errors %}
-            <p class="error-text">{{ error }}</p>
-            {% endfor %}
+        <div class="form-group">
+            <label class="form-label">Название сертификата</label>
+            {% if forloop.counter == 1 %}{{ wizard.form.cert_name_1 }}
+            {% elif forloop.counter == 2 %}{{ wizard.form.cert_name_2 }}
+            {% elif forloop.counter == 3 %}{{ wizard.form.cert_name_3 }}
+            {% elif forloop.counter == 4 %}{{ wizard.form.cert_name_4 }}{% endif %}
         </div>
-        {% endif %}
-    </div>
 
-    <div class="form-group">
-        <label class="form-label" for="{{ wizard.form.file.id_for_label }}">
-            {{ wizard.form.file.label }}
-        </label>
-        <div class="file-upload-area" id="certificateUpload">
-            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="17 8 12 3 7 8"></polyline>
-                <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-            <p class="upload-text">Нажмите или перетащите файл сюда</p>
-            <p class="upload-hint">PDF, JPG или PNG до 10 МБ</p>
+        <div class="form-group">
+            <label class="form-label">Кто выдал</label>
+            {% if forloop.counter == 1 %}{{ wizard.form.cert_issuer_1 }}
+            {% elif forloop.counter == 2 %}{{ wizard.form.cert_issuer_2 }}
+            {% elif forloop.counter == 3 %}{{ wizard.form.cert_issuer_3 }}
+            {% elif forloop.counter == 4 %}{{ wizard.form.cert_issuer_4 }}{% endif %}
         </div>
-        {{ wizard.form.file }}
-        <div class="field-help">{{ wizard.form.file.help_text }}</div>
-        {% if wizard.form.file.errors %}
-        <div class="field-errors">
-            {% for error in wizard.form.file.errors %}
-            <p class="error-text">{{ error }}</p>
-            {% endfor %}
+
+        <div class="form-group">
+            <label class="form-label">Файл сертификата</label>
+            {% if forloop.counter == 1 %}{{ wizard.form.cert_file_1 }}
+            {% elif forloop.counter == 2 %}{{ wizard.form.cert_file_2 }}
+            {% elif forloop.counter == 3 %}{{ wizard.form.cert_file_3 }}
+            {% elif forloop.counter == 4 %}{{ wizard.form.cert_file_4 }}{% endif %}
+            <div class="field-help">PDF, JPG или PNG до 10 МБ.</div>
         </div>
-        {% endif %}
     </div>
+    {% endfor %}
+</div>
+
+{% if wizard.form.non_field_errors %}
+<div class="field-errors">
+    {% for e in wizard.form.non_field_errors %}
+    <p class="error-text">{{ e }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Кнопка добавления -->
+<div class="add-cert-wrapper" id="addCertWrapper">
+    <button type="button" class="add-cert-btn" id="addCertBtn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span>Добавить ещё сертификат</span>
+    </button>
+    <p class="add-cert-hint">Вы можете добавить до 4 сертификатов</p>
 </div>
 
 <div class="certificate-examples">
@@ -85,9 +93,12 @@
 
 <!-- ───────────────────────── Видео-визитка ───────────────────────── -->
 <div class="form-section" style="margin-top: 32px; border-top: 1px solid #e5e7eb; padding-top: 28px;">
-    <h3 class="section-title">Видео-визитка</h3>
+    <h3 class="section-title">
+        Видео-визитка
+        <span class="optional-badge">необязательно</span>
+    </h3>
     <p class="section-description">
-        Короткое видео поможет ученикам познакомиться с вами. Этот блок необязательный — учителя с видео получают на 40% больше откликов.
+        Короткое видео поможет ученикам познакомиться с вами. Учителя с видео получают на 40% больше откликов.
     </p>
 
     <!-- Скрытое поле для URL (заполняется JS после загрузки) -->
@@ -150,6 +161,132 @@
     <p>Оба блока необязательны — сертификаты и видео можно добавить позже в настройках профиля.</p>
 </div>
 
+<style>
+.optional-badge {
+    display: inline-block; margin-left: 8px; padding: 2px 10px;
+    font-size: 11px; font-weight: 500; color: #6b7280; background: #f3f4f6;
+    border-radius: 10px; vertical-align: middle; text-transform: lowercase;
+}
+.cert-card {
+    padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px;
+    margin-bottom: 16px; background: #ffffff;
+}
+.cert-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+}
+.cert-header h4 { margin: 0; font-size: 15px; color: #374151; }
+.remove-cert-btn {
+    background: none; border: none; color: #ef4444; cursor: pointer;
+    padding: 8px; border-radius: 6px; transition: all 0.2s ease;
+    display: flex; align-items: center; justify-content: center;
+}
+.remove-cert-btn:hover { background: #fee2e2; transform: rotate(90deg); }
+
+.add-cert-wrapper { margin: 16px 0 24px; text-align: center; }
+.add-cert-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 24px; background: #ffffff;
+    border: 2px dashed #d1d5db; border-radius: 8px;
+    color: #3b82f6; font-size: 15px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s ease;
+}
+.add-cert-btn:hover { border-color: #3b82f6; background: #eff6ff; transform: translateY(-1px); }
+.add-cert-btn svg { color: #3b82f6; }
+.add-cert-hint { margin-top: 8px; font-size: 13px; color: #6b7280; }
+</style>
+
+<script>
+(function () {
+    'use strict';
+    var MAX = 4;
+
+    function visibleCount() {
+        var n = 0;
+        document.querySelectorAll('.cert-card').forEach(function (c) {
+            if (c.style.display !== 'none') n++;
+        });
+        return Math.max(1, n);
+    }
+
+    function updateAddBtn() {
+        var wrap = document.getElementById('addCertWrapper');
+        var hint = document.querySelector('.add-cert-hint');
+        var v = visibleCount();
+        if (v >= MAX) {
+            wrap.style.display = 'none';
+        } else {
+            wrap.style.display = 'block';
+            if (hint) {
+                var remaining = MAX - v;
+                var word = remaining === 1 ? 'сертификат' : (remaining < 5 ? 'сертификата' : 'сертификатов');
+                hint.textContent = 'Вы можете добавить ещё ' + remaining + ' ' + word;
+            }
+        }
+    }
+
+    function addCert() {
+        var v = visibleCount();
+        if (v >= MAX) return;
+        var next = v + 1;
+        var card = document.querySelector('[data-cert-num="' + next + '"]');
+        if (!card) return;
+        card.style.display = 'block';
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(10px)';
+        card.style.transition = 'all 0.3s ease';
+        requestAnimationFrame(function () {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        });
+        setTimeout(function () {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 80);
+        updateAddBtn();
+    }
+
+    function clearCard(card) {
+        card.querySelectorAll('input, textarea').forEach(function (el) {
+            if (el.type === 'file') {
+                el.value = '';
+            } else if (el.type !== 'checkbox' && el.type !== 'radio') {
+                el.value = '';
+            }
+        });
+    }
+
+    function removeCert(num) {
+        var card = document.querySelector('[data-cert-num="' + num + '"]');
+        if (!card) return;
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(-10px)';
+        setTimeout(function () {
+            card.style.display = 'none';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+            clearCard(card);
+            updateAddBtn();
+        }, 250);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('addCertBtn').addEventListener('click', addCert);
+        document.querySelectorAll('.remove-cert-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () { removeCert(btn.dataset.num); });
+        });
+        // При возврате на шаг показать карточки, в которых что-то заполнено
+        for (var i = 2; i <= MAX; i++) {
+            var name = document.querySelector('#id_cert_name_' + i);
+            var issuer = document.querySelector('#id_cert_issuer_' + i);
+            if ((name && name.value) || (issuer && issuer.value)) {
+                var c = document.querySelector('[data-cert-num="' + i + '"]');
+                if (c) c.style.display = 'block';
+            }
+        }
+        updateAddBtn();
+    });
+})();
+</script>
+
 <script>
 (function() {
     const MAX_SIZE = 50 * 1024 * 1024;
@@ -173,7 +310,6 @@
     const successEl = document.getElementById('video-success');
     const hiddenInput = document.getElementById('id_video_url');
 
-    // Если URL уже сохранён (возврат на шаг) — показываем состояние «загружено»
     if (hiddenInput && hiddenInput.value) {
         successEl.style.display = 'block';
         removeBtn.style.display = 'inline-flex';

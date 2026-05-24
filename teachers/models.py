@@ -615,6 +615,79 @@ class TeacherProfile(models.Model):
         """True, если задан хотя бы один рабочий интервал."""
         return any(self.get_schedule_intervals().values())
 
+    def generate_slots_from_template(self, weeks: int = 4, slot_minutes: int = 60,
+                                     start_date=None) -> dict:
+        """Нарезает TimeSlot из шаблона weekly_schedule на N недель вперёд.
+
+        Используется и после регистрации (авто-генерация), и через UI календаря.
+        Пересекающиеся / прошедшие слоты пропускаются.
+
+        Возвращает: {'created': N, 'skipped': M, 'total': K}.
+        """
+        from datetime import datetime, time as dt_time, timedelta
+        from django.utils import timezone
+
+        if weeks < 1:
+            weeks = 1
+        if weeks > 12:
+            weeks = 12
+        if slot_minutes not in (30, 45, 60, 90, 120):
+            slot_minutes = 60
+
+        schedule = self.get_schedule_intervals()
+        if not any(schedule.values()):
+            return {'created': 0, 'skipped': 0, 'total': 0}
+
+        tz = timezone.get_current_timezone()
+        now = timezone.now()
+        if start_date is None:
+            start_date = (now + timedelta(days=1)).date()
+        end_date = start_date + timedelta(weeks=weeks)
+
+        existing = list(TimeSlot.objects.filter(
+            teacher=self,
+            start_at__gte=timezone.make_aware(datetime.combine(start_date, dt_time(0, 0)), tz),
+            start_at__lt=timezone.make_aware(datetime.combine(end_date, dt_time(0, 0)), tz),
+        ).values_list('start_at', 'end_at'))
+
+        def overlaps(s, e):
+            for es, ee in existing:
+                if s < ee and es < e:
+                    return True
+            return False
+
+        weekday_map = {
+            'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3,
+            'friday': 4, 'saturday': 5, 'sunday': 6,
+        }
+        created = skipped = total = 0
+        current = start_date
+        while current < end_date:
+            day_key = current.strftime('%A').lower()
+            for from_str, to_str in schedule.get(day_key, []):
+                try:
+                    from_t = dt_time.fromisoformat(from_str)
+                    to_t = dt_time.fromisoformat(to_str)
+                except (ValueError, TypeError):
+                    continue
+                day_start = timezone.make_aware(datetime.combine(current, from_t), tz)
+                day_end = timezone.make_aware(datetime.combine(current, to_t), tz)
+                cursor = day_start
+                while cursor + timedelta(minutes=slot_minutes) <= day_end:
+                    slot_end = cursor + timedelta(minutes=slot_minutes)
+                    total += 1
+                    if cursor < now or overlaps(cursor, slot_end):
+                        skipped += 1
+                    else:
+                        TimeSlot.objects.create(
+                            teacher=self, start_at=cursor, end_at=slot_end, status='free',
+                        )
+                        existing.append((cursor, slot_end))
+                        created += 1
+                    cursor = slot_end
+            current += timedelta(days=1)
+        return {'created': created, 'skipped': skipped, 'total': total}
+
     def get_absolute_url(self):
         return reverse('teacher_detail', kwargs={'pk': self.pk})
     
@@ -671,15 +744,34 @@ class TeacherProfile(models.Model):
 
 class TeacherSubject(models.Model):
     """Промежуточная модель для связи учитель-предмет с ценой"""
+
+    TRIAL_DURATION_CHOICES = [
+        (30, '30 минут'),
+        (60, '60 минут'),
+    ]
+
     teacher = models.ForeignKey(TeacherProfile, on_delete=models.CASCADE)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     hourly_rate = models.DecimalField(
-        max_digits=10, 
+        max_digits=10,
         decimal_places=2,
         validators=[MinValueValidator(0)],
         help_text="Цена за час в сумах"
     )
-    is_free_trial = models.BooleanField(default=False, help_text="Бесплатное пробное занятие")
+    is_free_trial = models.BooleanField(default=True, help_text="Бесплатное пробное занятие")
+    trial_duration_minutes = models.PositiveSmallIntegerField(
+        choices=TRIAL_DURATION_CHOICES,
+        default=60,
+        help_text="Длительность пробного урока (30 или 60 минут)",
+    )
+    trial_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)],
+        help_text="Цена платного пробного урока в сумах (не указывается, если пробный бесплатный)",
+    )
     description = models.TextField(blank=True, help_text="Дополнительная информация по предмету")
     created_at = models.DateTimeField(auto_now_add=True)
 

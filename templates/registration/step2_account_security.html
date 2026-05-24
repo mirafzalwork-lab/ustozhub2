@@ -11,31 +11,46 @@
         <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
     </svg>
     <div>
-        <p style="font-weight: 600; font-size: 15px; margin: 0 0 2px; color: #1e40af;">Вы регистрируетесь через Google</p>
-        <p style="font-size: 13px; color: #3b82f6; margin: 0;">Ваш email уже подтвержден. Пароль создавать не обязательно.</p>
+        <p style="font-weight: 600; font-size: 15px; margin: 0 0 2px; color: #1e40af;">Вход через Google уже настроен</p>
+        <p style="font-size: 13px; color: #3b82f6; margin: 0;">
+            <i class="fas fa-check-circle" style="color: #059669; margin-right: 4px;"></i>
+            Email <strong>{{ wizard.form.email.value }}</strong> подтверждён через Google. Логин и пароль создавать не нужно.
+        </p>
     </div>
+</div>
+
+{# Hidden поля для Google: username, email, пароли — отправляются автоматически #}
+{{ wizard.form.username }}
+{{ wizard.form.email }}
+{{ wizard.form.password1 }}
+{{ wizard.form.password2 }}
+
+{# Показываем только ошибки уровня формы (если вдруг возникнут) #}
+{% if wizard.form.non_field_errors or wizard.form.email.errors or wizard.form.username.errors %}
+<div class="field-errors">
+    {% for error in wizard.form.non_field_errors %}<p class="error-text">{{ error }}</p>{% endfor %}
+    {% for error in wizard.form.email.errors %}<p class="error-text">Email: {{ error }}</p>{% endfor %}
+    {% for error in wizard.form.username.errors %}<p class="error-text">Имя пользователя: {{ error }}</p>{% endfor %}
 </div>
 {% endif %}
 
+<div class="security-notice" style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 16px 20px; border-radius: 10px; display: flex; gap: 12px; align-items: flex-start;">
+    <svg style="width: 22px; height: 22px; color: #059669; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+    </svg>
+    <div>
+        <p style="margin: 0 0 4px; font-weight: 600; color: #14532d;">Можно идти дальше</p>
+        <p style="margin: 0; font-size: 13px; color: #166534;">Вход всегда будет через Google — нажмите «Далее», чтобы продолжить регистрацию.</p>
+    </div>
+</div>
+{% else %}
+{# Username скрыт для всех — авто-генерится из имени в _create_user(). #}
+{{ wizard.form.username }}
+
 <div class="form-section">
     <h3 class="section-title">Данные для входа</h3>
-    <p class="section-description">Эти данные будут использоваться для входа в вашу учетную запись.</p>
-
-    <div class="form-group">
-        <label class="form-label" for="{{ wizard.form.username.id_for_label }}">
-            {{ wizard.form.username.label }}
-            <span class="required">*</span>
-        </label>
-        {{ wizard.form.username }}
-        <div class="field-help">{{ wizard.form.username.help_text }}</div>
-        {% if wizard.form.username.errors %}
-        <div class="field-errors">
-            {% for error in wizard.form.username.errors %}
-            <p class="error-text">{{ error }}</p>
-            {% endfor %}
-        </div>
-        {% endif %}
-    </div>
+    <p class="section-description">Вы будете входить по email и паролю.</p>
 
     <div class="form-group">
         <label class="form-label" for="{{ wizard.form.email.id_for_label }}">
@@ -43,14 +58,7 @@
             <span class="required">*</span>
         </label>
         {{ wizard.form.email }}
-        {% if is_google %}
-        <div class="field-help" style="color: #059669;">
-            <i class="fas fa-check-circle" style="margin-right: 4px;"></i>
-            Подтвержден через Google
-        </div>
-        {% else %}
         <div class="field-help">{{ wizard.form.email.help_text }}</div>
-        {% endif %}
         {% if wizard.form.email.errors %}
         <div class="field-errors">
             {% for error in wizard.form.email.errors %}
@@ -62,19 +70,13 @@
 </div>
 
 <div class="form-section">
-    <h3 class="section-title">
-        {% if is_google %}Создайте пароль (необязательно){% else %}Создайте пароль{% endif %}
-    </h3>
-    {% if is_google %}
-    <p class="section-description">Вы сможете входить через Google. Пароль нужен только если хотите также входить по email.</p>
-    {% else %}
+    <h3 class="section-title">Создайте пароль</h3>
     <p class="section-description">Используйте надежный пароль для защиты вашей учетной записи.</p>
-    {% endif %}
 
     <div class="form-group">
         <label class="form-label" for="{{ wizard.form.password1.id_for_label }}">
             {{ wizard.form.password1.label }}
-            {% if not is_google %}<span class="required">*</span>{% endif %}
+            <span class="required">*</span>
         </label>
         {{ wizard.form.password1 }}
 
@@ -99,7 +101,7 @@
     <div class="form-group">
         <label class="form-label" for="{{ wizard.form.password2.id_for_label }}">
             {{ wizard.form.password2.label }}
-            {% if not is_google %}<span class="required">*</span>{% endif %}
+            <span class="required">*</span>
         </label>
         {{ wizard.form.password2 }}
         <div class="field-help">{{ wizard.form.password2.help_text }}</div>
@@ -123,4 +125,5 @@
         <p>Ваш пароль будет надежно зашифрован. Мы никогда не передадим ваши данные третьим лицам.</p>
     </div>
 </div>
+{% endif %}
 {% endblock %}

@@ -399,21 +399,25 @@ class CertificateUploadForm(forms.ModelForm):
 
 
 class LoginForm(AuthenticationForm):
-    """Форма входа"""
+    """Форма входа. Поле username принимает email — fallback в login_view
+    подменит его на username существующего пользователя."""
     username = forms.CharField(
-        label=_('Имя пользователя или Email'),
-        widget=forms.TextInput(attrs={
+        label=_('Email'),
+        widget=forms.EmailInput(attrs={
             'class': 'form-input',
-            'placeholder': _('Введите имя пользователя или email'),
-            'autofocus': True
+            'placeholder': 'your.email@example.com',
+            'autocomplete': 'email',
+            'autofocus': True,
+            'inputmode': 'email',
         })
     )
-    
+
     password = forms.CharField(
         label=_('Пароль'),
         widget=forms.PasswordInput(attrs={
             'class': 'form-input',
-            'placeholder': _('Введите пароль')
+            'placeholder': _('Введите пароль'),
+            'autocomplete': 'current-password',
         })
     )
     

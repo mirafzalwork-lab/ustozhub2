@@ -5,176 +5,120 @@
 {% block step_content %}
 <div class="form-section">
     <h3 class="section-title">Предметы и цены</h3>
-    <p class="section-description">Укажите предметы, которые вы преподаете, и стоимость часа занятий. Вы можете добавить до 4 предметов.</p>
+    <p class="section-description">Укажите предметы, которые вы преподаёте, и стоимость занятий. Для каждого предмета можно настроить пробный урок отдельно. Можно добавить до 4 предметов.</p>
 </div>
 
 <div id="subjectsContainer">
-    <!-- Первый предмет (обязательный) -->
-    <div class="subject-card" data-subject-num="1">
+    {% for i in "1234" %}
+    <div class="subject-card" data-subject-num="{{ i }}" {% if not forloop.first %}style="display: none;"{% endif %}>
         <div class="subject-header">
-            <h4>Предмет 1</h4>
+            <h4>Предмет {{ i }}</h4>
+            {% if forloop.first %}
             <span class="badge-required">Обязательно</span>
-        </div>
-
-        <div class="form-group">
-            <label class="form-label" for="id_subject_1">
-                Выберите предмет <span class="required">*</span>
-            </label>
-            {{ wizard.form.subject_1 }}
-            {% if wizard.form.subject_1.errors %}
-            <div class="field-errors">
-                {% for error in wizard.form.subject_1.errors %}
-                <p class="error-text">{{ error }}</p>
-                {% endfor %}
-            </div>
+            {% else %}
+            <button type="button" class="remove-subject-btn" data-num="{{ i }}" aria-label="Удалить предмет {{ i }}">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
             {% endif %}
         </div>
 
-        <div class="form-row">
-            <div class="form-group">
-                <label class="form-label" for="id_hourly_rate_1">
-                    Цена за час (сум) <span class="required">*</span>
-                </label>
-                {{ wizard.form.hourly_rate_1 }}
-                {% if wizard.form.hourly_rate_1.errors %}
-                <div class="field-errors">
-                    {% for error in wizard.form.hourly_rate_1.errors %}
-                    <p class="error-text">{{ error }}</p>
-                    {% endfor %}
-                </div>
-                {% endif %}
-            </div>
-
-            <div class="form-group checkbox-wrapper">
-                <label class="checkbox-label free-trial-label">
-                    {{ wizard.form.is_free_trial_1 }}
-                    <span class="checkbox-text">Пробный урок бесплатно</span>
-                </label>
-            </div>
-        </div>
-
         <div class="form-group">
-            <label class="form-label" for="id_description_1">
-                Описание (желательно)
+            <label class="form-label" for="id_subject_{{ i }}">
+                Предмет для преподавания {% if forloop.first %}<span class="required">*</span>{% endif %}
             </label>
-            {{ wizard.form.description_1 }}
-            <div class="field-help">Опишите особенности преподавания этого предмета</div>
-        </div>
-    </div>
-
-    <!-- Карточки для предметов 2, 3, 4 (скрыты по умолчанию) -->
-    <div class="subject-card" data-subject-num="2" style="display: none;">
-        <div class="subject-header">
-            <h4>Предмет 2</h4>
-            <button type="button" class="remove-subject-btn" onclick="removeSubject(2)">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-            </button>
+            {% if forloop.counter == 1 %}{{ wizard.form.subject_1 }}
+            {% elif forloop.counter == 2 %}{{ wizard.form.subject_2 }}
+            {% elif forloop.counter == 3 %}{{ wizard.form.subject_3 }}
+            {% elif forloop.counter == 4 %}{{ wizard.form.subject_4 }}{% endif %}
+            {% if forloop.counter == 1 and wizard.form.subject_1.errors %}
+                <div class="field-errors">{% for e in wizard.form.subject_1.errors %}<p class="error-text">{{ e }}</p>{% endfor %}</div>
+            {% endif %}
         </div>
 
         <div class="form-group">
-            <label class="form-label" for="id_subject_2">Выберите предмет</label>
-            {{ wizard.form.subject_2 }}
+            <label class="form-label">
+                Цена за один час (сум) {% if forloop.first %}<span class="required">*</span>{% endif %}
+            </label>
+            {% if forloop.counter == 1 %}{{ wizard.form.hourly_rate_1 }}
+            {% elif forloop.counter == 2 %}{{ wizard.form.hourly_rate_2 }}
+            {% elif forloop.counter == 3 %}{{ wizard.form.hourly_rate_3 }}
+            {% elif forloop.counter == 4 %}{{ wizard.form.hourly_rate_4 }}{% endif %}
+            <div class="field-help">Стоимость одного полного урока (60 мин).</div>
         </div>
 
-        <div class="form-row">
+        <!-- Блок «Пробный урок» -->
+        <div class="trial-block">
+            <div class="trial-block-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 8v4l3 3M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span>Пробный урок</span>
+            </div>
+
             <div class="form-group">
-                <label class="form-label" for="id_hourly_rate_2">Цена за час (сум)</label>
-                {{ wizard.form.hourly_rate_2 }}
+                <label class="form-label">Длительность пробного урока</label>
+                <div class="duration-radio-group" role="radiogroup">
+                    {% if forloop.counter == 1 %}{% for choice in wizard.form.trial_duration_1 %}
+                        <label class="duration-radio-card">{{ choice.tag }}<span>{{ choice.choice_label }}</span></label>
+                    {% endfor %}{% endif %}
+                    {% if forloop.counter == 2 %}{% for choice in wizard.form.trial_duration_2 %}
+                        <label class="duration-radio-card">{{ choice.tag }}<span>{{ choice.choice_label }}</span></label>
+                    {% endfor %}{% endif %}
+                    {% if forloop.counter == 3 %}{% for choice in wizard.form.trial_duration_3 %}
+                        <label class="duration-radio-card">{{ choice.tag }}<span>{{ choice.choice_label }}</span></label>
+                    {% endfor %}{% endif %}
+                    {% if forloop.counter == 4 %}{% for choice in wizard.form.trial_duration_4 %}
+                        <label class="duration-radio-card">{{ choice.tag }}<span>{{ choice.choice_label }}</span></label>
+                    {% endfor %}{% endif %}
+                </div>
             </div>
 
             <div class="form-group checkbox-wrapper">
                 <label class="checkbox-label free-trial-label">
-                    {{ wizard.form.is_free_trial_2 }}
+                    {% if forloop.counter == 1 %}{{ wizard.form.is_free_trial_1 }}
+                    {% elif forloop.counter == 2 %}{{ wizard.form.is_free_trial_2 }}
+                    {% elif forloop.counter == 3 %}{{ wizard.form.is_free_trial_3 }}
+                    {% elif forloop.counter == 4 %}{{ wizard.form.is_free_trial_4 }}{% endif %}
                     <span class="checkbox-text">Пробный урок бесплатно</span>
                 </label>
+                <div class="field-help">Бесплатный пробный помогает привлечь больше учеников.</div>
+            </div>
+
+            <div class="form-group trial-price-group" data-num="{{ i }}" style="display: none;">
+                <label class="form-label">Цена пробного урока (сум)</label>
+                {% if forloop.counter == 1 %}{{ wizard.form.trial_price_1 }}
+                {% elif forloop.counter == 2 %}{{ wizard.form.trial_price_2 }}
+                {% elif forloop.counter == 3 %}{{ wizard.form.trial_price_3 }}
+                {% elif forloop.counter == 4 %}{{ wizard.form.trial_price_4 }}{% endif %}
+                <div class="field-help">Цена платного пробного урока. Обычно ниже обычной.</div>
             </div>
         </div>
 
         <div class="form-group">
-            <label class="form-label" for="id_description_2">Описание (желательно)</label>
-            {{ wizard.form.description_2 }}
-            <div class="field-help">Опишите особенности преподавания этого предмета</div>
+            <label class="form-label" for="id_description_{{ i }}">Описание (желательно)</label>
+            {% if forloop.counter == 1 %}{{ wizard.form.description_1 }}
+            {% elif forloop.counter == 2 %}{{ wizard.form.description_2 }}
+            {% elif forloop.counter == 3 %}{{ wizard.form.description_3 }}
+            {% elif forloop.counter == 4 %}{{ wizard.form.description_4 }}{% endif %}
+            <div class="field-help">Опишите особенности преподавания этого предмета.</div>
         </div>
     </div>
-
-    <div class="subject-card" data-subject-num="3" style="display: none;">
-        <div class="subject-header">
-            <h4>Предмет 3</h4>
-            <button type="button" class="remove-subject-btn" onclick="removeSubject(3)">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-            </button>
-        </div>
-
-        <div class="form-group">
-            <label class="form-label" for="id_subject_3">Выберите предмет</label>
-            {{ wizard.form.subject_3 }}
-        </div>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label class="form-label" for="id_hourly_rate_3">Цена за час (сум)</label>
-                {{ wizard.form.hourly_rate_3 }}
-            </div>
-
-            <div class="form-group checkbox-wrapper">
-                <label class="checkbox-label free-trial-label">
-                    {{ wizard.form.is_free_trial_3 }}
-                    <span class="checkbox-text">Пробный урок бесплатно</span>
-                </label>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label class="form-label" for="id_description_3">Описание (желательно)</label>
-            {{ wizard.form.description_3 }}
-            <div class="field-help">Опишите особенности преподавания этого предмета</div>
-        </div>
-    </div>
-
-    <div class="subject-card" data-subject-num="4" style="display: none;">
-        <div class="subject-header">
-            <h4>Предмет 4</h4>
-            <button type="button" class="remove-subject-btn" onclick="removeSubject(4)">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-            </button>
-        </div>
-
-        <div class="form-group">
-            <label class="form-label" for="id_subject_4">Выберите предмет</label>
-            {{ wizard.form.subject_4 }}
-        </div>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label class="form-label" for="id_hourly_rate_4">Цена за час (сум)</label>
-                {{ wizard.form.hourly_rate_4 }}
-            </div>
-
-            <div class="form-group checkbox-wrapper">
-                <label class="checkbox-label free-trial-label">
-                    {{ wizard.form.is_free_trial_4 }}
-                    <span class="checkbox-text">Пробный урок бесплатно</span>
-                </label>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label class="form-label" for="id_description_4">Описание (желательно)</label>
-            {{ wizard.form.description_4 }}
-            <div class="field-help">Опишите особенности преподавания этого предмета</div>
-        </div>
-    </div>
+    {% endfor %}
 </div>
+
+{% if wizard.form.non_field_errors %}
+<div class="field-errors">
+    {% for e in wizard.form.non_field_errors %}
+    <p class="error-text">{{ e }}</p>
+    {% endfor %}
+</div>
+{% endif %}
 
 <!-- Кнопка добавления предмета -->
 <div class="add-subject-wrapper" id="addSubjectWrapper">
-    <button type="button" class="add-subject-btn" onclick="addSubject()">
+    <button type="button" class="add-subject-btn" id="addSubjectBtn">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
@@ -186,195 +130,228 @@
 <div class="pricing-tips">
     <h4>💡 Рекомендации по ценообразованию:</h4>
     <ul>
-        <li>Средняя цена за час в Узбекистане: 50,000 - 150,000 сум</li>
-        <li>Опытные преподаватели берут 100,000 - 250,000 сум</li>
-        <li>Пробный урок помогает привлечь больше учеников</li>
+        <li>Средняя цена за час в Узбекистане: 50,000 – 150,000 сум</li>
+        <li>Опытные преподаватели берут 100,000 – 250,000 сум</li>
+        <li>Бесплатный пробный урок помогает привлечь больше учеников</li>
         <li>Вы сможете изменить цены позже в профиле</li>
     </ul>
 </div>
 
 <script>
-let visibleSubjects = 1;
-const maxSubjects = 4;
+(function () {
+    'use strict';
+    var maxSubjects = 4;
 
-function addSubject() {
-    if (visibleSubjects >= maxSubjects) {
-        return;
+    function getVisibleSubjects() {
+        var n = 0;
+        document.querySelectorAll('.subject-card').forEach(function (c) {
+            if (c.style.display !== 'none') n++;
+        });
+        return Math.max(1, n);
     }
-    
-    visibleSubjects++;
-    const subjectCard = document.querySelector(`[data-subject-num="${visibleSubjects}"]`);
-    
-    if (subjectCard) {
-        subjectCard.style.display = 'block';
-        
-        // Плавная анимация появления
-        setTimeout(() => {
-            subjectCard.style.opacity = '0';
-            subjectCard.style.transform = 'translateY(10px)';
-            subjectCard.style.transition = 'all 0.3s ease';
-            
-            setTimeout(() => {
-                subjectCard.style.opacity = '1';
-                subjectCard.style.transform = 'translateY(0)';
-            }, 10);
-        }, 10);
-        
-        // Прокрутка к новой карточке
-        setTimeout(() => {
-            subjectCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 100);
-    }
-    
-    // Скрыть кнопку, если достигнут максимум
-    if (visibleSubjects >= maxSubjects) {
-        document.getElementById('addSubjectWrapper').style.display = 'none';
-    }
-    
-    updateSubjectCount();
-}
 
-function removeSubject(num) {
-    const subjectCard = document.querySelector(`[data-subject-num="${num}"]`);
-    
-    if (subjectCard && num > 1) {
-        // Очистить поля
-        const subjectSelect = subjectCard.querySelector(`#id_subject_${num}`);
-        const priceInput = subjectCard.querySelector(`#id_hourly_rate_${num}`);
-        const trialCheckbox = subjectCard.querySelector(`#id_is_free_trial_${num}`);
-        const descriptionTextarea = subjectCard.querySelector(`#id_description_${num}`);
-        
-        if (subjectSelect) subjectSelect.value = '';
-        if (priceInput) priceInput.value = '';
-        if (trialCheckbox) trialCheckbox.checked = false;
-        if (descriptionTextarea) descriptionTextarea.value = '';
-        
-        // Анимация исчезновения
-        subjectCard.style.opacity = '0';
-        subjectCard.style.transform = 'translateY(-10px)';
-        
-        setTimeout(() => {
-            subjectCard.style.display = 'none';
-            subjectCard.style.opacity = '1';
-            subjectCard.style.transform = 'translateY(0)';
-        }, 300);
-        
-        visibleSubjects--;
-        
-        // Показать кнопку добавления
-        document.getElementById('addSubjectWrapper').style.display = 'block';
-        
-        updateSubjectCount();
-    }
-}
-
-function updateSubjectCount() {
-    const hint = document.querySelector('.add-subject-hint');
-    if (hint) {
-        const remaining = maxSubjects - visibleSubjects;
-        if (remaining > 0) {
-            hint.textContent = `Вы можете добавить еще ${remaining} ${remaining === 1 ? 'предмет' : remaining < 5 ? 'предмета' : 'предметов'}`;
+    function updateAddBtn() {
+        var wrap = document.getElementById('addSubjectWrapper');
+        var hint = document.querySelector('.add-subject-hint');
+        var visible = getVisibleSubjects();
+        if (visible >= maxSubjects) {
+            wrap.style.display = 'none';
+        } else {
+            wrap.style.display = 'block';
+            if (hint) {
+                var remaining = maxSubjects - visible;
+                var word = remaining === 1 ? 'предмет' : (remaining < 5 ? 'предмета' : 'предметов');
+                hint.textContent = 'Вы можете добавить ещё ' + remaining + ' ' + word;
+            }
         }
     }
-}
 
-// Инициализация при загрузке страницы
-document.addEventListener('DOMContentLoaded', function() {
-    // Проверяем, есть ли уже заполненные предметы (при возврате на шаг)
-    for (let i = 2; i <= maxSubjects; i++) {
-        const subjectSelect = document.querySelector(`#id_subject_${i}`);
-        if (subjectSelect && subjectSelect.value) {
-            visibleSubjects = i;
-            document.querySelector(`[data-subject-num="${i}"]`).style.display = 'block';
+    function addSubject() {
+        var visible = getVisibleSubjects();
+        if (visible >= maxSubjects) return;
+        var next = visible + 1;
+        var card = document.querySelector('[data-subject-num="' + next + '"]');
+        if (!card) return;
+        card.style.display = 'block';
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(10px)';
+        card.style.transition = 'all 0.3s ease';
+        requestAnimationFrame(function () {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        });
+        setTimeout(function () {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 80);
+        updateAddBtn();
+    }
+
+    function clearCard(card) {
+        card.querySelectorAll('input, select, textarea').forEach(function (el) {
+            if (el.type === 'checkbox' || el.type === 'radio') {
+                // Сброс к initial: free-trial → checked; duration radio "60" → checked
+                if (el.classList.contains('free-trial-checkbox')) {
+                    el.checked = true;
+                } else if (el.classList.contains('trial-duration-radio')) {
+                    el.checked = (el.value === '60');
+                } else {
+                    el.checked = false;
+                }
+            } else {
+                el.value = '';
+            }
+        });
+        // Скрыть trial-price-group, т.к. is_free_trial вернулся к true
+        var group = card.querySelector('.trial-price-group');
+        if (group) group.style.display = 'none';
+    }
+
+    function removeSubject(num) {
+        var card = document.querySelector('[data-subject-num="' + num + '"]');
+        if (!card || num === '1' || num === 1) return;
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(-10px)';
+        setTimeout(function () {
+            card.style.display = 'none';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+            clearCard(card);
+            updateAddBtn();
+        }, 250);
+    }
+
+    // Тогглинг блока цены пробного урока
+    function bindFreeTrialToggle(checkbox) {
+        var card = checkbox.closest('.subject-card');
+        if (!card) return;
+        var group = card.querySelector('.trial-price-group');
+        var input = group ? group.querySelector('.trial-price-input') : null;
+        function sync() {
+            if (!group) return;
+            if (checkbox.checked) {
+                group.style.display = 'none';
+                if (input) input.value = '';
+            } else {
+                group.style.display = '';
+                if (input) input.focus();
+            }
         }
+        checkbox.addEventListener('change', sync);
+        sync();
     }
-    
-    if (visibleSubjects >= maxSubjects) {
-        document.getElementById('addSubjectWrapper').style.display = 'none';
-    }
-    
-    updateSubjectCount();
-});
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Добавление предмета
+        document.getElementById('addSubjectBtn').addEventListener('click', addSubject);
+
+        // Удаление предмета
+        document.querySelectorAll('.remove-subject-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () { removeSubject(btn.dataset.num); });
+        });
+
+        // Тогглинг чекбоксов «бесплатно» (на всех 4 карточках)
+        document.querySelectorAll('.free-trial-checkbox').forEach(bindFreeTrialToggle);
+
+        // При возврате на шаг: показать карточки, в которых что-то заполнено
+        for (var i = 2; i <= maxSubjects; i++) {
+            var sel = document.querySelector('#id_subject_' + i);
+            if (sel && sel.value) {
+                var c = document.querySelector('[data-subject-num="' + i + '"]');
+                if (c) c.style.display = 'block';
+            }
+        }
+        updateAddBtn();
+    });
+})();
 </script>
 
 <style>
-.add-subject-wrapper {
-    margin: 24px 0;
-    text-align: center;
-}
+.add-subject-wrapper { margin: 24px 0; text-align: center; }
 
 .add-subject-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 24px;
-    background: #ffffff;
-    border: 2px dashed #d1d5db;
-    border-radius: 8px;
-    color: #3b82f6;
-    font-size: 15px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 24px; background: #ffffff;
+    border: 2px dashed #d1d5db; border-radius: 8px;
+    color: #3b82f6; font-size: 15px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s ease;
 }
-
-.add-subject-btn:hover {
-    border-color: #3b82f6;
-    background: #eff6ff;
-    transform: translateY(-1px);
-}
-
-.add-subject-btn svg {
-    color: #3b82f6;
-}
-
-.add-subject-hint {
-    margin-top: 8px;
-    font-size: 13px;
-    color: #6b7280;
-}
+.add-subject-btn:hover { border-color: #3b82f6; background: #eff6ff; transform: translateY(-1px); }
+.add-subject-btn svg { color: #3b82f6; }
+.add-subject-hint { margin-top: 8px; font-size: 13px; color: #6b7280; }
 
 .subject-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
 }
 
 .remove-subject-btn {
-    background: none;
-    border: none;
-    color: #ef4444;
-    cursor: pointer;
-    padding: 8px;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: none; border: none; color: #ef4444; cursor: pointer;
+    padding: 8px; border-radius: 6px; transition: all 0.2s ease;
+    display: flex; align-items: center; justify-content: center;
 }
-
-.remove-subject-btn:hover {
-    background: #fee2e2;
-    transform: rotate(90deg);
-}
+.remove-subject-btn:hover { background: #fee2e2; transform: rotate(90deg); }
 
 .badge-required {
-    background: #dbeafe;
-    color: #1e40af;
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 13px;
-    font-weight: 500;
+    background: #dbeafe; color: #1e40af;
+    padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 500;
 }
 
-.badge-optional {
-    background: #f3f4f6;
-    color: #6b7280;
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 13px;
-    font-weight: 500;
+/* === Trial block (пробный урок) === */
+.trial-block {
+    margin: 16px 0;
+    padding: 16px 18px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
 }
+.trial-block-title {
+    display: flex; align-items: center; gap: 8px;
+    color: #1e293b; font-weight: 600; font-size: 14px;
+    margin-bottom: 12px;
+}
+.trial-block-title svg { color: #3b82f6; }
+
+.duration-radio-group {
+    display: flex; gap: 10px; flex-wrap: wrap;
+}
+.duration-radio-card {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 16px; background: #fff;
+    border: 1.5px solid #e5e7eb; border-radius: 8px;
+    cursor: pointer; transition: all 0.15s ease;
+    font-size: 14px; font-weight: 500; color: #374151;
+}
+.duration-radio-card:hover { border-color: #93c5fd; background: #f0f7ff; }
+.duration-radio-card input[type="radio"] {
+    accent-color: #3b82f6;
+    margin: 0;
+}
+.duration-radio-card input[type="radio"]:checked + span { color: #1d4ed8; font-weight: 600; }
+.duration-radio-card:has(input:checked) {
+    border-color: #3b82f6; background: #eff6ff;
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.1);
+}
+
+.free-trial-label {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 14px; color: #374151; font-weight: 500;
+    cursor: pointer;
+}
+.free-trial-label input[type="checkbox"] {
+    width: 18px; height: 18px; accent-color: #3b82f6; cursor: pointer;
+}
+
+.trial-price-group { animation: fadeSlide 0.25s ease; }
+@keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.pricing-tips {
+    margin-top: 24px; padding: 16px 20px;
+    background: #fffbeb; border-left: 4px solid #f59e0b;
+    border-radius: 6px;
+}
+.pricing-tips h4 { margin: 0 0 8px 0; color: #92400e; font-size: 15px; }
+.pricing-tips ul { margin: 0; padding-left: 20px; color: #78350f; font-size: 13px; line-height: 1.7; }
 </style>
 {% endblock %}

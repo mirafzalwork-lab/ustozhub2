@@ -20,7 +20,7 @@ class Step1BasicProfileForm(forms.Form):
     Fields: Profile photo, First name, Last name, Gender, Teaching languages, Phone
     """
     GENDER_CHOICES = [
-        ('', 'Выберите пол'),
+        ('', 'Не указывать'),
         ('male', 'Мужской'),
         ('female', 'Женский'),
     ]
@@ -86,11 +86,12 @@ class Step1BasicProfileForm(forms.Form):
     
     gender = forms.ChoiceField(
         choices=GENDER_CHOICES,
-        required=True,
+        required=False,
         label='Пол',
         widget=forms.Select(attrs={
             'class': 'form-select'
-        })
+        }),
+        help_text='Необязательно. Помогает ученикам найти подходящего учителя.',
     )
     
     teaching_languages = forms.MultipleChoiceField(
@@ -110,9 +111,10 @@ class Step1BasicProfileForm(forms.Form):
         widget=forms.TextInput(attrs={
             'class': 'form-input',
             'placeholder': '+998 90 123 45 67',
-            'autocomplete': 'tel'
+            'autocomplete': 'tel',
+            'inputmode': 'tel',
         }),
-        help_text='Формат: +998 XX XXX XX XX'
+        help_text='Международный формат с кодом страны. Например: +998 90 123 45 67 или +1 202 555 0143.'
     )
     
     def clean_avatar(self):
@@ -145,25 +147,31 @@ class Step1BasicProfileForm(forms.Form):
         return avatar
     
     def clean_phone(self):
-        """✅ Валидация номера телефона"""
+        """Валидация телефона в международном формате E.164.
+
+        E.164 = '+' + 8…15 цифр (страна + номер). Подходит и для +998 (Узбекистан),
+        и для иностранных номеров (диаспора, иностранные учителя).
+        Пробелы/дефисы/скобки разрешены при вводе — мы их вырезаем.
+        """
         phone = self.cleaned_data.get('phone')
-        if phone:
-            try:
-                phone = phone.strip()
-                # ✅ Удаляем пробелы и дефисы для проверки
-                phone_digits = re.sub(r'[\s\-()]', '', phone)
-                
-                # ✅ Проверяем формат узбекского номера
-                if not re.match(r'^\+998\d{9}$', phone_digits):
-                    logger.warning(f"Invalid phone format: {phone}")
-                    raise ValidationError('Введите корректный номер телефона в формате +998 XX XXX XX XX')
-            except ValidationError:
-                raise
-            except Exception as e:
-                logger.error(f"Phone validation error: {e}")
-                raise ValidationError('Ошибка при проверке номера телефона')
-        
-        return phone
+        if not phone:
+            return phone
+        try:
+            phone = phone.strip()
+            phone_digits = re.sub(r'[\s\-()]', '', phone)
+            if not re.match(r'^\+\d{8,15}$', phone_digits):
+                logger.warning(f"Invalid phone format: {phone}")
+                raise ValidationError(
+                    'Введите корректный номер в международном формате с кодом страны: '
+                    '«+» и 8–15 цифр (например, +998 90 123 45 67).'
+                )
+            # Сохраняем в нормализованном виде (без пробелов/дефисов).
+            return phone_digits
+        except ValidationError:
+            raise
+        except Exception as e:
+            logger.error(f"Phone validation error: {e}")
+            raise ValidationError('Ошибка при проверке номера телефона')
     
     def clean_teaching_languages(self):
         # Получаем значение (должно быть список от CheckboxSelectMultiple)
@@ -391,14 +399,14 @@ class Step4AvailabilityFormatForm(forms.Form):
     }
     
     telegram = forms.CharField(
-        max_length=100,
+        max_length=200,
         required=True,
         label='Telegram',
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': '@username или +998901234567'
+            'placeholder': '@username, t.me/username или ссылка',
         }),
-        help_text='Ученики свяжутся с вами через Telegram'
+        help_text='@username, ссылка t.me/username или номер телефона. Ученики свяжутся с вами через Telegram.',
     )
     
     city = forms.ModelChoiceField(
@@ -443,25 +451,58 @@ class Step4AvailabilityFormatForm(forms.Form):
     available_from = forms.TimeField(required=False, widget=forms.HiddenInput())
     available_to = forms.TimeField(required=False, widget=forms.HiddenInput())
 
+    # Префиксы Telegram-ссылок, которые часто копипастят (без учёта регистра).
+    TG_URL_PREFIXES = (
+        'https://t.me/', 'http://t.me/', 't.me/',
+        'https://telegram.me/', 'http://telegram.me/', 'telegram.me/',
+        'https://web.telegram.org/', 'http://web.telegram.org/', 'web.telegram.org/',
+        'https://', 'http://',  # на случай других вариантов
+    )
+    TG_USERNAME_RE = re.compile(r'^[a-zA-Z][a-zA-Z0-9_]{3,30}[a-zA-Z0-9]$')
+
     def clean_telegram(self):
-        """✅ Валидация Telegram с проверкой формата"""
-        telegram = self.cleaned_data.get('telegram')
-        if telegram:
-            try:
-                telegram = telegram.strip()
-                # ✅ Проверяем, что это либо @username, либо номер телефона
-                if not (telegram.startswith('@') or telegram.startswith('+')):
-                    raise ValidationError('Введите Telegram в формате @username или +998...')
-                
-                # ✅ Дополнительная проверка на пустое значение после @
-                if telegram.startswith('@') and len(telegram) < 2:
-                    raise ValidationError('Укажите корректный Telegram username')
-            except ValidationError:
-                raise
-            except Exception as e:
-                logger.error(f"Telegram validation error: {e}")
-                raise ValidationError('Ошибка при проверке Telegram')
-        return telegram
+        """Нормализация Telegram.
+
+        Принимаем любую разумную форму ввода:
+            @username, username, t.me/username, https://t.me/username, +998901234567
+        На выходе либо '@username', либо '+998…' (E.164).
+
+        Telegram username по правилам Telegram: 5–32 символа, латинские буквы,
+        цифры, '_', начинается с буквы, не заканчивается на '_'.
+        Мы валидируем 5–32 и не разрешаем '_' на концах (regex выше).
+        """
+        raw = (self.cleaned_data.get('telegram') or '').strip()
+        if not raw:
+            return raw
+
+        # 1) Срезаем URL-префиксы (если копипастили ссылку)
+        low = raw.lower()
+        for prefix in self.TG_URL_PREFIXES:
+            if low.startswith(prefix):
+                raw = raw[len(prefix):]
+                break
+        raw = raw.lstrip('/')
+
+        # 2) Это телефон?
+        if raw.startswith('+'):
+            phone = re.sub(r'[\s\-()]', '', raw)
+            if not re.match(r'^\+\d{8,15}$', phone):
+                raise ValidationError(
+                    'Некорректный номер телефона в Telegram. Формат: +<код страны><номер>.'
+                )
+            return phone
+
+        # 3) Это username (с @ или без)
+        username = raw[1:] if raw.startswith('@') else raw
+        # username может содержать ? или другие хвосты от ссылки — отрезаем
+        username = username.split('?')[0].split('#')[0].split('/')[0]
+
+        if not self.TG_USERNAME_RE.match(username):
+            raise ValidationError(
+                'Некорректный Telegram username. Используйте 5–32 латинских букв, '
+                'цифр или «_», начиная с буквы (например, @ivan_teacher).'
+            )
+        return '@' + username
     
     DAY_NUMBER = {
         'monday': '1', 'tuesday': '2', 'wednesday': '3', 'thursday': '4',
@@ -532,9 +573,8 @@ class Step4AvailabilityFormatForm(forms.Form):
                 weekly_schedule[day] = [{'from': f, 'to': t} for _s, _e, f, t in normalized]
                 enabled_days.append(self.DAY_NUMBER[day])
 
-            if not weekly_schedule:
-                raise ValidationError('Добавьте хотя бы один рабочий интервал.')
-
+            # Расписание необязательно: учитель может заполнить его позже
+            # через календарь. Если пусто — просто сохраняем пустые структуры.
             cleaned_data['weekly_schedule'] = weekly_schedule
             cleaned_data['available_weekdays'] = enabled_days
             return cleaned_data
@@ -551,9 +591,14 @@ class Step5SubjectsPricingForm(forms.Form):
     STEP 4: Subjects & Pricing
     Dynamic form for up to 4 subjects with pricing
     """
+    TRIAL_DURATION_CHOICES = [
+        ('30', '30 минут'),
+        ('60', '60 минут'),
+    ]
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         # Создаем поля для 4 предметов
         for i in range(1, 5):
             self.fields[f'subject_{i}'] = forms.ModelChoiceField(
@@ -566,7 +611,7 @@ class Step5SubjectsPricingForm(forms.Form):
                 }),
                 empty_label='Выберите предмет'
             )
-            
+
             self.fields[f'hourly_rate_{i}'] = forms.DecimalField(
                 max_digits=10,
                 decimal_places=2,
@@ -580,16 +625,45 @@ class Step5SubjectsPricingForm(forms.Form):
                     'data-subject-num': i
                 })
             )
-            
+
+            # По умолчанию пробный урок 60 минут
+            self.fields[f'trial_duration_{i}'] = forms.ChoiceField(
+                choices=self.TRIAL_DURATION_CHOICES,
+                initial='60',
+                required=False,
+                label='Длительность пробного урока',
+                widget=forms.RadioSelect(attrs={
+                    'class': 'trial-duration-radio',
+                    'data-subject-num': i,
+                }),
+            )
+
+            # По умолчанию пробный бесплатный (checked)
             self.fields[f'is_free_trial_{i}'] = forms.BooleanField(
                 required=False,
+                initial=True,
                 label='Пробный урок бесплатно',
                 widget=forms.CheckboxInput(attrs={
-                    'class': 'form-checkbox',
-                    'data-subject-num': i
+                    'class': 'form-checkbox free-trial-checkbox',
+                    'data-subject-num': i,
                 })
             )
-            
+
+            # Цена платного пробного — нужна только если бесплатный отключён
+            self.fields[f'trial_price_{i}'] = forms.DecimalField(
+                max_digits=10,
+                decimal_places=2,
+                required=False,
+                label='Цена пробного урока (сум)',
+                widget=forms.NumberInput(attrs={
+                    'class': 'form-input trial-price-input',
+                    'placeholder': '50000',
+                    'min': '0',
+                    'step': '1000',
+                    'data-subject-num': i,
+                })
+            )
+
             self.fields[f'description_{i}'] = forms.CharField(
                 required=False,
                 label='Описание (желательно)',
@@ -602,30 +676,50 @@ class Step5SubjectsPricingForm(forms.Form):
                 }),
                 max_length=200
             )
-    
+
     def clean(self):
         """✅ Валидация предметов и цен"""
         try:
             cleaned_data = super().clean()
             subjects_added = 0
             selected_subjects = []
-            
+
             for i in range(1, 5):
                 try:
                     subject = cleaned_data.get(f'subject_{i}')
                     hourly_rate = cleaned_data.get(f'hourly_rate_{i}')
-                    
+                    is_free_trial = cleaned_data.get(f'is_free_trial_{i}', True)
+                    trial_price = cleaned_data.get(f'trial_price_{i}')
+                    trial_duration = cleaned_data.get(f'trial_duration_{i}') or '60'
+
                     if subject:
                         # ✅ Проверяем, что не выбран дубликат
                         if subject in selected_subjects:
                             raise ValidationError(
                                 f'Предмет "{subject}" выбран несколько раз. Выберите разные предметы.'
                             )
-                        
-                        # ✅ Проверяем, что указана цена
+
+                        # ✅ Проверяем, что указана цена за час
                         if not hourly_rate or hourly_rate <= 0:
-                            raise ValidationError(f'Укажите цену для предмета "{subject}"')
-                        
+                            raise ValidationError(f'Укажите цену за час для предмета "{subject}"')
+
+                        # ✅ Проверяем длительность пробного
+                        if trial_duration not in ('30', '60'):
+                            raise ValidationError(
+                                f'Для предмета "{subject}" выберите длительность пробного урока (30 или 60 минут).'
+                            )
+
+                        # ✅ Если пробный платный — нужна цена
+                        if not is_free_trial:
+                            if not trial_price or trial_price <= 0:
+                                raise ValidationError(
+                                    f'Укажите цену пробного урока для предмета "{subject}" '
+                                    f'или отметьте «Пробный урок бесплатно».'
+                                )
+                        else:
+                            # Если бесплатный — затираем введённую цену пробного, чтобы не сохранять
+                            cleaned_data[f'trial_price_{i}'] = None
+
                         selected_subjects.append(subject)
                         subjects_added += 1
                     elif hourly_rate and hourly_rate > 0:
@@ -636,14 +730,14 @@ class Step5SubjectsPricingForm(forms.Form):
                 except Exception as e:
                     logger.error(f"Subject {i} validation error: {e}")
                     raise ValidationError(f'Ошибка при проверке предмета {i}')
-            
+
             # ✅ Проверяем, что добавлен хотя бы один предмет
             if subjects_added == 0:
                 raise ValidationError('Добавьте хотя бы один предмет с ценой')
-            
+
             cleaned_data['subjects_count'] = subjects_added
             return cleaned_data
-            
+
         except ValidationError:
             raise
         except Exception as e:
@@ -651,112 +745,97 @@ class Step5SubjectsPricingForm(forms.Form):
             raise ValidationError('Ошибка при проверке предметов')
 
 
-class Step6CertificatesForm(forms.ModelForm):
+class Step6CertificatesForm(forms.Form):
     """
-    STEP 6: Certificates + Video (both optional, объединённый шаг)
-    Сертификаты/дипломы + видео-визитка (загружается на S3 через presigned URL).
+    STEP 6: Certificates + Video (всё необязательно, до 4 сертификатов).
+
+    Динамически создаёт поля cert_name_{i}, cert_issuer_{i}, cert_file_{i} для i=1..4
+    и одно поле video_url для presigned upload.
     """
+    MAX_CERTS = 4
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+    VALID_EXTS = {'.jpg', '.jpeg', '.png', '.pdf'}
+    ALLOWED_MIMES = {'image/jpeg', 'image/png', 'application/pdf'}
+
     video_url = forms.URLField(
         max_length=500,
         required=False,
         widget=forms.HiddenInput(attrs={'id': 'id_video_url'}),
     )
 
-    name = forms.CharField(
-        max_length=200,
-        required=False,
-        label='Название сертификата',
-        widget=forms.TextInput(attrs={
-            'class': 'form-input',
-            'placeholder': 'Например: Сертификат IELTS, Диплом о высшем образовании'
-        }),
-        help_text='Что это за сертификат? (желательно)'
-    )
-    
-    issuer = forms.CharField(
-        max_length=200,
-        required=False,
-        label='Кто выдал',
-        widget=forms.TextInput(attrs={
-            'class': 'form-input',
-            'placeholder': 'Например: British Council, НУУз'
-        }),
-        help_text='Организация или учреждение (желательно)'
-    )
-    
-    file = forms.FileField(
-        required=False,
-        label='Файл сертификата',
-        widget=forms.FileInput(attrs={
-            'class': 'form-file-input',
-            'accept': 'image/*,application/pdf'
-        }),
-        help_text='PDF, JPG или PNG. Максимум 10 МБ (желательно)'
-    )
-    
-    class Meta:
-        model = Certificate
-        fields = ['name', 'issuer', 'file']
-    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for i in range(1, self.MAX_CERTS + 1):
+            self.fields[f'cert_name_{i}'] = forms.CharField(
+                max_length=200,
+                required=False,
+                label='Название сертификата',
+                widget=forms.TextInput(attrs={
+                    'class': 'form-input',
+                    'placeholder': 'Например: Сертификат IELTS, Диплом о высшем образовании',
+                    'data-cert-num': i,
+                }),
+            )
+            self.fields[f'cert_issuer_{i}'] = forms.CharField(
+                max_length=200,
+                required=False,
+                label='Кто выдал',
+                widget=forms.TextInput(attrs={
+                    'class': 'form-input',
+                    'placeholder': 'Например: British Council, НУУз',
+                    'data-cert-num': i,
+                }),
+            )
+            self.fields[f'cert_file_{i}'] = forms.FileField(
+                required=False,
+                label='Файл сертификата',
+                widget=forms.FileInput(attrs={
+                    'class': 'form-file-input',
+                    'accept': 'image/*,application/pdf',
+                    'data-cert-num': i,
+                }),
+            )
+
+    def _validate_one_file(self, file, idx):
+        """Размер ≤10MB, расширение и MIME из белого списка."""
+        if file.size > self.MAX_FILE_SIZE:
+            raise ValidationError(
+                f'Сертификат {idx}: размер файла не должен превышать 10 МБ.'
+            )
+        ext = '.' + file.name.lower().rsplit('.', 1)[-1] if '.' in file.name else ''
+        if ext not in self.VALID_EXTS:
+            raise ValidationError(
+                f'Сертификат {idx}: разрешены только JPG, PNG и PDF.'
+            )
+        mime, _ = mimetypes.guess_type(file.name)
+        if mime not in self.ALLOWED_MIMES:
+            logger.warning(f"Certificate upload: недопустимый MIME type - {mime}")
+            raise ValidationError(f'Сертификат {idx}: недопустимый тип файла.')
+
     def clean(self):
-        """✅ Валидация сертификата с проверкой файла"""
         try:
-            cleaned_data = super().clean()
-            name = cleaned_data.get('name')
-            issuer = cleaned_data.get('issuer')
-            file = cleaned_data.get('file')
-            
-            # ✅ Очистка данных
-            if name:
-                name = name.strip()
-                cleaned_data['name'] = name
-            if issuer:
-                issuer = issuer.strip()
-                cleaned_data['issuer'] = issuer
-            
-            # ✅ Если загружен файл, то name и issuer тоже обязательны
-            if file:
-                if not name or not issuer:
-                    raise ValidationError('Для загруженного файла укажите название и издателя')
-            
-            # ✅ Если указаны name и issuer, то файл обязателен
-            if (name or issuer) and not file:
-                raise ValidationError('Загрузите файл сертификата')
-            
-            return cleaned_data
-            
+            cleaned = super().clean()
+            for i in range(1, self.MAX_CERTS + 1):
+                name = (cleaned.get(f'cert_name_{i}') or '').strip()
+                issuer = (cleaned.get(f'cert_issuer_{i}') or '').strip()
+                file = cleaned.get(f'cert_file_{i}')
+
+                # Если все три пустые — сертификат не заполнен, скипаем.
+                if not name and not issuer and not file:
+                    continue
+
+                # Если есть хотя бы один — нужны все три.
+                if not (name and issuer and file):
+                    raise ValidationError(
+                        f'Сертификат {i}: заполните название, организацию и приложите файл '
+                        f'(или очистите все три поля, чтобы пропустить).'
+                    )
+                self._validate_one_file(file, i)
+                cleaned[f'cert_name_{i}'] = name
+                cleaned[f'cert_issuer_{i}'] = issuer
+            return cleaned
         except ValidationError:
             raise
         except Exception as e:
             logger.error(f"Certificate validation error: {e}", exc_info=True)
-            raise ValidationError('Ошибка при проверке сертификата')
-    
-    def clean_file(self):
-        """✅ Валидация файла сертификата с проверкой типа"""
-        file = self.cleaned_data.get('file')
-        if file:
-            try:
-                # ✅ Проверка размера файла (10 МБ максимум)
-                if file.size > 10 * 1024 * 1024:
-                    raise ValidationError('Размер файла не должен превышать 10 МБ')
-                
-                # ✅ Проверка расширения файла
-                valid_extensions = ['.jpg', '.jpeg', '.png', '.pdf']
-                ext = file.name.lower().split('.')[-1]
-                if f'.{ext}' not in valid_extensions:
-                    raise ValidationError('Разрешены только JPG, PNG и PDF форматы')
-                
-                # ✅ Проверка MIME type для безопасности
-                mime_type, _ = mimetypes.guess_type(file.name)
-                allowed_mimes = ['image/jpeg', 'image/png', 'application/pdf']
-                if mime_type not in allowed_mimes:
-                    logger.warning(f"Certificate upload: недопустимый MIME type - {mime_type}")
-                    raise ValidationError('Недопустимый тип файла')
-            
-            except ValidationError:
-                raise
-            except Exception as e:
-                logger.error(f"Certificate file validation error: {e}", exc_info=True)
-                raise ValidationError('Ошибка при проверке файла сертификата')
-
-        return file
+            raise ValidationError('Ошибка при проверке сертификатов')
