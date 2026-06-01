@@ -92,7 +92,7 @@
     {% for item in recent_trials_to_convert %}
       <div class="conv-card">
         <div class="conv-head">
-          <span class="conv-emoji">🎉</span>
+          <span class="conv-emoji"><i class="fas fa-circle-check"></i></span>
           <div class="conv-text">
             <div class="conv-title">{% trans 'Вы прошли пробный с' %}
               <b>{{ item.teacher.user.get_full_name|default:item.teacher.user.username }}</b>
@@ -163,7 +163,7 @@
 
   <div class="sdb-hero">
     <div class="sdb-wallet">
-      <div class="lbl">💰 {% trans 'Баланс кошелька' %}</div>
+      <div class="lbl"><i class="fas fa-wallet"></i> {% trans 'Баланс кошелька' %}</div>
       <div class="amt">{{ wallet.balance|floatformat:0|intcomma }}<small> сум</small></div>
       <div class="sdb-actions">
         <a href="{% url 'home' %}#teachers">🔍 {% trans 'Найти учителя' %}</a>
@@ -172,7 +172,7 @@
     </div>
 
     <div class="sdb-stats">
-      <div class="lbl">📊 {% trans 'Сводка' %}</div>
+      <div class="lbl"><i class="fas fa-chart-simple"></i> {% trans 'Сводка' %}</div>
       <div class="stat-row" style="margin-top: 8px;">
         <div class="cell">
           <div class="val">{{ total_lessons_done }}</div>
@@ -194,7 +194,7 @@
     <div>
       <div class="sdb-section">
         <h2>
-          📅 {% trans 'Ближайшие уроки' %}
+          <i class="fas fa-calendar-days"></i> {% trans 'Ближайшие уроки' %}
           {% if lessons_today %}<span style="font-size:12px; background:#FEF3C7; color:#92400E; padding:2px 8px; border-radius:999px; margin-left:6px;">{{ lessons_today }} сегодня</span>{% endif %}
         </h2>
         {% if upcoming %}
@@ -218,7 +218,7 @@
 
       <div class="sdb-section">
         <h2>
-          📚 {% trans 'Домашние задания' %}
+          <i class="fas fa-book"></i> {% trans 'Домашние задания' %}
           <a href="{% url 'student_homework_list' %}" class="more">{% trans 'все →' %}</a>
         </h2>
         {% if new_homework or pending_grade_hw %}
@@ -276,18 +276,18 @@
       <div class="sdb-section">
         <h2>⚡ {% trans 'Быстро' %}</h2>
         <a href="{% url 'my_progress' %}" style="display:block; background:#EEF2FF; color:#4338CA; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500; margin-bottom:8px;">
-          📊 {% trans 'Мой прогресс' %}
+          <i class="fas fa-chart-simple"></i> {% trans 'Мой прогресс' %}
         </a>
         <a href="{% url 'student_homework_list' %}" style="display:block; background:#F5F3FF; color:#7C3AED; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500; margin-bottom:8px;">
-          📚 {% trans 'Все домашние задания' %}
+          <i class="fas fa-book"></i> {% trans 'Все домашние задания' %}
         </a>
         <a href="{% url 'profile' %}" style="display:block; background:#F1F5F9; color:#0A2540; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500;">
-          👤 {% trans 'Мой профиль' %}
+          <i class="fas fa-user"></i> {% trans 'Мой профиль' %}
         </a>
       </div>
 
       <div class="sdb-section">
-        <h2>💳 {% trans 'Последние транзакции' %}</h2>
+        <h2><i class="fas fa-credit-card"></i> {% trans 'Последние транзакции' %}</h2>
         {% if recent_tx %}
           {% for tx in recent_tx %}
             <div class="tx-mini {% if forloop.last %}last{% endif %}">

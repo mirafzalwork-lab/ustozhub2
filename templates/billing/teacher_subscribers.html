@@ -79,8 +79,8 @@
               <span class="status active">{{ s.get_status_display }}</span>
             </div>
             <div class="meta">
-              📚 {{ s.subject.name }} · {{ s.lessons_per_week }} {% trans 'в неделю' %}<br>
-              📅 {% trans 'до' %} {{ s.expires_at|date:"d M Y" }}
+              <i class="fas fa-book"></i> {{ s.subject.name }} · {{ s.lessons_per_week }} {% trans 'в неделю' %}<br>
+              <i class="fas fa-calendar-days"></i> {% trans 'до' %} {{ s.expires_at|date:"d M Y" }}
             </div>
             <div>
               <div style="display: flex; justify-content: space-between; font-size: 13px; color: #64748B;">
@@ -90,19 +90,19 @@
               <div class="progress-bar"><div class="fill" style="width: {{ s.progress_percent }}%;"></div></div>
             </div>
             <div class="sub-extra">
-              💵 {% trans 'Выплачено по этой подписке' %}:
+              <i class="fas fa-money-bill"></i> {% trans 'Выплачено по этой подписке' %}:
               <b>{{ s.teacher_earned_so_far|floatformat:0|intcomma }} {% trans 'сум' %}</b>
               <small>({{ s.lessons_paid_out }} {% trans 'из' %} {{ s.total_lessons }})</small>
             </div>
             <a href="{% url 'teacher_student_progress' s.id %}"
                style="display:block; margin-top:10px; padding:8px 14px; background:#EEF2FF; color:#4338CA; border:1px solid #C7D2FE; border-radius:8px; text-decoration:none; text-align:center; font-size:13px; font-weight:500;">
-              📊 {% trans 'Открыть прогресс' %}
+              <i class="fas fa-chart-simple"></i> {% trans 'Открыть прогресс' %}
             </a>
             <button type="button" class="t-cancel-btn" data-sub-id="{{ s.id }}"
                     data-cancel-url="{% url 'subscription_cancel' s.id %}"
                     data-escrow="{{ s.escrow_balance|floatformat:0|intcomma }}"
                     data-student="{{ s.student.get_full_name|default:s.student.username }}">
-              ✕ {% trans 'Отменить подписку (вернуть деньги ученику)' %}
+              <i class="fas fa-xmark"></i> {% trans 'Отменить подписку (вернуть деньги ученику)' %}
             </button>
           </div>
         {% endfor %}
@@ -162,7 +162,7 @@
 
   {% if history %}
     <div class="subs-section">
-      <h2>📜 {% trans 'История' %} ({{ history|length }})</h2>
+      <h2><i class="fas fa-clock-rotate-left"></i> {% trans 'История' %} ({{ history|length }})</h2>
       <div class="subs-grid">
         {% for s in history %}
           <div class="sub-card">
@@ -173,8 +173,8 @@
               </span>
             </div>
             <div class="meta">
-              📚 {{ s.subject.name }}<br>
-              ✅ {{ s.completed_lessons }} / {{ s.total_lessons }} {% trans 'уроков' %}
+              <i class="fas fa-book"></i> {{ s.subject.name }}<br>
+              <i class="fas fa-circle-check"></i> {{ s.completed_lessons }} / {{ s.total_lessons }} {% trans 'уроков' %}
             </div>
           </div>
         {% endfor %}

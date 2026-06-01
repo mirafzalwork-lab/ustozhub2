@@ -129,7 +129,7 @@
     <input type="hidden" name="idempotency_key" value="{{ idempotency_key }}">
     <button type="submit" class="btn-buy" {% if not has_enough %}disabled{% endif %}>
       {% if has_enough %}
-        ✓ {% trans 'Купить за' %} {{ tariff.total_price|floatformat:0|intcomma }} {% trans 'сум' %}
+        <i class="fas fa-check"></i> {% trans 'Купить за' %} {{ tariff.total_price|floatformat:0|intcomma }} {% trans 'сум' %}
       {% else %}
         {% trans 'Недостаточно средств' %}
       {% endif %}

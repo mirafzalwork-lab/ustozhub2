@@ -38,8 +38,8 @@
   <a href="{% url 'teacher_subscribers' %}" style="color:#6366F1; text-decoration:none; font-size:14px;">← {% trans 'к подписчикам' %}</a>
   <h1 style="margin-top:14px;">{% trans 'Прогресс ученика' %}</h1>
   <p class="subtitle">
-    👤 <b>{{ sub.student.get_full_name|default:sub.student.username }}</b>
-    · 📚 {{ sub.subject.name }}
+    <i class="fas fa-user"></i> <b>{{ sub.student.get_full_name|default:sub.student.username }}</b>
+    · <i class="fas fa-book"></i> {{ sub.subject.name }}
     · <span class="status-pill {{ sub.status }}">{{ sub.get_status_display }}</span>
   </p>
 
@@ -62,12 +62,12 @@
     </div>
     <div class="stat-card">
       <div class="lbl">{% trans 'Streak' %}</div>
-      <div class="val">{% if sub.learning_streak_weeks %}🔥 {{ sub.learning_streak_weeks }}<small> нед.</small>{% else %}—{% endif %}</div>
+      <div class="val">{% if sub.learning_streak_weeks %}<i class="fas fa-fire"></i> {{ sub.learning_streak_weeks }}<small> нед.</small>{% else %}—{% endif %}</div>
     </div>
   </div>
 
   <div class="tsp-section">
-    <h2>📅 {% trans 'История уроков' %}</h2>
+    <h2><i class="fas fa-calendar-days"></i> {% trans 'История уроков' %}</h2>
     {% if lessons %}
       <table class="lessons">
         <thead>
@@ -80,7 +80,7 @@
               <td><span class="status-pill {{ b.status }}">{{ b.get_status_display }}</span></td>
               <td>
                 {% if b.review %}
-                  ⭐ {{ b.review.rating }}/5
+                  <i class="fas fa-star"></i> {{ b.review.rating }}/5
                   {% if b.review.comment %}<br><small style="color:#64748B;">{{ b.review.comment|truncatechars:80 }}</small>{% endif %}
                 {% else %}
                   <small style="color:#94A3B8;">—</small>
@@ -96,7 +96,7 @@
   </div>
 
   <div class="tsp-section">
-    <h2>📚 {% trans 'Домашние задания' %}</h2>
+    <h2><i class="fas fa-book"></i> {% trans 'Домашние задания' %}</h2>
     {% if homeworks %}
       <table class="lessons">
         <thead>

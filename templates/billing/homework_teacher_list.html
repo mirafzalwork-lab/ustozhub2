@@ -27,8 +27,8 @@
                 <span class="hw-status submitted">{% trans 'Сдано' %}</span>
               </div>
               <div class="hw-card-meta">
-                👤 {{ hw.student.get_full_name|default:hw.student.username }} · 📚 {{ hw.subscription.subject.name }}
-                · 🕐 {% trans 'сдано' %} {{ hw.submission.submitted_at|date:"d M, H:i" }}
+                <i class="fas fa-user"></i> {{ hw.student.get_full_name|default:hw.student.username }} · <i class="fas fa-book"></i> {{ hw.subscription.subject.name }}
+                · <i class="fas fa-clock"></i> {% trans 'сдано' %} {{ hw.submission.submitted_at|date:"d M, H:i" }}
               </div>
             </div>
           </a>
@@ -39,7 +39,7 @@
 
   {% if others %}
     <div class="hw-section">
-      <h2>📋 {% trans 'Все задания' %} ({{ others|length }})</h2>
+      <h2><i class="fas fa-list"></i> {% trans 'Все задания' %} ({{ others|length }})</h2>
       <div class="hw-grid">
         {% for hw in others %}
           <a href="{% url 'homework_detail' hw.id %}" style="text-decoration:none; color:inherit;">
@@ -49,8 +49,8 @@
                 <span class="hw-status {{ hw.status }}">{{ hw.get_status_display }}</span>
               </div>
               <div class="hw-card-meta">
-                👤 {{ hw.student.get_full_name|default:hw.student.username }} · 📚 {{ hw.subscription.subject.name }}
-                {% if hw.due_at %} · 📅 {% trans 'до' %} {{ hw.due_at|date:"d M, H:i" }}{% endif %}
+                <i class="fas fa-user"></i> {{ hw.student.get_full_name|default:hw.student.username }} · <i class="fas fa-book"></i> {{ hw.subscription.subject.name }}
+                {% if hw.due_at %} · <i class="fas fa-calendar-days"></i> {% trans 'до' %} {{ hw.due_at|date:"d M, H:i" }}{% endif %}
                 {% if hw.submission and hw.submission.grade is not None %}
                   · <span class="hw-grade-badge">{{ hw.submission.grade }}/100</span>
                 {% endif %}

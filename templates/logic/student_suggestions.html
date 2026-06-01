@@ -320,19 +320,19 @@
             <div class="sm-hero__meta">
                 <span>{% trans "Учли:" %}</span>
                 {% if has_desired %}
-                    <span class="sm-criteria-chip">📚 {{ desired_subjects|join:", " }}</span>
+                    <span class="sm-criteria-chip"><i class="fas fa-book"></i> {{ desired_subjects|join:", " }}</span>
                 {% endif %}
                 {% if student.budget_max %}
-                    <span class="sm-criteria-chip">💰 {% trans "до" %} {{ student.budget_max|floatformat:0|intcomma }} {% trans "сум/час" %}</span>
+                    <span class="sm-criteria-chip"><i class="fas fa-wallet"></i> {% trans "до" %} {{ student.budget_max|floatformat:0|intcomma }} {% trans "сум/час" %}</span>
                 {% elif student.budget_min %}
-                    <span class="sm-criteria-chip">💰 {% trans "от" %} {{ student.budget_min|floatformat:0|intcomma }} {% trans "сум/час" %}</span>
+                    <span class="sm-criteria-chip"><i class="fas fa-wallet"></i> {% trans "от" %} {{ student.budget_min|floatformat:0|intcomma }} {% trans "сум/час" %}</span>
                 {% endif %}
                 {% if student.city %}
-                    <span class="sm-criteria-chip">📍 {{ student.city.name }}</span>
+                    <span class="sm-criteria-chip"><i class="fas fa-location-dot"></i> {{ student.city.name }}</span>
                 {% endif %}
                 {% if student.learning_format and student.learning_format != 'both' %}
                     <span class="sm-criteria-chip">
-                        {% if student.learning_format == 'online' %}🏠 {% trans "Онлайн" %}{% else %}📍 {% trans "Офлайн" %}{% endif %}
+                        {% if student.learning_format == 'online' %}<i class="fas fa-house"></i> {% trans "Онлайн" %}{% else %}<i class="fas fa-location-dot"></i> {% trans "Офлайн" %}{% endif %}
                     </span>
                 {% endif %}
             </div>
@@ -363,7 +363,7 @@
                                     {% if m.score >= 70 %}sm-card__score--high
                                     {% elif m.score >= 45 %}sm-card__score--med
                                     {% else %}sm-card__score--low{% endif %}">
-                                    🎯 {{ m.score }}% {% trans "совпадение" %}
+                                    <i class="fas fa-bullseye"></i> {{ m.score }}% {% trans "совпадение" %}
                                 </span>
                             {% endif %}
                         </div>
@@ -373,10 +373,10 @@
                                 <span>{{ t.experience_years }} {% trans "лет опыта" %}</span><span class="dot">•</span>
                             {% endif %}
                             {% if t.city %}
-                                <span>📍 {{ t.city.name }}</span><span class="dot">•</span>
+                                <span><i class="fas fa-location-dot"></i> {{ t.city.name }}</span><span class="dot">•</span>
                             {% endif %}
                             {% if t.total_reviews %}
-                                <span>⭐ {{ t.rating|floatformat:1 }} ({{ t.total_reviews }})</span><span class="dot">•</span>
+                                <span><i class="fas fa-star"></i> {{ t.rating|floatformat:1 }} ({{ t.total_reviews }})</span><span class="dot">•</span>
                             {% endif %}
                             <span class="sm-card__price">
                                 {% trans "от" %} {{ t.get_min_price|floatformat:0|intcomma }}<small> {% trans "сум/час" %}</small>
@@ -399,7 +399,7 @@
                             {% trans "Открыть профиль" %}
                         </a>
                         <a href="{% url 'start_conversation' user_id=t.user.id %}" class="sm-btn sm-btn--ghost">
-                            💬 {% trans "Написать" %}
+                            <i class="fas fa-comment"></i> {% trans "Написать" %}
                         </a>
                     </div>
                 </article>
@@ -413,16 +413,16 @@
             </p>
             <div class="sm-footer-cta__btns">
                 <a href="{% url 'home' %}" class="sm-btn sm-btn--primary">
-                    🔍 {% trans "Все учителя в каталоге" %}
+                    <i class="fas fa-magnifying-glass"></i> {% trans "Все учителя в каталоге" %}
                 </a>
                 <a href="{% url 'student_profile_edit' %}" class="sm-btn sm-btn--ghost">
-                    ✏️ {% trans "Уточнить мои предпочтения" %}
+                    <i class="fas fa-pen"></i> {% trans "Уточнить мои предпочтения" %}
                 </a>
             </div>
         </div>
     {% else %}
         <div class="sm-empty">
-            <div class="sm-empty__icon">🔎</div>
+            <div class="sm-empty__icon"><i class="fas fa-magnifying-glass"></i></div>
             <div class="sm-empty__title">{% trans "Пока без рекомендаций" %}</div>
             <div class="sm-empty__text">
                 {% if not has_desired %}
@@ -432,11 +432,11 @@
                 {% endif %}
             </div>
             <a href="{% url 'student_profile_edit' %}" class="sm-btn sm-btn--primary">
-                ✏️ {% trans "Заполнить профиль" %}
+                <i class="fas fa-pen"></i> {% trans "Заполнить профиль" %}
             </a>
             <span style="display:inline-block;width:8px;"></span>
             <a href="{% url 'home' %}" class="sm-btn sm-btn--ghost">
-                🔍 {% trans "Перейти в каталог" %}
+                <i class="fas fa-magnifying-glass"></i> {% trans "Перейти в каталог" %}
             </a>
         </div>
     {% endif %}

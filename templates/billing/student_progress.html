@@ -41,7 +41,7 @@
 </style>
 
 <div class="progress-page">
-  <h1>📊 {% trans 'Мой прогресс' %}</h1>
+  <h1><i class="fas fa-chart-simple"></i> {% trans 'Мой прогресс' %}</h1>
   <p class="subtitle">{% trans 'Сводка по вашим подпискам, урокам и домашним заданиям' %}</p>
 
   <div class="overall">
@@ -66,10 +66,10 @@
         <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
           <div>
             <h3>{{ s.subject.name }}</h3>
-            <div class="teacher">👤 {{ s.teacher.user.get_full_name|default:s.teacher.user.username }}</div>
+            <div class="teacher"><i class="fas fa-user"></i> {{ s.teacher.user.get_full_name|default:s.teacher.user.username }}</div>
           </div>
           {% if s.learning_streak_weeks %}
-            <span class="badge-streak">🔥 {{ s.learning_streak_weeks }} {% trans 'нед. подряд' %}</span>
+            <span class="badge-streak"><i class="fas fa-fire"></i> {{ s.learning_streak_weeks }} {% trans 'нед. подряд' %}</span>
           {% endif %}
         </div>
 
@@ -114,13 +114,13 @@
   {% endif %}
 
   {% if history_subs %}
-    <h2 style="font-size:18px; color:#0A2540; margin:24px 0 12px;">📜 {% trans 'История подписок' %}</h2>
+    <h2 style="font-size:18px; color:#0A2540; margin:24px 0 12px;"><i class="fas fa-clock-rotate-left"></i> {% trans 'История подписок' %}</h2>
     {% for s in history_subs %}
       <div class="sub-progress" style="opacity:.75;">
         <div style="display:flex; justify-content:space-between; gap:12px;">
           <div>
             <h3>{{ s.subject.name }} <small style="color:#94A3B8; font-size:14px; font-weight:400;">({{ s.get_status_display }})</small></h3>
-            <div class="teacher">👤 {{ s.teacher.user.get_full_name|default:s.teacher.user.username }} · {{ s.completed_lessons }}/{{ s.total_lessons }} {% trans 'уроков' %}</div>
+            <div class="teacher"><i class="fas fa-user"></i> {{ s.teacher.user.get_full_name|default:s.teacher.user.username }} · {{ s.completed_lessons }}/{{ s.total_lessons }} {% trans 'уроков' %}</div>
           </div>
           {% if s.average_grade %}
             <div style="text-align:right;">

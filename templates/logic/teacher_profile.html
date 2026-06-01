@@ -1291,27 +1291,27 @@
 
         <div class="ad-tiles">
             <div class="ad-tile">
-                <div class="ad-tile__label">👁️ {% trans 'Просмотры' %}</div>
+                <div class="ad-tile__label"><i class="fas fa-eye"></i> {% trans 'Просмотры' %}</div>
                 <div class="ad-tile__value" data-stat="views">{{ activity_7d.views }}</div>
                 <div class="ad-tile__sub"><span data-stat="viewers">{{ activity_7d.viewers }}</span> {% trans 'уникальных' %}</div>
             </div>
             <div class="ad-tile">
-                <div class="ad-tile__label">💬 {% trans 'Беседы' %}</div>
+                <div class="ad-tile__label"><i class="fas fa-comment"></i> {% trans 'Беседы' %}</div>
                 <div class="ad-tile__value" data-stat="conversations">{{ activity_7d.conversations }}</div>
                 <div class="ad-tile__sub">{% trans 'новых диалогов' %}</div>
             </div>
             <div class="ad-tile">
-                <div class="ad-tile__label">📅 {% trans 'Бронирования' %}</div>
+                <div class="ad-tile__label"><i class="fas fa-calendar-days"></i> {% trans 'Бронирования' %}</div>
                 <div class="ad-tile__value" data-stat="bookings">{{ activity_7d.bookings }}</div>
                 <div class="ad-tile__sub">{% trans 'заявок получено' %}</div>
             </div>
             <div class="ad-tile">
-                <div class="ad-tile__label">✅ {% trans 'Проведено' %}</div>
+                <div class="ad-tile__label"><i class="fas fa-circle-check"></i> {% trans 'Проведено' %}</div>
                 <div class="ad-tile__value" data-stat="completed">{{ activity_7d.completed }}</div>
                 <div class="ad-tile__sub">{% trans 'завершённых уроков' %}</div>
             </div>
             <div class="ad-tile{% if activity_all.pending %} is-warn{% endif %}">
-                <div class="ad-tile__label">⏱ {% trans 'Ждут ответа' %}</div>
+                <div class="ad-tile__label"><i class="fas fa-clock"></i> {% trans 'Ждут ответа' %}</div>
                 <div class="ad-tile__value" data-stat="pending">{{ activity_all.pending }}</div>
                 <div class="ad-tile__sub">
                     {% if activity_all.pending %}
@@ -1342,7 +1342,7 @@
 
         <div class="ad-earnings">
             <div class="ad-earnings__left">
-                <div class="ad-earnings__icon">💰</div>
+                <div class="ad-earnings__icon"><i class="fas fa-money-bill"></i></div>
                 <div>
                     <div class="ad-earnings__label">{% trans 'Заработано' %} <span id="adEarningsPeriod">{{ earnings_7d.period_label }}</span></div>
                     <div class="ad-earnings__amount">
@@ -1361,7 +1361,7 @@
         {% with done_count=0 total_count=first_booking_checklist|length %}
         <div class="fbc-widget">
             <div class="fbc-head">
-                <h3 class="fbc-title">🚀 {% trans '5 шагов до первой брони' %}</h3>
+                <h3 class="fbc-title"><i class="fas fa-rocket"></i> {% trans '5 шагов до первой брони' %}</h3>
                 {% with done=first_booking_done_count total=first_booking_checklist|length %}
                 <span class="fbc-progress">{{ done }} / {{ total }}</span>
                 {% endwith %}
@@ -1392,7 +1392,7 @@
     <div class="completeness-widget">
         <div class="comp-head">
             <div class="comp-head-left">
-                <h3>📋 {% trans 'Профиль заполнен на' %} <b>{{ comp.percent }}%</b></h3>
+                <h3><i class="fas fa-clipboard-list"></i> {% trans 'Профиль заполнен на' %} <b>{{ comp.percent }}%</b></h3>
                 <p>{% blocktrans with done=comp.completed total=comp.total %}{{ done }} из {{ total }} разделов заполнено. Заполните остальное — получайте больше запросов!{% endblocktrans %}</p>
             </div>
             <div class="comp-circle" data-percent="{{ comp.percent }}"
@@ -1555,7 +1555,7 @@
         <div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
             <div style="flex:1; min-width:240px;">
                 <h3 style="margin:0 0 6px; font-size:18px; font-weight:700; color:#1E1B4B;">
-                    📅 {% trans "Управляйте своим расписанием" %}
+                    <i class="fas fa-calendar-days"></i> {% trans "Управляйте своим расписанием" %}
                 </h3>
                 <p style="margin:0; color:#3730A3; font-size:14px; line-height:1.5;">
                     {% trans "Создавайте свободные слоты, чтобы ученики могли бронировать уроки. Можно нажать-и-протянуть в календаре, или сгенерировать слоты пачкой из шаблона." %}
@@ -1852,9 +1852,9 @@
                 <div class="info-label">{% trans 'Статус профиля' %}</div>
                 <div class="info-value">
                     {% if teacher.is_active %}
-                        <span style="color: #10b981;">✓ {% trans 'Активен' %}</span>
+                        <span style="color: #10b981;"><i class="fas fa-check"></i> {% trans 'Активен' %}</span>
                     {% else %}
-                        <span style="color: #dc3545;">✗ {% trans 'Неактивен' %}</span>
+                        <span style="color: #dc3545;"><i class="fas fa-xmark"></i> {% trans 'Неактивен' %}</span>
                     {% endif %}
                 </div>
             </div>
@@ -1862,9 +1862,9 @@
                 <div class="info-label">{% trans 'Рекомендуемый' %}</div>
                 <div class="info-value">
                     {% if teacher.is_featured %}
-                        <span style="color: #10b981;">✓ {% trans 'Да' %}</span>
+                        <span style="color: #10b981;"><i class="fas fa-check"></i> {% trans 'Да' %}</span>
                     {% else %}
-                        <span style="color: #666;">✗ {% trans 'Нет' %}</span>
+                        <span style="color: #666;"><i class="fas fa-xmark"></i> {% trans 'Нет' %}</span>
                     {% endif %}
                 </div>
             </div>

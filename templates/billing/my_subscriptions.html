@@ -41,7 +41,7 @@
 
   {% if pending_reviews %}
     <div class="subs-section">
-      <h2>⭐ {% trans 'Оцените прошедшие уроки' %} ({{ pending_reviews|length }})</h2>
+      <h2><i class="fas fa-star"></i> {% trans 'Оцените прошедшие уроки' %} ({{ pending_reviews|length }})</h2>
       <div style="display: grid; gap: 12px;">
         {% for b in pending_reviews %}
           <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding: 16px 20px; border: 1px solid #FCD34D; background: #FFFBEB; border-radius: 12px;">
@@ -54,7 +54,7 @@
               </div>
             </div>
             <a href="{% url 'leave_review' b.id %}?next={% url 'my_subscriptions' %}"
-               style="background: #F59E0B; color: #fff; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-weight: 500; white-space: nowrap;">⭐ {% trans 'Оценить' %}</a>
+               style="background: #F59E0B; color: #fff; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-weight: 500; white-space: nowrap;"><i class="fas fa-star"></i> {% trans 'Оценить' %}</a>
           </div>
         {% endfor %}
       </div>
@@ -72,9 +72,9 @@
               <span class="status active">{{ s.get_status_display }}</span>
             </div>
             <div class="meta">
-              👤 <b>{{ s.teacher.user.get_full_name|default:s.teacher.user.username }}</b><br>
-              📚 {{ s.lessons_per_week }} {% trans 'в неделю' %} · {{ s.lesson_duration_minutes }} {% trans 'мин/урок' %}<br>
-              📅 {% trans 'до' %} {{ s.expires_at|date:"d M Y" }}
+              <i class="fas fa-user"></i> <b>{{ s.teacher.user.get_full_name|default:s.teacher.user.username }}</b><br>
+              <i class="fas fa-book"></i> {{ s.lessons_per_week }} {% trans 'в неделю' %} · {{ s.lesson_duration_minutes }} {% trans 'мин/урок' %}<br>
+              <i class="fas fa-calendar-days"></i> {% trans 'до' %} {{ s.expires_at|date:"d M Y" }}
             </div>
             <div>
               <div style="display: flex; justify-content: space-between; font-size: 13px; color: #64748B;">
@@ -84,8 +84,8 @@
               <div class="progress-bar"><div class="fill" style="width: {{ s.progress_percent }}%;"></div></div>
             </div>
             <div class="meta" style="margin-top: 12px;">
-              💰 {% trans 'В эскроу' %}: <b>{{ s.escrow_balance|floatformat:0|intcomma }} {% trans 'сум' %}</b><br>
-              💵 {% trans 'Выплачено учителю' %}: <b>{{ s.teacher_earned_so_far|floatformat:0|intcomma }} {% trans 'сум' %}</b>
+              <i class="fas fa-wallet"></i> {% trans 'В эскроу' %}: <b>{{ s.escrow_balance|floatformat:0|intcomma }} {% trans 'сум' %}</b><br>
+              <i class="fas fa-money-bill"></i> {% trans 'Выплачено учителю' %}: <b>{{ s.teacher_earned_so_far|floatformat:0|intcomma }} {% trans 'сум' %}</b>
               <small style="color:#94A3B8;">({{ s.lessons_paid_out }} {% trans 'уроков' %})</small>
             </div>
 
@@ -93,7 +93,7 @@
                     data-cancel-url="{% url 'subscription_cancel' s.id %}"
                     data-escrow="{{ s.escrow_balance|floatformat:0|intcomma }}"
                     data-remaining="{{ s.remaining_lessons }}">
-              ✕ {% trans 'Отменить подписку' %}
+              <i class="fas fa-xmark"></i> {% trans 'Отменить подписку' %}
             </button>
           </div>
         {% endfor %}
@@ -158,7 +158,7 @@
 
   {% if history %}
     <div class="subs-section">
-      <h2>📜 {% trans 'История' %} ({{ history|length }})</h2>
+      <h2><i class="fas fa-clock-rotate-left"></i> {% trans 'История' %} ({{ history|length }})</h2>
       <div class="subs-grid">
         {% for s in history %}
           <div class="sub-card">
@@ -169,9 +169,9 @@
               </span>
             </div>
             <div class="meta">
-              👤 {{ s.teacher.user.get_full_name|default:s.teacher.user.username }}<br>
-              ✅ {{ s.completed_lessons }} / {{ s.total_lessons }} {% trans 'уроков' %}<br>
-              📅 {{ s.started_at|date:"d M Y" }} → {{ s.expires_at|date:"d M Y" }}
+              <i class="fas fa-user"></i> {{ s.teacher.user.get_full_name|default:s.teacher.user.username }}<br>
+              <i class="fas fa-circle-check"></i> {{ s.completed_lessons }} / {{ s.total_lessons }} {% trans 'уроков' %}<br>
+              <i class="fas fa-calendar-days"></i> {{ s.started_at|date:"d M Y" }} → {{ s.expires_at|date:"d M Y" }}
             </div>
           </div>
         {% endfor %}

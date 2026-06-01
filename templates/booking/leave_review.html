@@ -96,7 +96,7 @@
                     {% for i in "54321" %}
                         <input type="radio" id="r{{ i }}" name="rating" value="{{ i }}"
                                {% if existing and existing.rating|stringformat:"s" == i %}checked{% endif %}>
-                        <label for="r{{ i }}" title="{{ i }}">★</label>
+                        <label for="r{{ i }}" title="{{ i }}"><i class="fas fa-star"></i></label>
                     {% endfor %}
                 </div>
             </div>
@@ -109,7 +109,7 @@
                         {% for i in "54321" %}
                             <input type="radio" id="k{{ i }}" name="knowledge_rating" value="{{ i }}"
                                    {% if existing and existing.knowledge_rating|stringformat:"s" == i %}checked{% endif %}>
-                            <label for="k{{ i }}">★</label>
+                            <label for="k{{ i }}"><i class="fas fa-star"></i></label>
                         {% endfor %}
                     </div>
                 </div>
@@ -119,7 +119,7 @@
                         {% for i in "54321" %}
                             <input type="radio" id="c{{ i }}" name="communication_rating" value="{{ i }}"
                                    {% if existing and existing.communication_rating|stringformat:"s" == i %}checked{% endif %}>
-                            <label for="c{{ i }}">★</label>
+                            <label for="c{{ i }}"><i class="fas fa-star"></i></label>
                         {% endfor %}
                     </div>
                 </div>
@@ -129,7 +129,7 @@
                         {% for i in "54321" %}
                             <input type="radio" id="p{{ i }}" name="punctuality_rating" value="{{ i }}"
                                    {% if existing and existing.punctuality_rating|stringformat:"s" == i %}checked{% endif %}>
-                            <label for="p{{ i }}">★</label>
+                            <label for="p{{ i }}"><i class="fas fa-star"></i></label>
                         {% endfor %}
                     </div>
                 </div>

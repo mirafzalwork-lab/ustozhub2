@@ -106,10 +106,10 @@
         if (ms <= 3600000) {
             const m = Math.floor(ms / 60000);
             const s = Math.floor((ms % 60000) / 1000);
-            return `<span class="bk-countdown">⏱ осталось ${m}:${String(s).padStart(2, '0')}</span>`;
+            return `<span class="bk-countdown"><i class="fas fa-clock"></i> осталось ${m}:${String(s).padStart(2, '0')}</span>`;
         }
         const str = d.toLocaleString('ru', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
-        return `<span class="bk-countdown">⏱ подтвердить до ${str}</span>`;
+        return `<span class="bk-countdown"><i class="fas fa-clock"></i> подтвердить до ${str}</span>`;
     }
 
     function renderCard(b) {
@@ -124,11 +124,11 @@
 
         const subjectMeta = b.subject ? `<span>${escapeHtml(b.subject.name)}</span>` : '';
         const messageBlock = b.student_message
-            ? `<div class="msg">📩 ${escapeHtml(b.student_message)}</div>` : '';
+            ? `<div class="msg"><i class="fas fa-envelope"></i> ${escapeHtml(b.student_message)}</div>` : '';
         const teacherReplyBlock = b.teacher_reply
-            ? `<div class="msg">💬 ${escapeHtml(b.teacher_reply)}</div>` : '';
+            ? `<div class="msg"><i class="fas fa-comment"></i> ${escapeHtml(b.teacher_reply)}</div>` : '';
         const meetingUrlMeta = b.meeting_url
-            ? `<div class="msg" style="background:#EEF2FF; color:#3730A3;">🎥 ${escapeHtml(b.meeting_url)}</div>` : '';
+            ? `<div class="msg" style="background:#EEF2FF; color:#3730A3;"><i class="fas fa-video"></i> ${escapeHtml(b.meeting_url)}</div>` : '';
 
         const actions = renderActions(b);
 
@@ -158,7 +158,7 @@
                         <span class="bk-status ${statusBadgeClass(b.status)}">${escapeHtml(b.status_display)}</span>
                         ${b.status === 'pending' ? renderCountdown(b.expires_at) : ''}
                         ${subjectMeta}
-                        ${b.is_trial ? '<span>🎁 пробный</span>' : ''}
+                        ${b.is_trial ? '<span><i class="fas fa-gift"></i> пробный</span>' : ''}
                         <span>${b.slot.duration_minutes} мин</span>
                     </div>
                     ${messageBlock}

@@ -70,13 +70,7 @@
         gap: var(--spacing-sm);
     }
 
-    .messages-header h1::before {
-        content: '💬';
-        font-size: 36px;
-    }
-
-    .messages-header h1::before {
-        content: '💬';
+    .messages-header h1 i {
         font-size: 36px;
     }
 
@@ -270,7 +264,7 @@
             font-size: 28px;
         }
 
-        .messages-header h1::before {
+        .messages-header h1 i {
             font-size: 30px;
         }
 
@@ -307,7 +301,7 @@
             font-size: 22px;
         }
 
-        .messages-header h1::before {
+        .messages-header h1 i {
             font-size: 24px;
         }
 
@@ -409,7 +403,7 @@
             font-size: 20px;
         }
 
-        .messages-header h1::before {
+        .messages-header h1 i {
             font-size: 22px;
         }
 
@@ -528,7 +522,7 @@
 {% block content %}
 <div class="messages-container">
     <div class="messages-header">
-        <h1>{% trans "Сообщения" %}</h1>
+        <h1><i class="fas fa-comment"></i> {% trans "Сообщения" %}</h1>
     </div>
 
     {% if conversations %}
@@ -589,7 +583,7 @@
         </div>
     {% else %}
         <div class="empty-state">
-            <div class="empty-state-icon">💬</div>
+            <div class="empty-state-icon"><i class="fas fa-comment"></i></div>
             <h2>{% trans "Нет переписок" %}</h2>
             <p>
                 {% if user_type == 'student' %}

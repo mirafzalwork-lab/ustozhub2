@@ -75,7 +75,7 @@
 
   <div class="tdb-hero">
     <div class="tdb-card green">
-      <div class="lbl">💰 {% trans 'На балансе' %}</div>
+      <div class="lbl"><i class="fas fa-wallet"></i> {% trans 'На балансе' %}</div>
       <div class="val">{{ wallet.balance|floatformat:0|intcomma }}<small> сум</small></div>
       <div class="sub">
         <a href="{% url 'withdrawals_list' %}" style="color:#fff; text-decoration:underline;">{% trans 'Вывести' %}</a>
@@ -89,7 +89,7 @@
       </div>
     </div>
     <div class="tdb-card gold">
-      <div class="lbl">📅 {% trans 'Уроков на неделе' %}</div>
+      <div class="lbl"><i class="fas fa-calendar-days"></i> {% trans 'Уроков на неделе' %}</div>
       <div class="val">{{ week_lessons_count }}</div>
       <div class="sub">{% trans 'из них сегодня' %}: {{ today_lessons|length }}</div>
     </div>
@@ -118,7 +118,7 @@
     <div>
       <div class="tdb-section">
         <h2>
-          📅 {% trans 'Расписание на сегодня' %}
+          <i class="fas fa-calendar-days"></i> {% trans 'Расписание на сегодня' %}
         </h2>
         {% if today_lessons %}
           {% for b in today_lessons %}
@@ -150,7 +150,7 @@
             <div>
               <b style="color:#0A2540;">{{ b.student.get_full_name|default:b.student.username }}</b>
               <small style="color:#94A3B8;"> · {{ b.subject.name|default:'' }}</small>
-              <div style="font-size:12px; color:#64748B;">{{ b.slot.start_at|date:"d M, H:i" }}{% if b.is_trial %} · 🎁 пробный{% endif %}</div>
+              <div style="font-size:12px; color:#64748B;">{{ b.slot.start_at|date:"d M, H:i" }}{% if b.is_trial %} · <i class="fas fa-gift"></i> пробный{% endif %}</div>
             </div>
             <a href="/booking/calendar/">{% trans 'Открыть' %} →</a>
           </div>
@@ -160,7 +160,7 @@
 
       <div class="tdb-section">
         <h2>
-          📚 {% trans 'ДЗ ожидают проверки' %}
+          <i class="fas fa-book"></i> {% trans 'ДЗ ожидают проверки' %}
           <a href="{% url 'teacher_homework_list' %}" class="more">{% trans 'все →' %}</a>
         </h2>
         {% if homework_to_grade %}
@@ -184,7 +184,7 @@
       <div class="tdb-section">
         <h2>⚡ {% trans 'Быстро' %}</h2>
         <a href="/booking/calendar/" style="display:block; background:#EEF2FF; color:#4338CA; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500; margin-bottom:8px;">
-          📅 {% trans 'Календарь' %}
+          <i class="fas fa-calendar-days"></i> {% trans 'Календарь' %}
         </a>
         <a href="{% url 'teacher_homework_create' %}" style="display:block; background:#F5F3FF; color:#7C3AED; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500; margin-bottom:8px;">
           ✍ {% trans 'Создать ДЗ' %}
@@ -193,12 +193,12 @@
           💼 {% trans 'Мои тарифы' %}
         </a>
         <a href="{% url 'withdrawals_list' %}" style="display:block; background:#ECFDF5; color:#065F46; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500;">
-          💸 {% trans 'Вывод средств' %}
+          <i class="fas fa-money-bill-transfer"></i> {% trans 'Вывод средств' %}
         </a>
       </div>
 
       <div class="tdb-section">
-        <h2>📊 {% trans 'Заработок всего' %}</h2>
+        <h2><i class="fas fa-chart-simple"></i> {% trans 'Заработок всего' %}</h2>
         <div style="font-size:28px; font-weight:700; color:#0A2540; line-height:1.1;">
           {{ earned_total|floatformat:0|intcomma }}
           <small style="font-size:14px; color:#64748B; font-weight:400;">сум</small>
@@ -207,7 +207,7 @@
       </div>
 
       <div class="tdb-section">
-        <h2>💳 {% trans 'Последние транзакции' %}</h2>
+        <h2><i class="fas fa-credit-card"></i> {% trans 'Последние транзакции' %}</h2>
         {% if recent_tx %}
           {% for tx in recent_tx %}
             <div class="tx-mini {% if forloop.last %}last{% endif %}">
