@@ -2377,9 +2377,9 @@
             </div>
             {% endif %}
 
-            <!-- 📅 SCHEDULE SECTION -->
+            <!-- SCHEDULE SECTION -->
             {% if teacher.has_schedule %}
-            <div class="schedule-section">
+            <div class="schedule-section" id="schedule">
                 <h2 class="section-header">
                     <i class="fas fa-calendar-day"></i>
                     {% trans 'Расписание по дням' %}
@@ -2593,7 +2593,7 @@
                         {% if trial_ts and trial_ts.is_free_trial %}
                             {# PRIMARY: бесплатный пробный — главный hook marketplace'а #}
                             <a href="{% url 'book_teacher_page' teacher_id=teacher.id %}?trial=1{% if trial_ts.subject_id %}&subject={{ trial_ts.subject_id }}{% endif %}" class="btn-primary btn-trial-primary">
-                                <span class="trial-emoji" aria-hidden="true">🎁</span>
+                                <i class="trial-emoji fas fa-gift" aria-hidden="true"></i>
                                 <span class="trial-text">
                                     <span class="trial-headline">{% trans 'Бесплатный пробный урок' %}</span>
                                     <span class="trial-sub">{{ trial_ts.trial_duration_minutes|default:60 }} {% trans 'мин' %} · {{ trial_ts.subject.name }}</span>
@@ -2606,7 +2606,7 @@
                         {% elif trial_ts and trial_ts.trial_price %}
                             {# PRIMARY: платный пробный (по скидке от обычной цены) #}
                             <a href="{% url 'book_teacher_page' teacher_id=teacher.id %}?trial=1{% if trial_ts.subject_id %}&subject={{ trial_ts.subject_id }}{% endif %}" class="btn-primary btn-trial-primary btn-trial-paid">
-                                <span class="trial-emoji" aria-hidden="true">💎</span>
+                                <i class="trial-emoji fas fa-gem" aria-hidden="true"></i>
                                 <span class="trial-text">
                                     <span class="trial-headline">{% trans 'Пробный урок' %} — {{ trial_ts.trial_price|floatformat:0|intcomma }} {% trans 'сум' %}</span>
                                     <span class="trial-sub">{{ trial_ts.trial_duration_minutes|default:60 }} {% trans 'мин' %} · {{ trial_ts.subject.name }}</span>
@@ -2648,58 +2648,22 @@
                     </div>
                 </div>
 
-                <!-- Platform Messaging -->
-                <div class="contact-card">
-                    <h3 class="contact-title">{% trans 'Связаться с преподавателем' %}</h3>
-                    <div class="platform-message-promo">
-                        <div class="promo-icon">
-                            <i class="fas fa-comments"></i>
-                        </div>
-                        <p class="promo-text">{% trans 'Общайтесь с преподавателем напрямую через встроенный чат UstozHub — быстро, удобно и безопасно.' %}</p>
-                        {% if user.is_authenticated and user != teacher.user %}
-                        <a href="{% url 'start_conversation' user_id=teacher.user.id %}" class="btn-platform-chat">
-                            <i class="fas fa-paper-plane"></i>
-                            {% trans 'Написать сообщение' %}
-                        </a>
-                        {% elif not user.is_authenticated %}
-                        <a href="{% url 'login' %}?next={{ request.path }}" class="btn-platform-chat">
-                            <i class="fas fa-sign-in-alt"></i>
-                            {% trans 'Войдите, чтобы написать' %}
-                        </a>
-                        {% endif %}
-                        <div class="promo-features">
-                            <span><i class="fas fa-check-circle"></i> {% trans 'Мгновенные сообщения' %}</span>
-                            <span><i class="fas fa-check-circle"></i> {% trans 'История переписки' %}</span>
-                            <span><i class="fas fa-check-circle"></i> {% trans 'Безопасная сделка' %}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Availability -->
+                <!-- Формат обучения (расписание показано в основной колонке) -->
                 <div class="availability-card">
-                    <h3 class="contact-title">{% trans 'Расписание' %}</h3>
+                    <h3 class="contact-title">{% trans 'Формат обучения' %}</h3>
                     <div class="availability-info">
-                        {% if teacher.has_schedule %}
-                            {% for day_label, intervals in teacher.get_schedule_display %}
-                                {% if intervals %}
-                                <div class="availability-item">
-                                    <i class="fas fa-calendar-day"></i>
-                                    <span><strong>{{ day_label }}:</strong>
-                                        {% for from_t, to_t in intervals %}{{ from_t }}–{{ to_t }}{% if not forloop.last %}, {% endif %}{% endfor %}
-                                    </span>
-                                </div>
-                                {% endif %}
-                            {% endfor %}
-                        {% else %}
-                        <div class="availability-item">
-                            <i class="fas fa-calendar"></i>
-                            <span>{% trans 'Расписание не указано — свяжитесь с учителем' %}</span>
-                        </div>
-                        {% endif %}
                         <div class="availability-item">
                             <i class="fas fa-desktop"></i>
                             <span>{{ teacher.get_teaching_format_display }}</span>
                         </div>
+                        {% if teacher.has_schedule %}
+                        <div class="availability-item">
+                            <i class="fas fa-calendar-day"></i>
+                            <a href="#schedule" style="color: var(--accent-color, #3B82F6); text-decoration: none; font-weight: 500;">
+                                {% trans 'Смотреть расписание по дням' %} ↓
+                            </a>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
 
