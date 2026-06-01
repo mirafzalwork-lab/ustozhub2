@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static i18n %}
+{% load static i18n humanize %}
 
 {% block title %}{% trans "Забронировать" %} — {{ teacher.user.get_full_name }}{% endblock %}
 
@@ -70,14 +70,75 @@
 
     /* Экран подтверждения */
     .book-success { text-align: center; padding: 12px 8px 4px; }
-    .book-success__icon { font-size: 48px; color: var(--cal-success, #10B981); margin-bottom: 10px; }
+    .book-success__icon { font-size: 48px; color: var(--cal-success, #10B981); margin-bottom: 10px; transition: color .3s ease; }
+    .book-success__icon--rejected { color: #DC2626; }
+    .book-success__icon--expired { color: #D97706; }
+    .book-success__icon--waiting { color: #3B82F6; animation: book-pulse 1.6s ease-in-out infinite; }
+    @keyframes book-pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.08); opacity: 0.85; }
+    }
     .book-success h4 { margin: 0 0 8px; font-size: 19px; font-weight: 700; }
     .book-success__lead { margin: 0 0 12px; font-weight: 600; color: var(--cal-text, #0F172A); }
     .book-success__note { margin: 0; font-size: 13.5px; color: var(--cal-muted, #64748B); line-height: 1.55; }
+    .book-state { animation: book-state-fade .3s ease-out; }
+    @keyframes book-state-fade {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Live countdown */
+    .book-countdown {
+        margin: 16px auto 18px; max-width: 280px;
+        padding: 14px 18px; background: #EFF6FF;
+        border: 1px solid #BFDBFE; border-radius: 12px;
+    }
+    .book-countdown__label {
+        font-size: 12px; color: #1E40AF; text-transform: uppercase;
+        letter-spacing: .6px; margin-bottom: 6px; font-weight: 600;
+    }
+    .book-countdown__time {
+        font-size: 30px; font-weight: 700; color: #1E3A8A;
+        font-variant-numeric: tabular-nums; line-height: 1; margin-bottom: 10px;
+    }
+    .book-countdown__bar {
+        height: 4px; background: #DBEAFE; border-radius: 4px; overflow: hidden;
+    }
+    .book-countdown__fill {
+        height: 100%; background: linear-gradient(90deg, #10B981, #3B82F6);
+        transition: width 1s linear; width: 100%;
+    }
+    .book-countdown.is-urgent .book-countdown__time { color: #DC2626; }
+    .book-countdown.is-urgent .book-countdown__fill { background: linear-gradient(90deg, #DC2626, #F59E0B); }
+
+    .book-state__reply {
+        margin: 8px auto 14px; max-width: 360px;
+        padding: 10px 14px; background: #F8FAFC; border-radius: 8px;
+        font-size: 13.5px; color: #475569; font-style: italic;
+        text-align: left;
+    }
+    .book-state__reply::before { content: '"'; opacity: .5; }
+    .book-state__reply::after { content: '"'; opacity: .5; }
+    .book-state__reply:empty { display: none; }
+
+    .book-state__meeting {
+        display: inline-flex; align-items: center; gap: 8px;
+        margin-top: 10px; padding: 12px 22px;
+        background: linear-gradient(135deg, #10B981, #059669); color: #fff;
+        border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 14px;
+        box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3);
+        transition: transform .15s, box-shadow .15s;
+    }
+    .book-state__meeting:hover {
+        transform: translateY(-2px); color: #fff;
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+        text-decoration: none;
+    }
 
     @media (max-width: 560px) {
         .book-filters { flex-direction: column; align-items: stretch; }
         .book-filter__hint { margin-left: 0; }
+        .book-countdown__time { font-size: 26px; }
     }
 </style>
 {% endblock %}
@@ -145,9 +206,11 @@
                         {% for ts in teacher_subjects %}
                             <option value="{{ ts.subject__id }}"
                                     data-free-trial="{{ ts.is_free_trial|yesno:'1,0' }}"
-                                    data-rate="{{ ts.hourly_rate|floatformat:0 }}">
-                                {{ ts.subject__name }} · {{ ts.hourly_rate|floatformat:0 }} {% trans "сум/час" %}
-                                {% if ts.is_free_trial %} · 🎁 {% trans "пробный бесплатно" %}{% endif %}
+                                    data-rate="{{ ts.hourly_rate|floatformat:0 }}"
+                                    data-trial-price="{{ ts.trial_price|default_if_none:''|floatformat:0 }}"
+                                    data-trial-duration="{{ ts.trial_duration_minutes|default:60 }}">
+                                {{ ts.subject__name }} · {{ ts.hourly_rate|floatformat:0|intcomma }} {% trans "сум/час" %}
+                                {% if ts.is_free_trial %} · 🎁 {% trans "пробный бесплатно" %}{% elif ts.trial_price %} · 💎 {% trans "пробный" %} {{ ts.trial_price|floatformat:0|intcomma }} {% trans "сум" %}{% endif %}
                             </option>
                         {% endfor %}
                     </select>
@@ -172,14 +235,52 @@
                 <div id="book-error" class="cal-error" hidden></div>
             </div>
 
-            {# ── Экран подтверждения после отправки ── #}
-            <div id="book-success" class="book-success" hidden>
-                <div class="book-success__icon"><i class="fa-solid fa-circle-check"></i></div>
-                <h4>{% trans "Заявка отправлена!" %}</h4>
-                <p class="book-success__lead" id="book-success-when">—</p>
-                <p class="book-success__note">
-                    {% trans "Учитель подтвердит урок в течение 15 минут. Вы получите уведомление, а урок появится в разделе «Мои уроки»." %}
-                </p>
+            {# ── Экран подтверждения после отправки (4 состояния) ── #}
+            <div id="book-success" class="book-success" hidden data-state="waiting">
+                {# WAITING — заявка отправлена, ждём ответа учителя #}
+                <div class="book-state" data-state-view="waiting">
+                    <div class="book-success__icon book-success__icon--waiting"><i class="fa-solid fa-paper-plane"></i></div>
+                    <h4>{% trans "Заявка отправлена!" %}</h4>
+                    <p class="book-success__lead" id="book-success-when">—</p>
+
+                    <div class="book-countdown" id="book-countdown">
+                        <div class="book-countdown__label">{% trans 'Учитель ответит через' %}</div>
+                        <div class="book-countdown__time">
+                            <span id="book-countdown-min">--</span>:<span id="book-countdown-sec">--</span>
+                        </div>
+                        <div class="book-countdown__bar"><div class="book-countdown__fill" id="book-countdown-fill"></div></div>
+                    </div>
+
+                    <p class="book-success__note">
+                        {% trans "Когда учитель подтвердит — этот экран обновится автоматически. Вы также получите уведомление." %}
+                    </p>
+                </div>
+
+                {# CONFIRMED — учитель подтвердил #}
+                <div class="book-state" data-state-view="confirmed" hidden>
+                    <div class="book-success__icon"><i class="fa-solid fa-circle-check"></i></div>
+                    <h4>{% trans 'Урок подтверждён!' %}</h4>
+                    <p class="book-success__lead" id="book-confirmed-when">—</p>
+                    <p class="book-state__reply" id="book-confirmed-reply"></p>
+                    <a href="#" id="book-confirmed-meeting" class="book-state__meeting" hidden target="_blank" rel="noopener">
+                        <i class="fas fa-video"></i> {% trans 'Открыть видеокомнату' %}
+                    </a>
+                </div>
+
+                {# REJECTED — учитель отклонил #}
+                <div class="book-state" data-state-view="rejected" hidden>
+                    <div class="book-success__icon book-success__icon--rejected"><i class="fa-solid fa-circle-xmark"></i></div>
+                    <h4>{% trans 'Учитель отклонил заявку' %}</h4>
+                    <p class="book-state__reply" id="book-rejected-reply"></p>
+                    <p class="book-success__note">{% trans 'Не расстраивайтесь — попробуйте выбрать другое время или других учителей.' %}</p>
+                </div>
+
+                {# EXPIRED — время вышло, slot вернулся в free #}
+                <div class="book-state" data-state-view="expired" hidden>
+                    <div class="book-success__icon book-success__icon--expired"><i class="fa-solid fa-clock"></i></div>
+                    <h4>{% trans 'Учитель не успел ответить' %}</h4>
+                    <p class="book-success__note">{% trans 'Слот снова свободен. Попробуйте другое время или выберите другого учителя.' %}</p>
+                </div>
             </div>
         </div>
         <footer class="cal-modal__foot" id="book-foot">
@@ -191,11 +292,11 @@
                 <i class="fa fa-calendar-check"></i> {% trans "Запросить урок" %}
             </button>
         </footer>
-        {# Футер экрана подтверждения #}
+        {# Футер экрана подтверждения — динамически меняется по состоянию #}
         <footer class="cal-modal__foot" id="book-success-foot" hidden>
             <div style="flex:1"></div>
             <button type="button" class="btn btn-secondary" id="book-another">{% trans "Забронировать ещё" %}</button>
-            <a href="{% url 'my_bookings_page' %}" class="btn btn-primary">
+            <a href="{% url 'my_bookings_page' %}" class="btn btn-primary" id="book-mybookings-link">
                 <i class="fa fa-list-check"></i> {% trans "К моим урокам" %}
             </a>
         </footer>
@@ -233,6 +334,12 @@ window.UstozBook = {
         priceSum: "{% trans 'сум' %}",
         filterNone: "{% trans 'Нет свободных слотов в выбранное время дня.' %}",
         filterCount: "{% trans 'слотов в этом периоде' %}",
+        // Footer-кнопки по состояниям live-обновления
+        ctaBookAnother: "{% trans 'Забронировать ещё' %}",
+        ctaMyBookings: "{% trans 'К моим урокам' %}",
+        ctaJoinLesson: "{% trans 'Открыть видеокомнату' %}",
+        ctaPickOther: "{% trans 'Выбрать другой слот' %}",
+        ctaBackToTeacher: "{% trans 'Назад к учителю' %}",
     },
 };
 </script>

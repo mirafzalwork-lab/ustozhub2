@@ -46,6 +46,58 @@
             text-decoration: none; font-weight: 600;
         }
         .skip-link:focus { left: 0; outline: 3px solid #fbbf24; outline-offset: 2px; }
+
+        /* ===== Global focus-visible (a11y) — keyboard-only outline ===== */
+        :focus { outline: none; }
+        :focus-visible {
+            outline: 2px solid #3B82F6;
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible,
+        [tabindex]:focus-visible,
+        summary:focus-visible {
+            outline: 2px solid #3B82F6;
+            outline-offset: 2px;
+        }
+        /* Кнопки с цветным фоном — outline вынести наружу */
+        .btn-primary:focus-visible,
+        .btn-trial-primary:focus-visible,
+        .btn-favorite:focus-visible,
+        .btn-telegram:focus-visible {
+            outline-offset: 3px;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25);
+        }
+
+        /* ===== Tactile active-feedback (mobile + desktop) ===== */
+        @media (hover: none), (pointer: coarse) {
+            button:not(:disabled):active,
+            .btn-primary:active,
+            .btn-secondary:active,
+            .btn-secondary-soft:active,
+            .btn-trial-primary:active,
+            .btn-favorite:active,
+            .btn-telegram:active,
+            .btn-icon-action:active,
+            a.btn:active,
+            [role="button"]:active {
+                transform: scale(0.97);
+                transition: transform 0.06s ease-out;
+            }
+        }
+        /* Reduced motion: убираем scale-feedback */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
     </style>
 
     {# Structured data для всех страниц — название организации #}
@@ -1260,9 +1312,14 @@
                 <img src="{% static 'logo/new_logo.png' %}" alt="UstozHub">
             </a>
 
-            <!-- Search Bar (Desktop) -->
-    
-            
+            <!-- Search Bar (Desktop) — доступен на всех страницах, не только на главной -->
+            <form class="nav-search" role="search" action="{% url 'home' %}" method="get">
+                <input type="search" name="search" id="navSearchInput" class="search-input"
+                       placeholder="{% trans 'Поиск преподавателей, предметов…' %}"
+                       value="{{ request.GET.search|default:'' }}"
+                       aria-label="{% trans 'Поиск преподавателей' %}">
+                <i class="fas fa-search search-icon" aria-hidden="true"></i>
+            </form>
 
             <!-- Actions -->
             <div class="nav-actions">
@@ -1331,8 +1388,8 @@
                     </a>
                     
                     <!-- Messages Icon Button - С интегрированным real-time чатом -->
-                    <a href="{% url 'conversations_list' %}" class="messages-icon-btn" title="{% trans 'Сообщения' %}">
-                        <i class="fas fa-bolt"></i>
+                    <a href="{% url 'conversations_list' %}" class="messages-icon-btn" title="{% trans 'Сообщения' %}" aria-label="{% trans 'Сообщения' %}">
+                        <i class="fas fa-comment-dots"></i>
                         {% if unread_messages_count > 0 %}
                             <span class="messages-badge">{{ unread_messages_count }}</span>
                         {% endif %}
@@ -1391,7 +1448,7 @@
                             {% endif %}
 
                             <a href="{% url 'conversations_list' %}" class="dropdown-item">
-                                <i class="fas fa-bolt text-success"></i>
+                                <i class="fas fa-comment-dots text-success"></i>
                                 <span>{% trans 'Чат онлайн' %}</span>
                             </a>
 
@@ -1615,14 +1672,8 @@
             }
         })();
 
-        const navSearchInput = document.getElementById('navSearchInput');
-        if (navSearchInput) {
-            navSearchInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter' && this.value.trim()) {
-                    window.location.href = `{% url 'home' %}?search=${encodeURIComponent(this.value.trim())}`;
-                }
-            });
-        }
+        // Десктоп-поиск теперь обычная <form> с action=home — Enter сабмитит
+        // нативно, отдельный JS-обработчик не нужен (работает и без JS).
 
         // Mobile search
         const mobileSearchInput = document.getElementById('mobileSearchInput');
@@ -1871,6 +1922,30 @@
             return div.innerHTML;
         }
 
+        /* Универсальный toast для обратной связи (success/error/info).
+           Замена нативных alert() — не блокирует поток, единый стиль. */
+        window.flashToast = function(kind, text) {
+            var container = document.getElementById('toastContainer');
+            if (!container) { return; }
+            var palette = {
+                success: { color: '#10B981', icon: 'fa-circle-check' },
+                error:   { color: '#EF4444', icon: 'fa-triangle-exclamation' },
+                info:    { color: '#3B82F6', icon: 'fa-circle-info' }
+            };
+            var cfg = palette[kind] || palette.info;
+            var toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.borderLeft = '4px solid ' + cfg.color;
+            toast.innerHTML =
+                '<div class="toast-icon" style="color:' + cfg.color + '"><i class="fas ' + cfg.icon + '"></i></div>' +
+                '<div class="toast-body"><div class="toast-text">' + escapeHtml(text) + '</div></div>';
+            container.appendChild(toast);
+            setTimeout(function() {
+                toast.classList.add('hiding');
+                setTimeout(function() { toast.remove(); }, 350);
+            }, 4000);
+        };
+
         /* ========================================
            WEBSOCKET CONNECTION (primary)
            ======================================== */
@@ -1980,6 +2055,97 @@
     })();
     </script>
     {% endif %}
+
+    <!-- Глобальная модалка подтверждения (замена нативного confirm для действий) -->
+    <style>
+        .confirm-overlay {
+            position: fixed; inset: 0; z-index: 4000;
+            background: rgba(15, 23, 42, .55);
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px; opacity: 0; transition: opacity .18s ease;
+        }
+        .confirm-overlay.show { opacity: 1; }
+        .confirm-box {
+            background: #fff; border-radius: 16px; max-width: 420px; width: 100%;
+            padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,.25);
+            transform: translateY(8px) scale(.98); transition: transform .18s ease;
+        }
+        .confirm-overlay.show .confirm-box { transform: none; }
+        .confirm-box__title { font-size: 17px; font-weight: 700; color: #0F172A; margin: 0 0 8px; }
+        .confirm-box__text { font-size: 14px; color: #475569; line-height: 1.55; margin: 0 0 20px; }
+        .confirm-box__actions { display: flex; gap: 10px; justify-content: flex-end; }
+        .confirm-btn {
+            border: none; border-radius: 10px; padding: 10px 18px; font-size: 14px;
+            font-weight: 600; cursor: pointer; transition: filter .15s ease;
+        }
+        .confirm-btn:hover { filter: brightness(.95); }
+        .confirm-btn--cancel { background: #F1F5F9; color: #334155; }
+        .confirm-btn--ok { background: #3B82F6; color: #fff; }
+        .confirm-btn--ok.is-danger { background: #EF4444; }
+    </style>
+    <script>
+        /* confirmDialog(message, opts) -> Promise<boolean>.
+           Замена нативного confirm() для (в т.ч. деструктивных) действий.
+           opts: { title, okText, cancelText, danger } */
+        window.confirmDialog = function(message, opts) {
+            opts = opts || {};
+            return new Promise(function(resolve) {
+                var overlay = document.createElement('div');
+                overlay.className = 'confirm-overlay';
+                var titleHtml = opts.title
+                    ? '<div class="confirm-box__title"></div>' : '';
+                overlay.innerHTML =
+                    '<div class="confirm-box" role="dialog" aria-modal="true">' +
+                        titleHtml +
+                        '<p class="confirm-box__text"></p>' +
+                        '<div class="confirm-box__actions">' +
+                            '<button type="button" class="confirm-btn confirm-btn--cancel"></button>' +
+                            '<button type="button" class="confirm-btn confirm-btn--ok' +
+                                (opts.danger ? ' is-danger' : '') + '"></button>' +
+                        '</div>' +
+                    '</div>';
+                // Текст через textContent — без риска инъекции
+                if (opts.title) { overlay.querySelector('.confirm-box__title').textContent = opts.title; }
+                overlay.querySelector('.confirm-box__text').textContent = message || '';
+                overlay.querySelector('.confirm-btn--cancel').textContent = opts.cancelText || '{% trans "Отмена" %}';
+                overlay.querySelector('.confirm-btn--ok').textContent = opts.okText || '{% trans "Подтвердить" %}';
+
+                document.body.appendChild(overlay);
+                requestAnimationFrame(function(){ overlay.classList.add('show'); });
+
+                function close(result) {
+                    overlay.classList.remove('show');
+                    setTimeout(function(){ overlay.remove(); }, 180);
+                    document.removeEventListener('keydown', onKey);
+                    resolve(result);
+                }
+                function onKey(e) {
+                    if (e.key === 'Escape') { close(false); }
+                    if (e.key === 'Enter') { close(true); }
+                }
+                overlay.querySelector('.confirm-btn--cancel').addEventListener('click', function(){ close(false); });
+                overlay.querySelector('.confirm-btn--ok').addEventListener('click', function(){ close(true); });
+                overlay.addEventListener('click', function(e){ if (e.target === overlay) { close(false); } });
+                document.addEventListener('keydown', onKey);
+                overlay.querySelector('.confirm-btn--ok').focus();
+            });
+        };
+
+        /* Делегированное подтверждение для форм: добавь data-confirm="вопрос"
+           (и опц. data-confirm-ok="текст", data-confirm-danger) на <form>. */
+        document.addEventListener('submit', function(e) {
+            var form = e.target;
+            if (!form || !form.dataset || form.dataset.confirm === undefined) { return; }
+            if (form.dataset.confirmed === '1') { return; }  // уже подтверждено
+            e.preventDefault();
+            window.confirmDialog(form.dataset.confirm, {
+                okText: form.dataset.confirmOk || undefined,
+                danger: form.dataset.confirmDanger !== undefined
+            }).then(function(ok) {
+                if (ok) { form.dataset.confirmed = '1'; form.submit(); }
+            });
+        }, true);
+    </script>
 
     {% block extra_js %}{% endblock %}
 </body>

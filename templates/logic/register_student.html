@@ -53,6 +53,134 @@
         font-size: 14px;
     }
 
+    /* ===== Wizard (3-step onboarding) ===== */
+    .reg-wizard-progress {
+        display: flex; align-items: center; gap: 8px;
+        margin: 0 0 28px; padding: 0;
+        list-style: none; counter-reset: reg-step;
+    }
+    .reg-wizard-progress li {
+        flex: 1; display: flex; flex-direction: column; align-items: center;
+        gap: 6px; position: relative; min-width: 0;
+    }
+    .reg-wizard-progress li::before {
+        counter-increment: reg-step;
+        content: counter(reg-step);
+        width: 32px; height: 32px; border-radius: 50%;
+        background: #E2E8F0; color: #64748B;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 14px;
+        transition: all .25s ease;
+    }
+    .reg-wizard-progress li::after {
+        content: ''; position: absolute;
+        top: 16px; left: calc(50% + 22px); right: calc(-50% + 22px);
+        height: 2px; background: #E2E8F0; z-index: -1;
+        transition: background .25s ease;
+    }
+    .reg-wizard-progress li:last-child::after { display: none; }
+    .reg-wizard-progress li .step-label {
+        font-size: 12px; color: #64748B; font-weight: 600;
+        text-align: center; white-space: nowrap;
+        overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+    }
+    .reg-wizard-progress li.is-active::before {
+        background: linear-gradient(135deg, #10B981, #059669); color: #fff;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+    }
+    .reg-wizard-progress li.is-active .step-label { color: #059669; }
+    .reg-wizard-progress li.is-done::before {
+        background: #10B981; color: #fff;
+        content: '✓';
+    }
+    .reg-wizard-progress li.is-done::after { background: #10B981; }
+    .reg-wizard-progress li.is-done .step-label { color: #10B981; }
+
+    .reg-step { display: none; animation: reg-step-in .35s ease-out; }
+    .reg-step.is-active { display: block; }
+    @keyframes reg-step-in {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .reg-step-title {
+        font-size: 22px; font-weight: 700; color: #0A2540;
+        margin: 0 0 6px;
+    }
+    .reg-step-subtitle {
+        font-size: 14px; color: #64748B;
+        margin: 0 0 20px;
+    }
+
+    /* Optional fields disclosure (на step 1) */
+    .reg-optional {
+        margin-top: 8px;
+        border: 1px dashed #E2E8F0; border-radius: 10px;
+        background: #FAFBFC;
+    }
+    .reg-optional > summary {
+        cursor: pointer; padding: 12px 16px;
+        font-size: 14px; font-weight: 600; color: #475569;
+        display: flex; align-items: center; gap: 8px;
+        list-style: none;
+    }
+    .reg-optional > summary::-webkit-details-marker { display: none; }
+    .reg-optional > summary::before {
+        content: '▸'; transition: transform .15s ease;
+        color: #94A3B8; font-size: 12px;
+    }
+    .reg-optional[open] > summary::before { transform: rotate(90deg); }
+    .reg-optional > summary:hover { color: #0F172A; }
+    .reg-optional-content { padding: 4px 16px 16px; }
+
+    /* Step navigation */
+    .reg-nav {
+        display: flex; gap: 12px; margin-top: 28px;
+        padding-top: 20px; border-top: 1px solid #F1F5F9;
+        flex-wrap: wrap;
+    }
+    .reg-nav__spacer { flex: 1; }
+    .reg-nav__btn {
+        padding: 12px 22px; border-radius: 10px;
+        font-size: 15px; font-weight: 600;
+        cursor: pointer; border: none;
+        display: inline-flex; align-items: center; gap: 8px;
+        transition: all .2s ease; text-decoration: none;
+    }
+    .reg-nav__btn--back {
+        background: #fff; color: #475569; border: 1px solid #E2E8F0;
+    }
+    .reg-nav__btn--back:hover { background: #F8FAFC; border-color: #CBD5E1; }
+    .reg-nav__btn--skip {
+        background: transparent; color: #94A3B8;
+    }
+    .reg-nav__btn--skip:hover { color: #64748B; text-decoration: underline; }
+    .reg-nav__btn--next {
+        background: linear-gradient(135deg, #10B981, #059669); color: #fff;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+    }
+    .reg-nav__btn--next:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+    }
+    .reg-nav__btn--next:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+    .reg-nav__btn--submit {
+        background: linear-gradient(135deg, #4F46E5, #4338CA); color: #fff;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+    }
+    .reg-nav__btn--submit:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+    }
+
+    @media (max-width: 560px) {
+        .reg-wizard-progress li .step-label { font-size: 10px; }
+        .reg-wizard-progress li::before { width: 28px; height: 28px; font-size: 13px; }
+        .reg-step-title { font-size: 18px; }
+        .reg-nav__btn { padding: 12px 16px; font-size: 14px; flex: 1; justify-content: center; }
+        .reg-nav__btn--skip { flex: 0 0 100%; order: -1; }
+    }
+
     .form-section {
         margin-bottom: 32px;
         padding-bottom: 24px;
@@ -840,15 +968,19 @@
             {% endfor %}
         {% endif %}
 
-        <form method="post" id="registerForm">
+        <form method="post" id="registerForm" data-wizard data-initial-step="{% if form.errors %}{% if form.interests.errors or form.learning_format.errors or form.budget_min.errors or form.budget_max.errors or form.available_weekdays.errors %}2{% elif form.bio.errors or form.telegram.errors or form.whatsapp.errors %}3{% else %}1{% endif %}{% else %}1{% endif %}">
             {% csrf_token %}
 
-            <!-- Личная информация -->
-            <div class="form-section">
-                <h3 class="section-title">
-                    <i class="fas fa-user"></i>
-                    {% trans "Личная информация" %}
-                </h3>
+            <ol class="reg-wizard-progress" id="regWizardProgress" aria-label="{% trans 'Прогресс регистрации' %}">
+                <li data-step-dot="1"><span class="step-label">{% trans 'Аккаунт' %}</span></li>
+                <li data-step-dot="2"><span class="step-label">{% trans 'Что учить' %}</span></li>
+                <li data-step-dot="3"><span class="step-label">{% trans 'О себе' %}</span></li>
+            </ol>
+
+            {# ======================== STEP 1: Аккаунт ======================== #}
+            <div class="reg-step" data-step="1">
+                <h2 class="reg-step-title">{% trans 'Создайте аккаунт' %}</h2>
+                <p class="reg-step-subtitle">{% trans 'Минимум информации — остальное можно заполнить позже' %}</p>
 
                 <div class="form-row">
                     <div class="form-group">
@@ -872,28 +1004,7 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label" for="id_username">
-                        {{ form.username.label }} <span style="color: red;">*</span>
-                    </label>
-                    {{ form.username }}
-                    {% if form.username.errors %}
-                        <div class="error-message">{{ form.username.errors.0 }}</div>
-                    {% endif %}
-                    <div class="help-text">{% trans "Это имя будет использоваться для входа" %}</div>
-                </div>
-
                 <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label" for="id_email">
-                            {{ form.email.label }}
-                        </label>
-                        {{ form.email }}
-                        {% if form.email.errors %}
-                            <div class="error-message">{{ form.email.errors.0 }}</div>
-                        {% endif %}
-                    </div>
-
                     <div class="form-group">
                         <label class="form-label" for="id_phone">
                             {{ form.phone.label }} <span style="color: red;">*</span>
@@ -903,72 +1014,119 @@
                             <div class="error-message">{{ form.phone.errors.0 }}</div>
                         {% endif %}
                     </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label" for="id_age">
-                            {{ form.age.label }}
-                        </label>
-                        {{ form.age }}
-                        {% if form.age.errors %}
-                            <div class="error-message">{{ form.age.errors.0 }}</div>
-                        {% endif %}
-                    </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="id_city">
-                            {{ form.city.label }}
+                        <label class="form-label" for="id_email">
+                            {{ form.email.label }}
                         </label>
-                        {{ form.city }}
-                        {% if form.city.errors %}
-                            <div class="error-message">{{ form.city.errors.0 }}</div>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <div class="error-message">{{ form.email.errors.0 }}</div>
                         {% endif %}
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <label class="form-label" for="id_username">
+                        {{ form.username.label }} <span style="color: red;">*</span>
+                    </label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                        <div class="error-message">{{ form.username.errors.0 }}</div>
+                    {% endif %}
+                    <div class="help-text">{% trans "Это имя будет использоваться для входа (латиница)" %}</div>
+                </div>
+
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label" for="id_education_level">
-                            {{ form.education_level.label }}
+                        <label class="form-label" for="id_password1">
+                            {{ form.password1.label }} <span style="color: red;">*</span>
                         </label>
-                        {{ form.education_level }}
-                        {% if form.education_level.errors %}
-                            <div class="error-message">{{ form.education_level.errors.0 }}</div>
+                        {{ form.password1 }}
+                        {% if form.password1.errors %}
+                            <div class="error-message">{{ form.password1.errors.0 }}</div>
                         {% endif %}
+                        <div class="help-text">{% trans "Минимум 8 символов" %}</div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="id_school_university">
-                            {{ form.school_university.label }}
+                        <label class="form-label" for="id_password2">
+                            {{ form.password2.label }} <span style="color: red;">*</span>
                         </label>
-                        {{ form.school_university }}
-                        {% if form.school_university.errors %}
-                            <div class="error-message">{{ form.school_university.errors.0 }}</div>
+                        {{ form.password2 }}
+                        {% if form.password2.errors %}
+                            <div class="error-message">{{ form.password2.errors.0 }}</div>
                         {% endif %}
                     </div>
+                </div>
+
+                <details class="reg-optional" {% if form.age.errors or form.city.errors or form.education_level.errors or form.school_university.errors %}open{% endif %}>
+                    <summary>{% trans 'Дополнительно (необязательно)' %}</summary>
+                    <div class="reg-optional-content">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="id_age">{{ form.age.label }}</label>
+                                {{ form.age }}
+                                {% if form.age.errors %}<div class="error-message">{{ form.age.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="id_city">{{ form.city.label }}</label>
+                                {{ form.city }}
+                                {% if form.city.errors %}<div class="error-message">{{ form.city.errors.0 }}</div>{% endif %}
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="id_education_level">{{ form.education_level.label }}</label>
+                                {{ form.education_level }}
+                                {% if form.education_level.errors %}<div class="error-message">{{ form.education_level.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="id_school_university">{{ form.school_university.label }}</label>
+                                {{ form.school_university }}
+                                {% if form.school_university.errors %}<div class="error-message">{{ form.school_university.errors.0 }}</div>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
+                <div class="checkbox-group" style="margin-top: 16px;">
+                    {{ form.terms_accepted }}
+                    <label class="checkbox-label" for="id_terms_accepted">
+                        {% trans "Я принимаю" %} <a href="#" target="_blank">{% trans "условия использования" %}</a> {% trans "и" %} <a href="#" target="_blank">{% trans "политику конфиденциальности" %}</a>
+                    </label>
+                </div>
+                {% if form.terms_accepted.errors %}
+                    <div class="error-message" style="margin-top: 4px;">{{ form.terms_accepted.errors.0 }}</div>
+                {% endif %}
+
+                <div class="reg-nav">
+                    <a href="{% url 'register_choose' %}" class="reg-nav__btn reg-nav__btn--back">
+                        <i class="fas fa-arrow-left"></i> {% trans 'К выбору роли' %}
+                    </a>
+                    <div class="reg-nav__spacer"></div>
+                    <button type="button" class="reg-nav__btn reg-nav__btn--next" data-go-step="2">
+                        {% trans 'Далее' %} <i class="fas fa-arrow-right"></i>
+                    </button>
                 </div>
             </div>
 
-            <!-- Предметы и цели -->
-            <div class="form-section">
-                <h3 class="section-title">
-                    <i class="fas fa-book"></i>
-                    {% trans "Предметы и цели обучения" %}
-                </h3>
+            {# ======================== STEP 2: Что изучать ======================== #}
+            <div class="reg-step" data-step="2">
+                <h2 class="reg-step-title">{% trans 'Что хотите изучать?' %}</h2>
+                <p class="reg-step-subtitle">{% trans 'Поможем подобрать лучших учителей именно под вас' %}</p>
 
                 <div class="form-group full-width">
                     <label class="form-label">
                         {{ form.interests.label }} <span style="color: red;">*</span>
                     </label>
-                    
-                    <!-- Поиск предметов -->
+
                     <div class="subject-search-box" style="position: relative;">
                         <i class="fas fa-search"></i>
-                        <input 
-                            type="text" 
-                            id="subjectSearchInput" 
-                            class="subject-search" 
+                        <input
+                            type="text"
+                            id="subjectSearchInput"
+                            class="subject-search"
                             placeholder="{% trans 'Начните вводить название предмета...' %}"
                             autocomplete="off"
                             aria-label="{% trans 'Поиск предметов' %}"
@@ -976,101 +1134,34 @@
                             aria-controls="subjectSuggestions"
                         >
                         <span class="selected-badge" id="selectedBadge">0 {% trans 'выбрано' %}</span>
-                        <!-- Панель подсказок -->
                         <div id="subjectSuggestions" class="suggestions-panel" role="listbox" aria-expanded="false"></div>
                     </div>
 
-                    <!-- Быстрый выбор и выбранные предметы -->
                     <div id="subjectQuickPicks" class="quick-picks"></div>
                     <div id="subjectSelectedChips" class="chips-container"></div>
                     <button type="button" id="clearSelectedBtn" class="clear-btn">
                         <i class="fas fa-trash"></i> {% trans "Очистить выбор" %}
                     </button>
-                    
-                    <!-- Индикатор результатов поиска -->
+
                     <div class="search-results-hint" id="searchResultsHint">
                         <i class="fas fa-check-circle"></i>
                         <span id="searchResultsText"></span>
                     </div>
-                    
-                    <!-- Подсказка для пользователя -->
+
                     <div style="font-size: 12px; color: #666; margin-top: 8px; display: flex; align-items: center; gap: 6px;">
                         <i class="fas fa-lightbulb" style="color: #fbbf24;"></i>
                         <span>{% trans "💡 Начните вводить название или используйте быстрые кнопки ниже" %}</span>
                     </div>
-                    
-                    <!-- Чекбоксы предметов -->
+
                     <div id="subjectCheckboxes">
                         {{ form.interests }}
                     </div>
-                    
+
                     {% if form.interests.errors %}
                         <div class="error-message">{{ form.interests.errors.0 }}</div>
                     {% endif %}
                     <div class="help-text">{{ form.interests.help_text }}</div>
                 </div>
-
-                <div class="form-group full-width">
-                    <label class="form-label" for="id_bio">
-                        {{ form.bio.label }}
-                    </label>
-                    {{ form.bio }}
-                    <div class="char-counter" id="bioCounter">0 / 1000 {% trans "символов" %}</div>
-                    {% if form.bio.errors %}
-                        <div class="error-message">{{ form.bio.errors.0 }}</div>
-                    {% endif %}
-                    <div class="help-text">{{ form.bio.help_text }}</div>
-                </div>
-            </div>
-                        <div class="form-section">
-                            <h3 class="section-title">
-                                <i class="fas fa-address-book"></i>
-                                {% trans "Контакты для связи" %}
-                            </h3>
-                            <p style="color: #666; font-size: 14px; margin-bottom: 16px;">
-                                {% trans "Укажите удобные способы связи, чтобы учителя могли легко с вами связаться" %}
-                            </p>
-            
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label" for="id_telegram">
-                                        {{ form.telegram.label }}
-                                    </label>
-                                    {{ form.telegram }}
-                                    {% if form.telegram.errors %}
-                                        <div class="error-message">{{ form.telegram.errors.0 }}</div>
-                                    {% endif %}
-                                    <div class="help-text">{{ form.telegram.help_text }}</div>
-                                </div>
-            
-                                <div class="form-group">
-                                    <label class="form-label" for="id_whatsapp">
-                                        {{ form.whatsapp.label }}
-                                    </label>
-                                    {{ form.whatsapp }}
-                                    {% if form.whatsapp.errors %}
-                                        <div class="error-message">{{ form.whatsapp.errors.0 }}</div>
-                                    {% endif %}
-                                    <div class="help-text">{{ form.whatsapp.help_text }}</div>
-                                </div>
-                            </div>
-            
-                            <div style="background: #f0fdf4; border: 1px solid #d1fae5; border-radius: 8px; padding: 12px; font-size: 13px; color: #059669; margin-top: 12px; display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-info-circle"></i>
-                                <span>{% trans "Эти данные не обязательны, но помогут учителям быстрее связаться с вами для обсуждения деталей обучения" %}</span>
-                            </div>
-                        </div>
-            
-
-            
-    
-             
-            <!-- Формат и бюджет -->
-            <div class="form-section">
-                <h3 class="section-title">
-                    <i class="fas fa-cog"></i>
-                    {% trans "Предпочтения по обучению" %}
-                </h3>
 
                 <div class="form-group full-width">
                     <label class="form-label" for="id_learning_format">
@@ -1084,37 +1175,27 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label" for="id_budget_min">
-                            {{ form.budget_min.label }}
-                        </label>
+                        <label class="form-label" for="id_budget_min">{{ form.budget_min.label }}</label>
                         {{ form.budget_min }}
-                        {% if form.budget_min.errors %}
-                            <div class="error-message">{{ form.budget_min.errors.0 }}</div>
-                        {% endif %}
+                        {% if form.budget_min.errors %}<div class="error-message">{{ form.budget_min.errors.0 }}</div>{% endif %}
                         <div class="help-text">{{ form.budget_min.help_text }}</div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="id_budget_max">
-                            {{ form.budget_max.label }}
-                        </label>
+                        <label class="form-label" for="id_budget_max">{{ form.budget_max.label }}</label>
                         {{ form.budget_max }}
-                        {% if form.budget_max.errors %}
-                            <div class="error-message">{{ form.budget_max.errors.0 }}</div>
-                        {% endif %}
+                        {% if form.budget_max.errors %}<div class="error-message">{{ form.budget_max.errors.0 }}</div>{% endif %}
                         <div class="help-text">{{ form.budget_max.help_text }}</div>
                     </div>
                 </div>
 
                 <div class="budget-note">
                     <i class="fas fa-info-circle"></i>
-                    <span>{% trans "Указание бюджета поможет учителям понять ваши возможности. Можно не указывать и договориться отдельно." %}</span>
+                    <span>{% trans "Бюджет необязателен — можно договориться с учителем индивидуально." %}</span>
                 </div>
 
                 <div class="form-group full-width">
-                    <label class="form-label">
-                        {{ form.available_weekdays.label }}
-                    </label>
+                    <label class="form-label">{{ form.available_weekdays.label }}</label>
                     <div class="weekdays-grid">
                         {% for checkbox in form.available_weekdays %}
                             <div class="weekday-checkbox-wrapper">
@@ -1128,65 +1209,243 @@
                     {% endif %}
                     <div class="help-text">{{ form.available_weekdays.help_text }}</div>
                 </div>
+
+                <div class="reg-nav">
+                    <button type="button" class="reg-nav__btn reg-nav__btn--back" data-go-step="1">
+                        <i class="fas fa-arrow-left"></i> {% trans 'Назад' %}
+                    </button>
+                    <div class="reg-nav__spacer"></div>
+                    <button type="button" class="reg-nav__btn reg-nav__btn--next" data-go-step="3">
+                        {% trans 'Далее' %} <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
             </div>
 
-            <!-- Безопасность -->
-            <div class="form-section">
-                <h3 class="section-title">
-                    <i class="fas fa-lock"></i>
-                    {% trans "Безопасность" %}
-                </h3>
+            {# ======================== STEP 3: О себе (optional) ======================== #}
+            <div class="reg-step" data-step="3">
+                <h2 class="reg-step-title">{% trans 'Расскажите о себе' %} <small style="font-size:14px; font-weight:400; color:#94A3B8;">— {% trans 'необязательно' %}</small></h2>
+                <p class="reg-step-subtitle">{% trans 'Это помогает учителям лучше понять ваши цели. Можно заполнить позже в профиле.' %}</p>
 
-                <div class="form-group">
-                    <label class="form-label" for="id_password1">
-                        {{ form.password1.label }} <span style="color: red;">*</span>
-                    </label>
-                    {{ form.password1 }}
-                    {% if form.password1.errors %}
-                        <div class="error-message">{{ form.password1.errors.0 }}</div>
+                <div class="form-group full-width">
+                    <label class="form-label" for="id_bio">{{ form.bio.label }}</label>
+                    {{ form.bio }}
+                    <div class="char-counter" id="bioCounter">0 / 1000 {% trans "символов" %}</div>
+                    {% if form.bio.errors %}
+                        <div class="error-message">{{ form.bio.errors.0 }}</div>
                     {% endif %}
-                    <div class="help-text">{% trans "Минимум 8 символов" %}</div>
+                    <div class="help-text">{{ form.bio.help_text }}</div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label" for="id_password2">
-                        {{ form.password2.label }} <span style="color: red;">*</span>
-                    </label>
-                    {{ form.password2 }}
-                    {% if form.password2.errors %}
-                        <div class="error-message">{{ form.password2.errors.0 }}</div>
-                    {% endif %}
+                <p style="color: #666; font-size: 14px; margin: 20px 0 12px;">
+                    <i class="fas fa-address-book" style="color:#10B981; margin-right:6px;"></i>
+                    {% trans "Контакты для связи (необязательно)" %}
+                </p>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="id_telegram">{{ form.telegram.label }}</label>
+                        {{ form.telegram }}
+                        {% if form.telegram.errors %}<div class="error-message">{{ form.telegram.errors.0 }}</div>{% endif %}
+                        <div class="help-text">{{ form.telegram.help_text }}</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="id_whatsapp">{{ form.whatsapp.label }}</label>
+                        {{ form.whatsapp }}
+                        {% if form.whatsapp.errors %}<div class="error-message">{{ form.whatsapp.errors.0 }}</div>{% endif %}
+                        <div class="help-text">{{ form.whatsapp.help_text }}</div>
+                    </div>
+                </div>
+
+                <div style="background: #f0fdf4; border: 1px solid #d1fae5; border-radius: 8px; padding: 12px; font-size: 13px; color: #059669; margin-top: 12px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-info-circle"></i>
+                    <span>{% trans "Telegram/WhatsApp ускорят связь с учителем, но это необязательно." %}</span>
+                </div>
+
+                <div class="reg-nav">
+                    <button type="button" class="reg-nav__btn reg-nav__btn--back" data-go-step="2">
+                        <i class="fas fa-arrow-left"></i> {% trans 'Назад' %}
+                    </button>
+                    <button type="submit" class="reg-nav__btn reg-nav__btn--skip" data-skip-submit>
+                        {% trans 'Пропустить и завершить' %}
+                    </button>
+                    <div class="reg-nav__spacer"></div>
+                    <button type="submit" class="reg-nav__btn reg-nav__btn--submit">
+                        <i class="fas fa-check"></i> {% trans 'Создать аккаунт' %}
+                    </button>
                 </div>
             </div>
-
-            <div class="checkbox-group">
-                {{ form.terms_accepted }}
-                <label class="checkbox-label" for="id_terms_accepted">
-                    {% trans "Я принимаю" %} <a href="#">{% trans "условия использования" %}</a> {% trans "и" %} <a href="#">{% trans "политику конфиденциальности" %}</a>
-                </label>
-            </div>
-            {% if form.terms_accepted.errors %}
-                <div class="error-message" style="margin-top: -16px; margin-bottom: 16px;">
-                    {{ form.terms_accepted.errors.0 }}
-                </div>
-            {% endif %}
-
-            <button type="submit" class="submit-btn">
-                <i class="fas fa-user-plus"></i> {% trans "Зарегистрироваться" %}
-            </button>
         </form>
-
-        <div class="back-link">
-            <a href="{% url 'register_choose' %}">
-                <i class="fas fa-arrow-left"></i> {% trans "Назад к выбору типа аккаунта" %}
-            </a>
-        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    /* ============================================================
+     * Multi-step wizard (3 шага) — frontend-only, без backend-изменений
+     * ============================================================ */
+    (function () {
+        const form = document.querySelector('form[data-wizard]');
+        if (!form) return;
+
+        const steps = Array.from(form.querySelectorAll('.reg-step'));
+        const dots = Array.from(document.querySelectorAll('#regWizardProgress li'));
+        const TOTAL = steps.length;
+        // На каких шагах какие поля обязательны (для клиент-валидации перед переходом)
+        const STEP_REQUIRED = {
+            1: ['id_first_name', 'id_last_name', 'id_phone', 'id_username', 'id_password1', 'id_password2', 'id_terms_accepted'],
+            2: ['id_learning_format'],  // interests — спец-логика (checkbox group)
+            3: [],
+        };
+
+        // Подтянуть последний шаг из sessionStorage или из initial-step (если server-side errors)
+        let currentStep = parseInt(form.dataset.initialStep || '1', 10);
+        try {
+            const saved = parseInt(sessionStorage.getItem('reg_wizard_step') || '0', 10);
+            if (saved && !form.querySelector('.error-message')) {
+                // Если нет ошибок — восстанавливаем сохранённый шаг
+                currentStep = Math.min(Math.max(saved, 1), TOTAL);
+            }
+        } catch (_) {}
+
+        function showStep(n) {
+            n = Math.min(Math.max(n, 1), TOTAL);
+            currentStep = n;
+            steps.forEach(s => {
+                const sn = parseInt(s.dataset.step, 10);
+                s.classList.toggle('is-active', sn === n);
+            });
+            dots.forEach(d => {
+                const dn = parseInt(d.dataset.stepDot, 10);
+                d.classList.toggle('is-active', dn === n);
+                d.classList.toggle('is-done', dn < n);
+            });
+            try { sessionStorage.setItem('reg_wizard_step', String(n)); } catch (_) {}
+            // Scroll to top of form для удобства
+            try { form.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {
+                form.scrollIntoView();
+            }
+            // Focus first focusable input в новом шаге
+            const activeStep = form.querySelector('.reg-step.is-active');
+            if (activeStep) {
+                const firstInput = activeStep.querySelector(
+                    'input:not([type=hidden]):not(:disabled), select:not(:disabled), textarea:not(:disabled)'
+                );
+                if (firstInput) {
+                    setTimeout(() => { try { firstInput.focus({ preventScroll: true }); } catch (_) {} }, 350);
+                }
+            }
+        }
+
+        function validateStep(n) {
+            const stepEl = form.querySelector('.reg-step[data-step="' + n + '"]');
+            if (!stepEl) return true;
+            const required = STEP_REQUIRED[n] || [];
+            let firstInvalid = null;
+
+            // Стандартные required-поля
+            required.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                let invalid = false;
+                if (el.type === 'checkbox') {
+                    invalid = !el.checked;
+                } else {
+                    invalid = !el.value || !el.value.trim();
+                }
+                el.classList.toggle('is-invalid', invalid);
+                el.style.borderColor = invalid ? '#DC2626' : '';
+                if (invalid && !firstInvalid) firstInvalid = el;
+            });
+
+            // Step 2: interests — хотя бы один checkbox должен быть выбран
+            if (n === 2) {
+                const interestsChecked = stepEl.querySelectorAll('input[name="interests"]:checked');
+                if (interestsChecked.length === 0) {
+                    const subjBox = stepEl.querySelector('.subject-search-box');
+                    if (subjBox) subjBox.style.boxShadow = '0 0 0 2px #DC2626';
+                    if (!firstInvalid) firstInvalid = stepEl.querySelector('#subjectSearchInput');
+                } else {
+                    const subjBox = stepEl.querySelector('.subject-search-box');
+                    if (subjBox) subjBox.style.boxShadow = '';
+                }
+            }
+
+            // Password confirm
+            if (n === 1) {
+                const p1 = document.getElementById('id_password1');
+                const p2 = document.getElementById('id_password2');
+                if (p1 && p2 && p1.value && p2.value && p1.value !== p2.value) {
+                    p2.classList.add('is-invalid');
+                    p2.style.borderColor = '#DC2626';
+                    if (!firstInvalid) firstInvalid = p2;
+                }
+            }
+
+            if (firstInvalid) {
+                try { firstInvalid.focus(); } catch (_) {}
+                try { firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
+                return false;
+            }
+            return true;
+        }
+
+        // Кнопки навигации
+        form.addEventListener('click', function (e) {
+            const btn = e.target.closest('[data-go-step]');
+            if (!btn) return;
+            e.preventDefault();
+            const target = parseInt(btn.dataset.goStep, 10);
+            if (!target) return;
+            // Идём назад без валидации, вперёд — с валидацией
+            if (target < currentStep) {
+                showStep(target);
+            } else {
+                if (validateStep(currentStep)) {
+                    showStep(target);
+                }
+            }
+        });
+
+        // Submit-кнопки на последнем шаге: валидируем шаг 1 и 2 целиком (на случай если юзер
+        // как-то обошёл навигацию). Step 3 — необязательный, но bio min-length проверит сервер.
+        form.addEventListener('submit', function (e) {
+            // Снимаем sessionStorage при успешном submit, чтобы не вернулся на step 3 при следующей регистрации
+            try { sessionStorage.removeItem('reg_wizard_step'); } catch (_) {}
+            // На submit убираем кастомные red-borders — пусть server вернёт реальные ошибки
+            form.querySelectorAll('.is-invalid').forEach(el => {
+                el.classList.remove('is-invalid');
+                el.style.borderColor = '';
+            });
+        });
+
+        // Снимаем красную рамку при вводе
+        form.addEventListener('input', function (e) {
+            const t = e.target;
+            if (t && t.classList && t.classList.contains('is-invalid')) {
+                t.classList.remove('is-invalid');
+                t.style.borderColor = '';
+            }
+        });
+
+        // Enter на любом текстовом поле в Step 1/2 — переход на следующий шаг (не submit)
+        form.addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter') return;
+            const t = e.target;
+            if (!t || t.tagName === 'TEXTAREA' || t.tagName === 'BUTTON') return;
+            if (currentStep < TOTAL) {
+                e.preventDefault();
+                if (validateStep(currentStep)) {
+                    showStep(currentStep + 1);
+                }
+            }
+        });
+
+        // Init
+        showStep(currentStep);
+    })();
+
     // Счетчик символов для поля описания
     const bioField = document.getElementById('id_bio');
     const charCounter = document.getElementById('bioCounter');

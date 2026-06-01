@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans 'Мои домашние задания' %} — UstozHub{% endblock %}
+
+{% block content %}
+{% include 'billing/_homework_common.html' %}
+
+<div class="hw-page">
+  <h1>{% trans 'Мои домашние задания' %}</h1>
+  <p class="subtitle">{% trans 'Задания, которые задали учителя по вашим подпискам' %}</p>
+
+  {% if pending %}
+    <div class="hw-section">
+      <h2>📝 {% trans 'К выполнению' %} ({{ pending|length }})</h2>
+      <div class="hw-grid">
+        {% for hw in pending %}
+          <a href="{% url 'homework_detail' hw.id %}" style="text-decoration:none; color:inherit;">
+            <div class="hw-card {% if hw.status == 'returned' %}returned{% else %}pending{% endif %}">
+              <div class="hw-card-head">
+                <h3>{{ hw.title }}</h3>
+                <span class="hw-status {{ hw.status }}">{{ hw.get_status_display }}</span>
+              </div>
+              <div class="hw-card-meta">
+                👤 {{ hw.teacher.user.get_full_name|default:hw.teacher.user.username }} · 📚 {{ hw.subscription.subject.name }}
+                {% if hw.due_at %}
+                  · <span class="due-label {% if hw.is_overdue %}overdue{% else %}ok{% endif %}">
+                    {% if hw.is_overdue %}⏰ {% trans 'просрочено' %}{% else %}📅 {% trans 'до' %}{% endif %}
+                    {{ hw.due_at|date:"d M, H:i" }}
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if finished %}
+    <div class="hw-section">
+      <h2>✅ {% trans 'Сданные' %} ({{ finished|length }})</h2>
+      <div class="hw-grid">
+        {% for hw in finished %}
+          <a href="{% url 'homework_detail' hw.id %}" style="text-decoration:none; color:inherit;">
+            <div class="hw-card {{ hw.status }}">
+              <div class="hw-card-head">
+                <h3>{{ hw.title }}</h3>
+                <span class="hw-status {{ hw.status }}">{{ hw.get_status_display }}</span>
+              </div>
+              <div class="hw-card-meta">
+                👤 {{ hw.teacher.user.get_full_name|default:hw.teacher.user.username }} · 📚 {{ hw.subscription.subject.name }}
+                {% if hw.submission.grade is not None %}
+                  · <span class="hw-grade-badge">{{ hw.submission.grade }}/100</span>
+                {% endif %}
+              </div>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if not pending and not finished %}
+    <div class="empty-state">
+      <h2 style="color:#0A2540; margin:0 0 8px;">{% trans 'Заданий пока нет' %}</h2>
+      <p>{% trans 'Учитель пока ничего не задал.' %}</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

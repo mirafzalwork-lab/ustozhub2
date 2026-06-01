@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}Подписки — Админ-панель{% endblock %}
+
+{% block content %}
+<div class="ab-page">
+  <h1>📚 Подписки</h1>
+  <p class="subtitle">Список подписок учеников. Админ может принудительно отменить.</p>
+
+  {% with active_tab='subscriptions' %}{% include 'billing/admin/_base.html' %}{% endwith %}
+
+  {% if messages %}
+    {% for m in messages %}
+      <div style="padding:12px 16px; border-radius:8px; margin-bottom:14px; background:{% if m.tags == 'error' %}#FEF2F2{% elif m.tags == 'success' %}#ECFDF5{% else %}#FFFBEB{% endif %};">{{ m }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="ab-tabs" style="margin-top:0;">
+    <a href="?status=active" {% if status_filter == 'active' %}class="active"{% endif %}>Активные ({{ counts.active|default:0 }})</a>
+    <a href="?status=completed" {% if status_filter == 'completed' %}class="active"{% endif %}>Завершены ({{ counts.completed|default:0 }})</a>
+    <a href="?status=cancelled_by_student" {% if status_filter == 'cancelled_by_student' %}class="active"{% endif %}>Отм. учеником ({{ counts.cancelled_by_student|default:0 }})</a>
+    <a href="?status=cancelled_by_teacher" {% if status_filter == 'cancelled_by_teacher' %}class="active"{% endif %}>Отм. учителем ({{ counts.cancelled_by_teacher|default:0 }})</a>
+    <a href="?status=all" {% if status_filter == 'all' %}class="active"{% endif %}>Все</a>
+  </div>
+
+  <div class="ab-section" style="padding:0;">
+  {% if items %}
+    <table class="ab-table">
+      <thead>
+        <tr>
+          <th>Куплено</th><th>Ученик</th><th>Учитель</th><th>Предмет</th>
+          <th>Прогресс</th><th>Эскроу</th><th>Статус</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in items %}
+        <tr>
+          <td>{{ s.created_at|date:"d.m.Y" }}</td>
+          <td>{{ s.student.get_full_name|default:s.student.username }}</td>
+          <td>{{ s.teacher.user.get_full_name|default:s.teacher.user.username }}</td>
+          <td>{{ s.subject.name }}</td>
+          <td>{{ s.completed_lessons }}/{{ s.total_lessons }}<br><small style="color:#94A3B8;">paid: {{ s.lessons_paid_out }}</small></td>
+          <td><b>{{ s.escrow_balance|floatformat:0|intcomma }}</b></td>
+          <td><span class="ab-status {{ s.status }}">{{ s.get_status_display }}</span></td>
+          <td>
+            {% if s.status in 'active,paused,pending_payment'|cut:',' %}
+              <details>
+                <summary style="cursor:pointer; color:#DC2626; font-weight:500;">Отменить ▾</summary>
+                <form method="post" action="{% url 'admin_subscription_cancel' s.id %}" style="margin-top:8px;" onsubmit="return confirm('Отменить подписку и вернуть деньги ученику?')">
+                  {% csrf_token %}
+                  <textarea name="reason" rows="2" placeholder="Причина" style="width:100%; padding:6px 10px; border:1px solid #E2E8F0; border-radius:6px; font-size:13px; margin-bottom:6px;"></textarea>
+                  <button class="ab-btn ab-btn-danger" style="padding:6px 12px; font-size:12px;">Отменить с refund</button>
+                </form>
+              </details>
+            {% else %}
+              <small style="color:#94A3B8;">—</small>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div style="text-align:center; padding:40px; color:#94A3B8;">Подписок в этом разделе нет</div>
+  {% endif %}
+  </div>
+</div>
+{% endblock %}

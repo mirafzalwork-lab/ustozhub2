@@ -55,6 +55,34 @@ app.conf.beat_schedule = {
         'task': 'teachers.cleanup_wizard_drafts_async',
         'schedule': crontab(hour=3, minute=0),
     },
+    # Phase 4: выплаты учителям за завершённые subscription-уроки после grace window
+    'release-pending-payouts-every-5min': {
+        'task': 'billing.release_pending_payouts',
+        'schedule': 300.0,
+    },
+    # --- Обслуживание очереди Telegram-уведомлений ---
+    # Саму очередь обрабатывает демон telegram-bot.service (process_notifications
+    # --daemon). Здесь — только сервисные задачи, которых демон не делает.
+    'retry-failed-notifications-hourly': {
+        'task': 'retry_failed_notifications',
+        'schedule': crontab(minute=0),
+    },
+    'cancel-stuck-notifications-every-15min': {
+        'task': 'cancel_stuck_notifications',
+        'schedule': 900.0,
+    },
+    'health-check-notifications-every-5min': {
+        'task': 'health_check_notifications',
+        'schedule': 300.0,
+    },
+    'cleanup-old-notification-logs-daily': {
+        'task': 'cleanup_old_notification_logs',
+        'schedule': crontab(hour=3, minute=0),
+    },
+    'cleanup-old-notifications-daily': {
+        'task': 'cleanup_old_notifications',
+        'schedule': crontab(hour=3, minute=30),
+    },
 }
 
 

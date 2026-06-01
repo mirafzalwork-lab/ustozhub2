@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans 'Прогресс ученика' %} — UstozHub{% endblock %}
+
+{% block content %}
+<style>
+  .tsp-page { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  .tsp-page h1 { font-size: 26px; color: #0A2540; margin: 0; }
+  .tsp-page .subtitle { color: #64748B; margin: 4px 0 24px; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .stat-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px 18px; }
+  .stat-card.primary { background: linear-gradient(135deg, #4338CA, #6366F1); color: #fff; border: none; }
+  .stat-card .lbl { font-size: 11px; opacity: .8; text-transform: uppercase; letter-spacing: .5px; color:#64748B; }
+  .stat-card.primary .lbl { color: #fff; opacity: .85; }
+  .stat-card .val { font-size: 24px; font-weight: 700; color: #0A2540; margin-top: 4px; }
+  .stat-card.primary .val { color: #fff; }
+  .stat-card .val small { font-size: 13px; color:#94A3B8; font-weight: 400; }
+  .stat-card.primary .val small { color:#fff; opacity: .85; }
+
+  .tsp-section { background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 20px 24px; margin-bottom: 18px; }
+  .tsp-section h2 { font-size: 17px; color: #0A2540; margin: 0 0 14px; }
+
+  table.lessons { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.lessons th, table.lessons td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #F1F5F9; }
+  table.lessons th { color: #64748B; font-weight: 500; font-size: 12px; text-transform: uppercase; }
+  .status-pill { font-size: 10px; padding: 3px 8px; border-radius: 999px; font-weight: 600; text-transform: uppercase; }
+  .status-pill.completed { background:#ECFDF5; color:#065F46; }
+  .status-pill.confirmed { background:#EFF6FF; color:#1D4ED8; }
+  .status-pill.cancelled_by_student, .status-pill.cancelled_by_teacher { background:#FEF2F2; color:#B91C1C; }
+  .status-pill.no_show_student, .status-pill.no_show_teacher { background:#FFFBEB; color:#92400E; }
+
+  .empty { text-align:center; padding:30px; color:#94A3B8; }
+</style>
+
+<div class="tsp-page">
+  <a href="{% url 'teacher_subscribers' %}" style="color:#6366F1; text-decoration:none; font-size:14px;">← {% trans 'к подписчикам' %}</a>
+  <h1 style="margin-top:14px;">{% trans 'Прогресс ученика' %}</h1>
+  <p class="subtitle">
+    👤 <b>{{ sub.student.get_full_name|default:sub.student.username }}</b>
+    · 📚 {{ sub.subject.name }}
+    · <span class="status-pill {{ sub.status }}">{{ sub.get_status_display }}</span>
+  </p>
+
+  <div class="stats-grid">
+    <div class="stat-card primary">
+      <div class="lbl">{% trans 'Прогресс' %}</div>
+      <div class="val">{{ sub.completed_lessons }}/{{ sub.total_lessons }} <small>уроков</small></div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">{% trans 'Посещаемость' %}</div>
+      <div class="val">{{ sub.attendance_rate }}%</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">{% trans 'Средняя оценка ДЗ' %}</div>
+      <div class="val">{% if sub.average_grade %}{{ sub.average_grade }}<small>/100</small>{% else %}—{% endif %}</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">{% trans 'ДЗ выполнено' %}</div>
+      <div class="val">{{ sub.homework_graded }}/{{ sub.homework_total }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">{% trans 'Streak' %}</div>
+      <div class="val">{% if sub.learning_streak_weeks %}🔥 {{ sub.learning_streak_weeks }}<small> нед.</small>{% else %}—{% endif %}</div>
+    </div>
+  </div>
+
+  <div class="tsp-section">
+    <h2>📅 {% trans 'История уроков' %}</h2>
+    {% if lessons %}
+      <table class="lessons">
+        <thead>
+          <tr><th>{% trans 'Дата' %}</th><th>{% trans 'Статус' %}</th><th>{% trans 'Отзыв' %}</th></tr>
+        </thead>
+        <tbody>
+          {% for b in lessons %}
+            <tr>
+              <td>{{ b.slot.start_at|date:"d M Y, H:i" }}</td>
+              <td><span class="status-pill {{ b.status }}">{{ b.get_status_display }}</span></td>
+              <td>
+                {% if b.review %}
+                  ⭐ {{ b.review.rating }}/5
+                  {% if b.review.comment %}<br><small style="color:#64748B;">{{ b.review.comment|truncatechars:80 }}</small>{% endif %}
+                {% else %}
+                  <small style="color:#94A3B8;">—</small>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="empty">Уроков ещё нет</div>
+    {% endif %}
+  </div>
+
+  <div class="tsp-section">
+    <h2>📚 {% trans 'Домашние задания' %}</h2>
+    {% if homeworks %}
+      <table class="lessons">
+        <thead>
+          <tr><th>{% trans 'Задано' %}</th><th>{% trans 'Название' %}</th><th>{% trans 'Статус' %}</th><th>{% trans 'Оценка' %}</th></tr>
+        </thead>
+        <tbody>
+          {% for hw in homeworks %}
+            <tr>
+              <td>{{ hw.created_at|date:"d M" }}</td>
+              <td><a href="{% url 'homework_detail' hw.id %}" style="color:#7C3AED; text-decoration:none;">{{ hw.title }}</a></td>
+              <td><span class="status-pill">{{ hw.get_status_display }}</span></td>
+              <td>{% if hw.submission and hw.submission.grade is not None %}<b>{{ hw.submission.grade }}/100</b>{% else %}<small style="color:#94A3B8;">—</small>{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="empty">Заданий пока нет. <a href="{% url 'teacher_homework_create' %}" style="color:#7C3AED;">Создать?</a></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -691,6 +691,36 @@
             </div>
         </div>
 
+        {# Контакты для связи с учителем — Phase fix #1 #}
+        <div class="form-card">
+            <h2 class="section-title">
+                <i class="fas fa-address-book"></i>
+                {% trans 'Контакты' %}
+            </h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">{{ profile_form.telegram.label }}</label>
+                    {{ profile_form.telegram }}
+                    {% if profile_form.telegram.errors %}
+                        <div class="error-message">{{ profile_form.telegram.errors.0 }}</div>
+                    {% endif %}
+                    {% if profile_form.telegram.help_text %}
+                        <div class="help-text">{{ profile_form.telegram.help_text }}</div>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">{{ profile_form.whatsapp.label }}</label>
+                    {{ profile_form.whatsapp }}
+                    {% if profile_form.whatsapp.errors %}
+                        <div class="error-message">{{ profile_form.whatsapp.errors.0 }}</div>
+                    {% endif %}
+                    {% if profile_form.whatsapp.help_text %}
+                        <div class="help-text">{{ profile_form.whatsapp.help_text }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
         <div class="action-buttons">
             <a href="{% url 'profile' %}" class="btn btn-secondary">
                 <i class="fas fa-times"></i> {% trans 'Cancel' %}
@@ -701,6 +731,9 @@
         </div>
     </form>
 </div>
+
+{# UX enhancements: sticky save-bar, toasts, progress card, anchor nav, phone format #}
+{% include 'logic/_profile_edit_enhancements.html' %}
 {% endblock %}
 
 {% block extra_js %}

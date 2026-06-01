@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}Кошельки — Админ-панель{% endblock %}
+
+{% block content %}
+<div class="ab-page">
+  <h1>👛 Управление кошельками</h1>
+  <p class="subtitle">Поиск пользователя → просмотр баланса → пополнение / списание</p>
+
+  {% with active_tab='wallets' %}{% include 'billing/admin/_base.html' %}{% endwith %}
+
+  {% if messages %}
+    {% for m in messages %}
+      <div style="padding:12px 16px; border-radius:8px; margin-bottom:14px; background:{% if m.tags == 'error' %}#FEF2F2{% elif m.tags == 'success' %}#ECFDF5{% else %}#FFFBEB{% endif %}; color:#0A2540;">{{ m }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="get" class="ab-search">
+    <input name="q" value="{{ q }}" placeholder="Поиск по имени, username или email…" autofocus>
+    <button type="submit" class="ab-btn ab-btn-primary">Найти</button>
+  </form>
+
+  {% if results and not user %}
+    <div class="ab-section">
+      <h2>Найдено {{ results|length }}</h2>
+      <table class="ab-table">
+        <thead><tr><th>ID</th><th>Username</th><th>Имя</th><th>Email</th><th>Тип</th><th></th></tr></thead>
+        <tbody>
+          {% for u in results %}
+          <tr>
+            <td>{{ u.id }}</td>
+            <td>{{ u.username }}</td>
+            <td>{{ u.get_full_name|default:"—" }}</td>
+            <td>{{ u.email|default:"—" }}</td>
+            <td><span class="ab-status active">{{ u.user_type|default:"—" }}</span></td>
+            <td><a href="?user_id={{ u.id }}" class="ab-btn ab-btn-primary">Открыть</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+
+  {% if user and wallet %}
+    <div class="ab-grid-2">
+      <div class="ab-section">
+        <h2>👤 {{ user.get_full_name|default:user.username }}</h2>
+        <table class="ab-table" style="font-size:14px;">
+          <tr><th style="width:140px;">User ID</th><td>{{ user.id }}</td></tr>
+          <tr><th>Username</th><td>{{ user.username }}</td></tr>
+          <tr><th>Email</th><td>{{ user.email|default:"—" }}</td></tr>
+          <tr><th>Тип</th><td>{{ user.user_type|default:"—" }}</td></tr>
+          <tr><th>Wallet ID</th><td>#{{ wallet.id }}</td></tr>
+          <tr><th style="vertical-align:middle;">Баланс</th><td><span style="font-size:24px; font-weight:700; color:#0A2540;">{{ wallet.balance|floatformat:0|intcomma }} {{ wallet.currency }}</span></td></tr>
+          <tr><th>Последняя транзакция</th><td>{{ wallet.last_transaction_at|date:"d M Y, H:i"|default:"—" }}</td></tr>
+        </table>
+      </div>
+
+      <div class="ab-section">
+        <h2>💰 Пополнить / Списать</h2>
+        <form method="post" action="{% url 'admin_wallet_topup_action' user.id %}" id="topup-form">
+          {% csrf_token %}
+          <div class="ab-form-row">
+            <label>Операция</label>
+            <select name="operation" required id="topup-op">
+              <option value="credit">➕ Пополнить (credit)</option>
+              <option value="debit">➖ Списать (debit)</option>
+            </select>
+          </div>
+          <div class="ab-form-row">
+            <label>Сумма (сум) <span style="color:#94A3B8; font-weight:400;">— любое число от 1 и больше</span></label>
+            <input type="number" name="amount" id="topup-amount" required min="1" step="1" inputmode="numeric"
+                   placeholder="Введите сумму, например 100000">
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
+              <button type="button" class="quick-amt" data-val="50000">+50 000</button>
+              <button type="button" class="quick-amt" data-val="100000">+100 000</button>
+              <button type="button" class="quick-amt" data-val="500000">+500 000</button>
+              <button type="button" class="quick-amt" data-val="1000000">+1 000 000</button>
+              <button type="button" class="quick-amt" data-val="5000000">+5 000 000</button>
+              <button type="button" class="quick-amt" data-val="" data-clear="1">Очистить</button>
+            </div>
+          </div>
+          <div class="ab-form-row">
+            <label>Причина (для аудит-лога)</label>
+            <textarea name="reason" rows="2" placeholder="Например: пополнение для тестирования, корректировка после спора, и т.п."></textarea>
+          </div>
+          <button type="submit" class="ab-btn ab-btn-success">Выполнить</button>
+        </form>
+        <div style="margin-top:14px; font-size:13px; color:#94A3B8;">
+          ⚠ Любая операция пишется в Transaction-ledger с пометкой «admin {{ request.user.username }}».
+        </div>
+        <style>
+          .quick-amt {
+            background:#F1F5F9; border:1px solid #E2E8F0; color:#0A2540;
+            padding:6px 12px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:500;
+          }
+          .quick-amt:hover { background:#E2E8F0; }
+          .quick-amt[data-clear] { background:#FEF2F2; color:#B91C1C; border-color:#FECACA; }
+        </style>
+        <script>
+          (function() {
+            var amt = document.getElementById('topup-amount');
+            document.querySelectorAll('.quick-amt').forEach(function(b) {
+              b.addEventListener('click', function() {
+                if (b.dataset.clear) { amt.value = ''; amt.focus(); return; }
+                var add = parseInt(b.dataset.val, 10) || 0;
+                var cur = parseInt(amt.value, 10) || 0;
+                amt.value = String(cur + add);
+                amt.focus();
+              });
+            });
+          })();
+        </script>
+      </div>
+    </div>
+
+    <div class="ab-section">
+      <h2>📜 История транзакций ({{ transactions|length }} последних)</h2>
+      {% if transactions %}
+      <table class="ab-table">
+        <thead><tr><th>Дата</th><th>Тип</th><th>Сумма</th><th>Баланс после</th><th>Описание</th></tr></thead>
+        <tbody>
+          {% for tx in transactions %}
+          <tr>
+            <td>{{ tx.created_at|date:"d.m H:i" }}</td>
+            <td><span class="ab-status">{{ tx.get_type_display }}</span></td>
+            <td class="ab-tx-amount {% if tx.amount > 0 %}positive{% else %}negative{% endif %}">
+              {% if tx.amount > 0 %}+{% endif %}{{ tx.amount|floatformat:0|intcomma }}
+            </td>
+            <td>{{ tx.balance_after|floatformat:0|intcomma }}</td>
+            <td style="max-width:400px; color:#64748B; font-size:13px;">{{ tx.description|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="color:#94A3B8; text-align:center; padding:20px;">Транзакций пока нет</p>
+      {% endif %}
+    </div>
+  {% elif q and not results %}
+    <div class="ab-section" style="text-align:center; color:#64748B;">
+      Никого не найдено по запросу «{{ q }}»
+    </div>
+  {% elif not q %}
+    <div class="ab-section" style="text-align:center; color:#64748B;">
+      Введите часть имени, username или email в поле выше
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

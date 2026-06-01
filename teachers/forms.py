@@ -707,10 +707,13 @@ class StudentRegistrationForm(UserCreationForm):
 
 class TeacherSubjectEditForm(forms.ModelForm):
     """Форма для редактирования одного предмета учителя"""
-    
+
     class Meta:
         model = TeacherSubject
-        fields = ['subject', 'hourly_rate', 'is_free_trial', 'description']
+        fields = [
+            'subject', 'hourly_rate', 'is_free_trial',
+            'trial_duration_minutes', 'trial_price', 'description',
+        ]
         widgets = {
             'subject': forms.Select(attrs={
                 'class': 'form-select',
@@ -722,7 +725,17 @@ class TeacherSubjectEditForm(forms.ModelForm):
                 'step': '1000'
             }),
             'is_free_trial': forms.CheckboxInput(attrs={
-                'class': 'form-checkbox'
+                'class': 'form-checkbox',
+                'data-toggle-target': 'trial-price-row',
+            }),
+            'trial_duration_minutes': forms.Select(attrs={
+                'class': 'form-select',
+            }),
+            'trial_price': forms.NumberInput(attrs={
+                'class': 'form-input',
+                'placeholder': '50000',
+                'min': '0',
+                'step': '1000',
             }),
             'description': forms.Textarea(attrs={
                 'class': 'form-textarea',
@@ -734,29 +747,49 @@ class TeacherSubjectEditForm(forms.ModelForm):
             'subject': _('Предмет'),
             'hourly_rate': _('Цена за час (сум)'),
             'is_free_trial': _('Бесплатное пробное занятие'),
+            'trial_duration_minutes': _('Длительность пробного'),
+            'trial_price': _('Цена пробного (сум)'),
             'description': _('Описание')
         }
-    
+        help_texts = {
+            'trial_price': _('Заполняется, только если пробный платный'),
+        }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Для новой формы делаем поля необязательными
         if not self.instance.pk:
             self.fields['subject'].required = False
             self.fields['hourly_rate'].required = False
-    
+        self.fields['trial_price'].required = False
+        self.fields['trial_duration_minutes'].required = False
+
     def clean(self):
         cleaned_data = super().clean()
         subject = cleaned_data.get('subject')
         hourly_rate = cleaned_data.get('hourly_rate')
-        
+        is_free_trial = cleaned_data.get('is_free_trial', True)
+        trial_price = cleaned_data.get('trial_price')
+
         # Если выбран предмет, цена обязательна
         if subject and not hourly_rate:
             raise forms.ValidationError(_('Укажите цену за час для выбранного предмета'))
-        
+
         # Если указана цена, предмет обязателен
         if hourly_rate and not subject:
             raise forms.ValidationError(_('Выберите предмет'))
-        
+
+        # Платный пробный → trial_price обязательна и > 0
+        if subject and not is_free_trial:
+            if not trial_price or trial_price <= 0:
+                self.add_error(
+                    'trial_price',
+                    _('Укажите цену пробного урока (или сделайте его бесплатным).'),
+                )
+        else:
+            # Если бесплатный — обнуляем цену, чтобы не висели старые значения
+            cleaned_data['trial_price'] = None
+
         return cleaned_data
 
 
@@ -791,10 +824,12 @@ class TeacherProfileEditForm(forms.ModelForm):
     
     class Meta:
         model = TeacherProfile
+        # is_active управляется отдельным AJAX-тоглом в шапке (toggle_profile_status),
+        # НЕ через эту форму — иначе POST без is_active в данных сбрасывал бы профиль в скрытый.
         fields = [
             'bio', 'education_level', 'university', 'specialization',
             'experience_years', 'city', 'teaching_format', 'telegram',
-            'whatsapp', 'available_from', 'available_to', 'is_active'
+            'whatsapp', 'available_from', 'available_to',
         ]
         widgets = {
             'bio': forms.Textarea(attrs={
@@ -834,9 +869,6 @@ class TeacherProfileEditForm(forms.ModelForm):
                 'class': 'form-input',
                 'type': 'time'
             }),
-            'is_active': forms.CheckboxInput(attrs={
-                'class': 'form-checkbox-large'
-            })
         }
         labels = {
             'bio': _('О себе'),
@@ -850,10 +882,6 @@ class TeacherProfileEditForm(forms.ModelForm):
             'whatsapp': _('WhatsApp'),
             'available_from': _('Доступен с'),
             'available_to': _('Доступен до'),
-            'is_active': _('Отображать в поиске учителей')
-        }
-        help_texts = {
-            'is_active': _('Если отключено, ваш профиль не будет показываться в поиске')
         }
     
     def __init__(self, *args, **kwargs):
@@ -919,11 +947,12 @@ class StudentProfileEditForm(forms.ModelForm):
     
     class Meta:
         model = StudentProfile
+        # is_active управляется отдельным AJAX-тоглом в шапке (toggle_profile_status),
+        # НЕ через эту форму — иначе POST без is_active в данных сбрасывал бы профиль.
         fields = [
             'bio', 'description', 'education_level', 'school_university',
             'city', 'learning_format', 'budget_min', 'budget_max',
             'telegram', 'whatsapp',
-            'is_active'
         ]
         widgets = {
             'bio': forms.Textarea(attrs={
@@ -961,9 +990,6 @@ class StudentProfileEditForm(forms.ModelForm):
                 'class': 'form-input',
                 'placeholder': '+998 90 123 45 67'
             }),
-            'is_active': forms.CheckboxInput(attrs={
-                'class': 'form-checkbox-large'
-            })
         }
         labels = {
             'bio': _('Краткое описание'),
@@ -976,10 +1002,8 @@ class StudentProfileEditForm(forms.ModelForm):
             'budget_max': _('Максимальный бюджет (сум/час)'),
             'telegram': _('Telegram'),
             'whatsapp': _('WhatsApp'),
-            'is_active': _('Отображать в поиске учеников')
         }
         help_texts = {
-            'is_active': _('Если отключено, ваш профиль не будет показываться в поиске'),
             'budget_min': _('Минимальная цена, которую готовы платить'),
             'budget_max': _('Максимальная цена, которую готовы платить'),
             'telegram': _('Ваш Telegram username или номер телефона'),
@@ -1075,14 +1099,20 @@ class UserProfileEditForm(forms.ModelForm):
     
     def clean_email(self):
         email = self.cleaned_data.get('email')
+        # Если email не изменился — не проверяем (защита от исторических дубликатов в БД).
+        if email and self.instance.pk and email == self.instance.email:
+            return email
         if email:
             existing = User.objects.filter(email=email).exclude(pk=self.instance.pk)
             if existing.exists():
                 raise forms.ValidationError(_('Этот email уже используется'))
         return email
-    
+
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
+        # Если phone не изменился — не проверяем (защита от исторических дубликатов в БД).
+        if phone and self.instance.pk and phone == self.instance.phone:
+            return phone
         if phone:
             existing = User.objects.filter(phone=phone).exclude(pk=self.instance.pk)
             if existing.exists():

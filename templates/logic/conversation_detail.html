@@ -708,6 +708,255 @@
             animation: messageSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
     }
+
+    /* ============================================
+       🆕 PHASE 7 — Day separators, read receipts,
+       quick-start chips, subject chip, optimistic UI,
+       safe-area, delete modal
+       ============================================ */
+
+    /* --- Day separator (Сегодня / Вчера / 12 мая) --- */
+    .day-separator {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 18px 0 6px;
+        padding: 0 8px;
+        position: relative;
+    }
+    .day-separator::before,
+    .day-separator::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(to var(--dir, right), transparent, #E5E7EB 30%, #E5E7EB 70%, transparent);
+    }
+    .day-separator span {
+        padding: 4px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #6B7280;
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(6px);
+        border: 1px solid #E5E7EB;
+        border-radius: 100px;
+        white-space: nowrap;
+        text-transform: capitalize;
+        letter-spacing: 0.01em;
+    }
+    .day-separator.is-today span { color: #1D4ED8; border-color: #BFDBFE; background: #EFF6FF; }
+
+    /* --- Read receipts (✓ / ✓✓) --- */
+    .message-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: #9CA3AF;
+        padding: 0 4px;
+        font-weight: 500;
+    }
+    .message-receipt {
+        font-size: 13px;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        transition: color 200ms ease;
+    }
+    .message-receipt[data-state="pending"] { color: #D1D5DB; }
+    .message-receipt[data-state="sent"]    { color: #9CA3AF; }
+    .message-receipt[data-state="read"]    { color: #3B82F6; }
+    .message-receipt::before { content: "✓"; }
+    .message-receipt[data-state="sent"]::after,
+    .message-receipt[data-state="read"]::after { content: "✓"; margin-left: -3px; }
+    .message-receipt[data-state="pending"]::after { content: ""; }
+
+    /* --- Subject chip in header --- */
+    .subject-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 10px;
+        background: #EEF2FF;
+        color: #4338CA;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 100px;
+        border: 1px solid #C7D2FE;
+        margin-top: 4px;
+        max-width: 220px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .subject-chip i { font-size: 10px; opacity: 0.7; }
+
+    /* --- Quick-start chips on empty state --- */
+    .empty-messages {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6B7280;
+    }
+    .empty-messages-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1F2937;
+        margin: 6px 0 4px;
+    }
+    .empty-messages-hint {
+        font-size: 13px;
+        color: #6B7280;
+        margin-bottom: 18px;
+    }
+    .quick-start-chips {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        max-width: 480px;
+        margin: 0 auto;
+    }
+    .quick-start-chip {
+        padding: 8px 14px;
+        background: white;
+        border: 1px solid #E5E7EB;
+        border-radius: 100px;
+        font-size: 13px;
+        color: #374151;
+        cursor: pointer;
+        transition: all 180ms ease;
+        font-weight: 500;
+    }
+    .quick-start-chip:hover {
+        background: #EFF6FF;
+        border-color: #BFDBFE;
+        color: #1D4ED8;
+        transform: translateY(-1px);
+    }
+    .quick-start-chip:active { transform: scale(0.97); }
+
+    /* --- Linkified content inside bubble --- */
+    .message-bubble a {
+        color: inherit;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        word-break: break-all;
+    }
+    .message-item.own-message .message-bubble a { color: rgba(255,255,255,0.95); }
+
+    /* --- Optimistic / pending state --- */
+    .message-item.is-pending .message-bubble {
+        opacity: 0.7;
+    }
+
+    /* --- Send button disabled state (better than just opacity) --- */
+    .send-btn:disabled {
+        background: #E5E7EB;
+        color: #9CA3AF;
+        box-shadow: none;
+        cursor: not-allowed;
+    }
+
+    /* --- Connection status in header (compact pill) --- */
+    .conn-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 2px 8px;
+        border-radius: 100px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-left: 6px;
+        background: #FEF3C7;
+        color: #92400E;
+        transition: all 200ms ease;
+    }
+    .conn-pill.is-online { background: #D1FAE5; color: #065F46; }
+    .conn-pill.is-offline { background: #FEE2E2; color: #991B1B; }
+    .conn-pill .dot {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: currentColor;
+        animation: connPulse 2s ease-in-out infinite;
+    }
+    @keyframes connPulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+    }
+    .conn-pill.is-online .dot { animation: none; }
+
+    /* --- Custom-confirm delete modal --- */
+    .chat-modal-backdrop {
+        position: fixed; inset: 0;
+        background: rgba(15, 23, 42, 0.55);
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        animation: backdropFade 200ms ease;
+    }
+    .chat-modal-backdrop.is-open { display: flex; }
+    @keyframes backdropFade { from { opacity: 0; } to { opacity: 1; } }
+    .chat-modal {
+        background: white;
+        border-radius: 16px;
+        max-width: 380px;
+        width: 100%;
+        padding: 24px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+        animation: modalIn 220ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalIn {
+        from { opacity: 0; transform: translateY(20px) scale(0.96); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .chat-modal__icon {
+        width: 48px; height: 48px;
+        background: #FEE2E2; color: #DC2626;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px;
+        margin: 0 auto 14px;
+    }
+    .chat-modal__title {
+        font-size: 17px; font-weight: 700; color: #111827;
+        text-align: center; margin: 0 0 8px;
+    }
+    .chat-modal__text {
+        font-size: 14px; color: #6B7280; line-height: 1.5;
+        text-align: center; margin: 0 0 20px;
+    }
+    .chat-modal__actions {
+        display: flex; gap: 10px;
+    }
+    .chat-modal__btn {
+        flex: 1; padding: 10px 14px;
+        border-radius: 10px;
+        font-size: 14px; font-weight: 600;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: all 150ms ease;
+    }
+    .chat-modal__btn--cancel {
+        background: white; color: #374151; border-color: #E5E7EB;
+    }
+    .chat-modal__btn--cancel:hover { background: #F9FAFB; }
+    .chat-modal__btn--danger {
+        background: #DC2626; color: white;
+    }
+    .chat-modal__btn--danger:hover { background: #B91C1C; }
+
+    /* --- iOS safe-area для нижней формы --- */
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+        .message-form-container {
+            padding-bottom: max(var(--spacing-md), env(safe-area-inset-bottom));
+        }
+        @media (max-width: 768px) {
+            .message-form-container {
+                padding-bottom: max(10px, env(safe-area-inset-bottom));
+            }
+        }
+    }
 </style>
 {% endblock %}
 
@@ -731,10 +980,9 @@
             <div class="conversation-user-details">
                 <div class="conversation-user-name">
                     {{ other_user.get_full_name|default:other_user.username }}
-                    <!-- WebSocket статус - скрыт на мобильных -->
-                    <span id="connectionStatus" class="ms-2 text-muted small">
-                        <i class="fas fa-circle" style="color: #dc3545; font-size: 8px;"></i>
-                        <span id="statusText" style="font-size: 11px;">{% trans "Подключение..." %}</span>
+                    <span id="connectionStatus" class="conn-pill" data-state="connecting">
+                        <span class="dot"></span>
+                        <span id="statusText">{% trans "Подключение…" %}</span>
                     </span>
                 </div>
                 {% if user_type == 'student' and conversation.teacher.city %}
@@ -742,13 +990,18 @@
                         <i class="fas fa-map-marker-alt"></i> {{ conversation.teacher.city.name }}
                     </div>
                 {% endif %}
+                {% if conversation.subject %}
+                    <span class="subject-chip" title="{% trans 'Предмет беседы' %}">
+                        <i class="fas fa-book"></i>{{ conversation.subject.name }}
+                    </span>
+                {% endif %}
             </div>
         </div>
         
         <div class="conversation-actions">
-            <form method="post" action="{% url 'delete_conversation' conversation_id=conversation.id %}" onsubmit="return confirm('{% trans 'Удалить переписку?' %}');" style="margin: 0;">
+            <form method="post" action="{% url 'delete_conversation' conversation_id=conversation.id %}" style="margin: 0;" id="deleteConvForm">
                 {% csrf_token %}
-                <button type="submit" class="delete-conversation-btn" title="{% trans 'Удалить' %}">
+                <button type="button" class="delete-conversation-btn" title="{% trans 'Удалить' %}" id="deleteConvBtn">
                     <i class="fas fa-trash-alt"></i> <span>{% trans "Удалить" %}</span>
                 </button>
             </form>
@@ -756,10 +1009,25 @@
     </div>
 
     <div class="messages-wrapper">
-        <div class="messages-list" id="messagesList">
+        <div class="messages-list" id="messagesList" data-user-id="{{ user.id }}" data-user-type="{{ user_type }}">
             {% if messages %}
                 {% for message in messages %}
-                    <div class="message-item {% if message.sender == user %}own-message{% endif %}">
+                    {% ifchanged message.created_at|date:"Y-m-d" %}
+                        {% now "Y-m-d" as today_ymd %}
+                        <div class="day-separator{% if message.created_at|date:'Y-m-d' == today_ymd %} is-today{% endif %}"
+                             data-day="{{ message.created_at|date:'Y-m-d' }}">
+                            <span>
+                                {% if message.created_at|date:"Y-m-d" == today_ymd %}
+                                    {% trans "Сегодня" %}
+                                {% else %}
+                                    {{ message.created_at|date:"d E" }}
+                                {% endif %}
+                            </span>
+                        </div>
+                    {% endifchanged %}
+                    <div class="message-item {% if message.sender == user %}own-message{% endif %}"
+                         data-message-id="{{ message.id }}"
+                         data-sender-id="{{ message.sender.id }}">
                         <div class="message-avatar">
                             {% if message.sender.avatar %}
                                 <img src="{{ message.sender.avatar.url }}" alt="{{ message.sender.get_full_name }}">
@@ -768,19 +1036,42 @@
                             {% endif %}
                         </div>
                         <div class="message-content-wrapper">
-                            <div class="message-bubble">
-                                {{ message.content|linebreaksbr }}
-                            </div>
-                            <div class="message-time">
-                                {{ message.created_at|date:"H:i" }}
+                            <div class="message-bubble">{{ message.content|urlize|linebreaksbr }}</div>
+                            <div class="message-meta">
+                                <span class="message-time">{{ message.created_at|date:"H:i" }}</span>
+                                {% if message.sender == user %}
+                                    <span class="message-receipt"
+                                          data-state="{% if message.is_read %}read{% else %}sent{% endif %}"
+                                          title="{% if message.is_read %}{% trans 'Прочитано' %}{% else %}{% trans 'Отправлено' %}{% endif %}"></span>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
                 {% endfor %}
             {% else %}
-                <div class="empty-messages">
+                <div class="empty-messages" id="emptyMessagesState">
                     <div class="empty-messages-icon">💬</div>
-                    <p>{% trans "Нет сообщений. Начните переписку!" %}</p>
+                    <div class="empty-messages-title">{% trans "Начните беседу" %}</div>
+                    <div class="empty-messages-hint">
+                        {% if user_type == 'student' %}
+                            {% trans "Поздоровайтесь и расскажите, что вас интересует." %}
+                        {% else %}
+                            {% trans "Поприветствуйте ученика и предложите помощь." %}
+                        {% endif %}
+                    </div>
+                    <div class="quick-start-chips" id="quickStartChips">
+                        {% if user_type == 'student' %}
+                            <button type="button" class="quick-start-chip" data-text="{% trans 'Здравствуйте! Интересует ваш курс.' %}">👋 {% trans "Поприветствовать" %}</button>
+                            <button type="button" class="quick-start-chip" data-text="{% trans 'Можно ли начать с пробного урока?' %}">🎁 {% trans "Спросить о пробном" %}</button>
+                            <button type="button" class="quick-start-chip" data-text="{% trans 'Какие у вас свободные слоты на этой неделе?' %}">📅 {% trans "Узнать расписание" %}</button>
+                            <button type="button" class="quick-start-chip" data-text="{% trans 'Сколько стоит занятие?' %}">💰 {% trans "Цена" %}</button>
+                        {% else %}
+                            <button type="button" class="quick-start-chip" data-text="{% trans 'Здравствуйте! Чем могу помочь?' %}">👋 {% trans "Поприветствовать" %}</button>
+                            <button type="button" class="quick-start-chip" data-text="{% trans 'Расскажите немного о вашем уровне и целях.' %}">🎯 {% trans "Узнать цели" %}</button>
+                            <button type="button" class="quick-start-chip" data-text="{% trans 'Готов предложить бесплатное пробное занятие.' %}">🎁 {% trans "Предложить пробное" %}</button>
+                            <button type="button" class="quick-start-chip" data-text="{% trans 'Когда вам удобно начать?' %}">📅 {% trans "Уточнить время" %}</button>
+                        {% endif %}
+                    </div>
                 </div>
             {% endif %}
         </div>
@@ -801,7 +1092,7 @@
                         autocapitalize="sentences"
                     ></textarea>
                 </div>
-                <button type="submit" class="send-btn" id="sendBtn" title="{% trans 'Отправить' %}">
+                <button type="submit" class="send-btn" id="sendBtn" title="{% trans 'Отправить' %}" disabled>
                     <i class="fas fa-paper-plane"></i>
                     <span>{% trans "Отправить" %}</span>
                 </button>
@@ -810,324 +1101,501 @@
     </div>
 </div>
 
+<!-- Custom-confirm modal for delete -->
+<div class="chat-modal-backdrop" id="deleteModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle" hidden>
+    <div class="chat-modal">
+        <div class="chat-modal__icon"><i class="fas fa-trash-alt"></i></div>
+        <h3 class="chat-modal__title" id="deleteModalTitle">{% trans "Удалить переписку?" %}</h3>
+        <p class="chat-modal__text">
+            {% trans "Переписка скроется из вашего списка. История сообщений сохранится — если собеседник напишет вам снова, чат восстановится." %}
+        </p>
+        <div class="chat-modal__actions">
+            <button type="button" class="chat-modal__btn chat-modal__btn--cancel" id="deleteModalCancel">{% trans "Отмена" %}</button>
+            <button type="button" class="chat-modal__btn chat-modal__btn--danger" id="deleteModalConfirm">{% trans "Удалить" %}</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    // 📱 MOBILE-FIRST CHAT IMPROVEMENTS
-    
-    // Автопрокрутка вниз при загрузке
+(function() {
+    'use strict';
+
+    // ============================================
+    // 💬 CHAT — current user / conversation context
+    // ============================================
+    const CURRENT_USER_ID = parseInt('{{ user.id }}', 10);
+    const CONVERSATION_ID = '{{ conversation.id }}';
+    const AJAX_URL = '{% url "send_message_ajax" conversation_id=conversation.id %}';
+    const I18N = {
+        sending:   '{% trans "Отправка…" %}',
+        send:      '{% trans "Отправить" %}',
+        send_err:  '{% trans "Не удалось отправить сообщение" %}',
+        reconnect: '{% trans "Соединение пропало. Сообщение отправлено по резервному каналу." %}',
+        offline:   '{% trans "Офлайн" %}',
+        online:    '{% trans "Онлайн" %}',
+        today:     '{% trans "Сегодня" %}',
+        yesterday: '{% trans "Вчера" %}',
+        read:      '{% trans "Прочитано" %}',
+        sent:      '{% trans "Отправлено" %}',
+        pending:   '{% trans "Отправляется" %}',
+        ws_lost:   '{% trans "Соединение прервано. Переподключаемся…" %}',
+        delete_conv: '{% trans "Удалить переписку?" %}',
+    };
+
     const messagesList = document.getElementById('messagesList');
-    
-    function scrollToBottom(smooth = false) {
-        if (messagesList) {
-            if (smooth) {
-                messagesList.scrollTo({
-                    top: messagesList.scrollHeight,
-                    behavior: 'smooth'
-                });
-            } else {
-                messagesList.scrollTop = messagesList.scrollHeight;
-            }
+    const textarea = document.getElementById('message-content');
+    const sendBtn = document.getElementById('sendBtn');
+    const messageForm = document.getElementById('messageForm');
+
+    // ============================================
+    // helpers
+    // ============================================
+    function scrollToBottom(smooth) {
+        if (!messagesList) return;
+        if (smooth) {
+            messagesList.scrollTo({ top: messagesList.scrollHeight, behavior: 'smooth' });
+        } else {
+            messagesList.scrollTop = messagesList.scrollHeight;
         }
     }
-    
-    // Начальная прокрутка
-    scrollToBottom();
 
-    // Автоматическое увеличение высоты textarea (как в Telegram)
-    const textarea = document.querySelector('textarea[name="content"]');
+    function escapeHtml(str) {
+        if (str == null) return '';
+        var d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+
+    // Linkify URL и номера телефонов (узб + рос).
+    function linkify(safeHtml) {
+        // URL — http(s)://... или www....
+        var urlRe = /(\bhttps?:\/\/[^\s<]+|\bwww\.[^\s<]+)/gi;
+        safeHtml = safeHtml.replace(urlRe, function(m) {
+            var href = m.startsWith('http') ? m : 'https://' + m;
+            return '<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + m + '</a>';
+        });
+        // Номера телефонов: +998..., +7..., 8-XXX-...
+        var phoneRe = /(\+?\d{1,3}[\s\-(]?\d{2,3}[\s\-)]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2})/g;
+        safeHtml = safeHtml.replace(phoneRe, function(m) {
+            var tel = m.replace(/[^\d+]/g, '');
+            if (tel.length < 9) return m;
+            return '<a href="tel:' + tel + '">' + m + '</a>';
+        });
+        return safeHtml;
+    }
+
+    function formatTime(iso) {
+        try {
+            return new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        } catch(_) { return ''; }
+    }
+
+    function dayKey(iso) {
+        var d = iso ? new Date(iso) : new Date();
+        var y = d.getFullYear();
+        var m = String(d.getMonth() + 1).padStart(2, '0');
+        var dd = String(d.getDate()).padStart(2, '0');
+        return y + '-' + m + '-' + dd;
+    }
+
+    function humanDay(iso) {
+        var d = iso ? new Date(iso) : new Date();
+        var now = new Date();
+        var diffDays = Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()) -
+                                  new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+        if (diffDays === 0) return I18N.today;
+        if (diffDays === 1) return I18N.yesterday;
+        var months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+        return d.getDate() + ' ' + months[d.getMonth()];
+    }
+
+    function ensureDaySeparator(iso) {
+        if (!messagesList) return;
+        var key = dayKey(iso);
+        if (messagesList.querySelector('.day-separator[data-day="' + key + '"]')) return;
+        var sep = document.createElement('div');
+        sep.className = 'day-separator' + (key === dayKey() ? ' is-today' : '');
+        sep.setAttribute('data-day', key);
+        sep.innerHTML = '<span>' + escapeHtml(humanDay(iso)) + '</span>';
+        messagesList.appendChild(sep);
+    }
+
+    function notifyError(text) {
+        if (window.showToast) {
+            window.showToast('new_notification', I18N.send_err, text || '');
+        } else {
+            console.error(text);
+        }
+    }
+
+    // ============================================
+    // textarea: auto-grow + Enter-to-send + send-disabled
+    // ============================================
+    function syncSendBtn() {
+        if (!sendBtn || !textarea) return;
+        sendBtn.disabled = textarea.value.trim().length === 0;
+    }
+
     if (textarea) {
-        // Начальная настройка
         textarea.style.height = 'auto';
-        
         textarea.addEventListener('input', function() {
             this.style.height = 'auto';
-            const newHeight = Math.min(this.scrollHeight, window.innerWidth <= 480 ? 90 : 100);
-            this.style.height = newHeight + 'px';
-            
-            // Автопрокрутка при вводе текста
-            scrollToBottom(true);
+            var max = window.innerWidth <= 480 ? 90 : 120;
+            this.style.height = Math.min(this.scrollHeight, max) + 'px';
+            syncSendBtn();
         });
-
-        // Enter для отправки, Shift+Enter для новой строки
         textarea.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                document.getElementById('messageForm').dispatchEvent(new Event('submit', { cancelable: true }));
+                if (!sendBtn.disabled) {
+                    messageForm.dispatchEvent(new Event('submit', { cancelable: true }));
+                }
             }
         });
+        if (window.innerWidth > 768) textarea.focus();
+    }
+    syncSendBtn();
 
-        // Фокус на textarea при загрузке (только на десктопе)
-        if (window.innerWidth > 768) {
+    // ============================================
+    // Quick-start chips
+    // ============================================
+    var chipsBox = document.getElementById('quickStartChips');
+    if (chipsBox && textarea) {
+        chipsBox.addEventListener('click', function(e) {
+            var btn = e.target.closest('.quick-start-chip');
+            if (!btn) return;
+            var t = btn.getAttribute('data-text') || '';
+            textarea.value = t;
             textarea.focus();
-        }
-
-        // Предотвращаем zoom на iOS при фокусе
-        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-            textarea.addEventListener('focus', function() {
-                this.style.fontSize = '16px';
-            });
-        }
-    }
-
-    // Скрываем клавиатуру после отправки на мобильных
-    function hideKeyboard() {
-        if (window.innerWidth <= 768) {
-            if (document.activeElement) {
-                document.activeElement.blur();
-            }
-        }
-    }
-
-    // 🚀 ИНИЦИАЛИЗАЦИЯ REAL-TIME ЧАТА
-    const messageForm = document.getElementById('messageForm');
-    if (messageForm) {
-        initRealTimeChat();
-    }
-    
-    /**
-     * REAL-TIME CHAT WITH WEBSOCKET
-     * Интегрированный в существующую страницу сообщений
-     */
-    function initRealTimeChat() {
-        let socket = null;
-        let reconnectAttempts = 0;
-        const maxReconnectAttempts = 5;
-        let heartbeatInterval = null;
-
-        // Создаём индикатор подключения
-        const indicator = document.createElement('div');
-        indicator.id = 'wsStatus';
-        indicator.style.cssText = `
-            position: fixed; top: 70px; right: 20px; padding: 6px 12px; 
-            border-radius: 15px; font-size: 11px; font-weight: 600;
-            z-index: 1000; transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            background: #FEF3C7; color: #92400E;
-        `;
-        indicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Подключение...';
-        document.body.appendChild(indicator);
-
-        function updateStatus(status) {
-            const statusElement = document.getElementById('connectionStatus');
-            const statusText = document.getElementById('statusText');
-            
-            switch (status) {
-                case 'connected':
-                    statusElement.innerHTML = '<i class="fas fa-circle" style="color: #10b981;"></i> <span>{% trans "Онлайн" %}</span>';
-                    indicator.style.background = '#D1FAE5';
-                    indicator.style.color = '#065F46';
-                    indicator.innerHTML = '<i class="fas fa-bolt"></i> Онлайн';
-                    setTimeout(() => indicator.style.opacity = '0', 2000);
-                    break;
-                case 'disconnected':
-                    statusElement.innerHTML = '<i class="fas fa-circle" style="color: #dc3545;"></i> <span>{% trans "Офлайн" %}</span>';
-                    indicator.style.opacity = '1';
-                    indicator.style.background = '#FEE2E2';
-                    indicator.style.color = '#991B1B';
-                    indicator.innerHTML = '<i class="fas fa-wifi"></i> Офлайн';
-                    break;
-            }
-        }
-
-        function connectWebSocket() {
-            try {
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const host = window.location.host;
-                const conversationId = '{{ conversation.id }}';
-                
-                const wsUrl = `${protocol}//${host}/ws/conversation/${conversationId}/`;
-                console.log('🔌 WebSocket:', wsUrl);
-                
-                socket = new WebSocket(wsUrl);
-
-                socket.onopen = () => {
-                    console.log('✅ WebSocket подключён');
-                    updateStatus('connected');
-                    reconnectAttempts = 0;
-                    
-                    // Запускаем heartbeat каждые 30 секунд для поддержания соединения
-                    heartbeatInterval = setInterval(() => {
-                        if (socket && socket.readyState === WebSocket.OPEN) {
-                            socket.send(JSON.stringify({type: 'ping'}));
-                            console.log('📡 Ping sent');
-                        }
-                    }, 30000);
-                };
-
-                socket.onmessage = (event) => {
-                    try {
-                        const data = JSON.parse(event.data);
-                        console.log('📥 WebSocket message received:', data);
-                        
-                        if (data.type === 'chat_message') {
-                            displayNewMessage(data.message_data);
-                        } else if (data.type === 'pong') {
-                            console.log('📡 Pong received');
-                        }
-                    } catch (error) {
-                        console.error('❌ Error parsing WebSocket message:', error);
-                    }
-                };
-
-                socket.onclose = () => {
-                    console.log('❌ WebSocket отключён');
-                    updateStatus('disconnected');
-                    
-                    // Очищаем heartbeat при отключении
-                    if (heartbeatInterval) {
-                        clearInterval(heartbeatInterval);
-                        heartbeatInterval = null;
-                    }
-                    
-                    if (reconnectAttempts < maxReconnectAttempts) {
-                        reconnectAttempts++;
-                        setTimeout(connectWebSocket, 3000);
-                    }
-                };
-
-                socket.onerror = (error) => {
-                    console.error('🔥 WebSocket error:', error);
-                };
-
-            } catch (error) {
-                console.error('❌ WebSocket init failed:', error);
-            }
-        }
-
-        function displayNewMessage(messageData) {
-            const messagesList = document.getElementById('messagesList');
-            const isOwnMessage = messageData.sender_id === {{ user.id }};
-            
-            // Проверяем дубли
-            if (document.querySelector(`[data-message-id="${messageData.id}"]`)) {
-                return;
-            }
-
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message-item ${isOwnMessage ? 'own-message' : ''}`;
-            messageDiv.setAttribute('data-message-id', messageData.id);
-
-            const avatarInitials = messageData.sender_name.split(' ').map(n => n[0]).join('').substring(0, 2);
-            const messageTime = new Date(messageData.created_at).toLocaleTimeString('ru-RU', {
-                hour: '2-digit', minute: '2-digit'
-            });
-
-            messageDiv.innerHTML = `
-                <div class="message-avatar">${avatarInitials}</div>
-                <div class="message-content-wrapper">
-                    <div class="message-bubble">${messageData.message.replace(/\n/g, '<br>')}</div>
-                    <div class="message-time">${messageTime}</div>
-                </div>
-            `;
-
-            // Удаляем пустое состояние
-            const emptyMessages = messagesList.querySelector('.empty-messages');
-            if (emptyMessages) emptyMessages.remove();
-
-            messagesList.appendChild(messageDiv);
-            
-            // Плавная автопрокрутка вниз
-            scrollToBottom(true);
-            
-            // Вибрация на мобильных при получении нового сообщения (не от себя)
-            if (!isOwnMessage && 'vibrate' in navigator && window.innerWidth <= 768) {
-                navigator.vibrate(50);
-            }
-        }
-
-        // Настройка формы для WebSocket отправки
-        const originalForm = document.getElementById('messageForm');
-        const messageInput = document.getElementById('message-content');
-        const sendBtn = document.getElementById('sendBtn');
-        
-        if (originalForm && messageInput && sendBtn) {
-            originalForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const message = messageInput.value.trim();
-                if (!message) return;
-
-                // Блокируем кнопку во время отправки
-                const originalText = sendBtn.innerHTML;
-                sendBtn.disabled = true;
-                sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>{% trans "Отправка..." %}</span>';
-
-                // Пробуем WebSocket
-                if (socket && socket.readyState === WebSocket.OPEN) {
-                    const messageData = {
-                        type: 'chat_message',
-                        message: message
-                    };
-                    
-                    try {
-                        socket.send(JSON.stringify(messageData));
-                        messageInput.value = '';
-                        messageInput.style.height = 'auto';
-                        
-                        // Скрываем клавиатуру на мобильных после отправки
-                        if (window.innerWidth <= 768) {
-                            messageInput.blur();
-                        }
-                        
-                        // Восстанавливаем кнопку
-                        setTimeout(() => {
-                            sendBtn.disabled = false;
-                            sendBtn.innerHTML = originalText;
-                            scrollToBottom(true);
-                        }, 300);
-                        
-                    } catch (error) {
-                        console.error('WebSocket send error:', error);
-                        // Fallback to AJAX if WebSocket fails
-                        sendAjaxMessage(originalForm, messageInput, sendBtn, originalText);
-                    }
-                } else {
-                    // Fallback AJAX
-                    sendAjaxMessage(originalForm, messageInput, sendBtn, originalText);
-                }
-            });
-        }
-
-        function sendAjaxMessage(form, input, btn, originalText) {
-            const formData = new FormData(form);
-            fetch('{% url "send_message_ajax" conversation_id=conversation.id %}', {
-                method: 'POST',
-                body: formData,
-                headers: {'X-Requested-With': 'XMLHttpRequest'}
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data && data.success) {
-                    input.value = '';
-                    input.style.height = 'auto';
-                    
-                    // Скрываем клавиатуру на мобильных
-                    if (window.innerWidth <= 768) {
-                        input.blur();
-                    }
-                    
-                    scrollToBottom(true);
-                } else {
-                    alert('{% trans "Ошибка при отправке сообщения" %}');
-                }
-            })
-            .catch(error => {
-                console.error('AJAX Error:', error);
-                alert('{% trans "Ошибка при отправке сообщения" %}');
-            })
-            .finally(() => {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-            });
-        }
-
-        // Инициализация
-        connectWebSocket();
-        
-        // Cleanup
-        window.addEventListener('beforeunload', () => {
-            if (socket) socket.close();
+            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+            // Сразу делаем placeholder для быстрого «Enter»
+            setTimeout(function() {
+                textarea.setSelectionRange(t.length, t.length);
+            }, 10);
         });
     }
+
+    // ============================================
+    // Delete-conversation custom modal
+    // ============================================
+    (function() {
+        var btn = document.getElementById('deleteConvBtn');
+        var form = document.getElementById('deleteConvForm');
+        var modal = document.getElementById('deleteModalBackdrop');
+        if (!btn || !form || !modal) return;
+        var cancelBtn = document.getElementById('deleteModalCancel');
+        var confirmBtn = document.getElementById('deleteModalConfirm');
+
+        function open() {
+            modal.hidden = false;
+            modal.classList.add('is-open');
+            (cancelBtn || modal).focus({ preventScroll: true });
+            document.addEventListener('keydown', onKey);
+        }
+        function close() {
+            modal.classList.remove('is-open');
+            modal.hidden = true;
+            document.removeEventListener('keydown', onKey);
+        }
+        function onKey(e) {
+            if (e.key === 'Escape') close();
+        }
+        btn.addEventListener('click', open);
+        cancelBtn && cancelBtn.addEventListener('click', close);
+        modal.addEventListener('click', function(e) { if (e.target === modal) close(); });
+        confirmBtn && confirmBtn.addEventListener('click', function() {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = '...';
+            form.submit();
+        });
+    })();
+
+    // ============================================
+    // Real-time chat — WebSocket
+    // ============================================
+    var socket = null;
+    var reconnectAttempts = 0;
+    var maxReconnectAttempts = 8;
+    var heartbeatInterval = null;
+    var pendingMessages = []; // [{tempId, text, createdAt, el}]
+
+    function setConnStatus(state) {
+        var pill = document.getElementById('connectionStatus');
+        var txt = document.getElementById('statusText');
+        if (!pill || !txt) return;
+        pill.classList.remove('is-online', 'is-offline');
+        if (state === 'connected') {
+            pill.classList.add('is-online');
+            txt.textContent = I18N.online;
+        } else if (state === 'disconnected') {
+            pill.classList.add('is-offline');
+            txt.textContent = I18N.offline;
+        } else {
+            txt.textContent = '{% trans "Подключение…" %}';
+        }
+    }
+
+    function renderIncomingMessage(data) {
+        if (!messagesList) return;
+        // De-dup по реальному id
+        if (data.id && document.querySelector('[data-message-id="' + data.id + '"]')) return;
+
+        // Удаляем пустое состояние
+        var empty = document.getElementById('emptyMessagesState');
+        if (empty) empty.remove();
+
+        // Day-separator
+        ensureDaySeparator(data.created_at);
+
+        var isOwn = data.sender_id === CURRENT_USER_ID;
+        var initials = (data.sender_name || '').split(' ').map(function(n){return n[0]||'';}).join('').substring(0,2).toUpperCase() || 'U';
+        var safe = escapeHtml(data.message || '').replace(/\n/g, '<br>');
+        safe = linkify(safe);
+
+        var div = document.createElement('div');
+        div.className = 'message-item' + (isOwn ? ' own-message' : '');
+        div.setAttribute('data-message-id', data.id);
+        div.setAttribute('data-sender-id', data.sender_id);
+        div.innerHTML =
+            '<div class="message-avatar">' + escapeHtml(initials) + '</div>' +
+            '<div class="message-content-wrapper">' +
+                '<div class="message-bubble">' + safe + '</div>' +
+                '<div class="message-meta">' +
+                    '<span class="message-time">' + formatTime(data.created_at) + '</span>' +
+                    (isOwn ? '<span class="message-receipt" data-state="sent" title="' + I18N.sent + '"></span>' : '') +
+                '</div>' +
+            '</div>';
+        messagesList.appendChild(div);
+        scrollToBottom(true);
+
+        // Вибрация для входящих
+        if (!isOwn && 'vibrate' in navigator && window.innerWidth <= 768) {
+            try { navigator.vibrate(30); } catch(_) {}
+        }
+
+        // Если входящее (не от нас) — сразу помечаем как прочитанное
+        if (!isOwn) {
+            requestMarkAsRead();
+        }
+    }
+
+    // Свой исходящий — заменяем pending бабл реальным id
+    function reconcilePendingOwn(data) {
+        if (!pendingMessages.length) return false;
+        var match = null;
+        for (var i = 0; i < pendingMessages.length; i++) {
+            if (pendingMessages[i].text === data.message) { match = pendingMessages.splice(i, 1)[0]; break; }
+        }
+        if (!match || !match.el) return false;
+        match.el.classList.remove('is-pending');
+        match.el.setAttribute('data-message-id', data.id);
+        var receipt = match.el.querySelector('.message-receipt');
+        if (receipt) {
+            receipt.setAttribute('data-state', 'sent');
+            receipt.setAttribute('title', I18N.sent);
+        }
+        var t = match.el.querySelector('.message-time');
+        if (t) t.textContent = formatTime(data.created_at);
+        return true;
+    }
+
+    function addOptimisticOwn(text) {
+        if (!messagesList) return null;
+        var empty = document.getElementById('emptyMessagesState');
+        if (empty) empty.remove();
+        ensureDaySeparator(new Date().toISOString());
+
+        var tempId = 'tmp-' + Date.now() + '-' + Math.random().toString(36).slice(2,7);
+        var safe = linkify(escapeHtml(text).replace(/\n/g, '<br>'));
+        var div = document.createElement('div');
+        div.className = 'message-item own-message is-pending';
+        div.setAttribute('data-temp-id', tempId);
+        div.setAttribute('data-sender-id', CURRENT_USER_ID);
+        div.innerHTML =
+            '<div class="message-avatar">{{ user.first_name.0|default:"U"|upper }}{{ user.last_name.0|default:""|upper }}</div>' +
+            '<div class="message-content-wrapper">' +
+                '<div class="message-bubble">' + safe + '</div>' +
+                '<div class="message-meta">' +
+                    '<span class="message-time">' + formatTime(new Date().toISOString()) + '</span>' +
+                    '<span class="message-receipt" data-state="pending" title="' + I18N.pending + '"></span>' +
+                '</div>' +
+            '</div>';
+        messagesList.appendChild(div);
+        scrollToBottom(true);
+        pendingMessages.push({ tempId: tempId, text: text, createdAt: Date.now(), el: div });
+        return tempId;
+    }
+
+    function markAllOwnAsRead() {
+        var ownReceipts = messagesList ? messagesList.querySelectorAll('.message-item.own-message .message-receipt[data-state="sent"]') : [];
+        ownReceipts.forEach(function(r) {
+            r.setAttribute('data-state', 'read');
+            r.setAttribute('title', I18N.read);
+        });
+    }
+
+    function requestMarkAsRead() {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            try { socket.send(JSON.stringify({ type: 'mark_as_read' })); } catch(_) {}
+        }
+    }
+
+    function connectWebSocket() {
+        try {
+            var proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            var wsUrl = proto + '//' + window.location.host + '/ws/conversation/' + CONVERSATION_ID + '/';
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = function() {
+                setConnStatus('connected');
+                reconnectAttempts = 0;
+                heartbeatInterval = setInterval(function() {
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        socket.send(JSON.stringify({ type: 'ping' }));
+                    }
+                }, 30000);
+                // При входе сразу помечаем прочитанные
+                requestMarkAsRead();
+            };
+
+            socket.onmessage = function(event) {
+                try {
+                    var data = JSON.parse(event.data);
+                    if (data.type === 'chat_message') {
+                        var msg = data.message_data;
+                        if (!msg) return;
+                        // Свой ответ от сервера → reconcile pending
+                        if (msg.sender_id === CURRENT_USER_ID && reconcilePendingOwn(msg)) {
+                            return;
+                        }
+                        renderIncomingMessage(msg);
+                    } else if (data.type === 'messages_read') {
+                        markAllOwnAsRead();
+                    } else if (data.type === 'pong') {
+                        // ok
+                    } else if (data.type === 'error') {
+                        notifyError(data.error || '');
+                    }
+                } catch (err) {
+                    console.error('WS parse error:', err);
+                }
+            };
+
+            socket.onclose = function() {
+                setConnStatus('disconnected');
+                if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    setTimeout(connectWebSocket, Math.min(3000 * reconnectAttempts, 15000));
+                }
+            };
+
+            socket.onerror = function() { /* onclose сработает */ };
+        } catch (err) {
+            console.error('WS init failed:', err);
+            setConnStatus('disconnected');
+        }
+    }
+
+    // ============================================
+    // Submit handler — optimistic + WS-first + AJAX fallback
+    // ============================================
+    if (messageForm && textarea && sendBtn) {
+        messageForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var text = textarea.value.trim();
+            if (!text) return;
+
+            // Optimistic: рисуем бабл сразу
+            var tempId = addOptimisticOwn(text);
+
+            // Очищаем форму немедленно — пользователь может вводить следующее
+            textarea.value = '';
+            textarea.style.height = 'auto';
+            syncSendBtn();
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                try {
+                    socket.send(JSON.stringify({ type: 'chat_message', message: text }));
+                    return;
+                } catch (err) {
+                    console.warn('WS send failed → AJAX fallback', err);
+                }
+            }
+            // AJAX fallback
+            sendViaAjax(text, tempId);
+        });
+    }
+
+    function sendViaAjax(text, tempId) {
+        var fd = new FormData();
+        fd.append('content', text);
+        var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrf) fd.append('csrfmiddlewaretoken', csrf.value);
+
+        fetch(AJAX_URL, {
+            method: 'POST',
+            body: fd,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data && data.success) {
+                // Reconcile через WS не придёт — обновим вручную
+                var pendingEl = messagesList && messagesList.querySelector('[data-temp-id="' + tempId + '"]');
+                if (pendingEl) {
+                    pendingEl.classList.remove('is-pending');
+                    pendingEl.setAttribute('data-message-id', data.message.id);
+                    var r = pendingEl.querySelector('.message-receipt');
+                    if (r) { r.setAttribute('data-state', 'sent'); r.setAttribute('title', I18N.sent); }
+                }
+                // Удаляем из pending массива
+                for (var i = 0; i < pendingMessages.length; i++) {
+                    if (pendingMessages[i].tempId === tempId) { pendingMessages.splice(i,1); break; }
+                }
+            } else {
+                handleSendError(tempId);
+            }
+        })
+        .catch(function() { handleSendError(tempId); });
+    }
+
+    function handleSendError(tempId) {
+        // Помечаем pending как ошибку
+        var el = messagesList && messagesList.querySelector('[data-temp-id="' + tempId + '"]');
+        if (el) {
+            var r = el.querySelector('.message-receipt');
+            if (r) {
+                r.textContent = '⚠';
+                r.removeAttribute('data-state');
+                r.style.color = '#DC2626';
+                r.setAttribute('title', I18N.send_err);
+            }
+            el.style.opacity = '0.6';
+        }
+        notifyError(I18N.send_err);
+    }
+
+    // ============================================
+    // visibility — при возврате во вкладку помечаем прочитанные
+    // ============================================
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') {
+            requestMarkAsRead();
+        }
+    });
+
+    // Cleanup
+    window.addEventListener('beforeunload', function() {
+        if (socket) { try { socket.close(); } catch(_) {} }
+    });
+
+    // ============================================
+    // start
+    // ============================================
+    scrollToBottom(false);
+    connectWebSocket();
+})();
 </script>
 {% endblock %}
 

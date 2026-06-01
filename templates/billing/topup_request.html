@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}{% trans 'Пополнить кошелёк' %} — UstozHub{% endblock %}
+
+{% block content %}
+<style>
+  .topup-page { max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
+  .topup-header { margin-bottom: 24px; }
+  .topup-header h1 {
+    font-size: 26px; font-weight: 700; color: #0A2540;
+    display: flex; align-items: center; gap: 12px; margin: 0 0 8px;
+  }
+  .topup-header .subtitle { color: #64748B; margin: 0; font-size: 15px; }
+
+  .balance-card {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+    background: linear-gradient(135deg, #0F766E 0%, #14B8A6 100%);
+    color: #fff; border-radius: 14px; padding: 20px 24px;
+    margin-bottom: 24px; box-shadow: 0 6px 20px rgba(15,118,110,.18);
+  }
+  .balance-card .label { font-size: 13px; opacity: .85; text-transform: uppercase; letter-spacing: .6px; }
+  .balance-card .amount { font-size: 28px; font-weight: 700; line-height: 1.1; margin-top: 4px; }
+  .balance-card .amount small { font-size: 14px; font-weight: 400; opacity: .85; margin-left: 4px; }
+
+  .needed-card {
+    background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 12px;
+    padding: 16px 20px; margin-bottom: 24px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .needed-card i { font-size: 24px; color: #D97706; flex-shrink: 0; }
+  .needed-card .text { flex: 1; }
+  .needed-card .row { font-size: 14px; color: #78350F; margin: 2px 0; }
+  .needed-card .needed-amount { font-size: 20px; font-weight: 700; color: #92400E; }
+
+  .step-card {
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 14px;
+    padding: 24px; margin-bottom: 16px;
+  }
+  .step-card .step-head {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
+  }
+  .step-card .step-num {
+    width: 32px; height: 32px; flex-shrink: 0;
+    background: linear-gradient(135deg, #3B82F6, #2563EB); color: #fff;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 15px;
+  }
+  .step-card h2 { margin: 0; font-size: 17px; color: #0A2540; font-weight: 600; }
+
+  .req-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 12px 14px; background: #F8FAFC; border: 1px solid #E2E8F0;
+    border-radius: 10px; margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .req-row .req-label { font-size: 12px; color: #64748B; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 2px; }
+  .req-row .req-value { font-size: 17px; font-weight: 600; color: #0A2540; font-variant-numeric: tabular-nums; word-break: break-all; }
+  .req-row .req-info { min-width: 0; flex: 1; }
+  .copy-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #fff; color: #3B82F6; border: 1px solid #BFDBFE;
+    border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all .15s ease; flex-shrink: 0;
+  }
+  .copy-btn:hover { background: #EFF6FF; border-color: #3B82F6; }
+  .copy-btn.copied { background: #ECFDF5; color: #059669; border-color: #6EE7B7; }
+  .copy-btn i { font-size: 12px; }
+
+  .tg-btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; padding: 14px 18px;
+    background: linear-gradient(135deg, #0088CC, #006699); color: #fff;
+    border: none; border-radius: 12px; font-size: 16px; font-weight: 600;
+    text-decoration: none; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 136, 204, 0.28);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .tg-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0, 136, 204, 0.36); color: #fff; text-decoration: none; }
+  .tg-btn i { font-size: 20px; }
+
+  .alt-contact {
+    margin-top: 14px; font-size: 13px; color: #64748B; text-align: center;
+  }
+  .alt-contact a { color: #3B82F6; text-decoration: none; font-weight: 600; }
+  .alt-contact a:hover { text-decoration: underline; }
+
+  .eta-strip {
+    background: #ECFDF5; border: 1px solid #BBF7D0; border-radius: 12px;
+    padding: 14px 18px; margin-top: 24px;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 14px; color: #065F46;
+  }
+  .eta-strip i { font-size: 18px; color: #059669; }
+
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 24px; padding: 10px 18px;
+    background: #F1F5F9; color: #0A2540; border-radius: 8px;
+    text-decoration: none; font-weight: 500; font-size: 14px;
+  }
+  .back-link:hover { background: #E2E8F0; }
+
+  @media (max-width: 600px) {
+    .topup-page { padding: 20px 14px 48px; }
+    .topup-header h1 { font-size: 22px; }
+    .balance-card { padding: 16px 18px; }
+    .balance-card .amount { font-size: 24px; }
+    .step-card { padding: 18px; }
+    .req-row .req-value { font-size: 15px; }
+    .copy-btn { padding: 8px 12px; font-size: 12px; }
+  }
+</style>
+
+<div class="topup-page">
+  <div class="topup-header">
+    <h1>💳 {% trans 'Пополнить кошелёк' %}</h1>
+    <p class="subtitle">{% trans 'Перевод на карту с подтверждением в Telegram. Зачисление обычно в течение' %} {{ processing_hours }} {% trans 'часов в рабочее время.' %}</p>
+  </div>
+
+  <div class="balance-card">
+    <div>
+      <div class="label">{% trans 'Текущий баланс' %}</div>
+      <div class="amount">{{ wallet.balance|floatformat:0|intcomma }} <small>{{ wallet.currency|default:'UZS' }}</small></div>
+    </div>
+    <i class="fas fa-wallet" style="font-size:36px; opacity:.4;"></i>
+  </div>
+
+  {% if needed > 0 %}
+    <div class="needed-card">
+      <i class="fas fa-info-circle"></i>
+      <div class="text">
+        <div class="row">{% trans 'Для покупки подписки нужно ещё' %}:</div>
+        <div class="needed-amount">{{ needed|intcomma }} {% trans 'сум' %}</div>
+      </div>
+    </div>
+  {% elif amount > 0 %}
+    <div class="needed-card" style="background:#ECFDF5; border-color:#BBF7D0;">
+      <i class="fas fa-check-circle" style="color:#059669;"></i>
+      <div class="text">
+        <div class="row" style="color:#065F46;">{% trans 'У вас уже достаточно средств для этой покупки.' %}</div>
+        {% if next_url %}
+        <a href="{{ next_url }}" style="display:inline-block; margin-top:8px; padding:8px 14px; background:#059669; color:#fff; border-radius:8px; text-decoration:none; font-size:13px; font-weight:600;">← {% trans 'Вернуться к покупке' %}</a>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if not topup_configured %}
+  <div class="needed-card" style="background:#FEF2F2; border-color:#FECACA;">
+    <i class="fas fa-triangle-exclamation" style="color:#DC2626;"></i>
+    <div class="text">
+      <div class="row" style="color:#991B1B;">{% trans 'Пополнение временно недоступно — реквизиты ещё не настроены. Пожалуйста, свяжитесь с поддержкой.' %}</div>
+      {% if support_phone %}<div class="row" style="margin-top:6px;">{% trans 'Телефон поддержки:' %} <a href="tel:{{ support_phone }}">{{ support_phone }}</a></div>{% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div class="step-card">
+    <div class="step-head">
+      <div class="step-num">1</div>
+      <h2>{% trans 'Переведите нужную сумму на карту' %}</h2>
+    </div>
+
+    <div class="req-row">
+      <div class="req-info">
+        <div class="req-label">{% trans 'Номер карты' %}</div>
+        <div class="req-value" id="card-number">{{ card_number }}</div>
+      </div>
+      <button type="button" class="copy-btn" data-copy-target="card-number">
+        <i class="far fa-copy"></i> <span>{% trans 'Копировать' %}</span>
+      </button>
+    </div>
+
+    <div class="req-row">
+      <div class="req-info">
+        <div class="req-label">{% trans 'Получатель' %}</div>
+        <div class="req-value">{{ card_holder }}</div>
+      </div>
+    </div>
+
+    <div class="req-row">
+      <div class="req-info">
+        <div class="req-label">{% trans 'Банк' %}</div>
+        <div class="req-value">{{ bank_name }}</div>
+      </div>
+    </div>
+
+    {% if needed > 0 %}
+    <div class="req-row">
+      <div class="req-info">
+        <div class="req-label">{% trans 'Минимальная сумма перевода' %}</div>
+        <div class="req-value" id="topup-amount" style="color:#D97706;">{{ needed|intcomma }} {% trans 'сум' %}</div>
+      </div>
+      <button type="button" class="copy-btn" data-copy-target="topup-amount" data-copy-raw="{{ needed }}">
+        <i class="far fa-copy"></i> <span>{% trans 'Копировать' %}</span>
+      </button>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="step-card">
+    <div class="step-head">
+      <div class="step-num">2</div>
+      <h2>{% trans 'Отправьте чек в Telegram' %}</h2>
+    </div>
+    <p style="margin:0 0 14px; color:#475569; font-size:14px; line-height:1.55;">
+      {% trans 'Сделайте скриншот успешного перевода и отправьте его боту/менеджеру в Telegram. В сообщении укажите ваш логин или email — так мы быстрее найдём ваш кошелёк.' %}
+    </p>
+
+    {% with msg_text=_('Здравствуйте! Я пополнил кошелёк UstozHub. Мой email: ')|add:user.email|add:_(' / логин: ')|add:user.username %}
+    <a href="https://t.me/{{ telegram_handle }}?text={{ msg_text|urlencode }}" target="_blank" rel="noopener" class="tg-btn">
+      <i class="fab fa-telegram-plane"></i>
+      {% trans 'Открыть Telegram' %} — @{{ telegram_handle }}
+    </a>
+    {% endwith %}
+
+    {% if support_phone %}
+    <div class="alt-contact">
+      {% trans 'Или позвоните:' %} <a href="tel:{{ support_phone }}">{{ support_phone }}</a>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="eta-strip">
+    <i class="fas fa-clock"></i>
+    <div>
+      {% blocktrans with hours=processing_hours %}Зачисление в течение <b>{{ hours }} ч</b> в рабочее время (9:00–22:00). Вы получите уведомление в системе и Telegram.{% endblocktrans %}
+    </div>
+  </div>
+
+  {% if next_url %}
+    <a href="{{ next_url }}" class="back-link">← {% trans 'Назад' %}</a>
+  {% else %}
+    <a href="{% url 'home' %}" class="back-link">← {% trans 'На главную' %}</a>
+  {% endif %}
+</div>
+
+<script>
+(function(){
+  document.querySelectorAll('.copy-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var targetId = btn.dataset.copyTarget;
+      var raw = btn.dataset.copyRaw;
+      var el = targetId ? document.getElementById(targetId) : null;
+      var text = raw || (el ? el.textContent.trim() : '');
+      if (!text) return;
+
+      var done = function(){
+        btn.classList.add('copied');
+        var span = btn.querySelector('span');
+        var prev = span ? span.textContent : '';
+        if (span) span.textContent = '{% trans "Скопировано" %}';
+        btn.querySelector('i').className = 'fas fa-check';
+        setTimeout(function(){
+          btn.classList.remove('copied');
+          if (span) span.textContent = prev;
+          btn.querySelector('i').className = 'far fa-copy';
+        }, 1800);
+      };
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function(){
+          /* fallback */
+          var ta = document.createElement('textarea');
+          ta.value = text; document.body.appendChild(ta); ta.select();
+          try { document.execCommand('copy'); done(); } catch(e){}
+          document.body.removeChild(ta);
+        });
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); done(); } catch(e){}
+        document.body.removeChild(ta);
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

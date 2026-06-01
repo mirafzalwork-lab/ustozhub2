@@ -1,0 +1,74 @@
+{# Общие стили для admin billing pages #}
+<style>
+  .ab-page { max-width: 1280px; margin: 0 auto; padding: 28px 24px; }
+  .ab-page h1 { font-size: 26px; color: #0A2540; margin: 0; }
+  .ab-page .subtitle { color: #64748B; margin: 4px 0 24px; }
+  .ab-back { color: #6366F1; text-decoration: none; font-size: 14px; }
+
+  .ab-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 24px; padding: 4px; background: #F1F5F9; border-radius: 10px; }
+  .ab-tabs a { padding: 8px 16px; border-radius: 8px; text-decoration: none; color: #475569; font-size: 14px; font-weight: 500; }
+  .ab-tabs a.active { background: #fff; color: #0A2540; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+
+  .ab-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 28px; }
+  .ab-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px 20px; }
+  .ab-card .lbl { font-size: 12px; color: #64748B; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+  .ab-card .val { font-size: 22px; font-weight: 700; color: #0A2540; line-height: 1.1; }
+  .ab-card .val small { font-size: 13px; color: #94A3B8; font-weight: 400; }
+  .ab-card.brand { background: linear-gradient(135deg, #4338CA, #6366F1); color: #fff; border: none; }
+  .ab-card.brand .lbl, .ab-card.brand .val, .ab-card.brand .val small { color: #fff; opacity: 1; }
+  .ab-card.brand .lbl { opacity: .85; }
+  .ab-card.warn { background: linear-gradient(135deg, #B45309, #D97706); color: #fff; border: none; }
+  .ab-card.warn .lbl, .ab-card.warn .val, .ab-card.warn .val small { color: #fff; }
+  .ab-card.warn .lbl { opacity: .85; }
+  .ab-card.success { background: linear-gradient(135deg, #047857, #10B981); color: #fff; border: none; }
+  .ab-card.success .lbl, .ab-card.success .val, .ab-card.success .val small { color: #fff; }
+  .ab-card.success .lbl { opacity: .85; }
+
+  .ab-section { background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 22px 24px; margin-bottom: 18px; }
+  .ab-section h2 { font-size: 17px; color: #0A2540; margin: 0 0 16px; }
+
+  .ab-btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 14px; cursor: pointer; border: none; }
+  .ab-btn-primary { background: #4F46E5; color: #fff; }
+  .ab-btn-primary:hover { background: #4338CA; }
+  .ab-btn-secondary { background: #F1F5F9; color: #0A2540; border: 1px solid #E2E8F0; }
+  .ab-btn-success { background: #10B981; color: #fff; }
+  .ab-btn-success:hover { background: #047857; }
+  .ab-btn-danger { background: #DC2626; color: #fff; }
+  .ab-btn-danger:hover { background: #B91C1C; }
+  .ab-btn-warning { background: #D97706; color: #fff; }
+
+  table.ab-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.ab-table th, table.ab-table td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
+  table.ab-table th { color: #64748B; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; }
+  table.ab-table tr:hover { background: #F8FAFC; }
+
+  .ab-status { font-size: 11px; padding: 3px 10px; border-radius: 999px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; display: inline-block; }
+  .ab-status.pending  { background: #FFFBEB; color: #92400E; }
+  .ab-status.approved { background: #EFF6FF; color: #1D4ED8; }
+  .ab-status.completed{ background: #ECFDF5; color: #065F46; }
+  .ab-status.active   { background: #ECFDF5; color: #065F46; }
+  .ab-status.rejected, .ab-status.cancelled_by_student, .ab-status.cancelled_by_teacher, .ab-status.cancelled_by_admin { background: #FEF2F2; color: #B91C1C; }
+  .ab-status.cancelled, .ab-status.expired, .ab-status.paused { background: #F1F5F9; color: #475569; }
+  .ab-status.pending_payment { background: #FFFBEB; color: #92400E; }
+
+  .ab-search { display: flex; gap: 10px; margin-bottom: 18px; }
+  .ab-search input { flex: 1; padding: 10px 14px; border: 1px solid #E2E8F0; border-radius: 8px; font-size: 15px; }
+
+  .ab-form-row { margin-bottom: 14px; }
+  .ab-form-row label { display: block; font-size: 13px; color: #475569; margin-bottom: 4px; }
+  .ab-form-row input, .ab-form-row textarea, .ab-form-row select { width: 100%; padding: 9px 12px; border: 1px solid #E2E8F0; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+
+  .ab-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 800px) { .ab-grid-2 { grid-template-columns: 1fr; } }
+
+  .ab-tx-amount.positive { color: #047857; font-weight: 600; }
+  .ab-tx-amount.negative { color: #B91C1C; font-weight: 600; }
+</style>
+
+<div class="ab-tabs">
+  <a href="{% url 'admin_dashboard' %}" {% if active_tab == 'overview' %}class="active"{% endif %}>📊 Главная</a>
+  <a href="{% url 'admin_billing_hub' %}" {% if active_tab == 'billing' %}class="active"{% endif %}>💰 Финансы</a>
+  <a href="{% url 'admin_billing_wallets' %}" {% if active_tab == 'wallets' %}class="active"{% endif %}>👛 Кошельки</a>
+  <a href="{% url 'admin_billing_withdrawals' %}" {% if active_tab == 'withdrawals' %}class="active"{% endif %}>💸 Выводы</a>
+  <a href="{% url 'admin_billing_subscriptions' %}" {% if active_tab == 'subscriptions' %}class="active"{% endif %}>📚 Подписки</a>
+</div>

@@ -397,7 +397,12 @@
     });
 
     $delete.addEventListener('click', async () => {
-        if (!editingId || !confirm(i18n.confirmDeleteSlot || 'Удалить этот слот?')) return;
+        if (!editingId) return;
+        const _confirmText = i18n.confirmDeleteSlot || 'Удалить этот слот?';
+        const _ok = window.confirmDialog
+            ? await window.confirmDialog(_confirmText, { danger: true })
+            : confirm(_confirmText);
+        if (!_ok) return;
         // Сохраняем данные слота, чтобы можно было восстановить.
         const snapshot = editingEvent ? {
             start: editingEvent.start.toISOString(),

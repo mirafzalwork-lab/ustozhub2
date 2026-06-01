@@ -369,20 +369,153 @@ class TelegramNotificationService:
             logger.error(f"Ошибка обработки батча: {e}", exc_info=True)
             return 0
     
-    def process_queue_batch_sync(self, batch_size=10):
-        """Синхронная версия process_queue_batch"""
-        try:
+    @staticmethod
+    def _tg_send_sync(token, chat_id, text, data=None):
+        """Синхронная отправка сообщения в Telegram через HTTP API (urllib).
+
+        Возвращает (ok, error_str, message_id). При ошибке парсинга Markdown
+        повторяет отправку без parse_mode (защита от инъекции/битой разметки).
+        """
+        import json as _json
+        from urllib import request as _req, parse as _parse, error as _err
+
+        url = f'https://api.telegram.org/bot{token}/sendMessage'
+
+        def _post(payload):
+            body = _parse.urlencode(payload).encode('utf-8')
+            req = _req.Request(url, data=body)
             try:
-                loop = asyncio.get_event_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-            
-            return loop.run_until_complete(
-                self.process_queue_batch(batch_size)
+                with _req.urlopen(req, timeout=15) as resp:
+                    return _json.loads(resp.read().decode('utf-8'))
+            except _err.HTTPError as e:
+                try:
+                    return _json.loads(e.read().decode('utf-8'))
+                except Exception:
+                    return {'ok': False, 'description': f'HTTP {e.code}'}
+            except Exception as e:
+                return {'ok': False, 'description': str(e)}
+
+        base = {'chat_id': chat_id, 'text': text, 'parse_mode': 'Markdown'}
+        if data and data.get('url'):
+            base['reply_markup'] = _json.dumps({'inline_keyboard': [[{
+                'text': data.get('button_text', '📬 Открыть'),
+                'url': data['url'],
+            }]]})
+
+        result = _post(base)
+        if not result.get('ok') and "can't parse" in (result.get('description', '').lower()):
+            # Битая Markdown-разметка → шлём как обычный текст, чтобы доставить.
+            base.pop('parse_mode', None)
+            result = _post(base)
+
+        if result.get('ok'):
+            return True, '', result.get('result', {}).get('message_id', 0)
+        return False, result.get('description', 'unknown error'), None
+
+    def _deliver_one_sync(self, notification, token):
+        """Синхронная доставка одного уведомления + запись лога/статуса."""
+        start_time = time.time()
+        try:
+            telegram_user = TelegramUser.objects.filter(
+                user=notification.recipient,
+                notifications_enabled=True,
+                started_bot=True,
+            ).first()
+
+            if not telegram_user:
+                notification.status = 'cancelled'
+                notification.last_error = 'Уведомления отключены'
+                notification.save(update_fields=['status', 'last_error'])
+                NotificationLog.objects.create(
+                    notification=notification,
+                    attempt_number=notification.retry_count + 1,
+                    status='skipped', error_message='Уведомления отключены',
+                )
+                return False
+
+            text = f"*{notification.title}*\n\n{notification.message}"
+            ok, err, msg_id = self._tg_send_sync(
+                token, telegram_user.telegram_id, text, notification.data,
             )
+            elapsed = int((time.time() - start_time) * 1000)
+
+            if ok:
+                notification.mark_as_sent()
+                NotificationLog.objects.create(
+                    notification=notification,
+                    attempt_number=notification.retry_count + 1,
+                    status='success', telegram_message_id=msg_id or 0,
+                    processing_time_ms=elapsed,
+                )
+                return True
+
+            # Ошибка доставки
+            notification.mark_as_failed(err)
+            low = err.lower()
+            if 'blocked' in low or 'deactivated' in low or 'chat not found' in low:
+                notification.status = 'cancelled'
+                notification.last_error = 'Пользователь недоступен'
+                notification.save(update_fields=['status', 'last_error'])
+            elif notification.can_retry():
+                notification.scheduled_at = timezone.now() + notification.calculate_next_retry_delay()
+                notification.status = 'pending'
+                notification.save(update_fields=['scheduled_at', 'status'])
+            NotificationLog.objects.create(
+                notification=notification,
+                attempt_number=notification.retry_count,
+                status='error', error_message=err, processing_time_ms=elapsed,
+            )
+            return False
         except Exception as e:
-            logger.error(f"Ошибка в process_queue_batch_sync: {e}")
+            logger.error(f"Ошибка доставки уведомления {notification.id}: {e}", exc_info=True)
+            try:
+                notification.mark_as_failed(str(e))
+                if notification.can_retry():
+                    notification.scheduled_at = timezone.now() + notification.calculate_next_retry_delay()
+                    notification.status = 'pending'
+                    notification.save(update_fields=['scheduled_at', 'status'])
+            except Exception:
+                pass
+            return False
+
+    def process_queue_batch_sync(self, batch_size=10):
+        """Синхронная обработка батча очереди.
+
+        Race-safe: батч забирается под select_for_update(skip_locked=True) и
+        атомарно помечается 'processing' — два воркера не возьмут одно и то же
+        (раньше выборка и пометка были не атомарны → дубли сообщений).
+        Доставка полностью синхронная (без async-ORM, который ломается под ASGI).
+        """
+        token = getattr(settings, 'TELEGRAM_BOT_TOKEN', '') or ''
+        if not token:
+            logger.error('TELEGRAM_BOT_TOKEN не задан — очередь не обрабатывается')
+            return 0
+        try:
+            now = timezone.now()
+            with transaction.atomic():
+                rows = list(
+                    NotificationQueue.objects
+                    .select_for_update(skip_locked=True)
+                    .filter(status='pending', scheduled_at__lte=now)
+                    .select_related('recipient')
+                    .order_by('scheduled_at')[:batch_size]
+                )
+                ids = [n.id for n in rows]
+                if ids:
+                    NotificationQueue.objects.filter(id__in=ids).update(
+                        status='processing', processing_started_at=now,
+                    )
+            if not rows:
+                return 0
+
+            success_count = 0
+            for notification in rows:
+                if self._deliver_one_sync(notification, token):
+                    success_count += 1
+            logger.info(f"Очередь: отправлено {success_count}/{len(rows)}")
+            return success_count
+        except Exception as e:
+            logger.error(f"Ошибка в process_queue_batch_sync: {e}", exc_info=True)
             return 0
     
     def notify_new_message(

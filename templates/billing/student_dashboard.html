@@ -1,0 +1,310 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}{% trans 'Личный кабинет ученика' %} — UstozHub{% endblock %}
+
+{% block content %}
+<style>
+  .sdb { max-width: 1200px; margin: 0 auto; padding: 28px 20px; }
+  .sdb .greet { font-size: 26px; color: #0A2540; margin: 0 0 6px; }
+  .sdb .greet small { color: #64748B; font-size: 14px; font-weight: 400; }
+
+  .sdb-hero {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 22px;
+  }
+  @media (max-width: 768px) { .sdb-hero { grid-template-columns: 1fr; } }
+
+  .sdb-wallet, .sdb-stats {
+    border-radius: 16px; padding: 22px 24px; color: #fff;
+    box-shadow: 0 8px 26px rgba(15, 23, 42, .08);
+  }
+  .sdb-wallet { background: linear-gradient(135deg, #1E40AF 0%, #6366F1 100%); }
+  .sdb-stats  { background: linear-gradient(135deg, #0F766E 0%, #14B8A6 100%); }
+  .sdb-wallet .lbl, .sdb-stats .lbl { font-size: 12px; text-transform: uppercase; opacity: .85; letter-spacing: .6px; }
+  .sdb-wallet .amt { font-size: 32px; font-weight: 700; margin: 4px 0 12px; }
+  .sdb-wallet .amt small { font-size: 14px; opacity: .8; font-weight: 400; }
+  .sdb-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .sdb-actions a {
+    background: rgba(255,255,255,.18); color: #fff; padding: 8px 14px; border-radius: 8px;
+    text-decoration: none; font-size: 13px; font-weight: 500;
+  }
+  .sdb-actions a:hover { background: rgba(255,255,255,.28); }
+
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .stat-row .cell { text-align: center; }
+  .stat-row .val { font-size: 22px; font-weight: 700; }
+  .stat-row .lbl-sm { font-size: 11px; opacity: .85; text-transform: uppercase; }
+
+  .sdb-section {
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 14px;
+    padding: 20px 22px; margin-bottom: 18px;
+  }
+  .sdb-section h2 { font-size: 17px; color: #0A2540; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; }
+  .sdb-section .more { float: right; font-size: 13px; color: #6366F1; text-decoration: none; }
+
+  .lesson-card {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px; border: 1px solid #E2E8F0; border-radius: 10px; margin-bottom: 8px;
+    font-size: 14px;
+  }
+  .lesson-card .time { font-weight: 600; color: #0A2540; min-width: 110px; }
+  .lesson-card .who  { color: #475569; flex: 1; }
+  .lesson-card .actions a { color: #6366F1; text-decoration: none; font-size: 13px; }
+  .lesson-card.today { background: #FFFBEB; border-color: #FDE68A; }
+
+  .hw-row {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid #F1F5F9;
+  }
+  .hw-row:last-child { border-bottom: 0; }
+  .hw-row a { color: #7C3AED; text-decoration: none; font-weight: 500; }
+  .hw-row .status { font-size: 11px; padding: 3px 8px; border-radius: 999px; text-transform: uppercase; font-weight: 600; }
+  .hw-row .status.assigned { background: #FFFBEB; color: #92400E; }
+  .hw-row .status.submitted { background: #EFF6FF; color: #1D4ED8; }
+
+  .sub-mini {
+    border: 1px solid #E2E8F0; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px;
+  }
+  .sub-mini .head { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .sub-mini b { color: #0A2540; }
+  .sub-mini .pb-wrap { background: #F1F5F9; border-radius: 999px; height: 6px; overflow: hidden; margin-top: 6px; }
+  .sub-mini .pb-fill { background: linear-gradient(90deg, #14B8A6, #10B981); height: 100%; }
+
+  .empty { text-align: center; color: #94A3B8; padding: 20px; font-size: 14px; }
+  .tx-mini { font-size: 13px; padding: 6px 0; border-bottom: 1px solid #F1F5F9; display: flex; justify-content: space-between; }
+  .tx-mini.last { border-bottom: 0; }
+  .tx-amt.plus { color: #059669; font-weight: 600; }
+  .tx-amt.minus { color: #DC2626; font-weight: 600; }
+
+  .row-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .row-2 { grid-template-columns: 1fr; } }
+</style>
+
+<div class="sdb">
+  <h1 class="greet">
+    {% trans 'Привет' %}, {{ request.user.first_name|default:request.user.username }}!
+    <small>{% trans 'Что нового на сегодня' %}</small>
+  </h1>
+
+  {% if recent_trials_to_convert %}
+  <div class="conv-banner">
+    {% for item in recent_trials_to_convert %}
+      <div class="conv-card">
+        <div class="conv-head">
+          <span class="conv-emoji">🎉</span>
+          <div class="conv-text">
+            <div class="conv-title">{% trans 'Вы прошли пробный с' %}
+              <b>{{ item.teacher.user.get_full_name|default:item.teacher.user.username }}</b>
+              · {{ item.subject.name }}
+            </div>
+            <div class="conv-sub">
+              {% if item.hours_since < 1 %}
+                {% trans 'Только что завершён' %} ·
+              {% elif item.hours_since < 24 %}
+                {% trans 'Завершён' %} {{ item.hours_since }} {% trans 'ч. назад' %} ·
+              {% else %}
+                {% trans 'Завершён' %} {{ item.days_since }} {% trans 'дн. назад' %} ·
+              {% endif %}
+              {% trans 'Готовы продолжить занятия?' %}
+            </div>
+          </div>
+        </div>
+        {% if item.tariffs %}
+          <div class="conv-tariffs">
+            {% for t in item.tariffs %}
+              <a href="{% url 'subscription_buy' t.id %}" class="conv-tariff">
+                <div class="tname">{{ t.name|default:t.subject.name }}</div>
+                <div class="tmeta">{{ t.lessons_per_week }}× /{% trans 'нед' %} · {{ t.duration_months }} {% trans 'мес' %}</div>
+                <div class="tprice">{{ t.total_price|floatformat:0|intcomma }} <small>сум</small></div>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <a href="{% url 'home' %}" class="conv-btn">{% trans 'У учителя пока нет тарифов — посмотреть других' %} →</a>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <style>
+    .conv-banner { margin-bottom: 22px; }
+    .conv-card {
+      background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+      border: 2px solid #F59E0B;
+      border-radius: 16px; padding: 18px 20px; margin-bottom: 12px;
+      box-shadow: 0 6px 22px rgba(245, 158, 11, .18);
+    }
+    .conv-head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
+    .conv-emoji { font-size: 32px; line-height: 1; }
+    .conv-title { font-size: 16px; color: #78350F; font-weight: 600; }
+    .conv-sub { font-size: 13px; color: #92400E; margin-top: 4px; }
+    .conv-tariffs {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+    }
+    .conv-tariff {
+      background: #fff; padding: 12px 14px; border-radius: 10px;
+      text-decoration: none; color: #0A2540; border: 1px solid #FCD34D;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .conv-tariff:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(245,158,11,.25); }
+    .conv-tariff .tname { font-weight: 700; font-size: 14px; }
+    .conv-tariff .tmeta { font-size: 12px; color: #64748B; margin-top: 4px; }
+    .conv-tariff .tprice { margin-top: 8px; font-size: 18px; font-weight: 700; color: #B45309; }
+    .conv-tariff .tprice small { font-size: 12px; color: #94A3B8; font-weight: 400; }
+    .conv-btn {
+      display: inline-block; background: #fff; color: #B45309;
+      padding: 10px 14px; border-radius: 8px; text-decoration: none;
+      font-weight: 500; font-size: 13px;
+    }
+  </style>
+  {% endif %}
+
+  <div class="sdb-hero">
+    <div class="sdb-wallet">
+      <div class="lbl">💰 {% trans 'Баланс кошелька' %}</div>
+      <div class="amt">{{ wallet.balance|floatformat:0|intcomma }}<small> сум</small></div>
+      <div class="sdb-actions">
+        <a href="{% url 'home' %}#teachers">🔍 {% trans 'Найти учителя' %}</a>
+        <a href="{% url 'my_subscriptions' %}">📦 {% trans 'Подписки' %}</a>
+      </div>
+    </div>
+
+    <div class="sdb-stats">
+      <div class="lbl">📊 {% trans 'Сводка' %}</div>
+      <div class="stat-row" style="margin-top: 8px;">
+        <div class="cell">
+          <div class="val">{{ total_lessons_done }}</div>
+          <div class="lbl-sm">{% trans 'Уроков' %}</div>
+        </div>
+        <div class="cell">
+          <div class="val">{{ hours_studied }}</div>
+          <div class="lbl-sm">{% trans 'Часов' %}</div>
+        </div>
+        <div class="cell">
+          <div class="val">{% if avg_grade %}{{ avg_grade }}{% else %}—{% endif %}</div>
+          <div class="lbl-sm">{% trans 'Avg ДЗ' %}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row-2">
+    <div>
+      <div class="sdb-section">
+        <h2>
+          📅 {% trans 'Ближайшие уроки' %}
+          {% if lessons_today %}<span style="font-size:12px; background:#FEF3C7; color:#92400E; padding:2px 8px; border-radius:999px; margin-left:6px;">{{ lessons_today }} сегодня</span>{% endif %}
+        </h2>
+        {% if upcoming %}
+          {% for b in upcoming %}
+            <div class="lesson-card {% if b.slot.start_at|date:'Y-m-d' == today %}today{% endif %}">
+              <div class="time">{{ b.slot.start_at|date:"d M, H:i" }}</div>
+              <div class="who">
+                {{ b.slot.teacher.user.get_full_name|default:b.slot.teacher.user.username }}
+                · {{ b.subject.name|default:'—' }}
+                {% if b.subscription %}<small style="color:#94A3B8;">· подписка</small>{% endif %}
+              </div>
+              <div class="actions">
+                {% if b.meeting_url %}<a href="{{ b.meeting_url }}" target="_blank">📹 Войти</a>{% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty">{% trans 'Уроков в ближайшие 7 дней нет' %}</div>
+        {% endif %}
+      </div>
+
+      <div class="sdb-section">
+        <h2>
+          📚 {% trans 'Домашние задания' %}
+          <a href="{% url 'student_homework_list' %}" class="more">{% trans 'все →' %}</a>
+        </h2>
+        {% if new_homework or pending_grade_hw %}
+          {% for hw in new_homework %}
+            <div class="hw-row">
+              <div>
+                <a href="{% url 'homework_detail' hw.id %}">{{ hw.title }}</a>
+                <small style="color:#94A3B8; margin-left:6px;">{{ hw.subscription.subject.name }}</small>
+              </div>
+              <span class="status assigned">{% trans 'Сдать' %}</span>
+            </div>
+          {% endfor %}
+          {% for hw in pending_grade_hw %}
+            <div class="hw-row">
+              <div>
+                <a href="{% url 'homework_detail' hw.id %}">{{ hw.title }}</a>
+                <small style="color:#94A3B8; margin-left:6px;">{{ hw.subscription.subject.name }}</small>
+              </div>
+              <span class="status submitted">{% trans 'На проверке' %}</span>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty">{% trans 'Активных заданий нет' %}</div>
+        {% endif %}
+      </div>
+
+      <div class="sdb-section">
+        <h2>
+          📦 {% trans 'Мои подписки' %}
+          <a href="{% url 'my_subscriptions' %}" class="more">{% trans 'все →' %}</a>
+        </h2>
+        {% if active_subs %}
+          {% for s in active_subs %}
+            <div class="sub-mini">
+              <div class="head">
+                <b>{{ s.subject.name }}</b>
+                <span style="color:#64748B; font-size:13px;">
+                  {{ s.teacher.user.get_full_name|default:s.teacher.user.username }}
+                </span>
+              </div>
+              <div style="display:flex; justify-content:space-between; font-size:13px; color:#475569;">
+                <span>{{ s.completed_lessons }} / {{ s.total_lessons }} {% trans 'уроков' %}</span>
+                <span>{% trans 'до' %} {{ s.expires_at|date:"d M" }}</span>
+              </div>
+              <div class="pb-wrap"><div class="pb-fill" style="width: {{ s.progress_percent }}%;"></div></div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty">{% trans 'Активных подписок нет' %} · <a href="{% url 'home' %}" style="color:#6366F1;">{% trans 'найти учителя' %}</a></div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div>
+      <div class="sdb-section">
+        <h2>⚡ {% trans 'Быстро' %}</h2>
+        <a href="{% url 'my_progress' %}" style="display:block; background:#EEF2FF; color:#4338CA; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500; margin-bottom:8px;">
+          📊 {% trans 'Мой прогресс' %}
+        </a>
+        <a href="{% url 'student_homework_list' %}" style="display:block; background:#F5F3FF; color:#7C3AED; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500; margin-bottom:8px;">
+          📚 {% trans 'Все домашние задания' %}
+        </a>
+        <a href="{% url 'profile' %}" style="display:block; background:#F1F5F9; color:#0A2540; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500;">
+          👤 {% trans 'Мой профиль' %}
+        </a>
+      </div>
+
+      <div class="sdb-section">
+        <h2>💳 {% trans 'Последние транзакции' %}</h2>
+        {% if recent_tx %}
+          {% for tx in recent_tx %}
+            <div class="tx-mini {% if forloop.last %}last{% endif %}">
+              <div>
+                <div style="color:#475569;">{{ tx.get_type_display }}</div>
+                <small style="color:#94A3B8;">{{ tx.created_at|date:"d M, H:i" }}</small>
+              </div>
+              <div class="tx-amt {% if tx.amount > 0 %}plus{% else %}minus{% endif %}">
+                {% if tx.amount > 0 %}+{% endif %}{{ tx.amount|floatformat:0|intcomma }}
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty">{% trans 'Пока пусто' %}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

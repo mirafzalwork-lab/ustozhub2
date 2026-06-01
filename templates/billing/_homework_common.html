@@ -1,0 +1,44 @@
+{# Общие стили + макросы для homework страниц #}
+<style>
+  .hw-page { max-width: 1000px; margin: 0 auto; padding: 32px 24px; }
+  .hw-page h1 { font-size: 26px; color: #0A2540; margin: 0 0 8px; }
+  .hw-page .subtitle { color: #64748B; margin: 0 0 24px; }
+  .hw-section h2 { font-size: 18px; color: #0A2540; margin: 28px 0 14px; }
+
+  .hw-grid { display: grid; gap: 12px; }
+  .hw-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px 22px; }
+  .hw-card.pending { border-left: 4px solid #F59E0B; }
+  .hw-card.submitted { border-left: 4px solid #3B82F6; }
+  .hw-card.graded { border-left: 4px solid #10B981; }
+  .hw-card.returned { border-left: 4px solid #EF4444; }
+  .hw-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .hw-card-head h3 { margin: 0; font-size: 16px; color: #0A2540; }
+  .hw-card-meta { color: #64748B; font-size: 13px; margin: 6px 0; }
+  .hw-status { font-size: 11px; padding: 3px 10px; border-radius: 999px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; }
+  .hw-status.assigned { background:#FFFBEB; color:#92400E; }
+  .hw-status.submitted { background:#EFF6FF; color:#1D4ED8; }
+  .hw-status.graded { background:#ECFDF5; color:#065F46; }
+  .hw-status.returned { background:#FEF2F2; color:#B91C1C; }
+  .hw-grade-badge { display: inline-block; background:#10B981; color:#fff; font-weight:700; padding: 4px 10px; border-radius: 8px; font-size: 13px; }
+
+  .hw-btn-primary { background: #7C3AED; color: #fff; padding: 10px 22px; border-radius: 8px; border: none; font-weight: 500; cursor: pointer; text-decoration: none; display: inline-block; }
+  .hw-btn-primary:hover { background: #6D28D9; }
+  .hw-btn-secondary { background: #F1F5F9; color: #0A2540; border: 1px solid #E2E8F0; padding: 10px 22px; border-radius: 8px; text-decoration: none; }
+
+  .empty-state { text-align: center; padding: 40px; background: #F8FAFC; border-radius: 12px; color: #64748B; }
+
+  .form-row { margin-bottom: 16px; }
+  .form-row label { display: block; font-weight: 500; font-size: 14px; color: #334155; margin-bottom: 6px; }
+  .form-input, .form-select { width: 100%; padding: 10px 14px; border: 1px solid #E2E8F0; border-radius: 8px; font-size: 15px; box-sizing: border-box; background: #fff; }
+  .form-input:focus, .form-select:focus { outline: none; border-color: #7C3AED; box-shadow: 0 0 0 3px rgba(124,58,237,.18); }
+  .form-row .err { color: #DC2626; font-size: 13px; margin-top: 4px; }
+
+  .file-list { display: grid; gap: 8px; margin: 12px 0; }
+  .file-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #F8FAFC; border-radius: 8px; font-size: 14px; }
+  .file-item a { color: #1D4ED8; text-decoration: none; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .file-item .size { color: #94A3B8; font-size: 12px; }
+
+  .due-label { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; }
+  .due-label.ok { background:#ECFDF5; color:#065F46; }
+  .due-label.overdue { background:#FEF2F2; color:#B91C1C; }
+</style>

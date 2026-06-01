@@ -242,24 +242,41 @@ def clear_teacher_cache(sender, instance=None, **kwargs):
 
 @receiver([post_save, post_delete], sender=Review)
 def clear_teacher_reviews_cache(sender, instance=None, **kwargs):
-    """Сбрасывает кэш учителя при добавлении/удалении отзыва"""
+    """При добавлении/удалении отзыва:
+       1) пересчитываем среднее TeacherProfile.rating + total_reviews
+       2) обновляем ranking_score
+       3) сбрасываем кэш
+    """
     try:
         if instance and instance.teacher_id:
-            # Очищаем кэш рейтинга и отзывов учителя
+            # 1) Aggregate среднее и количество
+            from django.db.models import Avg, Count
+            agg = Review.objects.filter(teacher_id=instance.teacher_id).aggregate(
+                avg=Avg('rating'), cnt=Count('id'),
+            )
+            new_rating = round(float(agg['avg'] or 0), 2)
+            new_count = agg['cnt'] or 0
+            TeacherProfile.objects.filter(pk=instance.teacher_id).update(
+                rating=new_rating, total_reviews=new_count,
+            )
+
+            # 2) Cache invalidation
             cache.delete(f'teacher_reviews_{instance.teacher_id}')
             cache.delete(f'teacher_rating_{instance.teacher_id}')
-            logger.debug(f"Кэш отзывов учителя {instance.teacher_id} очищен")
+            logger.debug(f"Rating учителя {instance.teacher_id} пересчитан: {new_rating} (n={new_count})")
 
-            # Пересчитываем ранжирование учителя после нового отзыва
+            # 3) Ranking
             try:
-                teacher = instance.teacher
-                if teacher and teacher.is_active:
+                teacher = TeacherProfile.objects.get(pk=instance.teacher_id)
+                if teacher.is_active:
                     teacher.update_ranking_score()
                     logger.debug(f"Ранжирование учителя {teacher.pk} обновлено")
+            except TeacherProfile.DoesNotExist:
+                pass
             except Exception as e:
                 logger.warning(f"Не удалось обновить ранжирование: {e}")
     except Exception as e:
-        logger.error(f"Ошибка очистки кэша отзывов: {e}", exc_info=True)
+        logger.error(f"Ошибка пересчёта rating: {e}", exc_info=True)
 
 
 @receiver(post_save, sender=User)

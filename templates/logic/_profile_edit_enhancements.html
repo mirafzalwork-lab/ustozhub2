@@ -1,0 +1,510 @@
+{# UX-улучшения для страниц редактирования профиля #}
+{# Включается в teacher_profile_edit.html и student_profile_edit.html #}
+{% load i18n %}
+
+<style>
+  /* ── Sticky save-bar внизу ─────────────────────────── */
+  .pe-savebar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(0deg, rgba(255,255,255,1) 0%, rgba(255,255,255,.97) 100%);
+    border-top: 1px solid #E2E8F0;
+    padding: 14px 20px;
+    box-shadow: 0 -6px 24px rgba(15,23,42,.08);
+    z-index: 999;
+    transform: translateY(100%);
+    transition: transform .25s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    max-width: 1100px;
+    margin: 0 auto;
+    border-radius: 14px 14px 0 0;
+  }
+  .pe-savebar.shown { transform: translateY(0); }
+  .pe-savebar .pe-savebar-text {
+    color: #475569;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pe-savebar .pe-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #F59E0B;
+    animation: pe-pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pe-pulse { 0%, 100% { opacity: .4; } 50% { opacity: 1; } }
+  .pe-savebar .pe-actions { display: flex; gap: 10px; }
+  .pe-savebar button, .pe-savebar a {
+    padding: 10px 22px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .pe-savebar .pe-save {
+    background: linear-gradient(135deg, #10B981, #059669);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(16,185,129,.3);
+  }
+  .pe-savebar .pe-save:hover { transform: translateY(-1px); }
+  .pe-savebar .pe-cancel {
+    background: #F1F5F9;
+    color: #475569;
+  }
+  .pe-savebar .pe-cancel:hover { background: #E2E8F0; }
+
+  /* ── Toast уведомления ─────────────────────────────── */
+  .pe-toast {
+    position: fixed;
+    top: 22px; right: 22px;
+    z-index: 1000;
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px 20px;
+    box-shadow: 0 12px 32px rgba(15,23,42,.18);
+    border-left: 4px solid #10B981;
+    max-width: 360px;
+    transform: translateX(120%);
+    transition: transform .3s ease;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .pe-toast.shown { transform: translateX(0); }
+  .pe-toast.error { border-left-color: #DC2626; }
+  .pe-toast.info { border-left-color: #3B82F6; }
+  .pe-toast .pe-toast-icon {
+    font-size: 20px; flex-shrink: 0;
+  }
+  .pe-toast .pe-toast-title {
+    font-weight: 600;
+    color: #0A2540;
+    font-size: 14px;
+    margin-bottom: 2px;
+  }
+  .pe-toast .pe-toast-msg {
+    font-size: 13px;
+    color: #64748B;
+    line-height: 1.4;
+  }
+  .pe-toast .pe-toast-close {
+    margin-left: auto;
+    cursor: pointer;
+    color: #94A3B8;
+    font-size: 18px;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+
+  /* ── Карточка прогресса ────────────────────────────── */
+  .pe-progress {
+    background: linear-gradient(135deg, #1E40AF, #6366F1);
+    color: #fff;
+    border-radius: 14px;
+    padding: 18px 22px;
+    margin-bottom: 18px;
+    box-shadow: 0 8px 22px rgba(99,102,241,.18);
+  }
+  .pe-progress .pe-progress-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .pe-progress .pe-progress-title {
+    font-size: 15px;
+    font-weight: 600;
+    opacity: .95;
+  }
+  .pe-progress .pe-progress-percent {
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .pe-progress .pe-progress-bar {
+    background: rgba(255,255,255,.18);
+    height: 8px;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .pe-progress .pe-progress-fill {
+    background: linear-gradient(90deg, #FCD34D, #F59E0B);
+    height: 100%;
+    border-radius: 999px;
+    transition: width .5s ease;
+  }
+  .pe-progress .pe-progress-hint {
+    margin-top: 8px;
+    font-size: 12px;
+    opacity: .85;
+  }
+
+  /* ── Якорная навигация секций ──────────────────────── */
+  .pe-anchor-nav {
+    position: sticky;
+    top: 70px;
+    z-index: 50;
+    background: #fff;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 8px;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  }
+  .pe-anchor-nav a {
+    padding: 6px 14px;
+    border-radius: 8px;
+    color: #475569;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: background .15s;
+  }
+  .pe-anchor-nav a:hover { background: #F1F5F9; color: #0A2540; }
+  .pe-anchor-nav a.active { background: #EEF2FF; color: #4338CA; }
+
+  /* ── Скрываем стандартные .alert когда есть toasts ── */
+  .pe-hide-default-alerts .alert { display: none; }
+
+  /* ── Лучше выделить input при ошибке ──────────────── */
+  .form-input:has(+ .error-message),
+  .form-input.has-error { border-color: #DC2626 !important; background: #FEF2F2 !important; }
+
+  @media (max-width: 720px) {
+    .pe-anchor-nav { top: 60px; }
+    .pe-savebar { padding: 10px 14px; gap: 10px; flex-wrap: wrap; }
+    .pe-savebar .pe-savebar-text { font-size: 12px; }
+    .pe-savebar button { padding: 8px 14px; font-size: 13px; }
+    .pe-progress { padding: 14px 16px; }
+  }
+</style>
+
+{# Карточка прогресса заполненности профиля — вставляется ВНУТРИ контейнера через JS #}
+<template id="pe-progress-tmpl">
+  <div class="pe-progress" id="pe-progress">
+    <div class="pe-progress-head">
+      <span class="pe-progress-title">📊 {% trans 'Заполненность профиля' %}</span>
+      <span class="pe-progress-percent" id="pe-progress-percent">0%</span>
+    </div>
+    <div class="pe-progress-bar"><div class="pe-progress-fill" id="pe-progress-fill" style="width: 0%;"></div></div>
+    <div class="pe-progress-hint" id="pe-progress-hint">{% trans 'Заполните больше полей, чтобы повысить шансы быть найденным' %}</div>
+  </div>
+</template>
+
+{# Sticky save-bar — вставляется в конец body через JS #}
+<template id="pe-savebar-tmpl">
+  <div class="pe-savebar" id="pe-savebar" role="status" aria-live="polite">
+    <div class="pe-savebar-text">
+      <span class="pe-dot"></span>
+      <span>{% trans 'Есть несохранённые изменения' %}</span>
+    </div>
+    <div class="pe-actions">
+      <button type="button" class="pe-cancel" id="pe-cancel-btn">{% trans 'Отменить' %}</button>
+      <button type="button" class="pe-save" id="pe-save-btn">💾 {% trans 'Сохранить' %}</button>
+    </div>
+  </div>
+</template>
+
+<script>
+(function() {
+  'use strict';
+
+  const form = document.querySelector('form[method="post"]');
+  if (!form) return;
+
+  // ── 1. Карточка прогресса заполненности ────────────────────────────
+  const editContainer = document.querySelector('.edit-container');
+  if (editContainer) {
+    const tmpl = document.getElementById('pe-progress-tmpl');
+    const node = tmpl.content.cloneNode(true);
+    // вставляем сразу после edit-header
+    const header = editContainer.querySelector('.edit-header');
+    if (header && header.nextSibling) {
+      editContainer.insertBefore(node, header.nextSibling);
+    } else {
+      editContainer.prepend(node);
+    }
+  }
+
+  // Phase 5: предпочитаем server-side completeness (из get_completeness() в TeacherProfile)
+  // — он считает только важные для conversion поля, не все input'ы подряд.
+  const serverCompleteness = form.dataset.completeness;
+
+  function calcProgress() {
+    if (serverCompleteness !== undefined && serverCompleteness !== '') {
+      return parseInt(serverCompleteness, 10) || 0;
+    }
+    // Fallback: наивный расчёт по заполненным input'ам (для student_profile_edit и пр.)
+    const inputs = form.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], input[type="number"], textarea, select');
+    let filled = 0, total = 0;
+    inputs.forEach(el => {
+      if (el.type === 'hidden' || el.name === 'csrfmiddlewaretoken' || el.disabled) return;
+      total++;
+      if (el.value && String(el.value).trim() !== '') filled++;
+    });
+    return total ? Math.round(filled / total * 100) : 0;
+  }
+
+  // Phase 5: подсветка missing-секций (из server-side completeness.missing JSON)
+  (function highlightMissingSections() {
+    const dataEl = document.getElementById('completeness-missing-data');
+    if (!dataEl) return;
+    let missing;
+    try { missing = JSON.parse(dataEl.textContent); } catch (e) { return; }
+    if (!Array.isArray(missing)) return;
+    missing.forEach(item => {
+      if (!item.anchor) return;
+      const card = document.getElementById(item.anchor);
+      if (card) {
+        card.classList.add('is-missing-completeness');
+        card.setAttribute('data-missing-label', '+' + item.boost + '%');
+      }
+    });
+  })();
+
+  // Phase 5: scroll на якорь из URL с offset для sticky nav (~80px)
+  (function scrollToHash() {
+    if (!window.location.hash) return;
+    const target = document.getElementById(window.location.hash.slice(1));
+    if (!target) return;
+    setTimeout(() => {
+      const top = target.getBoundingClientRect().top + window.pageYOffset - 90;
+      window.scrollTo({ top, behavior: 'smooth' });
+      // Briefly accent
+      target.style.transition = 'box-shadow .4s ease';
+      const prevShadow = target.style.boxShadow;
+      target.style.boxShadow = '0 0 0 6px rgba(245, 158, 11, 0.25)';
+      setTimeout(() => { target.style.boxShadow = prevShadow; }, 1800);
+    }, 200);
+  })();
+
+  // Phase 5: bio char counter с min-50
+  (function bioCounter() {
+    const counter = document.getElementById('bio-counter');
+    const bio = document.getElementById('id_bio');
+    if (!counter || !bio) return;
+    const fill = document.getElementById('bio-counter-fill');
+    const label = document.getElementById('bio-counter-label');
+    const min = parseInt(counter.dataset.min || '50', 10);
+    const max = parseInt(counter.dataset.max || '500', 10);
+    const update = () => {
+      const len = bio.value.length;
+      const ok = len >= min;
+      counter.classList.toggle('is-ok', ok);
+      const pct = Math.min((len / min) * 100, 100);
+      if (fill) fill.style.width = pct + '%';
+      if (label) {
+        if (ok) label.textContent = len + ' / ' + max + ' ' + '✓';
+        else label.textContent = len + ' / ' + min + ' мин.';
+      }
+    };
+    bio.addEventListener('input', update);
+    update();
+  })();
+
+  function refreshProgress() {
+    const p = calcProgress();
+    const percentEl = document.getElementById('pe-progress-percent');
+    const fillEl = document.getElementById('pe-progress-fill');
+    const hintEl = document.getElementById('pe-progress-hint');
+    if (percentEl) percentEl.textContent = p + '%';
+    if (fillEl) fillEl.style.width = p + '%';
+    if (hintEl) {
+      if (p >= 90) hintEl.textContent = '🎉 {% trans "Отличный профиль! Ученики будут видеть полную информацию о вас." %}';
+      else if (p >= 70) hintEl.textContent = '👍 {% trans "Профиль почти готов. Допишите оставшиеся поля для лучшей видимости." %}';
+      else if (p >= 40) hintEl.textContent = '📝 {% trans "Хорошее начало. Заполните больше полей, чтобы повысить шансы быть найденным." %}';
+      else hintEl.textContent = '✨ {% trans "Начните с базовой информации — это поможет ученикам понять, кто вы." %}';
+    }
+  }
+  refreshProgress();
+
+  // ── 2. Sticky save-bar при изменениях ──────────────────────────────
+  // Вставляем save-bar в конец body (вне любых containers — sticky/fixed работает корректно)
+  const sbTmpl = document.getElementById('pe-savebar-tmpl');
+  document.body.appendChild(sbTmpl.content.cloneNode(true));
+  const savebar = document.getElementById('pe-savebar');
+  const saveBtn = document.getElementById('pe-save-btn');
+  const cancelBtn = document.getElementById('pe-cancel-btn');
+
+  // Snapshot изначальных значений для сравнения
+  const initialFormData = new FormData(form);
+  const initialValues = {};
+  for (const [k, v] of initialFormData.entries()) {
+    if (initialValues[k] === undefined) initialValues[k] = [];
+    initialValues[k].push(String(v));
+  }
+
+  function hasChanges() {
+    const fd = new FormData(form);
+    const cur = {};
+    for (const [k, v] of fd.entries()) {
+      if (cur[k] === undefined) cur[k] = [];
+      cur[k].push(String(v));
+    }
+    // Сравним по ключам
+    const allKeys = new Set([...Object.keys(initialValues), ...Object.keys(cur)]);
+    for (const k of allKeys) {
+      const a = (initialValues[k] || []).sort().join('||');
+      const b = (cur[k] || []).sort().join('||');
+      if (a !== b) return true;
+    }
+    return false;
+  }
+
+  function syncSavebar() {
+    if (hasChanges()) savebar.classList.add('shown');
+    else savebar.classList.remove('shown');
+    refreshProgress();
+  }
+
+  form.addEventListener('input', syncSavebar);
+  form.addEventListener('change', syncSavebar);
+
+  // Submit
+  saveBtn.addEventListener('click', function() {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '⏳ {% trans "Сохраняем..." %}';
+    form.submit();
+  });
+
+  cancelBtn.addEventListener('click', async function() {
+    const ok = await window.confirmDialog('{% trans "Отменить несохранённые изменения и обновить страницу?" %}', {
+      okText: '{% trans "Отменить изменения" %}', danger: true
+    });
+    if (!ok) return;
+    window.location.reload();
+  });
+
+  // Beforeunload — предупреждение при попытке уйти
+  window.addEventListener('beforeunload', function(e) {
+    if (hasChanges() && !saveBtn.disabled) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
+
+  // ── 3. Toast: показать success/error из Django messages ────────────
+  const alerts = document.querySelectorAll('.alert');
+  if (alerts.length) {
+    document.body.classList.add('pe-hide-default-alerts');
+    alerts.forEach((a, idx) => {
+      let type = 'info';
+      let title = '{% trans "Уведомление" %}';
+      if (a.classList.contains('alert-success')) { type = 'success'; title = '{% trans "Готово" %}'; }
+      else if (a.classList.contains('alert-error') || a.classList.contains('alert-danger')) {
+        type = 'error'; title = '{% trans "Ошибка" %}';
+      }
+      setTimeout(() => showToast(title, a.textContent.trim(), type, idx === 0 ? 4000 : 6000), idx * 200);
+    });
+  }
+
+  function showToast(title, msg, type, autoCloseMs) {
+    const t = document.createElement('div');
+    t.className = 'pe-toast ' + (type === 'success' ? '' : type);
+    const icon = type === 'success' ? '✅' : type === 'error' ? '⚠️' : 'ℹ️';
+    t.innerHTML = `
+      <div class="pe-toast-icon">${icon}</div>
+      <div>
+        <div class="pe-toast-title">${escapeHTML(title)}</div>
+        <div class="pe-toast-msg">${escapeHTML(msg)}</div>
+      </div>
+      <button class="pe-toast-close" type="button" aria-label="Закрыть">&times;</button>
+    `;
+    document.body.appendChild(t);
+    setTimeout(() => t.classList.add('shown'), 30);
+    const close = () => {
+      t.classList.remove('shown');
+      setTimeout(() => t.remove(), 300);
+    };
+    t.querySelector('.pe-toast-close').addEventListener('click', close);
+    if (autoCloseMs) setTimeout(close, autoCloseMs);
+  }
+  function escapeHTML(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ── 4. Phone auto-format ───────────────────────────────────────────
+  // +998 90 123 45 67
+  const phoneInputs = form.querySelectorAll('input[name="phone"], input[name*="phone"], input[placeholder*="+998"]');
+  phoneInputs.forEach(inp => {
+    inp.addEventListener('input', function() {
+      let v = inp.value.replace(/\D/g, '');
+      if (v.startsWith('998')) v = v.slice(3);
+      if (v.length > 9) v = v.slice(0, 9);
+      let out = '+998';
+      if (v.length > 0) out += ' ' + v.slice(0, 2);
+      if (v.length > 2) out += ' ' + v.slice(2, 5);
+      if (v.length > 5) out += ' ' + v.slice(5, 7);
+      if (v.length > 7) out += ' ' + v.slice(7, 9);
+      // Если поле было пустое и юзер ничего не ввёл — не подставляем +998
+      if (v.length === 0 && inp.value.replace(/\D/g, '').length === 0) {
+        inp.value = '';
+      } else {
+        inp.value = out;
+      }
+    });
+  });
+
+  // ── 5. Якорная навигация по секциям (если ≥3 секции) ───────────────
+  const sections = document.querySelectorAll('.form-card .section-title');
+  if (sections.length >= 3 && editContainer) {
+    const nav = document.createElement('div');
+    nav.className = 'pe-anchor-nav';
+    sections.forEach((s, i) => {
+      const id = 'pe-sect-' + i;
+      const card = s.closest('.form-card');
+      if (card) card.id = id;
+      const a = document.createElement('a');
+      a.href = '#' + id;
+      a.textContent = s.textContent.trim().replace(/^[^\wА-Яа-яЁё]+/, '');
+      a.addEventListener('click', function(e) {
+        e.preventDefault();
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      nav.appendChild(a);
+    });
+    // Вставляем после прогресс-карточки
+    const after = editContainer.querySelector('#pe-progress') || editContainer.querySelector('.edit-header');
+    if (after && after.nextSibling) editContainer.insertBefore(nav, after.nextSibling);
+    else editContainer.appendChild(nav);
+
+    // Active section highlight по скроллу
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(en => {
+        if (en.isIntersecting) {
+          nav.querySelectorAll('a').forEach(a => a.classList.remove('active'));
+          const a = nav.querySelector(`a[href="#${en.target.id}"]`);
+          if (a) a.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+    sections.forEach((s, i) => {
+      const card = s.closest('.form-card');
+      if (card) observer.observe(card);
+    });
+  }
+
+  // ── 6. Auto-resize textareas ───────────────────────────────────────
+  form.querySelectorAll('textarea').forEach(t => {
+    const resize = () => {
+      t.style.height = 'auto';
+      t.style.height = (t.scrollHeight + 4) + 'px';
+    };
+    t.addEventListener('input', resize);
+    if (t.value) setTimeout(resize, 50);
+  });
+})();
+</script>

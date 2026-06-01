@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}Финансы — Админ-панель{% endblock %}
+
+{% block content %}
+<div class="ab-page">
+  <h1>💰 Финансы платформы</h1>
+  <p class="subtitle">Обзор денежного состояния и быстрые действия</p>
+
+  {% with active_tab='billing' %}{% include 'billing/admin/_base.html' %}{% endwith %}
+
+  {% if messages %}
+    {% for m in messages %}
+      <div style="padding:12px 16px; border-radius:8px; margin-bottom:14px; background:{% if m.tags == 'error' %}#FEF2F2{% elif m.tags == 'success' %}#ECFDF5{% else %}#FFFBEB{% endif %};">{{ m }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {# Алёрты, требующие действий админа #}
+  {% if pending_moderation_count or pending_withdrawals or orphan_teacher_users_count %}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; margin-bottom:18px;">
+      {% if pending_moderation_count %}
+        <a href="/admin/teachers/teacherprofile/?moderation_status__exact=pending" target="_blank"
+           style="display:block; padding:16px 18px; background:linear-gradient(135deg, #DC2626, #B91C1C); color:#fff; border-radius:12px; text-decoration:none; box-shadow:0 6px 18px rgba(220,38,38,.22);">
+          <div style="font-size:11px; opacity:.85; text-transform:uppercase; letter-spacing:.5px;">⚠ Требуют модерации</div>
+          <div style="font-size:26px; font-weight:700; margin:6px 0 2px;">{{ pending_moderation_count }} {% if pending_moderation_count == 1 %}учитель{% else %}учителей{% endif %}</div>
+          <div style="font-size:12px; opacity:.85;">Открыть в Django Admin →</div>
+        </a>
+      {% endif %}
+      {% if pending_withdrawals %}
+        <a href="{% url 'admin_billing_withdrawals' %}?status=pending"
+           style="display:block; padding:16px 18px; background:linear-gradient(135deg, #B45309, #D97706); color:#fff; border-radius:12px; text-decoration:none; box-shadow:0 6px 18px rgba(180,83,9,.22);">
+          <div style="font-size:11px; opacity:.85; text-transform:uppercase; letter-spacing:.5px;">📥 Заявки на вывод</div>
+          <div style="font-size:26px; font-weight:700; margin:6px 0 2px;">{{ pending_withdrawals }} {% if pending_withdrawals == 1 %}ждёт{% else %}ждут{% endif %}</div>
+          <div style="font-size:12px; opacity:.85;">Открыть →</div>
+        </a>
+      {% endif %}
+      {% if orphan_teacher_users_count %}
+        <div style="padding:16px 18px; background:#F1F5F9; border:1px dashed #94A3B8; color:#475569; border-radius:12px;">
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:#64748B;">🪪 Брошенные регистрации</div>
+          <div style="font-size:26px; font-weight:700; margin:6px 0 2px; color:#0A2540;">{{ orphan_teacher_users_count }}</div>
+          <div style="font-size:12px;">User(type=teacher) без TeacherProfile</div>
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="ab-cards">
+    <div class="ab-card brand">
+      <div class="lbl">Доход платформы (баланс)</div>
+      <div class="val">{{ platform_balance|floatformat:0|intcomma }} <small>сум</small></div>
+    </div>
+    <div class="ab-card success">
+      <div class="lbl">Комиссия за 30 дней</div>
+      <div class="val">{{ tx_month_revenue|floatformat:0|intcomma }} <small>сум</small></div>
+    </div>
+    <div class="ab-card warn">
+      <div class="lbl">В эскроу (всего)</div>
+      <div class="val">{{ total_escrow|floatformat:0|intcomma }} <small>сум</small></div>
+    </div>
+    <div class="ab-card">
+      <div class="lbl">Балансы пользователей</div>
+      <div class="val">{{ total_user_balances|floatformat:0|intcomma }} <small>сум</small></div>
+    </div>
+  </div>
+
+  <div class="ab-grid-2">
+    <div class="ab-section">
+      <h2>📚 Подписки</h2>
+      <div class="ab-cards" style="margin-bottom:0;">
+        <div class="ab-card">
+          <div class="lbl">Активные</div>
+          <div class="val">{{ active_subs }}</div>
+        </div>
+        <div class="ab-card">
+          <div class="lbl">Завершено</div>
+          <div class="val">{{ completed_subs }}</div>
+        </div>
+        <div class="ab-card">
+          <div class="lbl">Отменено</div>
+          <div class="val">{{ cancelled_subs }}</div>
+        </div>
+      </div>
+      <a href="{% url 'admin_billing_subscriptions' %}" class="ab-btn ab-btn-primary" style="margin-top:14px;">Все подписки →</a>
+    </div>
+
+    <div class="ab-section">
+      <h2>💸 Заявки на вывод</h2>
+      <div class="ab-cards" style="margin-bottom:0;">
+        <div class="ab-card" style="{% if pending_withdrawals %}background:#FFFBEB; border-color:#FCD34D;{% endif %}">
+          <div class="lbl">Ожидают</div>
+          <div class="val">{{ pending_withdrawals }}</div>
+        </div>
+        <div class="ab-card">
+          <div class="lbl">Одобрены</div>
+          <div class="val">{{ approved_withdrawals }}</div>
+        </div>
+        <div class="ab-card">
+          <div class="lbl">Выплачено за 30д</div>
+          <div class="val">{{ withdrawals_month_amount|floatformat:0|intcomma }}<small> сум</small></div>
+        </div>
+      </div>
+      <a href="{% url 'admin_billing_withdrawals' %}" class="ab-btn ab-btn-primary" style="margin-top:14px;">К заявкам →</a>
+    </div>
+  </div>
+
+  <div class="ab-section">
+    <h2>🚀 Быстрые действия</h2>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <a href="{% url 'admin_billing_wallets' %}" class="ab-btn ab-btn-success">💰 Пополнить баланс пользователю</a>
+      <a href="{% url 'admin_billing_withdrawals' %}?status=pending" class="ab-btn ab-btn-warning">📥 Обработать выводы ({{ pending_withdrawals }})</a>
+      <a href="/admin/billing/" class="ab-btn ab-btn-secondary">Django Admin (детально)</a>
+    </div>
+  </div>
+
+  <div class="ab-section">
+    <h2>📊 Активность</h2>
+    <div class="ab-cards" style="margin-bottom:0;">
+      <div class="ab-card">
+        <div class="lbl">Транзакций сегодня</div>
+        <div class="val">{{ tx_today }}</div>
+      </div>
+      <div class="ab-card">
+        <div class="lbl">Выплачено учителям за 30д</div>
+        <div class="val">{{ payouts_month|floatformat:0|intcomma }} <small>сум</small></div>
+      </div>
+      <div class="ab-card{% if new_users_24h %} brand{% endif %}">
+        <div class="lbl">Новых пользователей за 24ч</div>
+        <div class="val">{{ new_users_24h }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ab-grid-2">
+    <div class="ab-section">
+      <h2>💳 Последние транзакции</h2>
+      {% if recent_transactions %}
+      <table class="ab-table" style="font-size:13px;">
+        <thead><tr><th>Дата</th><th>Кому</th><th>Тип</th><th style="text-align:right;">Сумма</th></tr></thead>
+        <tbody>
+          {% for tx in recent_transactions %}
+          <tr>
+            <td style="white-space:nowrap;">{{ tx.created_at|date:"d.m H:i" }}</td>
+            <td>{{ tx.wallet.user.username }}</td>
+            <td><span style="font-size:11px;">{{ tx.get_type_display }}</span></td>
+            <td style="text-align:right; font-weight:600; color:{% if tx.amount > 0 %}#059669{% else %}#DC2626{% endif %};">
+              {% if tx.amount > 0 %}+{% endif %}{{ tx.amount|floatformat:0|intcomma }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="color:#94A3B8; padding:14px; text-align:center;">Пока пусто</p>
+      {% endif %}
+    </div>
+
+    <div class="ab-section">
+      <h2>📥 Последние заявки на вывод</h2>
+      {% if recent_withdrawals %}
+      <table class="ab-table" style="font-size:13px;">
+        <thead><tr><th>Дата</th><th>Учитель</th><th>Статус</th><th style="text-align:right;">Сумма</th></tr></thead>
+        <tbody>
+          {% for wr in recent_withdrawals %}
+          <tr>
+            <td style="white-space:nowrap;">{{ wr.created_at|date:"d.m H:i" }}</td>
+            <td>{{ wr.user.username }}</td>
+            <td><span class="ab-status {{ wr.status }}">{{ wr.get_status_display }}</span></td>
+            <td style="text-align:right; font-weight:600;">{{ wr.amount|floatformat:0|intcomma }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <a href="{% url 'admin_billing_withdrawals' %}?status=all" class="ab-btn ab-btn-secondary" style="margin-top:10px; font-size:13px;">Все →</a>
+      {% else %}
+      <p style="color:#94A3B8; padding:14px; text-align:center;">Пока пусто</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if recent_subs %}
+  <div class="ab-section">
+    <h2>📚 Последние подписки</h2>
+    <table class="ab-table" style="font-size:13px;">
+      <thead><tr><th>Дата</th><th>Ученик</th><th>Учитель</th><th>Предмет</th><th>Статус</th></tr></thead>
+      <tbody>
+        {% for s in recent_subs %}
+        <tr>
+          <td style="white-space:nowrap;">{{ s.created_at|date:"d.m H:i" }}</td>
+          <td>{{ s.student.username }}</td>
+          <td>{{ s.teacher.user.username }}</td>
+          <td>{{ s.subject.name }}</td>
+          <td><span class="ab-status {{ s.status }}">{{ s.get_status_display }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

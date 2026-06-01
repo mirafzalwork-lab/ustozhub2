@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',  # Требуется для django-allauth
     'django.contrib.sitemaps',  # SEO: /sitemap.xml
+    'django.contrib.humanize',  # intcomma для форматирования валюты
 
     # Third-party apps
     'channels',  # Django Channels для WebSocket support
@@ -76,6 +77,7 @@ INSTALLED_APPS = [
 
     # Local apps
     'teachers',
+    'billing',
 ]
 
 # ИСПРАВЛЕНО: правильный порядок middleware для i18n
@@ -351,6 +353,38 @@ VIDEO_ALLOWED_CONTENT_TYPES = ['video/mp4']
 VIDEO_PRESIGNED_URL_EXPIRY = 600  # 10 минут на загрузку
 
 # =============================================================================
+# BILLING & PAYMENTS
+# =============================================================================
+from decimal import Decimal  # noqa: E402
+
+# Валюта платформы. Денежные суммы храним в DecimalField(14, 2).
+BILLING_CURRENCY = 'UZS'
+
+# Комиссия платформы с каждого payout'а учителю (0..1, доля).
+# Snapshot этого значения пишется в Subscription.commission_rate в момент покупки —
+# изменение этой константы НЕ влияет на уже активные подписки.
+PLATFORM_COMMISSION_RATE = Decimal(os.environ.get('PLATFORM_COMMISSION_RATE', '0.15'))
+
+# Окно в часах между end_at урока и автоматическим payout учителю.
+# В это окно ученик может открыть dispute и заморозить выплату.
+PAYOUT_GRACE_HOURS = int(os.environ.get('PAYOUT_GRACE_HOURS', '24'))
+
+# Минимальная сумма для запроса вывода средств учителем.
+MIN_WITHDRAWAL_AMOUNT = Decimal(os.environ.get('MIN_WITHDRAWAL_AMOUNT', '100000.00'))
+
+# Бесплатных переносов в месяц внутри подписки (для ученика).
+SUBSCRIPTION_FREE_RESCHEDULES_PER_MONTH = int(
+    os.environ.get('SUBSCRIPTION_FREE_RESCHEDULES_PER_MONTH', '2')
+)
+
+# Минимальное число месяцев в подписке.
+SUBSCRIPTION_MIN_MONTHS = int(os.environ.get('SUBSCRIPTION_MIN_MONTHS', '1'))
+
+# Кошелёк платформы (для приёма комиссии). Создаётся миграцией data-migration
+# или management-командой; идентифицируется по username.
+PLATFORM_ACCOUNT_USERNAME = os.environ.get('PLATFORM_ACCOUNT_USERNAME', '__platform__')
+
+# =============================================================================
 # TELEGRAM BOT SETTINGS
 # =============================================================================
 
@@ -375,8 +409,12 @@ TELEGRAM_WEBAPP_URL = SITE_URL
 # КРИТИЧНО для multi-process: при LocMem кэш у каждого процесса свой,
 # инвалидация не доходит → stale data в WebSocket-процессе.
 
+# В production кэш ВСЕГДА Redis (REDIS_URL всегда определён — его уже используют
+# Channels и Celery). Раньше требовался явный env REDIS_URL/USE_REDIS_CACHE, иначе
+# прод молча падал на LocMemCache → рассинхрон бейджей между Gunicorn и Daphne.
 _use_redis_cache = os.environ.get('USE_REDIS_CACHE', '').lower() in ('true', '1', 'yes')
-if _use_redis_cache or (not DEBUG and os.environ.get('REDIS_URL')):
+_disable_redis_cache = os.environ.get('USE_REDIS_CACHE', '').lower() in ('false', '0', 'no')
+if _use_redis_cache or (not DEBUG and not _disable_redis_cache):
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.redis.RedisCache',
@@ -558,3 +596,19 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 'yes')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'UstozHub <noreply@ustozhubedu.uz>')
 SERVER_EMAIL = os.environ.get('SERVER_EMAIL', DEFAULT_FROM_EMAIL)
+
+# =============================================================================
+# 💳 WALLET TOPUP (manual flow — до интеграции Payme/Click)
+# =============================================================================
+# Реквизиты для ручного пополнения через перевод на карту.
+# Студент видит их на /billing/my/wallet/topup/, переводит, скриншот в Telegram,
+# админ начисляет через /admin/billing/wallet/<user_id>/topup/.
+# ВАЖНО: по умолчанию ПУСТО. Фейковый номер-заглушка раньше показывался
+# пользователям, если env не задан в проде → деньги уходили "в никуда".
+# Пустое значение → страница пополнения покажет «временно недоступно».
+TOPUP_CARD_NUMBER = os.environ.get('TOPUP_CARD_NUMBER', '')
+TOPUP_CARD_HOLDER = os.environ.get('TOPUP_CARD_HOLDER', 'USTOZHUB PAY')
+TOPUP_BANK_NAME = os.environ.get('TOPUP_BANK_NAME', 'Uzcard / Humo')
+TOPUP_TELEGRAM_HANDLE = os.environ.get('TOPUP_TELEGRAM_HANDLE', 'ustozhub_pay')
+TOPUP_SUPPORT_PHONE = os.environ.get('TOPUP_SUPPORT_PHONE', '+998 90 000 00 00')
+TOPUP_PROCESSING_HOURS = os.environ.get('TOPUP_PROCESSING_HOURS', '1-2')

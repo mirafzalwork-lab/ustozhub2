@@ -38,6 +38,10 @@
         </div>
         <ul class="sidebar-menu">
             <li><a href="{% url 'admin_dashboard' %}" class="active"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+            <li><a href="{% url 'admin_billing_hub' %}"><i class="fas fa-coins"></i> <span>💰 Финансы</span></a></li>
+            <li><a href="{% url 'admin_billing_wallets' %}"><i class="fas fa-wallet"></i> <span>Кошельки</span></a></li>
+            <li><a href="{% url 'admin_billing_withdrawals' %}"><i class="fas fa-money-bill-wave"></i> <span>Выводы</span></a></li>
+            <li><a href="{% url 'admin_billing_subscriptions' %}"><i class="fas fa-graduation-cap"></i> <span>Подписки</span></a></li>
             <li><a href="{% url 'admin_messages' %}"><i class="fas fa-comments"></i> <span>Сообщения</span></a></li>
             <li><a href="{% url 'telegram_management' %}"><i class="fab fa-telegram"></i> <span>Telegram</span></a></li>
             <li><a href="{% url 'daily_reminders_list' %}"><i class="fas fa-clock"></i> <span>Напоминания</span></a></li>
@@ -80,6 +84,35 @@
         </div>
         {% endfor %}
         {% endif %}
+
+        <!-- BILLING QUICK ACTIONS -->
+        <div style="background: linear-gradient(135deg, #4338CA 0%, #6366F1 100%); color: #fff; border-radius: 14px; padding: 20px 24px; margin-bottom: 22px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom: 14px;">
+                <div>
+                    <div style="font-size:13px; opacity:.85; text-transform:uppercase; letter-spacing:.5px;">💰 Финансы платформы</div>
+                    <h2 style="margin:4px 0 0; font-size:22px; font-weight:700;">Управление кошельками, выводами, подписками</h2>
+                </div>
+                <a href="{% url 'admin_billing_hub' %}" style="background:#fff; color:#4338CA; padding:10px 22px; border-radius:8px; text-decoration:none; font-weight:600; white-space:nowrap;">Открыть полностью →</a>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px;">
+                <a href="{% url 'admin_billing_wallets' %}" style="background:rgba(255,255,255,.15); color:#fff; padding:14px 18px; border-radius:10px; text-decoration:none;">
+                    <div style="font-size:13px; opacity:.85;">Кошельки</div>
+                    <div style="font-size:17px; font-weight:600; margin-top:4px;">💰 Пополнить баланс →</div>
+                </a>
+                <a href="{% url 'admin_billing_withdrawals' %}?status=pending" style="background:rgba(255,255,255,.15); color:#fff; padding:14px 18px; border-radius:10px; text-decoration:none;">
+                    <div style="font-size:13px; opacity:.85;">Заявки на вывод</div>
+                    <div style="font-size:17px; font-weight:600; margin-top:4px;">💸 Обработать →</div>
+                </a>
+                <a href="{% url 'admin_billing_subscriptions' %}" style="background:rgba(255,255,255,.15); color:#fff; padding:14px 18px; border-radius:10px; text-decoration:none;">
+                    <div style="font-size:13px; opacity:.85;">Подписки</div>
+                    <div style="font-size:17px; font-weight:600; margin-top:4px;">📚 Все подписки →</div>
+                </a>
+                <a href="/admin/billing/" style="background:rgba(255,255,255,.15); color:#fff; padding:14px 18px; border-radius:10px; text-decoration:none;">
+                    <div style="font-size:13px; opacity:.85;">Django Admin</div>
+                    <div style="font-size:17px; font-weight:600; margin-top:4px;">⚙️ Детально →</div>
+                </a>
+            </div>
+        </div>
 
         <!-- QUICK ACTIONS -->
         <div class="quick-actions">

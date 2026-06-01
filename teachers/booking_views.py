@@ -691,14 +691,69 @@ def booking_create_api(request):
     message = (data.get('message') or '').strip()
     is_trial = bool(data.get('is_trial', False))
 
+    # Phase 9.5: для пробного выясняем — платный или бесплатный.
+    # Платный → проходит через TrialService (debit + escrow + idempotency).
+    # Бесплатный → обычный create_hold (без денег).
+    teacher_subject = None
+    if is_trial:
+        try:
+            slot_obj = TimeSlot.objects.get(pk=slot_id)
+        except TimeSlot.DoesNotExist:
+            return _json_error('Слот не найден', status=404)
+
+        if subject is None:
+            return _json_error('subject_id обязателен для пробного урока', status=400)
+
+        from .models import TeacherSubject
+        teacher_subject = TeacherSubject.objects.filter(
+            teacher=slot_obj.teacher, subject=subject,
+        ).first()
+        if teacher_subject is None:
+            return _json_error('Учитель не преподаёт этот предмет', status=400)
+
+        # Анти-абуз: один пробный на (student, teacher, subject).
+        from billing.services import TrialService
+        if TrialService._existing_trial_qs(
+            request.user, slot_obj.teacher, subject,
+        ).exists():
+            return _json_error(
+                'У вас уже есть пробный урок с этим учителем по этому предмету.',
+                status=409,
+            )
+
     try:
-        booking = Booking.create_hold(
-            slot_id=slot_id,
-            student=request.user,
-            subject=subject,
-            message=message,
-            is_trial=is_trial,
-        )
+        if is_trial and teacher_subject and not teacher_subject.is_free_trial \
+                and teacher_subject.trial_price:
+            # Платный пробный — через TrialService (с debit'ом).
+            from billing.services import (
+                InsufficientFunds, TrialAlreadyTaken, TrialNotPaid, TrialService,
+            )
+            try:
+                booking = TrialService.book_paid_trial(
+                    student=request.user,
+                    slot_id=slot_id,
+                    teacher_subject=teacher_subject,
+                    message=message,
+                )
+            except InsufficientFunds as e:
+                return _json_error(
+                    f'Недостаточно средств на балансе для оплаты пробного урока '
+                    f'({int(teacher_subject.trial_price)} сум). Пополните кошелёк.',
+                    status=402,
+                )
+            except TrialAlreadyTaken as e:
+                return _json_error(str(e), status=409)
+            except TrialNotPaid as e:
+                # Не должно случиться — branch гарантирует, но защита.
+                return _json_error(str(e), status=400)
+        else:
+            booking = Booking.create_hold(
+                slot_id=slot_id,
+                student=request.user,
+                subject=subject,
+                message=message,
+                is_trial=is_trial,
+            )
     except SlotUnavailable as e:
         return _json_error(f'Слот уже занят или прошёл: {e}', status=409)
     except TimeSlot.DoesNotExist:
@@ -742,17 +797,23 @@ def booking_cancel_api(request, booking_id):
             if booking.status == 'pending':
                 booking.reject(teacher_reply=(json.loads(request.body or '{}').get('reply', '')))
             else:
-                # confirmed → cancelled_by_teacher
-                booking.status = 'cancelled_by_teacher'
-                booking.save(update_fields=['status', 'updated_at'])
-                booking.slot.status = 'free'
-                booking.slot.hold_expires_at = None
-                booking.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+                # confirmed → cancelled_by_teacher (race-safe, под select_for_update)
+                booking.cancel_by_teacher()
             _notify_student_about_decision(booking, decision='cancelled')
         else:
             return _json_error('Доступ запрещён', status=403)
     except ValueError as e:
         return _json_error(str(e), status=409)
+
+    # Phase 9.5: refund платного пробного при отмене любой стороной.
+    if booking.is_trial and booking.trial_price_paid:
+        try:
+            from billing.services import TrialService
+            refunded = TrialService.refund_trial(booking, reason='Отмена бронирования')
+            if refunded > 0:
+                logger.info(f'Trial refund: booking={booking.id}, amount={refunded}')
+        except Exception as e:
+            logger.error(f'Trial refund failed for booking={booking.id}: {e}', exc_info=True)
 
     return JsonResponse({'booking': _booking_to_dict(booking)})
 
@@ -799,7 +860,7 @@ def booking_reschedule_api(request, booking_id):
 # ---------------------------------------------------------------- TEACHER --
 
 _MEETING_URL_MAX_LEN = 500
-_MEETING_URL_ALLOWED_SCHEMES = ('https://', 'http://')
+_MEETING_URL_ALLOWED_SCHEMES = ('https://',)
 
 
 def _validate_meeting_url(url: str) -> tuple[bool, str]:
@@ -813,7 +874,7 @@ def _validate_meeting_url(url: str) -> tuple[bool, str]:
     if len(url) > _MEETING_URL_MAX_LEN:
         return False, f'URL слишком длинный (макс {_MEETING_URL_MAX_LEN})'
     if not url.lower().startswith(_MEETING_URL_ALLOWED_SCHEMES):
-        return False, 'Ссылка должна начинаться с https:// или http://'
+        return False, 'Ссылка должна начинаться с https://'
     # Минимальная sanity-проверка: должен быть хост
     from urllib.parse import urlparse
     try:
@@ -926,6 +987,14 @@ def booking_reject_api(request, booking_id):
         booking.reject(teacher_reply=reply)
     except ValueError as e:
         return _json_error(str(e), status=409)
+
+    # Phase 9.5: refund платного пробного, если учитель reject'нул.
+    if booking.is_trial and booking.trial_price_paid:
+        try:
+            from billing.services import TrialService
+            TrialService.refund_trial(booking, reason=f'Отказ учителя: {reply[:100]}')
+        except Exception as e:
+            logger.error(f'Trial refund failed for booking={booking.id}: {e}', exc_info=True)
 
     _notify_student_about_decision(booking, decision='rejected')
     logger.info(f'Booking rejected: {booking.pk}')
@@ -1061,10 +1130,13 @@ def book_teacher_page(request, teacher_id: int):
         messages.error(request, 'Учитель не найден')
         return redirect('home')
 
-    # Подгружаем предметы учителя для select
+    # Подгружаем предметы учителя для select (включая trial_price и trial_duration)
     teacher_subjects = list(
         teacher.teachersubject_set.select_related('subject')
-        .values('subject__id', 'subject__name', 'hourly_rate', 'is_free_trial')
+        .values(
+            'subject__id', 'subject__name', 'hourly_rate',
+            'is_free_trial', 'trial_price', 'trial_duration_minutes',
+        )
     )
 
     return render(request, 'booking/book_teacher.html', {
@@ -1151,10 +1223,8 @@ def leave_review(request, booking_id):
         return redirect('my_bookings_page')
 
     teacher = booking.slot.teacher
-    # Существующий отзыв этого ученика этому учителю по этому предмету
-    existing = Review.objects.filter(
-        teacher=teacher, student=request.user, subject=booking.subject,
-    ).first()
+    # Per-booking Review (OneToOne booking) — один отзыв = один урок.
+    existing = Review.objects.filter(booking=booking).first()
 
     if request.method == 'POST':
         def _clamp(name, default=5):
@@ -1165,23 +1235,25 @@ def leave_review(request, booking_id):
             return max(1, min(5, v))
 
         rating = _clamp('rating')
-        # Детальные оценки опциональны — по умолчанию равны общей
         knowledge = _clamp('knowledge_rating', rating)
         communication = _clamp('communication_rating', rating)
         punctuality = _clamp('punctuality_rating', rating)
         comment = (request.POST.get('comment') or '').strip()[:1000]
 
-        review = existing or Review(teacher=teacher, student=request.user, subject=booking.subject)
+        review = existing or Review(teacher=teacher, student=request.user, subject=booking.subject, booking=booking)
         review.rating = rating
         review.knowledge_rating = knowledge
         review.communication_rating = communication
         review.punctuality_rating = punctuality
         review.comment = comment
-        review.booking = booking
         review.is_verified = True
         review.save()
 
         messages.success(request, 'Спасибо! Ваш отзыв сохранён.')
+        # Если пришли из подписки — возвращаем на /my/subscriptions/
+        next_url = request.POST.get('next') or request.GET.get('next')
+        if next_url and next_url.startswith('/'):
+            return redirect(next_url)
         return redirect('teacher_detail', id=teacher.pk)
 
     return render(request, 'booking/leave_review.html', {
@@ -1250,6 +1322,21 @@ def _notify_student_about_decision(booking: Booking, decision: str):
         )
     except Exception as e:
         logger.warning(f'_notify_student_about_decision failed: {e}')
+
+    # Отдельный WS-event для live-обновления открытой booking-modal у студента.
+    # Notification идёт своим путём (toast + badge); booking_status — узкий канал
+    # для UI-страниц, которые ждут конкретного booking.
+    try:
+        from .consumers import notify_user
+        notify_user(booking.student_id, 'booking_status_changed', {
+            'booking_id': str(booking.id),
+            'status': booking.status,
+            'decision': decision,
+            'meeting_url': booking.meeting_url or '',
+            'teacher_reply': booking.teacher_reply or '',
+        })
+    except Exception as e:
+        logger.warning(f'booking_status_changed WS push failed: {e}')
 
 
 def _notify_teacher_about_cancellation(booking: Booking, by: str):

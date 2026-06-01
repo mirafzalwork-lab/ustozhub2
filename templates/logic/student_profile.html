@@ -793,8 +793,20 @@
                 {% endif %}
             </div>
             <div class="profile-actions">
+                <a href="{% url 'dashboard' %}" class="btn btn-primary" style="background: linear-gradient(135deg, #0F766E, #14B8A6);">
+                    <i class="fas fa-tachometer-alt"></i> {% trans 'Дашборд' %}
+                </a>
                 <a href="{% url 'student_profile_edit' %}" class="btn btn-primary">
                     <i class="fas fa-edit"></i> {% trans 'Редактировать профиль' %}
+                </a>
+                <a href="{% url 'my_subscriptions' %}" class="btn btn-primary" style="background: linear-gradient(135deg, #14B8A6, #0F766E);">
+                    <i class="fas fa-graduation-cap"></i> {% trans 'Мои подписки' %}
+                </a>
+                <a href="{% url 'student_homework_list' %}" class="btn btn-primary" style="background: linear-gradient(135deg, #7C3AED, #6D28D9);">
+                    <i class="fas fa-book-open"></i> {% trans 'Домашние задания' %}
+                </a>
+                <a href="{% url 'my_progress' %}" class="btn btn-primary" style="background: linear-gradient(135deg, #2563EB, #1D4ED8);">
+                    <i class="fas fa-chart-line"></i> {% trans 'Мой прогресс' %}
                 </a>
                 <!-- Preview button added to match teacher profile actions -->
                 <a href="{% url 'home' %}" class="btn btn-success">
@@ -809,6 +821,9 @@
             </div>
         </div>
     </div>
+
+    {# Кошелёк #}
+    {% include 'billing/_wallet_card.html' %}
 
     <!-- Блок статистики -->
     <div class="stats-grid">

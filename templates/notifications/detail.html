@@ -657,8 +657,11 @@
         if ($confirm) $confirm.addEventListener('click', () => {
             act(cfg.confirmUrl, { reply: $reply.value.trim(), meeting_url: $url.value.trim() }, $confirm);
         });
-        if ($reject) $reject.addEventListener('click', () => {
-            if (!confirm('Отклонить эту заявку? Слот снова станет свободным.')) return;
+        if ($reject) $reject.addEventListener('click', async () => {
+            const ok = await window.confirmDialog('{% trans "Отклонить эту заявку? Слот снова станет свободным." %}', {
+                okText: '{% trans "Отклонить" %}', danger: true
+            });
+            if (!ok) return;
             act(cfg.rejectUrl, { reply: $reply.value.trim() }, $reject);
         });
 

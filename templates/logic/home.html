@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load i18n %}
+{% load humanize %}
 {% block title %}{% trans "UstozHub — найти репетитора в Узбекистане" %}{% endblock %}
 {% block meta_description %}{% trans "Тысячи проверенных репетиторов в Узбекистане. Английский, математика, узбекский, IT, подготовка к ЕГЭ — выбирайте учителя, бронируйте онлайн-урок." %}{% endblock %}
 {% block og_title %}{% trans "UstozHub — найти репетитора в Узбекистане" %}{% endblock %}
@@ -673,6 +674,11 @@
         white-space: nowrap;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
         transition: all 0.2s;
+    }
+    .subject-tag.subject-tag--more {
+        background: #F1F5F9;
+        color: #475569;
+        box-shadow: none;
     }
 
 
@@ -1804,7 +1810,7 @@
                                     {% trans 'от' %}
                                     <span class="hero-price-value">
                                         {% with first_ts=ts_list.0 %}
-                                            {% if first_ts %}{{ first_ts.hourly_rate|floatformat:0 }}{% else %}—{% endif %}
+                                            {% if first_ts %}{{ first_ts.hourly_rate|floatformat:0|intcomma }}{% else %}—{% endif %}
                                         {% endwith %}
                                         <small>{% trans 'сум/ч' %}</small>
                                     </span>
@@ -2081,6 +2087,11 @@
                                         {% for ts in teacher.teachersubject_set.all|slice:":3" %}
                                             <span class="subject-tag">{{ ts.subject.name }}</span>
                                         {% endfor %}
+                                        {% with subj_total=teacher.teachersubject_set.count %}
+                                            {% if subj_total > 3 %}
+                                                <span class="subject-tag subject-tag--more">+{{ subj_total|add:"-3" }}</span>
+                                            {% endif %}
+                                        {% endwith %}
                                     </div>
 
                                     <div class="teacher-languages">
@@ -2116,13 +2127,13 @@
                                     {% with min_price=teacher.get_min_price %}
                                         <div class="teacher-price">
                                             {% if min_price > 0 %}
-                                                {% trans 'от' %} {{ min_price|floatformat:0 }} {% trans 'сум' %}
+                                                {% trans 'от' %} {{ min_price|floatformat:0|intcomma }} {% trans 'сум' %}
                                             {% else %}
                                                 {% trans 'Договорная' %}
                                             {% endif %}
                                         </div>
                                     {% endwith %}
-                                    <div class="price-period">60-{% trans 'мин. урок' %}</div>
+                                    <div class="price-period">{% trans 'за час' %}</div>
                                 </div>
 
                                 <div class="action-buttons">
@@ -2176,8 +2187,11 @@
             {% else %}
                 <div class="no-results">
                     <i class="fas fa-search"></i>
-                    <h3>{% trans 'No results found' %}</h3>
-                    <p>{% trans 'Try adjusting your search or filters' %}</p>
+                    <h3>{% trans 'Ничего не нашлось' %}</h3>
+                    <p>{% trans 'Попробуйте изменить фильтры или ослабить условия поиска.' %}</p>
+                    <a href="{% url 'home' %}" class="btn-primary" style="margin-top:18px; display:inline-flex; align-items:center; gap:8px; padding:12px 22px; border-radius:10px; background:linear-gradient(135deg,#10B981,#059669); color:#fff; text-decoration:none; font-weight:600;">
+                        <i class="fas fa-rotate-left"></i> {% trans 'Сбросить все фильтры' %}
+                    </a>
                 </div>
             {% endif %}
         </section>

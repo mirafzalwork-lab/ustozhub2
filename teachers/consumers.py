@@ -277,7 +277,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
             elif message_type == 'mark_as_read':
                 # ✅ Помечаем сообщения как прочитанные с обработкой ошибок
                 try:
-                    await self.mark_messages_as_read()
+                    updated_count = await self.mark_messages_as_read()
+                    if updated_count:
+                        await self.channel_layer.group_send(
+                            self.room_group_name,
+                            {
+                                'type': 'messages_read',
+                                'reader_id': self.user.pk,
+                                'count': updated_count,
+                                'read_at': timezone.now().isoformat(),
+                            }
+                        )
                 except Exception as e:
                     logger.error(f"Error marking messages as read: {e}")
                     await self.send_error('Failed to mark messages as read')
@@ -296,19 +306,35 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """
         try:
             message_data = event.get('message_data')
-            
+
             if not message_data:
                 logger.error(f"Missing message_data in chat_message event")
                 return
-            
+
             # ✅ Отправляем сообщение WebSocket клиенту
             await self.send(text_data=json.dumps({
                 'type': 'chat_message',
                 'message_data': message_data
             }))
-        
+
         except Exception as e:
             logger.error(f"Error in chat_message handler for user_id={self.user.pk}: {e}", exc_info=True)
+
+    async def messages_read(self, event):
+        """
+        ✅ Уведомление об отметке сообщений как прочитанных другим участником.
+        Отправляем только отправителю — чтобы он обновил статус ✓ → ✓✓.
+        """
+        try:
+            if event.get('reader_id') == self.user.pk:
+                return  # не отправляем себе
+            await self.send(text_data=json.dumps({
+                'type': 'messages_read',
+                'reader_id': event.get('reader_id'),
+                'read_at': event.get('read_at'),
+            }))
+        except Exception as e:
+            logger.error(f"Error in messages_read handler for user_id={self.user.pk}: {e}", exc_info=True)
 
     async def send_error(self, error_message):
         """
@@ -431,12 +457,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def mark_messages_as_read(self):
         """
-        ✅ Помечает сообщения как прочитанные
+        ✅ Помечает сообщения как прочитанные.
+        Возвращает количество обновлённых сообщений.
         """
         try:
             if not self.conversation:
-                return
-            
+                return 0
+
             updated_count = Message.objects.filter(
                 conversation=self.conversation,
                 is_read=False
@@ -453,9 +480,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 f"Marked {updated_count} messages as read for user_id={self.user.pk} "
                 f"in conversation {self.conversation_id}"
             )
-        
+            return updated_count
+
         except Exception as e:
             logger.error(f"Error marking messages as read: {e}", exc_info=True)
+            return 0
 
     @database_sync_to_async
     def check_rate_limit(self):

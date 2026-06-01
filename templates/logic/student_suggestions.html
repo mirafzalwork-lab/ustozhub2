@@ -1,51 +1,445 @@
 {% extends 'base.html' %}
 {% load i18n %}
+{% load humanize %}
 
 {% block title %}{% trans 'Подходящие учителя' %} - UstozHub{% endblock %}
 
-{% block content %}
-<div style="max-width:1200px;margin:0 auto;padding:32px 16px;">
-  <h1 style="font-size:24px;font-weight:700;margin-bottom:8px;">{% trans 'Подходящие учителя' %}</h1>
-  {% if desired_subjects %}
-    <div style="color:#666;margin-bottom:16px;">
-      {% trans 'По вашим предметам' %}: 
-      {{ desired_subjects|join:", " }}
-    </div>
-  {% endif %}
+{% block extra_css %}
+<style>
+/* ============================================
+   🎯 SMART MATCHING — Phase 8
+   ============================================ */
+.sm-hero {
+    max-width: 920px;
+    margin: 0 auto 24px;
+    padding: 28px 24px;
+    background: linear-gradient(135deg, #EFF6FF 0%, #FAF5FF 100%);
+    border: 1px solid #DDD6FE;
+    border-radius: 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+.sm-hero::before {
+    content: "✨";
+    position: absolute;
+    top: 16px; right: 24px;
+    font-size: 28px;
+    opacity: 0.5;
+    transform: rotate(15deg);
+}
+.sm-hero h1 {
+    font-size: 26px;
+    font-weight: 800;
+    color: #0F172A;
+    margin: 0 0 6px;
+    letter-spacing: -0.02em;
+}
+.sm-hero p {
+    font-size: 15px;
+    color: #475569;
+    margin: 0 0 14px;
+    line-height: 1.5;
+}
+.sm-hero__meta {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #334155;
+}
+.sm-criteria-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    background: white;
+    border: 1px solid #C7D2FE;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #4338CA;
+}
 
-  {% if teachers %}
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;">
-      {% for t in teachers %}
-        <a href="{% url 'teacher_detail' t.id %}" style="display:block;padding:16px;background:#fff;border-radius:12px;text-decoration:none;color:inherit;border:2px solid #e9ecef;">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:48px;height:48px;border-radius:50%;background:#3B82F6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;overflow:hidden;">
-              {% if t.user.avatar %}
-                <img src="{{ t.user.avatar.url }}" alt="{{ t.user.get_full_name }}" style="width:100%;height:100%;object-fit:cover;">
-              {% else %}
-                {{ t.user.first_name.0|default:"У" }}
-              {% endif %}
-            </div>
-            <div style="flex:1;">
-              <div style="font-weight:700;">{{ t.user.get_full_name|default:t.user.username }}</div>
-              <div style="font-size:12px;color:#666;">{{ t.get_subjects_display }}</div>
-            </div>
-          </div>
-          <div style="margin-top:10px;font-size:14px;color:#0A2540;font-weight:600;">
-            {% trans 'от' %} {{ t.get_min_price|floatformat:0 }} {% trans 'сум/час' %}
-          </div>
-        </a>
-      {% endfor %}
-    </div>
-  {% else %}
-    <div style="text-align:center;color:#999;padding:40px;">
-      <i class="fas fa-search" style="font-size:42px;color:#ddd;"></i>
-      <p style="margin-top:12px;">{% trans 'Мы не нашли учителей по указанным предметам. Попробуйте обновить профиль или посмотрите лучших учителей.' %}</p>
-      <a href="{% url 'home' %}" class="btn btn-primary" style="display:inline-block;margin-top:8px;">{% trans 'Посмотреть учителей' %}</a>
-    </div>
-  {% endif %}
-</div>
+/* ============================================
+   Match cards
+   ============================================ */
+.sm-container {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 0 16px 60px;
+}
+.sm-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.sm-card {
+    background: white;
+    border: 1px solid #E5E7EB;
+    border-radius: 16px;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 80px 1fr auto;
+    gap: 16px;
+    transition: all 200ms ease;
+    position: relative;
+    overflow: hidden;
+}
+.sm-card:hover {
+    border-color: #818CF8;
+    box-shadow: 0 6px 18px -4px rgba(79,70,229,0.18);
+    transform: translateY(-2px);
+}
+.sm-card.is-top {
+    border-color: #FCD34D;
+    background: linear-gradient(180deg, #FFFBEB 0%, white 30%);
+}
+.sm-card.is-top::before {
+    content: "🏆 " attr(data-top-label);
+    position: absolute;
+    top: 0; left: 20px;
+    padding: 3px 12px 4px;
+    background: #FCD34D;
+    color: #78350F;
+    font-size: 11px;
+    font-weight: 800;
+    border-radius: 0 0 8px 8px;
+    letter-spacing: 0.02em;
+}
+
+.sm-card__avatar {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0A2540, #1e4a72);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 700;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.sm-card__avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.sm-card__body { min-width: 0; }
+.sm-card__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.sm-card__name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0F172A;
+    text-decoration: none;
+    line-height: 1.2;
+}
+.sm-card__name:hover { color: #4338CA; }
+.sm-card__score {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+.sm-card__score--high { background: #DCFCE7; color: #15803D; }
+.sm-card__score--med  { background: #FEF3C7; color: #92400E; }
+.sm-card__score--low  { background: #F3F4F6; color: #4B5563; }
+
+.sm-card__sub {
+    font-size: 13px;
+    color: #64748B;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.sm-card__sub .dot { color: #CBD5E1; }
+
+.sm-card__factors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+.sm-factor {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid;
+    line-height: 1.2;
+}
+.sm-factor.is-matched {
+    background: #ECFDF5;
+    color: #065F46;
+    border-color: #A7F3D0;
+}
+.sm-factor.is-unmatched {
+    background: #F9FAFB;
+    color: #94A3B8;
+    border-color: #E5E7EB;
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+.sm-card__price {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0F172A;
+}
+.sm-card__price small { font-size: 12px; color: #64748B; font-weight: 500; }
+
+.sm-card__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+    min-width: 160px;
+}
+.sm-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 150ms ease;
+    white-space: nowrap;
+}
+.sm-btn--primary {
+    background: #4F46E5;
+    color: white;
+}
+.sm-btn--primary:hover { background: #4338CA; }
+.sm-btn--ghost {
+    background: white;
+    color: #4338CA;
+    border-color: #C7D2FE;
+}
+.sm-btn--ghost:hover { background: #EEF2FF; }
+
+/* ============================================
+   Empty state + footer CTA
+   ============================================ */
+.sm-empty {
+    text-align: center;
+    padding: 60px 20px;
+    background: white;
+    border: 2px dashed #E5E7EB;
+    border-radius: 20px;
+}
+.sm-empty__icon { font-size: 56px; opacity: 0.4; }
+.sm-empty__title {
+    font-size: 18px; font-weight: 700; color: #1F2937;
+    margin: 16px 0 8px;
+}
+.sm-empty__text {
+    color: #6B7280; font-size: 14px; max-width: 420px;
+    margin: 0 auto 20px;
+}
+
+.sm-footer-cta {
+    margin-top: 28px;
+    padding: 22px;
+    background: #F8FAFC;
+    border-radius: 16px;
+    text-align: center;
+}
+.sm-footer-cta__title {
+    font-size: 15px;
+    color: #475569;
+    margin: 0 0 12px;
+}
+.sm-footer-cta__btns {
+    display: inline-flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 720px) {
+    .sm-hero h1 { font-size: 22px; }
+    .sm-hero p { font-size: 14px; }
+    .sm-card {
+        grid-template-columns: 60px 1fr;
+    }
+    .sm-card__avatar { width: 60px; height: 60px; font-size: 22px; }
+    .sm-card__actions {
+        grid-column: 1 / -1;
+        flex-direction: row;
+        min-width: 0;
+    }
+    .sm-card__actions .sm-btn { flex: 1; }
+    .sm-card.is-top::before { left: 12px; }
+}
+</style>
 {% endblock %}
 
+{% block content %}
+<div class="sm-container">
 
+    <div class="sm-hero">
+        <h1>
+            {% if matches %}
+                {% blocktrans count counter=matches|length %}Мы подобрали для вас {{ counter }} учителя{% plural %}Мы подобрали для вас {{ counter }} учителей{% endblocktrans %}
+            {% else %}
+                {% trans "Расскажите немного о себе" %}
+            {% endif %}
+        </h1>
+        <p>
+            {% if matches %}
+                {% trans "Отсортировано по тому, насколько они вам подходят. Чем выше %, тем больше совпадений по предмету, бюджету, формату и городу." %}
+            {% else %}
+                {% trans "Чтобы получить персональные рекомендации, выберите интересующие предметы и заполните бюджет." %}
+            {% endif %}
+        </p>
+        {% if profile_fields_filled %}
+            <div class="sm-hero__meta">
+                <span>{% trans "Учли:" %}</span>
+                {% if has_desired %}
+                    <span class="sm-criteria-chip">📚 {{ desired_subjects|join:", " }}</span>
+                {% endif %}
+                {% if student.budget_max %}
+                    <span class="sm-criteria-chip">💰 {% trans "до" %} {{ student.budget_max|floatformat:0|intcomma }} {% trans "сум/час" %}</span>
+                {% elif student.budget_min %}
+                    <span class="sm-criteria-chip">💰 {% trans "от" %} {{ student.budget_min|floatformat:0|intcomma }} {% trans "сум/час" %}</span>
+                {% endif %}
+                {% if student.city %}
+                    <span class="sm-criteria-chip">📍 {{ student.city.name }}</span>
+                {% endif %}
+                {% if student.learning_format and student.learning_format != 'both' %}
+                    <span class="sm-criteria-chip">
+                        {% if student.learning_format == 'online' %}🏠 {% trans "Онлайн" %}{% else %}📍 {% trans "Офлайн" %}{% endif %}
+                    </span>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
 
+    {% if matches %}
+        <div class="sm-cards">
+            {% for m in matches %}
+                {% with t=m.teacher %}
+                <article class="sm-card{% if forloop.first and m.score and m.score >= 70 %} is-top{% endif %}"
+                         {% if forloop.first and m.score and m.score >= 70 %}data-top-label="{% trans 'Лучшее совпадение' %}"{% endif %}>
+                    <div class="sm-card__avatar">
+                        {% if t.user.avatar %}
+                            <img src="{{ t.user.avatar.url }}" alt="{{ t.user.get_full_name }}">
+                        {% else %}
+                            {{ t.user.first_name.0|default:"У"|upper }}{{ t.user.last_name.0|default:""|upper }}
+                        {% endif %}
+                    </div>
 
+                    <div class="sm-card__body">
+                        <div class="sm-card__head">
+                            <a href="{% url 'teacher_detail' t.id %}" class="sm-card__name">
+                                {{ t.user.get_full_name|default:t.user.username }}
+                            </a>
+                            {% if m.score is not None %}
+                                <span class="sm-card__score
+                                    {% if m.score >= 70 %}sm-card__score--high
+                                    {% elif m.score >= 45 %}sm-card__score--med
+                                    {% else %}sm-card__score--low{% endif %}">
+                                    🎯 {{ m.score }}% {% trans "совпадение" %}
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <div class="sm-card__sub">
+                            {% if t.experience_years %}
+                                <span>{{ t.experience_years }} {% trans "лет опыта" %}</span><span class="dot">•</span>
+                            {% endif %}
+                            {% if t.city %}
+                                <span>📍 {{ t.city.name }}</span><span class="dot">•</span>
+                            {% endif %}
+                            {% if t.total_reviews %}
+                                <span>⭐ {{ t.rating|floatformat:1 }} ({{ t.total_reviews }})</span><span class="dot">•</span>
+                            {% endif %}
+                            <span class="sm-card__price">
+                                {% trans "от" %} {{ t.get_min_price|floatformat:0|intcomma }}<small> {% trans "сум/час" %}</small>
+                            </span>
+                        </div>
+
+                        {% if m.factors %}
+                            <div class="sm-card__factors">
+                                {% for f in m.factors %}
+                                    <span class="sm-factor {% if f.matched %}is-matched{% else %}is-unmatched{% endif %}">
+                                        {{ f.icon }} {{ f.label }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="sm-card__actions">
+                        <a href="{% url 'teacher_detail' t.id %}" class="sm-btn sm-btn--primary">
+                            {% trans "Открыть профиль" %}
+                        </a>
+                        <a href="{% url 'start_conversation' user_id=t.user.id %}" class="sm-btn sm-btn--ghost">
+                            💬 {% trans "Написать" %}
+                        </a>
+                    </div>
+                </article>
+                {% endwith %}
+            {% endfor %}
+        </div>
+
+        <div class="sm-footer-cta">
+            <p class="sm-footer-cta__title">
+                {% trans "Хотите больше вариантов?" %}
+            </p>
+            <div class="sm-footer-cta__btns">
+                <a href="{% url 'home' %}" class="sm-btn sm-btn--primary">
+                    🔍 {% trans "Все учителя в каталоге" %}
+                </a>
+                <a href="{% url 'student_profile_edit' %}" class="sm-btn sm-btn--ghost">
+                    ✏️ {% trans "Уточнить мои предпочтения" %}
+                </a>
+            </div>
+        </div>
+    {% else %}
+        <div class="sm-empty">
+            <div class="sm-empty__icon">🔎</div>
+            <div class="sm-empty__title">{% trans "Пока без рекомендаций" %}</div>
+            <div class="sm-empty__text">
+                {% if not has_desired %}
+                    {% trans "Укажите интересующие предметы — мы сразу подберём подходящих учителей." %}
+                {% else %}
+                    {% trans "По вашим предметам мы пока не нашли подходящих учителей. Посмотрите каталог или измените фильтры." %}
+                {% endif %}
+            </div>
+            <a href="{% url 'student_profile_edit' %}" class="sm-btn sm-btn--primary">
+                ✏️ {% trans "Заполнить профиль" %}
+            </a>
+            <span style="display:inline-block;width:8px;"></span>
+            <a href="{% url 'home' %}" class="sm-btn sm-btn--ghost">
+                🔍 {% trans "Перейти в каталог" %}
+            </a>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

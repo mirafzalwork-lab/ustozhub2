@@ -1820,7 +1820,7 @@
                         {% if user.is_authenticated and user.user_type == 'teacher' and user != student.user %}
                             <!-- Онлайн чат с real-time сообщениями -->
                             <a href="{% url 'start_conversation' user_id=student.user.id %}" class="btn-primary" style="background: linear-gradient(135deg, #10B981, #059669); border: none;">
-                                <i class="fas fa-bolt"></i>
+                                <i class="fas fa-comment-dots"></i>
                                 {% trans "Чат онлайн" %}
                             </a>
                         {% endif %}

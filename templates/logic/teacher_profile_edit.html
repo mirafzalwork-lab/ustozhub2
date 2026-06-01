@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}Редактирование профиля учителя - UstozHub{% endblock %}
 
@@ -603,6 +604,46 @@
             background: #f9fafb;
         }
     }
+
+    /* ===== Missing-section highlight (Phase 5) ===== */
+    .form-card.is-missing-completeness {
+        border: 2px solid #F59E0B;
+        box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.12);
+        position: relative;
+    }
+    .form-card.is-missing-completeness::before {
+        content: '🔥 ' attr(data-missing-label);
+        position: absolute; top: -12px; left: 20px;
+        padding: 4px 12px; background: #F59E0B; color: #fff;
+        border-radius: 999px; font-size: 11px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: .5px;
+    }
+
+    /* Bio counter (Phase 5) */
+    .bio-counter {
+        display: flex; align-items: center; gap: 10px;
+        margin-top: 6px; font-size: 12px;
+    }
+    .bio-counter__bar {
+        flex: 1; max-width: 200px;
+        height: 4px; background: #E2E8F0; border-radius: 2px; overflow: hidden;
+    }
+    .bio-counter__fill {
+        height: 100%; background: #F59E0B; transition: width .2s ease;
+    }
+    .bio-counter.is-ok .bio-counter__fill { background: #10B981; }
+    .bio-counter__label { color: #94A3B8; font-variant-numeric: tabular-nums; }
+    .bio-counter.is-ok .bio-counter__label { color: #059669; }
+
+    /* Subjects warning (Phase 5) */
+    .subjects-warning {
+        display: flex; align-items: center; gap: 12px;
+        padding: 14px 18px; margin: 12px 0;
+        background: #FEF3C7; border: 1px solid #FCD34D; border-radius: 10px;
+        font-size: 14px; color: #92400E;
+    }
+    .subjects-warning i { font-size: 22px; color: #D97706; flex-shrink: 0; }
+    .subjects-warning strong { color: #78350F; }
 </style>
 {% endblock %}
 
@@ -631,11 +672,19 @@
         {% endfor %}
     {% endif %}
 
-    <form method="post" enctype="multipart/form-data" id="profileForm">
+    <form method="post" enctype="multipart/form-data" id="profileForm"
+          {% if completeness %}data-completeness="{{ completeness.percent }}"{% endif %}>
         {% csrf_token %}
 
+        {# Передача missing-секций в JS для подсветки #}
+        {% if completeness and completeness.missing %}
+        <script id="completeness-missing-data" type="application/json">
+            [{% for item in completeness.missing %}{"anchor": "{{ item.anchor|escapejs }}", "label": "{{ item.label|escapejs }}", "boost": {{ item.boost }}}{% if not forloop.last %},{% endif %}{% endfor %}]
+        </script>
+        {% endif %}
+
         <!-- Личная информация -->
-        <div class="form-card">
+        <div class="form-card" id="section-personal">
             <h2 class="section-title">
                 <i class="fas fa-user"></i>
                 Личная информация
@@ -707,7 +756,7 @@
         </div>
 
         <!-- Профессиональная информация -->
-        <div class="form-card">
+        <div class="form-card" id="section-professional">
             <h2 class="section-title">
                 <i class="fas fa-briefcase"></i>
                 Профессиональная информация
@@ -716,6 +765,10 @@
             <div class="form-group full-width">
                 <label class="form-label">{{ profile_form.bio.label }}</label>
                 {{ profile_form.bio }}
+                <div class="bio-counter" id="bio-counter" data-min="50" data-max="500">
+                    <div class="bio-counter__bar"><div class="bio-counter__fill" id="bio-counter-fill"></div></div>
+                    <div class="bio-counter__label" id="bio-counter-label">0 / 50 {% trans 'мин.' %}</div>
+                </div>
                 {% if profile_form.bio.errors %}
                     <div class="error-message">{{ profile_form.bio.errors.0 }}</div>
                 {% endif %}
@@ -774,7 +827,7 @@
         </div>
 
         <!-- Формат и расписание -->
-        <div class="form-card">
+        <div class="form-card" id="section-format">
             <h2 class="section-title">
                 <i class="fas fa-calendar"></i>
                 Формат и расписание
@@ -833,7 +886,7 @@
         </div>
 
         <!-- Контакты -->
-        <div class="form-card">
+        <div class="form-card" id="section-contacts">
             <h2 class="section-title">
                 <i class="fas fa-phone"></i>
                 Контактная информация
@@ -859,7 +912,7 @@
         </div>
 
         <!-- Видео-визитка -->
-        <div class="form-card">
+        <div class="form-card" id="section-video">
             <h2 class="section-title">
                 <i class="fas fa-video"></i>
                 Видео-визитка
@@ -939,7 +992,7 @@
         </div>
 
         <!-- Предметы и цены -->
-        <div class="form-card">
+        <div class="form-card" id="section-subjects">
             <div class="section-header-with-button">
                 <h2 class="section-title">
                     <i class="fas fa-book"></i>
@@ -950,6 +1003,16 @@
                     <span class="btn-text">Добавить предмет</span>
                 </button>
             </div>
+
+            {% if not teacher_subjects.exists %}
+                <div class="subjects-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div>
+                        <strong>{% trans 'Без предметов вас нельзя забронировать!' %}</strong><br>
+                        {% trans 'Добавьте хотя бы один предмет с ценой за час, чтобы появиться в поиске учителей.' %}
+                    </div>
+                </div>
+            {% endif %}
 
             <!-- Существующие предметы -->
             <div id="existing-subjects">
@@ -990,6 +1053,26 @@
                                     <label for="id_subject_{{ form.instance.id }}-is_free_trial">
                                         {{ form.is_free_trial.label }}
                                     </label>
+                                </div>
+                            </div>
+
+                            <div class="form-row trial-fields" data-trial-for="{{ form.instance.id }}">
+                                <div class="form-group">
+                                    <label class="form-label" for="id_subject_{{ form.instance.id }}-trial_duration_minutes">{{ form.trial_duration_minutes.label }}</label>
+                                    {{ form.trial_duration_minutes }}
+                                    {% if form.trial_duration_minutes.errors %}
+                                        <div class="error-message">{{ form.trial_duration_minutes.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="form-group trial-price-group">
+                                    <label class="form-label" for="id_subject_{{ form.instance.id }}-trial_price">{{ form.trial_price.label }}</label>
+                                    {{ form.trial_price }}
+                                    {% if form.trial_price.help_text %}
+                                        <small style="color:#64748B; font-size:12px;">{{ form.trial_price.help_text }}</small>
+                                    {% endif %}
+                                    {% if form.trial_price.errors %}
+                                        <div class="error-message">{{ form.trial_price.errors.0 }}</div>
+                                    {% endif %}
                                 </div>
                             </div>
 
@@ -1047,6 +1130,23 @@
                                 </div>
                             </div>
 
+                            <div class="form-row trial-fields" data-trial-for="new">
+                                <div class="form-group">
+                                    <label class="form-label" for="id_new_subject-trial_duration_minutes">{{ form.trial_duration_minutes.label }}</label>
+                                    {{ form.trial_duration_minutes }}
+                                </div>
+                                <div class="form-group trial-price-group">
+                                    <label class="form-label" for="id_new_subject-trial_price">{{ form.trial_price.label }}</label>
+                                    {{ form.trial_price }}
+                                    {% if form.trial_price.help_text %}
+                                        <small style="color:#64748B; font-size:12px;">{{ form.trial_price.help_text }}</small>
+                                    {% endif %}
+                                    {% if form.trial_price.errors %}
+                                        <div class="error-message">{{ form.trial_price.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
                             <div class="form-group full-width">
                                 <label class="form-label" for="id_new_subject-description">{{ form.description.label }}</label>
                                 {{ form.description }}
@@ -1070,10 +1170,37 @@
         </div>
     </form>
 </div>
+
+{# UX enhancements: sticky save-bar, toasts, progress card, anchor nav, phone format #}
+{% include 'logic/_profile_edit_enhancements.html' %}
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    // Phase 9.5: показывать/скрывать поле цены пробного в зависимости от чекбокса "Бесплатный".
+    (function() {
+      function syncTrialPrice(checkbox) {
+        var container = checkbox.closest('.subject-item');
+        if (!container) return;
+        var priceGroup = container.querySelector('.trial-price-group');
+        if (!priceGroup) return;
+        var priceInput = priceGroup.querySelector('input');
+        if (checkbox.checked) {
+          priceGroup.style.opacity = '0.4';
+          priceGroup.style.pointerEvents = 'none';
+          if (priceInput) priceInput.disabled = true;
+        } else {
+          priceGroup.style.opacity = '1';
+          priceGroup.style.pointerEvents = 'auto';
+          if (priceInput) priceInput.disabled = false;
+        }
+      }
+      document.querySelectorAll('input[type="checkbox"][name$="is_free_trial"], input[type="checkbox"][name*="-is_free_trial"]').forEach(function(cb) {
+        syncTrialPrice(cb);
+        cb.addEventListener('change', function() { syncTrialPrice(cb); });
+      });
+    })();
+
     function toggleProfileStatus() {
         const checkbox = document.getElementById('profileToggle');
         const isActive = checkbox.checked;
@@ -1098,11 +1225,11 @@
         });
     }
 
-    function deleteSubject(subjectId) {
-        if (!confirm('Вы уверены, что хотите удалить этот предмет?')) {
-            return;
-        }
-
+    async function deleteSubject(subjectId) {
+        const ok = await window.confirmDialog('{% trans "Вы уверены, что хотите удалить этот предмет?" %}', {
+            okText: '{% trans "Удалить" %}', danger: true
+        });
+        if (!ok) { return; }
         window.location.href = "{% url 'delete_teacher_subject' 0 %}".replace('0', subjectId);
     }
 
@@ -1387,7 +1514,10 @@
 
         // Удалить видео
         window.videoDelete = async function() {
-            if (!confirm('Вы уверены, что хотите удалить видео-визитку?')) return;
+            const ok = await window.confirmDialog('{% trans "Вы уверены, что хотите удалить видео-визитку?" %}', {
+                okText: '{% trans "Удалить" %}', danger: true
+            });
+            if (!ok) return;
 
             try {
                 const resp = await fetch("{% url 'video_delete' %}", {

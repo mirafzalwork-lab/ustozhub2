@@ -1,0 +1,1207 @@
+"""Тесты финансового фундамента.
+
+Покрывают:
+  * auto-создание Wallet при создании User
+  * credit/debit пишут Transaction и обновляют balance
+  * balance == SUM(transactions.amount)
+  * идемпотентность по idempotency_key
+  * InsufficientFunds при попытке уйти в минус
+  * transfer между двумя кошельками атомарен
+"""
+from __future__ import annotations
+
+from decimal import Decimal
+
+from django.contrib.auth import get_user_model
+from django.db import transaction as db_transaction
+from django.test import TestCase, TransactionTestCase, override_settings
+
+
+# Простое хранилище статики без manifest — для view-тестов, где не запускаем collectstatic.
+SIMPLE_STATIC_STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+}
+
+from billing.models import (
+    Homework, HomeworkAttachment, HomeworkSubmission, HomeworkSubmissionFile,
+    Subscription, Tariff, Transaction, Wallet, WithdrawalRequest,
+)
+from billing.services import (
+    AlreadySubscribed,
+    CancellationError,
+    InsufficientFunds,
+    NotEnoughCapacity,
+    SubscriptionService,
+    WalletService,
+    WithdrawalAmountError,
+    WithdrawalError,
+    WithdrawalService,
+)
+
+User = get_user_model()
+
+
+def _make_teacher_with_subject(username='t1', with_schedule=True):
+    """Создаёт User(teacher) + TeacherProfile + Subject + TeacherSubject — минимум для Tariff тестов."""
+    from teachers.models import Subject, SubjectCategory, TeacherProfile, TeacherSubject
+    user = User.objects.create_user(
+        username=username, email=f'{username}@x.com', password='x' * 12,
+        user_type='teacher',
+    )
+    schedule = {
+        'monday':    [{'from': '09:00', 'to': '13:00'}],
+        'tuesday':   [{'from': '09:00', 'to': '13:00'}],
+        'wednesday': [{'from': '09:00', 'to': '13:00'}],
+        'thursday':  [{'from': '09:00', 'to': '13:00'}],
+        'friday':    [{'from': '09:00', 'to': '13:00'}],
+    } if with_schedule else {}
+    profile = TeacherProfile.objects.create(
+        user=user, experience_years=3, weekly_schedule=schedule,
+    )
+    cat, _ = SubjectCategory.objects.get_or_create(name='Языки')
+    subject, _ = Subject.objects.get_or_create(name='Английский', defaults={'category': cat})
+    TeacherSubject.objects.create(teacher=profile, subject=subject, hourly_rate=Decimal('50000'))
+    return profile, subject
+
+
+def _make_tariff(teacher, subject, lessons_per_week=2, duration_months=1, price=Decimal('800000')):
+    return Tariff.objects.create(
+        teacher=teacher, subject=subject,
+        lessons_per_week=lessons_per_week, lesson_duration_minutes=60,
+        duration_months=duration_months, price_per_month=price,
+    )
+
+
+def _make_student_with_balance(username='stud', balance=Decimal('1000000')):
+    from teachers.models import StudentProfile
+    student = User.objects.create_user(
+        username=username, email=f'{username}@x.com', password='x' * 12,
+        user_type='student',
+    )
+    # StudentProfile нужен иначе OnboardingMiddleware редиректит на /register/choose/
+    StudentProfile.objects.create(user=student)
+    if balance > 0:
+        WalletService.credit(
+            user=student, amount=balance,
+            tx_type=Transaction.Type.DEPOSIT,
+            idempotency_key=f'seed-{username}',
+            description='test seed',
+        )
+    return student
+
+
+class WalletAutoCreateTests(TestCase):
+    def test_wallet_created_on_user_create(self):
+        u = User.objects.create_user(username='alice', email='a@a.com', password='x' * 12)
+        self.assertTrue(Wallet.objects.filter(user=u).exists())
+        self.assertEqual(u.wallet.balance, Decimal('0.00'))
+
+    def test_wallet_unique_per_user(self):
+        u = User.objects.create_user(username='bob', email='b@b.com', password='x' * 12)
+        # signal уже создал — повторный get_or_create вернёт тот же
+        w, created = Wallet.objects.get_or_create(user=u)
+        self.assertFalse(created)
+        self.assertEqual(Wallet.objects.filter(user=u).count(), 1)
+
+
+class WalletServiceCreditDebitTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='carol', email='c@c.com', password='x' * 12)
+
+    def test_credit_increases_balance_and_creates_transaction(self):
+        tx = WalletService.credit(
+            user=self.user,
+            amount=Decimal('500.00'),
+            tx_type=Transaction.Type.DEPOSIT,
+            idempotency_key='credit-1',
+            description='пополнение',
+        )
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('500.00'))
+        self.assertEqual(tx.amount, Decimal('500.00'))
+        self.assertEqual(tx.balance_after, Decimal('500.00'))
+        self.assertEqual(tx.status, Transaction.Status.COMPLETED)
+
+    def test_debit_decreases_balance(self):
+        WalletService.credit(
+            user=self.user, amount=Decimal('1000'),
+            tx_type=Transaction.Type.DEPOSIT, idempotency_key='c1',
+        )
+        WalletService.debit(
+            user=self.user, amount=Decimal('300'),
+            tx_type=Transaction.Type.PURCHASE, idempotency_key='d1',
+        )
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('700.00'))
+
+    def test_debit_below_zero_raises(self):
+        WalletService.credit(
+            user=self.user, amount=Decimal('100'),
+            tx_type=Transaction.Type.DEPOSIT, idempotency_key='c1',
+        )
+        with self.assertRaises(InsufficientFunds):
+            WalletService.debit(
+                user=self.user, amount=Decimal('200'),
+                tx_type=Transaction.Type.PURCHASE, idempotency_key='d1',
+            )
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('100.00'))
+        # неуспешная транзакция не должна попасть в ledger
+        self.assertEqual(Transaction.objects.filter(wallet=self.user.wallet).count(), 1)
+
+    def test_idempotency_returns_same_transaction(self):
+        tx1 = WalletService.credit(
+            user=self.user, amount=Decimal('500'),
+            tx_type=Transaction.Type.DEPOSIT, idempotency_key='same-key',
+        )
+        tx2 = WalletService.credit(
+            user=self.user, amount=Decimal('999'),  # другая сумма игнорируется
+            tx_type=Transaction.Type.DEPOSIT, idempotency_key='same-key',
+        )
+        self.assertEqual(tx1.id, tx2.id)
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('500.00'))
+
+    def test_balance_matches_ledger_sum(self):
+        WalletService.credit(user=self.user, amount=Decimal('1000'),
+                             tx_type=Transaction.Type.DEPOSIT, idempotency_key='k1')
+        WalletService.debit(user=self.user, amount=Decimal('300'),
+                            tx_type=Transaction.Type.PURCHASE, idempotency_key='k2')
+        WalletService.credit(user=self.user, amount=Decimal('50'),
+                             tx_type=Transaction.Type.REFUND, idempotency_key='k3')
+
+        self.user.wallet.refresh_from_db()
+        reconciled = WalletService.reconcile_balance(self.user.wallet)
+        self.assertEqual(self.user.wallet.balance, reconciled)
+        self.assertEqual(self.user.wallet.balance, Decimal('750.00'))
+
+    def test_credit_negative_amount_raises(self):
+        with self.assertRaises(ValueError):
+            WalletService.credit(
+                user=self.user, amount=Decimal('-10'),
+                tx_type=Transaction.Type.DEPOSIT, idempotency_key='neg',
+            )
+
+    def test_idempotency_key_required(self):
+        with self.assertRaises(ValueError):
+            WalletService.credit(
+                user=self.user, amount=Decimal('1'),
+                tx_type=Transaction.Type.DEPOSIT, idempotency_key='',
+            )
+
+
+class WalletServiceTransferTests(TestCase):
+    def setUp(self):
+        self.alice = User.objects.create_user(username='al', email='al@x.com', password='x' * 12)
+        self.bob = User.objects.create_user(username='bo', email='bo@x.com', password='x' * 12)
+        WalletService.credit(
+            user=self.alice, amount=Decimal('1000'),
+            tx_type=Transaction.Type.DEPOSIT, idempotency_key='seed-al',
+        )
+
+    def test_transfer_moves_money(self):
+        out_tx, in_tx = WalletService.transfer(
+            from_user=self.alice, to_user=self.bob,
+            amount=Decimal('300'),
+            tx_type_out=Transaction.Type.PURCHASE,
+            tx_type_in=Transaction.Type.LESSON_PAYOUT,
+            idempotency_key='xfer-1',
+        )
+        self.alice.wallet.refresh_from_db()
+        self.bob.wallet.refresh_from_db()
+        self.assertEqual(self.alice.wallet.balance, Decimal('700.00'))
+        self.assertEqual(self.bob.wallet.balance, Decimal('300.00'))
+        self.assertEqual(out_tx.amount, Decimal('-300.00'))
+        self.assertEqual(in_tx.amount, Decimal('300.00'))
+
+    def test_transfer_insufficient_funds_rolls_back(self):
+        with self.assertRaises(InsufficientFunds):
+            WalletService.transfer(
+                from_user=self.alice, to_user=self.bob,
+                amount=Decimal('5000'),
+                tx_type_out=Transaction.Type.PURCHASE,
+                tx_type_in=Transaction.Type.LESSON_PAYOUT,
+                idempotency_key='xfer-fail',
+            )
+        # Ничего не сдвинулось
+        self.alice.wallet.refresh_from_db()
+        self.bob.wallet.refresh_from_db()
+        self.assertEqual(self.alice.wallet.balance, Decimal('1000.00'))
+        self.assertEqual(self.bob.wallet.balance, Decimal('0.00'))
+
+
+# ---------- Tariff -----------------------------------------------------------
+
+
+class TariffModelTests(TestCase):
+    def setUp(self):
+        self.teacher, self.subject = _make_teacher_with_subject('tariff_t')
+
+    def test_total_lessons_calc(self):
+        t = Tariff.objects.create(
+            teacher=self.teacher, subject=self.subject,
+            lessons_per_week=2, lesson_duration_minutes=60,
+            duration_months=1, price_per_month=Decimal('800000'),
+        )
+        # 2 в неделю × 4 недели/мес × 1 мес = 8 уроков
+        self.assertEqual(t.total_lessons, 8)
+        self.assertEqual(t.total_price, Decimal('800000.00'))
+        # 800000 / 8 = 100000
+        self.assertEqual(t.price_per_lesson, Decimal('100000.00'))
+
+    def test_total_lessons_multi_month(self):
+        t = Tariff.objects.create(
+            teacher=self.teacher, subject=self.subject,
+            lessons_per_week=3, lesson_duration_minutes=60,
+            duration_months=3, price_per_month=Decimal('600000'),
+        )
+        # 3 × 4 × 3 = 36
+        self.assertEqual(t.total_lessons, 36)
+        self.assertEqual(t.total_price, Decimal('1800000.00'))
+        # 1800000 / 36 = 50000
+        self.assertEqual(t.price_per_lesson, Decimal('50000.00'))
+
+    def test_negative_price_violates_constraint(self):
+        from django.db.utils import IntegrityError
+        with self.assertRaises(IntegrityError):
+            Tariff.objects.create(
+                teacher=self.teacher, subject=self.subject,
+                lessons_per_week=2, lesson_duration_minutes=60,
+                duration_months=1, price_per_month=Decimal('-100'),
+            )
+
+
+class TariffFormTests(TestCase):
+    def setUp(self):
+        self.teacher, self.subject = _make_teacher_with_subject('tariff_t2')
+
+    def test_min_price_validation(self):
+        from billing.forms import TariffForm
+        form = TariffForm(data={
+            'subject': self.subject.id,
+            'name': '', 'description': '',
+            'lessons_per_week': 2, 'lesson_duration_minutes': 60,
+            'duration_months': 1, 'price_per_month': '5000',  # ниже минимума
+            'is_active': 'on',
+        }, teacher=self.teacher)
+        self.assertFalse(form.is_valid())
+        self.assertIn('price_per_month', form.errors)
+
+    def test_subject_must_belong_to_teacher(self):
+        from billing.forms import TariffForm
+        from teachers.models import Subject
+        # Создаём «чужой» предмет — учитель его НЕ преподаёт
+        foreign_subject = Subject.objects.create(name='Тест-предмет', category=self.subject.category)
+        form = TariffForm(data={
+            'subject': foreign_subject.id,
+            'name': '', 'description': '',
+            'lessons_per_week': 2, 'lesson_duration_minutes': 60,
+            'duration_months': 1, 'price_per_month': '800000',
+            'is_active': 'on',
+        }, teacher=self.teacher)
+        self.assertFalse(form.is_valid())
+        self.assertIn('subject', form.errors)
+
+
+@override_settings(STORAGES=SIMPLE_STATIC_STORAGES)
+class TariffViewsTests(TestCase):
+    def setUp(self):
+        from django.urls import reverse
+        self.teacher, self.subject = _make_teacher_with_subject('tv1')
+        self.other_teacher, _ = _make_teacher_with_subject('tv2')
+        self.url_list = reverse('tariffs_list')
+        self.url_create = reverse('tariff_create')
+
+    def test_list_requires_login(self):
+        r = self.client.get(self.url_list)
+        # Аноним без teacher_profile — login_required перенаправит на login
+        self.assertEqual(r.status_code, 302)
+        self.assertIn('/login', r.url)
+
+    def test_list_visible_to_teacher(self):
+        self.client.login(username='tv1', password='x' * 12)
+        r = self.client.get(self.url_list)
+        self.assertEqual(r.status_code, 200)
+
+    def test_student_redirected_from_tariffs(self):
+        User.objects.create_user(
+            username='stud1', email='s@x.com', password='x' * 12, user_type='student'
+        )
+        self.client.login(username='stud1', password='x' * 12)
+        r = self.client.get(self.url_list)
+        # Должен редиректить (нет teacher_profile)
+        self.assertEqual(r.status_code, 302)
+
+    def test_cannot_edit_others_tariff(self):
+        from django.urls import reverse
+        tariff = Tariff.objects.create(
+            teacher=self.other_teacher, subject=self.subject,
+            lessons_per_week=2, lesson_duration_minutes=60,
+            duration_months=1, price_per_month=Decimal('800000'),
+        )
+        self.client.login(username='tv1', password='x' * 12)
+        r = self.client.get(reverse('tariff_edit', args=[tariff.pk]))
+        self.assertEqual(r.status_code, 404)
+
+    def test_create_tariff_via_form(self):
+        self.client.login(username='tv1', password='x' * 12)
+        r = self.client.post(self.url_create, {
+            'subject': self.subject.id,
+            'name': 'Стандарт',
+            'description': 'Базовый курс',
+            'lessons_per_week': 2,
+            'lesson_duration_minutes': 60,
+            'duration_months': 1,
+            'price_per_month': '800000',
+            'is_active': 'on',
+        })
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(Tariff.objects.filter(teacher=self.teacher).count(), 1)
+
+
+# ---------- Subscription purchase -----------------------------------------
+
+
+class SubscriptionPurchaseTests(TestCase):
+    def setUp(self):
+        self.teacher, self.subject = _make_teacher_with_subject('sub_t')
+        self.tariff = _make_tariff(self.teacher, self.subject,
+                                   lessons_per_week=2, duration_months=1,
+                                   price=Decimal('800000'))
+        self.student = _make_student_with_balance('sub_s', balance=Decimal('1000000'))
+
+    def test_successful_purchase(self):
+        from teachers.models import Booking
+        sub = SubscriptionService.purchase(
+            student=self.student, tariff=self.tariff,
+            idempotency_key='test-1',
+        )
+        # Subscription создана
+        self.assertEqual(sub.status, Subscription.Status.ACTIVE)
+        self.assertEqual(sub.total_lessons, 8)  # 2/нед × 4 × 1 мес
+        self.assertEqual(sub.price_total, Decimal('800000.00'))
+        self.assertEqual(sub.price_per_lesson, Decimal('100000.00'))
+        self.assertEqual(sub.escrow_balance, Decimal('800000.00'))
+        # Snapshot commission_rate из settings
+        self.assertEqual(sub.commission_rate, Decimal('0.15'))
+
+        # Кошелёк списался
+        self.student.wallet.refresh_from_db()
+        self.assertEqual(self.student.wallet.balance, Decimal('200000.00'))
+
+        # 8 bookings создалось
+        bookings = Booking.objects.filter(subscription=sub)
+        self.assertEqual(bookings.count(), 8)
+        # Все confirmed, не trial
+        for b in bookings:
+            self.assertEqual(b.status, 'confirmed')
+            self.assertFalse(b.is_trial)
+
+        # Транзакция привязана к подписке
+        purchase_tx = Transaction.objects.filter(
+            related_subscription=sub, type=Transaction.Type.PURCHASE
+        ).first()
+        self.assertIsNotNone(purchase_tx)
+        self.assertEqual(purchase_tx.amount, Decimal('-800000.00'))
+
+    def test_insufficient_funds_rolls_back_everything(self):
+        from teachers.models import Booking
+        poor = _make_student_with_balance('poor', balance=Decimal('100000'))
+        with self.assertRaises(InsufficientFunds):
+            SubscriptionService.purchase(
+                student=poor, tariff=self.tariff, idempotency_key='poor-1',
+            )
+        # Никакая подписка не создана
+        self.assertEqual(Subscription.objects.filter(student=poor).count(), 0)
+        # Никаких bookings
+        self.assertEqual(Booking.objects.filter(student=poor).count(), 0)
+        # Wallet не тронут
+        poor.wallet.refresh_from_db()
+        self.assertEqual(poor.wallet.balance, Decimal('100000.00'))
+
+    def test_idempotency_double_submit(self):
+        sub1 = SubscriptionService.purchase(
+            student=self.student, tariff=self.tariff, idempotency_key='dup-key',
+        )
+        # Второй вызов с тем же ключом — вернёт ту же подписку
+        sub2 = SubscriptionService.purchase(
+            student=self.student, tariff=self.tariff, idempotency_key='dup-key',
+        )
+        self.assertEqual(sub1.id, sub2.id)
+        # Только одна подписка в БД, и одна транзакция
+        self.assertEqual(Subscription.objects.filter(student=self.student).count(), 1)
+        # Кошелёк списан только один раз
+        self.student.wallet.refresh_from_db()
+        self.assertEqual(self.student.wallet.balance, Decimal('200000.00'))
+
+    def test_cannot_buy_twice_same_teacher_subject(self):
+        SubscriptionService.purchase(
+            student=self.student, tariff=self.tariff, idempotency_key='first',
+        )
+        # Допполняем кошелёк, чтобы хватило денег на 2-ю покупку
+        WalletService.credit(
+            user=self.student, amount=Decimal('800000'),
+            tx_type=Transaction.Type.DEPOSIT,
+            idempotency_key='topup-for-2nd',
+        )
+        with self.assertRaises(AlreadySubscribed):
+            SubscriptionService.purchase(
+                student=self.student, tariff=self.tariff, idempotency_key='second',
+            )
+
+    def test_teacher_without_schedule_raises(self):
+        teacher_no_sched, subj = _make_teacher_with_subject('no_sched', with_schedule=False)
+        tariff = _make_tariff(teacher_no_sched, subj)
+        with self.assertRaises(NotEnoughCapacity):
+            SubscriptionService.purchase(
+                student=self.student, tariff=tariff, idempotency_key='no-sched',
+            )
+
+
+# ---------- Lesson payout (Phase 4) ---------------------------------------
+
+
+class LessonPayoutTests(TestCase):
+    def setUp(self):
+        from billing.platform_account import get_or_create_platform_user
+        self.platform = get_or_create_platform_user()
+        self.teacher, self.subject = _make_teacher_with_subject('p4_t')
+        self.tariff = _make_tariff(self.teacher, self.subject,
+                                   lessons_per_week=2, duration_months=1,
+                                   price=Decimal('800000'))
+        self.student = _make_student_with_balance('p4_s', balance=Decimal('1000000'))
+        self.subscription = SubscriptionService.purchase(
+            student=self.student, tariff=self.tariff,
+            idempotency_key='p4-purchase',
+        )
+
+    def _first_booking(self):
+        from teachers.models import Booking
+        return Booking.objects.filter(subscription=self.subscription).first()
+
+    def test_payout_credits_teacher_and_platform(self):
+        booking = self._first_booking()
+        booking.status = 'completed'
+        booking.save()  # триггерит сигнал completed_lessons +=1
+
+        ok = SubscriptionService.release_lesson_payout(booking)
+        self.assertTrue(ok)
+
+        teacher_user = self.teacher.user
+        teacher_user.wallet.refresh_from_db()
+        self.platform.wallet.refresh_from_db()
+        self.subscription.refresh_from_db()
+
+        # 800000 / 8 = 100000 за урок; comm 15% → 15000 платформе, 85000 учителю
+        self.assertEqual(self.subscription.price_per_lesson, Decimal('100000.00'))
+        self.assertEqual(teacher_user.wallet.balance, Decimal('85000.00'))
+        self.assertEqual(self.platform.wallet.balance, Decimal('15000.00'))
+        # escrow уменьшился
+        self.assertEqual(self.subscription.escrow_balance, Decimal('700000.00'))
+        # lessons_paid_out счётчик увеличен
+        self.assertEqual(self.subscription.lessons_paid_out, 1)
+
+    def test_payout_idempotent(self):
+        booking = self._first_booking()
+        booking.status = 'completed'
+        booking.save()
+
+        SubscriptionService.release_lesson_payout(booking)
+        ok2 = SubscriptionService.release_lesson_payout(booking)
+        self.assertFalse(ok2, 'повторный вызов должен вернуть False')
+
+        # Балансы не удвоились
+        teacher_user = self.teacher.user
+        teacher_user.wallet.refresh_from_db()
+        self.assertEqual(teacher_user.wallet.balance, Decimal('85000.00'))
+
+    def test_full_completion_sets_subscription_completed(self):
+        from teachers.models import Booking
+        bookings = list(Booking.objects.filter(subscription=self.subscription))
+        self.assertEqual(len(bookings), 8)
+
+        # Помечаем все 8 как completed и выплачиваем
+        for b in bookings:
+            b.status = 'completed'
+            b.save()
+            SubscriptionService.release_lesson_payout(b)
+
+        self.subscription.refresh_from_db()
+        self.assertEqual(self.subscription.lessons_paid_out, 8)
+        self.assertEqual(self.subscription.status, self.subscription.Status.COMPLETED)
+        self.assertEqual(self.subscription.escrow_balance, Decimal('0.00'))
+
+        # Финансовая сходимость: 800000 = 8 * (85000 + 15000)
+        teacher_user = self.teacher.user
+        teacher_user.wallet.refresh_from_db()
+        self.platform.wallet.refresh_from_db()
+        self.assertEqual(teacher_user.wallet.balance, Decimal('680000.00'))
+        self.assertEqual(self.platform.wallet.balance, Decimal('120000.00'))
+
+    def test_payout_recovers_missing_commission(self):
+        """B2: если комиссия платформе не начислилась (частичный сбой), повторный
+        payout добивает её, НЕ трогая эскроу и счётчики повторно."""
+        from billing.models import Transaction
+        booking = self._first_booking()
+        booking.status = 'completed'
+        booking.save()
+        SubscriptionService.release_lesson_payout(booking)
+
+        # Симулируем потерю комиссии: удаляем tx и откатываем баланс платформы.
+        commission_key = f'commission:{booking.id}'
+        Transaction.objects.filter(idempotency_key=commission_key).delete()
+        platform_wallet = self.platform.wallet
+        platform_wallet.refresh_from_db()
+        platform_wallet.balance = platform_wallet.balance - Decimal('15000.00')
+        platform_wallet.save(update_fields=['balance'])
+
+        self.subscription.refresh_from_db()
+        escrow_before = self.subscription.escrow_balance
+        paid_before = self.subscription.lessons_paid_out
+
+        # Повторный payout: payout учителю уже есть → already_paid=True.
+        result = SubscriptionService.release_lesson_payout(booking)
+        self.assertFalse(result, 'эскроу уже списан — возвращаем False')
+
+        # Комиссия восстановлена, эскроу и счётчик НЕ изменились.
+        self.assertTrue(Transaction.objects.filter(idempotency_key=commission_key).exists())
+        platform_wallet.refresh_from_db()
+        self.assertEqual(platform_wallet.balance, Decimal('15000.00'))
+        self.subscription.refresh_from_db()
+        self.assertEqual(self.subscription.escrow_balance, escrow_before)
+        self.assertEqual(self.subscription.lessons_paid_out, paid_before)
+
+    def test_completed_signal_increments_counter(self):
+        booking = self._first_booking()
+        self.assertEqual(self.subscription.completed_lessons, 0)
+        booking.status = 'completed'
+        booking.save()
+        self.subscription.refresh_from_db()
+        self.assertEqual(self.subscription.completed_lessons, 1)
+
+        # Второй save с тем же status — counter НЕ удвоится
+        booking.save()
+        self.subscription.refresh_from_db()
+        self.assertEqual(self.subscription.completed_lessons, 1)
+
+
+# ---------- Subscription cancellation (Phase 5) ---------------------------
+
+
+class SubscriptionCancellationTests(TestCase):
+    def setUp(self):
+        from billing.platform_account import get_or_create_platform_user
+        self.platform = get_or_create_platform_user()
+        self.teacher, self.subject = _make_teacher_with_subject('p5_t')
+        self.tariff = _make_tariff(self.teacher, self.subject,
+                                   lessons_per_week=2, duration_months=1,
+                                   price=Decimal('800000'))
+        self.student = _make_student_with_balance('p5_s', balance=Decimal('1000000'))
+        self.subscription = SubscriptionService.purchase(
+            student=self.student, tariff=self.tariff,
+            idempotency_key='p5-purchase',
+        )
+
+    def _all_bookings(self):
+        from teachers.models import Booking
+        return list(Booking.objects.filter(subscription=self.subscription).order_by('slot__start_at'))
+
+    def test_cancel_without_completed_full_refund(self):
+        from teachers.models import Booking, TimeSlot
+        # До отмены: balance = 200000 (после покупки)
+        self.student.wallet.refresh_from_db()
+        self.assertEqual(self.student.wallet.balance, Decimal('200000.00'))
+
+        result = SubscriptionService.cancel(
+            self.subscription, cancelled_by='student', reason='тест отмены',
+        )
+
+        self.assertEqual(result['refunded'], Decimal('800000.00'))
+        self.assertEqual(result['paid_out'], 0)
+        self.assertEqual(result['cancelled_bookings'], 8)
+
+        self.subscription.refresh_from_db()
+        self.assertEqual(self.subscription.status,
+                         self.subscription.Status.CANCELLED_BY_STUDENT)
+        self.assertEqual(self.subscription.escrow_balance, Decimal('0.00'))
+        self.assertIsNotNone(self.subscription.cancelled_at)
+        self.assertEqual(self.subscription.cancellation_reason, 'тест отмены')
+
+        # Полный refund: balance вернулся к 1 000 000
+        self.student.wallet.refresh_from_db()
+        self.assertEqual(self.student.wallet.balance, Decimal('1000000.00'))
+
+        # Все 8 bookings отменены, слоты свободны
+        cancelled = Booking.objects.filter(
+            subscription=self.subscription, status='cancelled_by_student',
+        ).count()
+        self.assertEqual(cancelled, 8)
+        free_slots = TimeSlot.objects.filter(
+            teacher=self.teacher, status='free',
+        ).count()
+        # Все 8 свободны (они в будущем)
+        self.assertGreaterEqual(free_slots, 8)
+
+    def test_cancel_with_completed_pays_teacher_then_refunds(self):
+        # Помечаем 3 урока completed (учитель отработал, но payout ещё не сделан)
+        bookings = self._all_bookings()[:3]
+        for b in bookings:
+            b.status = 'completed'
+            b.save()
+
+        result = SubscriptionService.cancel(
+            self.subscription, cancelled_by='student', reason='',
+        )
+
+        # Учителю выплатились 3 урока × 85 000 = 255 000
+        self.assertEqual(result['paid_out'], 3)
+        teacher_user = self.teacher.user
+        teacher_user.wallet.refresh_from_db()
+        self.assertEqual(teacher_user.wallet.balance, Decimal('255000.00'))
+        self.platform.wallet.refresh_from_db()
+        self.assertEqual(self.platform.wallet.balance, Decimal('45000.00'))
+
+        # Ученику возвращены 5 уроков × 100 000 = 500 000
+        self.assertEqual(result['refunded'], Decimal('500000.00'))
+        self.student.wallet.refresh_from_db()
+        self.assertEqual(self.student.wallet.balance, Decimal('700000.00'))  # 200000 + 500000
+
+        # Бухгалтерская сходимость: 800000 = 255000 + 45000 + 500000
+        # ✓
+
+    def test_cancel_idempotent_raises(self):
+        SubscriptionService.cancel(self.subscription, cancelled_by='student', reason='')
+        with self.assertRaises(CancellationError):
+            SubscriptionService.cancel(self.subscription, cancelled_by='student', reason='')
+
+    def test_cancel_by_teacher_sets_correct_status(self):
+        result = SubscriptionService.cancel(self.subscription, cancelled_by='teacher', reason='unavailable')
+        self.subscription.refresh_from_db()
+        self.assertEqual(self.subscription.status,
+                         self.subscription.Status.CANCELLED_BY_TEACHER)
+        # Ученик получает полный refund
+        self.assertEqual(result['refunded'], Decimal('800000.00'))
+
+    def test_cannot_cancel_already_completed(self):
+        # Завершаем подписку полностью
+        for b in self._all_bookings():
+            b.status = 'completed'
+            b.save()
+            SubscriptionService.release_lesson_payout(b)
+        self.subscription.refresh_from_db()
+        self.assertEqual(self.subscription.status, self.subscription.Status.COMPLETED)
+
+        with self.assertRaises(CancellationError):
+            SubscriptionService.cancel(self.subscription, cancelled_by='student', reason='')
+
+
+# ---------- Reviews per-lesson (Phase 7) ----------------------------------
+
+
+class ReviewPerLessonTests(TestCase):
+    def setUp(self):
+        from billing.platform_account import get_or_create_platform_user
+        self.platform = get_or_create_platform_user()
+        self.teacher, self.subject = _make_teacher_with_subject('p7_t')
+        self.tariff = _make_tariff(self.teacher, self.subject,
+                                   lessons_per_week=2, duration_months=1,
+                                   price=Decimal('800000'))
+        self.student = _make_student_with_balance('p7_s', balance=Decimal('1000000'))
+        self.subscription = SubscriptionService.purchase(
+            student=self.student, tariff=self.tariff,
+            idempotency_key='p7-purchase',
+        )
+
+    def _complete_bookings(self, n):
+        from teachers.models import Booking
+        bookings = list(Booking.objects.filter(subscription=self.subscription)[:n])
+        for b in bookings:
+            b.status = 'completed'
+            b.save()
+        return bookings
+
+    def test_multiple_reviews_per_subscription(self):
+        """Ученик может оставить отдельный отзыв на КАЖДЫЙ урок подписки."""
+        from teachers.models import Booking, Review
+        bookings = self._complete_bookings(3)
+        # Ровно 3 отзыва — на каждый booking
+        for i, b in enumerate(bookings):
+            Review.objects.create(
+                teacher=self.teacher, student=self.student,
+                subject=self.subject, booking=b,
+                rating=5 - i,
+                knowledge_rating=5, communication_rating=5, punctuality_rating=5,
+                is_verified=True,
+            )
+        self.assertEqual(
+            Review.objects.filter(student=self.student, teacher=self.teacher).count(),
+            3,
+        )
+
+    def test_one_review_per_booking_enforced(self):
+        """OneToOne booking запрещает 2 отзыва на 1 урок."""
+        from teachers.models import Booking, Review
+        from django.db.utils import IntegrityError
+        bookings = self._complete_bookings(1)
+        b = bookings[0]
+        Review.objects.create(
+            teacher=self.teacher, student=self.student, subject=self.subject,
+            booking=b, rating=5,
+            knowledge_rating=5, communication_rating=5, punctuality_rating=5,
+            is_verified=True,
+        )
+        with self.assertRaises(IntegrityError):
+            Review.objects.create(
+                teacher=self.teacher, student=self.student, subject=self.subject,
+                booking=b, rating=4,
+                knowledge_rating=4, communication_rating=4, punctuality_rating=4,
+                is_verified=True,
+            )
+
+    def test_leave_review_view_per_booking(self):
+        from django.urls import reverse
+        from teachers.models import Booking, Review
+
+        bookings = self._complete_bookings(2)
+        self.client.login(username='p7_s', password='x' * 12)
+
+        # Оставляем отзыв на 1-й booking
+        url1 = reverse('leave_review', args=[bookings[0].id])
+        r = self.client.post(url1, {
+            'rating': 5, 'comment': 'Отличный урок',
+            'knowledge_rating': 5, 'communication_rating': 4, 'punctuality_rating': 5,
+        })
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(Review.objects.filter(booking=bookings[0]).exists())
+
+        # Оставляем отзыв на 2-й booking — должен создаться отдельный Review
+        url2 = reverse('leave_review', args=[bookings[1].id])
+        r = self.client.post(url2, {
+            'rating': 4, 'comment': 'Норм',
+            'knowledge_rating': 4, 'communication_rating': 4, 'punctuality_rating': 4,
+        })
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(
+            Review.objects.filter(student=self.student, teacher=self.teacher).count(),
+            2,
+        )
+
+    def test_cannot_review_others_booking(self):
+        from django.urls import reverse
+        from teachers.models import Booking, StudentProfile
+        bookings = self._complete_bookings(1)
+        other = User.objects.create_user(
+            username='p7_other', email='oo@x.com', password='x' * 12,
+            user_type='student',
+        )
+        StudentProfile.objects.create(user=other)
+        self.client.login(username='p7_other', password='x' * 12)
+        url = reverse('leave_review', args=[bookings[0].id])
+        r = self.client.post(url, {
+            'rating': 1, 'comment': 'fake',
+            'knowledge_rating': 1, 'communication_rating': 1, 'punctuality_rating': 1,
+        })
+        self.assertEqual(r.status_code, 403)
+
+    def test_cannot_review_not_completed(self):
+        """Нельзя оценить незавершённый урок."""
+        from django.urls import reverse
+        from teachers.models import Booking
+        b = Booking.objects.filter(subscription=self.subscription).first()
+        # b.status='confirmed' (default after purchase)
+        self.client.login(username='p7_s', password='x' * 12)
+        r = self.client.post(reverse('leave_review', args=[b.id]), {
+            'rating': 5, 'comment': '',
+            'knowledge_rating': 5, 'communication_rating': 5, 'punctuality_rating': 5,
+        })
+        # Редирект в my_bookings_page с warning, не создаём Review
+        from teachers.models import Review
+        self.assertFalse(Review.objects.filter(booking=b).exists())
+
+
+# ---------- Withdrawal (Phase 6) ------------------------------------------
+
+
+class WithdrawalServiceTests(TestCase):
+    def setUp(self):
+        # «Учитель» с балансом — для тестов withdrawal достаточно просто User.
+        self.user = User.objects.create_user(
+            username='wd_user', email='wd@x.com', password='x' * 12,
+            user_type='teacher',
+        )
+        WalletService.credit(
+            user=self.user, amount=Decimal('500000'),
+            tx_type=Transaction.Type.DEPOSIT, idempotency_key='wd-seed',
+        )
+        self.admin = User.objects.create_user(
+            username='wd_admin', email='wda@x.com', password='x' * 12,
+            is_staff=True,
+        )
+
+    def test_create_request_debits_wallet(self):
+        wr = WithdrawalService.create_request(
+            user=self.user, amount=Decimal('200000'),
+            payout_method='card', payout_details='8600 1234 5678 9012',
+            idempotency_key='wd-1',
+        )
+        self.assertEqual(wr.status, WithdrawalRequest.Status.PENDING)
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('300000.00'))
+
+    def test_min_amount_validation(self):
+        with self.assertRaises(WithdrawalAmountError):
+            WithdrawalService.create_request(
+                user=self.user, amount=Decimal('50000'),
+                payout_method='card', payout_details='card',
+                idempotency_key='wd-low',
+            )
+
+    def test_insufficient_funds(self):
+        with self.assertRaises(InsufficientFunds):
+            WithdrawalService.create_request(
+                user=self.user, amount=Decimal('1000000'),
+                payout_method='card', payout_details='card',
+                idempotency_key='wd-big',
+            )
+
+    def test_idempotency_double_submit(self):
+        wr1 = WithdrawalService.create_request(
+            user=self.user, amount=Decimal('100000'),
+            payout_method='card', payout_details='c1',
+            idempotency_key='wd-dup',
+        )
+        wr2 = WithdrawalService.create_request(
+            user=self.user, amount=Decimal('100000'),
+            payout_method='card', payout_details='c1',
+            idempotency_key='wd-dup',
+        )
+        self.assertEqual(wr1.id, wr2.id)
+        # Кошелёк списан только один раз
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('400000.00'))
+
+    def test_user_cancel_refunds(self):
+        wr = WithdrawalService.create_request(
+            user=self.user, amount=Decimal('150000'),
+            payout_method='card', payout_details='c',
+            idempotency_key='wd-c',
+        )
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('350000.00'))
+
+        WithdrawalService.cancel_by_user(wr)
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('500000.00'))
+        wr.refresh_from_db()
+        self.assertEqual(wr.status, WithdrawalRequest.Status.CANCELLED)
+
+    def test_admin_reject_refunds(self):
+        wr = WithdrawalService.create_request(
+            user=self.user, amount=Decimal('200000'),
+            payout_method='card', payout_details='c',
+            idempotency_key='wd-r',
+        )
+        WithdrawalService.reject(wr, admin_user=self.admin, note='подозрительные реквизиты')
+        wr.refresh_from_db()
+        self.assertEqual(wr.status, WithdrawalRequest.Status.REJECTED)
+        self.assertEqual(wr.admin_note, 'подозрительные реквизиты')
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('500000.00'))
+
+    def test_admin_reject_requires_note(self):
+        wr = WithdrawalService.create_request(
+            user=self.user, amount=Decimal('150000'),
+            payout_method='card', payout_details='c',
+            idempotency_key='wd-rn',
+        )
+        with self.assertRaises(WithdrawalError):
+            WithdrawalService.reject(wr, admin_user=self.admin, note='   ')
+
+    def test_admin_approve_then_complete(self):
+        wr = WithdrawalService.create_request(
+            user=self.user, amount=Decimal('100000'),
+            payout_method='card', payout_details='c',
+            idempotency_key='wd-ac',
+        )
+        WithdrawalService.approve(wr, admin_user=self.admin)
+        wr.refresh_from_db()
+        self.assertEqual(wr.status, WithdrawalRequest.Status.APPROVED)
+        # На completed
+        WithdrawalService.complete(wr, admin_user=self.admin)
+        wr.refresh_from_db()
+        self.assertEqual(wr.status, WithdrawalRequest.Status.COMPLETED)
+        # Деньги НЕ возвращаются — они переведены за пределы платформы.
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('400000.00'))
+
+    def test_cannot_cancel_already_approved(self):
+        wr = WithdrawalService.create_request(
+            user=self.user, amount=Decimal('100000'),
+            payout_method='card', payout_details='c',
+            idempotency_key='wd-no',
+        )
+        WithdrawalService.approve(wr, admin_user=self.admin)
+        with self.assertRaises(WithdrawalError):
+            WithdrawalService.cancel_by_user(wr)
+
+
+# ---------- Homework (Phase 8) -------------------------------------------
+
+
+class HomeworkTests(TestCase):
+    def setUp(self):
+        from billing.platform_account import get_or_create_platform_user
+        self.platform = get_or_create_platform_user()
+        self.teacher, self.subject = _make_teacher_with_subject('p8_t')
+        self.tariff = _make_tariff(self.teacher, self.subject)
+        self.student = _make_student_with_balance('p8_s', balance=Decimal('1000000'))
+        self.subscription = SubscriptionService.purchase(
+            student=self.student, tariff=self.tariff,
+            idempotency_key='p8-purchase',
+        )
+
+    def test_create_homework(self):
+        hw = Homework.objects.create(
+            subscription=self.subscription, teacher=self.teacher, student=self.student,
+            title='Прочитать главу 1', description='Прочитать и ответить на 5 вопросов.',
+        )
+        self.assertEqual(hw.status, Homework.Status.ASSIGNED)
+        self.assertFalse(hw.is_overdue)
+
+    def test_grade_validation(self):
+        from django.db.utils import IntegrityError
+        hw = Homework.objects.create(
+            subscription=self.subscription, teacher=self.teacher, student=self.student,
+            title='Test', description='—',
+        )
+        with self.assertRaises(IntegrityError):
+            HomeworkSubmission.objects.create(
+                homework=hw, student=self.student, grade=200,
+            )
+
+    def test_one_submission_per_homework(self):
+        from django.db.utils import IntegrityError
+        hw = Homework.objects.create(
+            subscription=self.subscription, teacher=self.teacher, student=self.student,
+            title='Test', description='—',
+        )
+        HomeworkSubmission.objects.create(homework=hw, student=self.student, text_response='ok')
+        with self.assertRaises(IntegrityError):
+            HomeworkSubmission.objects.create(homework=hw, student=self.student, text_response='dup')
+
+    def test_create_via_view(self):
+        from django.urls import reverse
+        self.client.login(username=self.teacher.user.username, password='x' * 12)
+        url = reverse('teacher_homework_create')
+        r = self.client.post(url, {
+            'subscription': str(self.subscription.id),
+            'title': 'ДЗ 1', 'description': 'описание задания',
+        })
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(Homework.objects.filter(teacher=self.teacher).count(), 1)
+
+    def test_student_can_only_see_own_homework(self):
+        from django.urls import reverse
+        other_student = _make_student_with_balance('p8_other', balance=Decimal('0'))
+        hw = Homework.objects.create(
+            subscription=self.subscription, teacher=self.teacher, student=self.student,
+            title='Test', description='—',
+        )
+        self.client.login(username='p8_other', password='x' * 12)
+        r = self.client.get(reverse('homework_detail', args=[hw.id]))
+        # Чужие ДЗ → redirect на home с error message
+        self.assertEqual(r.status_code, 302)
+
+    def test_student_submit_and_teacher_grade_flow(self):
+        from django.urls import reverse
+        hw = Homework.objects.create(
+            subscription=self.subscription, teacher=self.teacher, student=self.student,
+            title='Test', description='—',
+        )
+
+        # Student submits
+        self.client.login(username='p8_s', password='x' * 12)
+        r = self.client.post(reverse('homework_detail', args=[hw.id]), {
+            'text_response': 'мой ответ',
+        })
+        self.assertEqual(r.status_code, 302)
+        hw.refresh_from_db()
+        self.assertEqual(hw.status, Homework.Status.SUBMITTED)
+        self.assertEqual(hw.submission.text_response, 'мой ответ')
+
+        # Teacher grades
+        self.client.logout()
+        self.client.login(username=self.teacher.user.username, password='x' * 12)
+        r = self.client.post(reverse('homework_detail', args=[hw.id]), {
+            'decision': 'grade', 'grade': '85',
+            'feedback': 'хорошо',
+        })
+        self.assertEqual(r.status_code, 302)
+        hw.refresh_from_db()
+        self.assertEqual(hw.status, Homework.Status.GRADED)
+        self.assertEqual(hw.submission.grade, 85)
+
+    def test_teacher_return_to_rework(self):
+        from django.urls import reverse
+        hw = Homework.objects.create(
+            subscription=self.subscription, teacher=self.teacher, student=self.student,
+            title='Test', description='—',
+        )
+        sub = HomeworkSubmission.objects.create(
+            homework=hw, student=self.student, text_response='первая попытка',
+        )
+        hw.status = Homework.Status.SUBMITTED
+        hw.save()
+
+        self.client.login(username=self.teacher.user.username, password='x' * 12)
+        r = self.client.post(reverse('homework_detail', args=[hw.id]), {
+            'decision': 'return',
+            'feedback': 'нужно дополнить выводы',
+        })
+        self.assertEqual(r.status_code, 302)
+        hw.refresh_from_db()
+        self.assertEqual(hw.status, Homework.Status.RETURNED)
+        sub.refresh_from_db()
+        self.assertIsNone(sub.grade)
+        self.assertIn('дополнить', sub.feedback)
+
+
+# ---------- Progress aggregations (Phase 9) -------------------------------
+
+
+@override_settings(STORAGES=SIMPLE_STATIC_STORAGES)
+class ProgressTests(TestCase):
+    def setUp(self):
+        from billing.platform_account import get_or_create_platform_user
+        self.platform = get_or_create_platform_user()
+        self.teacher, self.subject = _make_teacher_with_subject('p9_t')
+        self.tariff = _make_tariff(self.teacher, self.subject)
+        self.student = _make_student_with_balance('p9_s', balance=Decimal('1000000'))
+        self.subscription = SubscriptionService.purchase(
+            student=self.student, tariff=self.tariff,
+            idempotency_key='p9-purchase',
+        )
+
+    def test_attendance_rate_zero_initially(self):
+        self.assertEqual(self.subscription.attendance_rate, 0)
+
+    def test_attendance_rate_with_completed(self):
+        from teachers.models import Booking
+        bookings = list(Booking.objects.filter(subscription=self.subscription)[:3])
+        for b in bookings:
+            b.status = 'completed'
+            b.save()
+        self.assertEqual(self.subscription.attendance_rate, 100)
+
+    def test_attendance_rate_with_no_show(self):
+        from teachers.models import Booking
+        bookings = list(Booking.objects.filter(subscription=self.subscription)[:4])
+        bookings[0].status = 'completed'; bookings[0].save()
+        bookings[1].status = 'completed'; bookings[1].save()
+        bookings[2].status = 'no_show_student'; bookings[2].save()
+        bookings[3].status = 'no_show_teacher'; bookings[3].save()
+        self.assertEqual(self.subscription.attendance_rate, 50)
+
+    def test_average_grade_none_when_no_homework(self):
+        self.assertIsNone(self.subscription.average_grade)
+
+    def test_average_grade_with_homework(self):
+        hw1 = Homework.objects.create(
+            subscription=self.subscription, teacher=self.teacher, student=self.student,
+            title='hw1', description='—',
+        )
+        HomeworkSubmission.objects.create(homework=hw1, student=self.student, grade=80)
+        hw2 = Homework.objects.create(
+            subscription=self.subscription, teacher=self.teacher, student=self.student,
+            title='hw2', description='—',
+        )
+        HomeworkSubmission.objects.create(homework=hw2, student=self.student, grade=100)
+        self.assertEqual(self.subscription.average_grade, 90.0)
+
+    def test_homework_completion_rate(self):
+        Homework.objects.create(
+            subscription=self.subscription, teacher=self.teacher, student=self.student,
+            title='hw1', description='—', status=Homework.Status.GRADED,
+        )
+        Homework.objects.create(
+            subscription=self.subscription, teacher=self.teacher, student=self.student,
+            title='hw2', description='—', status=Homework.Status.ASSIGNED,
+        )
+        self.assertEqual(self.subscription.homework_completion_rate, 50)
+
+    def test_next_lesson(self):
+        next_b = self.subscription.next_lesson
+        self.assertIsNotNone(next_b)
+        self.assertEqual(next_b.status, 'confirmed')
+
+    def test_my_progress_view(self):
+        from django.urls import reverse
+        self.client.login(username='p9_s', password='x' * 12)
+        r = self.client.get(reverse('my_progress'))
+        self.assertEqual(r.status_code, 200)
+        html = r.content.decode('utf-8')
+        self.assertIn('Мой прогресс', html)
+
+    def test_teacher_student_progress_view(self):
+        from django.urls import reverse
+        self.client.login(username=self.teacher.user.username, password='x' * 12)
+        r = self.client.get(reverse('teacher_student_progress', args=[self.subscription.id]))
+        self.assertEqual(r.status_code, 200)
+        self.assertIn('Прогресс ученика', r.content.decode('utf-8'))
+
+    def test_teacher_cannot_see_others_subscription_progress(self):
+        from django.urls import reverse
+        other_teacher, _ = _make_teacher_with_subject('p9_other_t')
+        self.client.login(username=other_teacher.user.username, password='x' * 12)
+        r = self.client.get(reverse('teacher_student_progress', args=[self.subscription.id]))
+        self.assertEqual(r.status_code, 404)
+
+
+class WalletRaceConditionTests(TransactionTestCase):
+    """Race test: два параллельных debit'а на 60 при балансе 100.
+
+    Инвариант: баланс никогда не должен уйти в минус, при этом успешным
+    может быть только один debit (на PostgreSQL — благодаря select_for_update,
+    на SQLite — благодаря file-level lock).
+    """
+
+    def test_concurrent_debits_dont_go_negative(self):
+        import threading
+        from django.db import OperationalError
+
+        user = User.objects.create_user(username='race', email='race@x.com', password='x' * 12)
+        WalletService.credit(
+            user=user, amount=Decimal('100'),
+            tx_type=Transaction.Type.DEPOSIT, idempotency_key='race-seed',
+        )
+
+        successes = []
+        errors = []
+
+        def worker(key_suffix):
+            from django.db import connection
+            try:
+                WalletService.debit(
+                    user=user, amount=Decimal('60'),
+                    tx_type=Transaction.Type.PURCHASE,
+                    idempotency_key=f'race-{key_suffix}',
+                )
+                successes.append(key_suffix)
+            except (InsufficientFunds, OperationalError) as e:
+                errors.append(type(e).__name__)
+            finally:
+                connection.close()
+
+        t1 = threading.Thread(target=worker, args=('a',))
+        t2 = threading.Thread(target=worker, args=('b',))
+        t1.start(); t2.start()
+        t1.join(); t2.join()
+
+        user.wallet.refresh_from_db()
+        # Главный инвариант: balance >= 0 ВСЕГДА, второй debit не прошёл
+        self.assertGreaterEqual(user.wallet.balance, Decimal('0'))
+        self.assertLessEqual(len(successes), 1,
+                             f'не должно быть 2 успешных debit\'а: {successes}')
+        # 0 успехов = оба упали (SQLite-locking), 1 = классический PG-сценарий
+        self.assertIn(len(successes), (0, 1))

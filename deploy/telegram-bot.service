@@ -1,6 +1,6 @@
 [Unit]
-Description=Telegram bot for ustozhubedu
-After=network.target
+Description=UstozHub notification queue processor (Telegram)
+After=network.target redis-server.service postgresql.service
 
 [Service]
 Type=simple
@@ -8,8 +8,8 @@ User=www-data
 Group=www-data
 WorkingDirectory=/var/www/ustozhubuz
 EnvironmentFile=/var/www/ustozhubuz/.env
-ExecStart=/var/www/ustozhubuz/venv/bin/python manage.py process_notifications
-Restart=on-failure
+ExecStart=/var/www/ustozhubuz/venv/bin/python manage.py process_notifications --daemon --interval 10
+Restart=always
 RestartSec=10
 
 [Install]

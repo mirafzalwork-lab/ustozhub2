@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans 'Новое задание' %} — UstozHub{% endblock %}
+
+{% block content %}
+{% include 'billing/_homework_common.html' %}
+
+<div class="hw-page" style="max-width:780px;">
+  <h1>{% trans 'Новое задание' %}</h1>
+  <p class="subtitle">{% trans 'Задание создаётся для конкретной активной подписки. Файлы будут доступны ученику.' %}</p>
+
+  {% if not active_subs %}
+    <div class="empty-state">
+      <h2 style="color:#0A2540; margin:0 0 8px;">{% trans 'Нет активных подписок' %}</h2>
+      <p>{% trans 'Задание можно назначить только ученику с активной подпиской.' %}</p>
+    </div>
+  {% else %}
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+
+    <div class="form-row">
+      <label for="sub-select">{% trans 'Подписка / ученик' %} <span style="color:#DC2626">*</span></label>
+      <select id="sub-select" name="subscription" required class="form-select">
+        <option value="">— {% trans 'выберите' %} —</option>
+        {% for s in active_subs %}
+          <option value="{{ s.id }}">
+            {{ s.student.get_full_name|default:s.student.username }} · {{ s.subject.name }}
+            ({{ s.completed_lessons }}/{{ s.total_lessons }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label for="{{ form.title.id_for_label }}">{% trans 'Название задания' %} <span style="color:#DC2626">*</span></label>
+      {{ form.title }}
+      {% if form.title.errors %}<div class="err">{{ form.title.errors }}</div>{% endif %}
+    </div>
+
+    <div class="form-row">
+      <label for="{{ form.description.id_for_label }}">{% trans 'Описание' %} <span style="color:#DC2626">*</span></label>
+      {{ form.description }}
+      {% if form.description.errors %}<div class="err">{{ form.description.errors }}</div>{% endif %}
+    </div>
+
+    <div class="form-row">
+      <label for="{{ form.due_at.id_for_label }}">{% trans 'Дедлайн (опционально)' %}</label>
+      {{ form.due_at }}
+    </div>
+
+    <div class="form-row">
+      <label>{% trans 'Прикреплённые файлы (PDF/DOCX/JPG/MP4 и т.п., до 50 МБ каждый)' %}</label>
+      <input type="file" name="attachments" multiple class="form-input"
+             accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.mp4,.mp3,.zip">
+    </div>
+
+    <div style="display:flex; gap:12px; margin-top:24px;">
+      <button type="submit" class="hw-btn-primary">{% trans 'Назначить задание' %}</button>
+      <a href="{% url 'teacher_homework_list' %}" class="hw-btn-secondary">{% trans 'Отмена' %}</a>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

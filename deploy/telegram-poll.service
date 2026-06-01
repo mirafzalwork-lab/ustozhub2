@@ -1,0 +1,20 @@
+[Unit]
+Description=Telegram polling bot (commands, WebApp, callbacks)
+After=network.target redis-server.service postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/ustozhubuz
+EnvironmentFile=/var/www/ustozhubuz/.env
+ExecStart=/var/www/ustozhubuz/venv/bin/python /var/www/ustozhubuz/telegram_bot/bot.py
+Restart=always
+RestartSec=10
+
+# Безопасность
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

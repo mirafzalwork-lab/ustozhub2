@@ -152,12 +152,14 @@ def video_save(request):
     if not file_url.startswith(expected_prefix):
         return JsonResponse({'error': 'Недопустимый URL видео'}, status=400)
 
-    # Validate that the path belongs to this teacher (or was uploaded during registration)
-    allowed_paths = [
-        f"/videos/teachers/{teacher_profile.pk}/",
-        "/videos/teachers/new/",
-    ]
-    if not any(p in file_url for p in allowed_paths):
+    # IDOR-защита: разрешаем ТОЛЬКО собственный путь учителя или загрузку
+    # текущей сессии (видео, залитое в этой же сессии регистрации).
+    # Раньше подстрочная проверка "new/" позволяла присвоить чужое видео.
+    session_key = request.session.session_key or ''
+    allowed_prefixes = [f"{expected_prefix}/videos/teachers/{teacher_profile.pk}/"]
+    if session_key:
+        allowed_prefixes.append(f"{expected_prefix}/videos/teachers/new/{session_key}/")
+    if not any(file_url.startswith(p) for p in allowed_prefixes):
         return JsonResponse({'error': 'Нет доступа к этому файлу'}, status=403)
 
     # Delete old video from storage if replacing

@@ -11,7 +11,7 @@ from django.core.cache import cache
 from django.conf import settings
 from django.contrib.auth import login, logout, authenticate
 from django.utils import timezone
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, Http404
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 import csv
@@ -27,7 +27,7 @@ from .models import (
     TeacherSubject, Certificate, User, Favorite, FavoriteStudent,
     Conversation, Message, Review, ViewCounter, TelegramUser,
     SubjectCategory, SubjectSearchLog, Notification, NotificationRead,
-    DailyReminderTemplate,
+    DailyReminderTemplate, Booking,
 )
 from .search import (
     normalize_query, build_teacher_search_q,
@@ -238,13 +238,15 @@ def home(request):
     # Базовый queryset: все активные и одобренные учителя (включая рекомендуемых).
     # Рекомендуемые показываются дополнительно в слайдере сверху, но также присутствуют
     # в общей сетке — в обычном порядке, без приоритета наверху.
+    # Учителя без TeacherSubject не имеют ни цен, ни предметов — показывать бесполезно.
     teachers = TeacherProfile.objects.filter(
-        is_active=True, moderation_status='approved'
+        is_active=True, moderation_status='approved',
+        teachersubject__isnull=False,
     ).select_related(
         'user', 'city'
     ).prefetch_related(
         'subjects', 'teachersubject_set__subject', 'reviews'
-    )
+    ).distinct()
     
     # Получаем параметры фильтрации
     subject_id = request.GET.get('subject')
@@ -676,10 +678,11 @@ def messages_management(request):
 
     return render(request, 'admin/messages_management.html', context)
 
+@login_required
 def students_list(request):
     """
-    Страница со списком учеников, которые ищут учителей
-    Аналогична home() но для учеников
+    Страница со списком учеников, которые ищут учителей.
+    Требует авторизации — содержит PII учеников.
     """
     # Базовый queryset - только активные ученики
     students = StudentProfile.objects.filter(is_active=True).select_related(
@@ -778,18 +781,25 @@ def students_list(request):
 
 
 def detail(request, id):
-    """Детальная страница учителя с подсчетом просмотров"""
-    teacher = get_object_or_404(
+    """Детальная страница учителя.
+
+    Публичная, но черновики/неодобренные профили скрыты — кроме случая,
+    когда заходит сам владелец профиля (видит свой профиль в любом статусе).
+    """
+    qs = (
         TeacherProfile.objects.select_related('user', 'city')
         .prefetch_related(
             'teachersubject_set__subject',
             'certificates',
             'reviews__student',
-            'reviews__subject'
-        ),
-        id=id,
-        is_active=True
+            'reviews__subject',
+        )
     )
+    teacher = get_object_or_404(qs, id=id)
+    is_owner = request.user.is_authenticated and request.user.id == teacher.user_id
+    if not is_owner:
+        if not teacher.is_active or teacher.moderation_status != 'approved':
+            raise Http404()
 
     record_profile_view(request, teacher, 'teacher')
 
@@ -822,6 +832,32 @@ def detail(request, id):
     can_view_contacts = can_view_contact_info(request, teacher.user)
     show_auth_prompt = not request.user.is_authenticated
 
+    # Активные тарифы учителя (подписки, которые ученик может купить).
+    active_tariffs = teacher.tariffs.filter(is_active=True).select_related('subject')
+
+    # Phase 10.5: Если ученик прошёл пробный с этим учителем за последние 30 дней
+    # и ещё не подписан → подсветить тарифы как «рекомендуется после пробного».
+    completed_trial_subject_ids = set()
+    if request.user.is_authenticated and request.user.user_type == 'student':
+        from datetime import timedelta
+        from django.utils import timezone as tz
+        from billing.models import Subscription as SubModel
+        cutoff = tz.now() - timedelta(days=30)
+        trials_qs = Booking.objects.filter(
+            student=request.user,
+            slot__teacher=teacher,
+            is_trial=True,
+            status='completed',
+            slot__end_at__gte=cutoff,
+            slot__end_at__lt=tz.now(),
+        ).values_list('subject_id', flat=True)
+        # Исключаем предметы, по которым уже есть активная подписка к этому учителю
+        active_sub_subj_ids = set(SubModel.objects.filter(
+            student=request.user, teacher=teacher,
+            status__in=SubModel.ACTIVE_STATUSES,
+        ).values_list('subject_id', flat=True))
+        completed_trial_subject_ids = set(trials_qs) - active_sub_subj_ids
+
     context = {
         'teacher': teacher,
         'reviews': reviews,
@@ -831,13 +867,16 @@ def detail(request, id):
         'similar_teachers': similar_teachers,
         'can_view_contacts': can_view_contacts,
         'show_auth_prompt': show_auth_prompt,
+        'active_tariffs': active_tariffs,
+        'completed_trial_subject_ids': completed_trial_subject_ids,
     }
 
     return render(request, 'logic/teacher_detail.html', context)
 
 
+@login_required
 def student_detail(request, id):
-    """Детальная страница ученика с подсчетом просмотров"""
+    """Детальная страница ученика с подсчетом просмотров. Требует авторизации (PII)."""
     student = get_object_or_404(
         StudentProfile.objects.select_related('user', 'city')
         .prefetch_related(
@@ -992,6 +1031,43 @@ def robots_txt(request):
     return HttpResponse(content, content_type='text/plain')
 
 
+def healthz(request):
+    """Health-check для мониторинга/nginx: проверяет БД и Redis-кэш.
+
+    Возвращает 200 если всё живо, иначе 503 (с деталями, какой компонент упал).
+    Без аутентификации, без записи в БД — дёшево пинговать часто.
+    """
+    from django.http import JsonResponse
+    from django.db import connection
+    from django.core.cache import cache
+
+    checks = {}
+    ok = True
+
+    try:
+        with connection.cursor() as cur:
+            cur.execute('SELECT 1')
+            cur.fetchone()
+        checks['db'] = 'ok'
+    except Exception as e:
+        checks['db'] = f'error: {e}'
+        ok = False
+
+    try:
+        cache.set('healthz', '1', 5)
+        checks['cache'] = 'ok' if cache.get('healthz') == '1' else 'error: readback failed'
+        if checks['cache'] != 'ok':
+            ok = False
+    except Exception as e:
+        checks['cache'] = f'error: {e}'
+        ok = False
+
+    return JsonResponse(
+        {'status': 'ok' if ok else 'degraded', 'checks': checks},
+        status=200 if ok else 503,
+    )
+
+
 def register_choose(request):
     """Выбор типа регистрации"""
     if request.user.is_authenticated:
@@ -1044,23 +1120,12 @@ def register_student(request):
 
             messages.success(
                 request,
-                'Регистрация прошла успешно! Сейчас мы подберем для вас подходящих учителей.'
+                'Регистрация прошла успешно! Мы подобрали учителей, которые точно вам подойдут.'
             )
-            
-            # Получаем желаемые предметы студента и перенаправляем на home с поиском
-            try:
-                student_profile = user.student_profile
-                desired_subjects = student_profile.desired_subjects.all()
-                
-                # Если есть желаемые предметы, перенаправляем на home с поиском по первому предмету
-                if desired_subjects.exists():
-                    first_subject = desired_subjects.first()
-                    return redirect(f'{reverse("home")}?search={first_subject.name}')
-            except (StudentProfile.DoesNotExist, AttributeError):
-                pass
-            
-            # Если нет предметов, просто перенаправляем на home
-            return redirect('home')
+
+            # 🎯 Phase 8 — Magic moment: сразу показываем smart-matched учителей
+            # вместо безликого редиректа на каталог.
+            return redirect('student_suggestions')
     else:
         form = StudentRegistrationForm()
     
@@ -1093,10 +1158,34 @@ def profile_view(request):
                 'unique_total': teacher_profile.get_unique_viewers_count('all'),
                 'unique_week': teacher_profile.get_unique_viewers_count('week'),
             }
-            
+
+            # Phase 9 — Activity dashboard данные за 3 периода
+            activity_7d  = teacher_profile.get_activity_stats('7d')
+            activity_30d = teacher_profile.get_activity_stats('30d')
+            activity_all = teacher_profile.get_activity_stats('all')
+            funnel_7d    = teacher_profile.get_funnel_stats('7d')
+            earnings_7d  = teacher_profile.get_earnings_stats('7d')
+            earnings_30d = teacher_profile.get_earnings_stats('30d')
+            earnings_all = teacher_profile.get_earnings_stats('all')
+
+            first_booking_checklist = teacher_profile.get_first_booking_checklist()
+            first_booking_done_count = (
+                sum(1 for c in first_booking_checklist if c['done'])
+                if first_booking_checklist else 0
+            )
+
             return render(request, 'logic/teacher_profile.html', {
                 'teacher': teacher_profile,
-                'views_stats': views_stats,  # ✅ НОВОЕ
+                'views_stats': views_stats,
+                'activity_7d': activity_7d,
+                'activity_30d': activity_30d,
+                'activity_all': activity_all,
+                'funnel_7d': funnel_7d,
+                'earnings_7d': earnings_7d,
+                'earnings_30d': earnings_30d,
+                'earnings_all': earnings_all,
+                'first_booking_checklist': first_booking_checklist,
+                'first_booking_done_count': first_booking_done_count,
             })
         except TeacherProfile.DoesNotExist:
             messages.warning(request, 'Завершите регистрацию учителя')
@@ -1224,7 +1313,10 @@ def teacher_profile_edit(request):
         'profile_form': profile_form,
         'teacher': teacher_profile,
         'subject_forms': subject_forms,
-        'teacher_subjects': teacher_subjects
+        'teacher_subjects': teacher_subjects,
+        # Передаём completeness для синхронизации с widget'ом на teacher_profile.html
+        # и подсветки missing-секций
+        'completeness': teacher_profile.get_completeness(),
     }
     return render(request, 'logic/teacher_profile_edit.html', context)
 
@@ -1371,7 +1463,7 @@ def my_favorite_students(request):
 
 @login_required
 def student_suggestions(request):
-    """Страница с подходящими учителями для текущего ученика сразу после регистрации"""
+    """Smart-matching: подобранные учителя для студента (Phase 8 magic moment)."""
     if request.user.user_type != 'student':
         messages.error(request, 'Доступ запрещен')
         return redirect('home')
@@ -1382,24 +1474,23 @@ def student_suggestions(request):
         messages.warning(request, 'Заполните профиль ученика')
         return redirect('student_profile_edit')
 
-    desired_subjects = student.desired_subjects.all()
+    desired_subjects = list(student.desired_subjects.all())
+    matches = TeacherProfile.get_smart_matches(student, limit=5)
 
-    teachers = TeacherProfile.objects.filter(
-        is_active=True,
-        moderation_status='approved',
-        subjects__in=desired_subjects
-    ).select_related('user', 'city').prefetch_related('teachersubject_set__subject').distinct().order_by('-is_featured', '-rating', '-created_at')[:24]
-
-    # fallback: если нет указанных предметов, показать топ-учителей
-    if not teachers:
-        teachers = TeacherProfile.objects.filter(
-            is_active=True, moderation_status='approved'
-        ).select_related('user', 'city').prefetch_related('teachersubject_set__subject').order_by('-is_featured', '-rating', '-created_at')[:12]
+    # Считаем сколько критериев заполнено в профиле — для подсказки
+    profile_fields_filled = sum(1 for v in [
+        desired_subjects,
+        student.budget_max or student.budget_min,
+        student.city_id,
+        student.learning_format and student.learning_format != 'both',
+    ] if v)
 
     return render(request, 'logic/student_suggestions.html', {
         'student': student,
-        'teachers': teachers,
+        'matches': matches,
         'desired_subjects': desired_subjects,
+        'profile_fields_filled': profile_fields_filled,
+        'has_desired': bool(desired_subjects),
     })
 
 

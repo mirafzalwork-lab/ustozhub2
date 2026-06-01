@@ -1,0 +1,73 @@
+{% load i18n %}
+{% load humanize %}
+{# Карточка кошелька для профиля. Подключается через {% include 'billing/_wallet_card.html' %} #}
+<style>
+  .wallet-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #0F766E 0%, #14B8A6 100%);
+    color: #fff;
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin: 20px 0 24px;
+    gap: 20px;
+    flex-wrap: wrap;
+    box-shadow: 0 6px 20px rgba(15,118,110,.18);
+  }
+  .wallet-card .wallet-left { display: flex; align-items: center; gap: 16px; min-width: 0; }
+  .wallet-card .wallet-icon {
+    width: 52px; height: 52px; border-radius: 12px;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .wallet-card .wallet-label { font-size: 13px; opacity: .85; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 2px; }
+  .wallet-card .wallet-amount { font-size: 28px; font-weight: 700; line-height: 1.1; }
+  .wallet-card .wallet-amount small { font-size: 14px; font-weight: 400; opacity: .85; margin-left: 4px; }
+  .wallet-card .wallet-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .wallet-card .wallet-btn {
+    background: rgba(255,255,255,.18);
+    border: 1px solid rgba(255,255,255,.28);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background .15s;
+  }
+  .wallet-card .wallet-btn:hover { background: rgba(255,255,255,.28); color: #fff; text-decoration: none; }
+  .wallet-card .wallet-btn.primary {
+    background: #fff; color: #0F766E; font-weight: 600; border-color: #fff;
+  }
+  .wallet-card .wallet-btn.primary:hover { background: #ECFDF5; color: #0F766E; }
+  .wallet-card .wallet-btn i { margin-right: 4px; }
+  @media (max-width: 600px) {
+    .wallet-card { padding: 16px; }
+    .wallet-card .wallet-amount { font-size: 22px; }
+    .wallet-card .wallet-actions { width: 100%; }
+    .wallet-card .wallet-btn { flex: 1; text-align: center; }
+  }
+</style>
+
+{% with wallet=user.wallet %}
+<div class="wallet-card">
+  <div class="wallet-left">
+    <div class="wallet-icon"><i class="fas fa-wallet"></i></div>
+    <div>
+      <div class="wallet-label">{% trans 'Баланс кошелька' %}</div>
+      <div class="wallet-amount">
+        {{ wallet.balance|floatformat:0|intcomma }}
+        <small>{{ wallet.currency|default:"UZS" }}</small>
+      </div>
+    </div>
+  </div>
+  <div class="wallet-actions">
+    <a href="{% url 'wallet_topup_request' %}" class="wallet-btn primary">
+      <i class="fas fa-plus-circle"></i>{% trans 'Пополнить' %}
+    </a>
+  </div>
+</div>
+{% endwith %}

@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}{% trans 'Мои тарифы' %} — UstozHub{% endblock %}
+
+{% block content %}
+<style>
+  .tariffs-page { max-width: 1000px; margin: 0 auto; padding: 32px 24px; }
+  .tariffs-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
+  .tariffs-header h1 { margin: 0; font-size: 28px; color: var(--primary-color, #0A2540); }
+  .tariffs-header .subtitle { color: #64748B; font-size: 14px; margin-top: 4px; }
+  .btn-primary { background: var(--accent-color, #3B82F6); color: #fff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; transition: opacity .15s; }
+  .btn-primary:hover { opacity: .9; }
+  .btn-secondary { background: #fff; color: var(--primary-color, #0A2540); border: 1px solid #E2E8F0; padding: 8px 14px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; }
+  .btn-secondary:hover { background: #F8FAFC; }
+  .btn-danger { color: #DC2626; background: transparent; border: 1px solid #FCA5A5; padding: 8px 14px; border-radius: 8px; font-size: 14px; cursor: pointer; }
+  .btn-danger:hover { background: #FEF2F2; }
+
+  .tariffs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+  .tariff-card { border: 1px solid #E2E8F0; border-radius: 14px; padding: 20px; background: #fff; position: relative; }
+  .tariff-card.recommended { border-color: var(--accent-color, #3B82F6); box-shadow: 0 4px 16px rgba(59,130,246,.10); }
+  .tariff-card.inactive { opacity: .55; }
+  .tariff-card .badge { position: absolute; top: -10px; right: 16px; background: var(--accent-color, #3B82F6); color: #fff; font-size: 11px; padding: 4px 10px; border-radius: 999px; font-weight: 600; letter-spacing: .3px; }
+  .tariff-card .badge.muted { background: #94A3B8; }
+  .tariff-card h3 { margin: 0 0 4px 0; font-size: 18px; color: #0A2540; }
+  .tariff-card .subject { color: #64748B; font-size: 14px; margin-bottom: 14px; }
+  .tariff-card .price { font-size: 26px; font-weight: 700; color: #0A2540; }
+  .tariff-card .price small { font-size: 13px; color: #64748B; font-weight: 400; }
+  .tariff-card .meta { margin: 12px 0 16px; font-size: 14px; color: #475569; line-height: 1.7; }
+  .tariff-card .meta .row { display: flex; justify-content: space-between; gap: 12px; }
+  .tariff-card .meta .row b { color: #0A2540; font-weight: 500; }
+  .tariff-card .actions { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid #F1F5F9; }
+  .tariff-card .description { font-size: 13px; color: #64748B; margin: 12px 0; line-height: 1.5; }
+
+  .empty-state { text-align: center; padding: 60px 20px; background: #F8FAFC; border-radius: 14px; }
+  .empty-state h2 { font-size: 20px; color: #0A2540; margin: 0 0 8px; }
+  .empty-state p { color: #64748B; margin: 0 0 20px; }
+</style>
+
+<div class="tariffs-page">
+  <div class="tariffs-header">
+    <div>
+      <h1>{% trans 'Мои тарифы' %}</h1>
+      <div class="subtitle">{% trans 'Подписки, которые ученики могут купить у вас' %}</div>
+    </div>
+    <a href="{% url 'tariff_create' %}" class="btn-primary">+ {% trans 'Создать тариф' %}</a>
+  </div>
+
+  {% if tariffs %}
+    <div class="tariffs-grid">
+      {% for t in tariffs %}
+        <div class="tariff-card {% if t.is_recommended %}recommended{% endif %} {% if not t.is_active %}inactive{% endif %}">
+          {% if t.is_recommended %}<span class="badge">{% trans 'Рекомендованный' %}</span>{% endif %}
+          {% if not t.is_active %}<span class="badge muted">{% trans 'Выключен' %}</span>{% endif %}
+
+          <h3>{{ t.name|default:t.subject.name }}</h3>
+          <div class="subject">{{ t.subject.name }}</div>
+
+          <div class="price">
+            {{ t.total_price|floatformat:0|intcomma }} <small>сум{% if t.duration_months != 1 %} / {{ t.duration_months }} мес.{% endif %}</small>
+          </div>
+
+          <div class="meta">
+            <div class="row"><span>{% trans 'Уроков в неделю' %}</span><b>{{ t.lessons_per_week }}</b></div>
+            <div class="row"><span>{% trans 'Длительность урока' %}</span><b>{{ t.lesson_duration_minutes }} мин</b></div>
+            <div class="row"><span>{% trans 'Всего уроков' %}</span><b>{{ t.total_lessons }}</b></div>
+            <div class="row"><span>{% trans 'Цена за урок' %}</span><b>{{ t.price_per_lesson|floatformat:0|intcomma }} сум</b></div>
+          </div>
+
+          {% if t.description %}<div class="description">{{ t.description|truncatechars:120 }}</div>{% endif %}
+
+          <div class="actions">
+            <a href="{% url 'tariff_edit' t.pk %}" class="btn-secondary">{% trans 'Изменить' %}</a>
+            <form method="post" action="{% url 'tariff_toggle_active' t.pk %}" style="display:inline">
+              {% csrf_token %}
+              <button type="submit" class="btn-secondary">{% if t.is_active %}{% trans 'Выключить' %}{% else %}{% trans 'Включить' %}{% endif %}</button>
+            </form>
+            <form method="post" action="{% url 'tariff_delete' t.pk %}" style="display:inline" data-confirm="{% trans 'Удалить тариф?' %}" data-confirm-ok="{% trans 'Удалить' %}" data-confirm-danger>
+              {% csrf_token %}
+              <button type="submit" class="btn-danger">{% trans 'Удалить' %}</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <h2>{% trans 'У вас пока нет тарифов' %}</h2>
+      <p>{% trans 'Создайте первый тариф, чтобы ученики могли купить у вас подписку.' %}</p>
+      <a href="{% url 'tariff_create' %}" class="btn-primary">+ {% trans 'Создать тариф' %}</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

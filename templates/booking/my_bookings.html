@@ -29,8 +29,64 @@
     .bk-filter.is-active {
         background: var(--cal-primary,#4F46E5); color:#fff; border-color: var(--cal-primary,#4F46E5);
     }
+    .bk-filter-count {
+        display: none;
+        margin-left: 4px; padding: 1px 6px;
+        background: rgba(0,0,0,0.08); border-radius: 999px;
+        font-size: 11px; font-weight: 700;
+    }
+    .bk-filter.is-active .bk-filter-count { background: rgba(255,255,255,0.25); }
+    .bk-filter-count.has-items { display: inline-block; }
+    .bk-filter-count.is-urgent {
+        background: #DC2626; color: #fff;
+        animation: bk-count-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes bk-count-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
 
     .bk-list { display:flex; flex-direction:column; gap:12px; }
+
+    /* ===== Stats strip (Phase 5) ===== */
+    .bk-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 10px;
+        margin-bottom: 18px;
+        padding: 14px 16px;
+        background: linear-gradient(135deg, #EEF2FF, #E0E7FF);
+        border: 1px solid #C7D2FE; border-radius: 14px;
+    }
+    .bk-stat { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .bk-stat__icon {
+        width: 34px; height: 34px; border-radius: 10px;
+        background: #fff; color: #4338CA;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 14px; flex-shrink: 0;
+    }
+    .bk-stat__icon.urgent { color: #DC2626; }
+    .bk-stat__val { font-size: 15px; font-weight: 700; color: #0F172A; line-height: 1.1; }
+    .bk-stat__lbl { font-size: 11px; color: #475569; text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
+
+    /* ===== Day group header (Phase 5) ===== */
+    .bk-day-header {
+        display: flex; align-items: center; gap: 10px;
+        font-size: 13px; font-weight: 700; color: #0F172A;
+        text-transform: uppercase; letter-spacing: .04em;
+        margin: 14px 4px 6px;
+    }
+    .bk-day-header.is-today { color: #DC2626; }
+    .bk-day-header.is-today::before { content: '🔥'; font-size: 16px; }
+    .bk-day-header__count {
+        font-size: 11px; font-weight: 600; color: #64748B;
+        background: #F1F5F9; padding: 2px 8px; border-radius: 999px;
+        text-transform: none; letter-spacing: 0;
+    }
+    .bk-day-header__line {
+        flex: 1; height: 1px; background: #E2E8F0;
+    }
+
     .bk-card {
         display:grid; grid-template-columns: 80px 1fr auto;
         gap:16px; align-items:center;
@@ -40,8 +96,47 @@
         border-radius:14px;
         box-shadow: 0 1px 3px rgba(15,23,42,.04);
         transition: all .15s;
+        position: relative;
+        overflow: hidden;
     }
     .bk-card:hover { box-shadow: 0 4px 12px rgba(15,23,42,.06); border-color:#CBD5E1; }
+    /* Pending — жёлтая акцентная полоса слева */
+    .bk-card.is-pending { border-left: 4px solid #F59E0B; }
+    /* Urgent — красная рамка + пульс если <5 мин до expires_at */
+    .bk-card.is-urgent {
+        border-color: #DC2626; border-left: 4px solid #DC2626;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
+        animation: bk-urgent-pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes bk-urgent-pulse {
+        0%, 100% { box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08); }
+        50% { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0.15); }
+    }
+    /* Today — зелёный бейдж в углу */
+    .bk-card.is-today .bk-today-badge { display: inline-flex; }
+    .bk-today-badge {
+        display: none;
+        align-items: center; gap: 4px;
+        position: absolute; top: 10px; right: 12px;
+        padding: 3px 9px; border-radius: 999px;
+        background: linear-gradient(135deg, #10B981, #059669);
+        color: #fff; font-size: 10px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: .5px;
+        z-index: 1;
+    }
+    /* Trial — ленточка-уголок */
+    .bk-card.is-trial::before {
+        content: '🎁 ' attr(data-trial-label);
+        position: absolute; top: 8px; left: -28px;
+        transform: rotate(-30deg);
+        background: linear-gradient(135deg, #F59E0B, #D97706);
+        color: #fff; font-size: 9px; font-weight: 700;
+        padding: 2px 30px; letter-spacing: .5px;
+        z-index: 1; pointer-events: none;
+        text-transform: uppercase;
+    }
+    /* Past — приглушено */
+    .bk-card.is-past { opacity: 0.85; background: #FAFBFC; }
 
     .bk-date {
         text-align:center;
@@ -150,6 +245,19 @@
     .bkm-field textarea { min-height:80px; resize:vertical; }
     .bkm-field input:focus, .bkm-field textarea:focus, .bkm-field select:focus { outline:none; border-color:#4F46E5; }
     .bkm-field .bkm-hint { font-size:12px; color:#94a3b8; margin-top:4px; }
+
+    /* Quick-reply chips для reject — Phase 5 */
+    .bkm-chips {
+        display: flex; flex-wrap: wrap; gap: 6px;
+        margin: 4px 0 12px;
+    }
+    .bkm-chip {
+        padding: 6px 12px; border-radius: 999px;
+        background: #F8FAFC; color: #475569; border: 1px solid #E2E8F0;
+        font-size: 12.5px; cursor: pointer; transition: all .15s;
+    }
+    .bkm-chip:hover { background: #EFF6FF; border-color: #BFDBFE; color: #1E40AF; }
+    .bkm-chip.is-active { background: #1E40AF; color: #fff; border-color: #1E40AF; }
     .bkm-actions { display:flex; gap:10px; margin-top:20px; }
     .bkm-btn {
         flex:1; padding:11px 16px; border-radius:10px; border:0;
@@ -185,12 +293,13 @@
             {% endif %}
         </h1>
         <div class="bk-filters" id="bk-filters">
-            <button class="bk-filter is-active" data-status="">{% trans "Все" %}</button>
-            <button class="bk-filter" data-status="pending">{% trans "Ожидают" %}</button>
-            <button class="bk-filter" data-status="confirmed">{% trans "Подтверждены" %}</button>
-            <button class="bk-filter" data-status="completed">{% trans "Завершены" %}</button>
+            <button class="bk-filter is-active" data-tab="urgent">🔥 {% trans "Срочно" %} <span class="bk-filter-count" data-count="urgent"></span></button>
+            <button class="bk-filter" data-tab="upcoming">📅 {% trans "Предстоящие" %} <span class="bk-filter-count" data-count="upcoming"></span></button>
+            <button class="bk-filter" data-tab="past">✓ {% trans "Прошедшие" %} <span class="bk-filter-count" data-count="past"></span></button>
         </div>
     </header>
+
+    <div id="bk-stats" class="bk-stats" hidden></div>
 
     <div class="bk-list" id="bk-list">
         <div class="bk-empty"><i class="fa-regular fa-clock"></i><div>{% trans "Загрузка..." %}</div></div>
@@ -262,6 +371,31 @@ window.UstozMyBookings = {
         noFreeSlots: "{% trans 'У учителя нет свободных слотов на ближайшие 30 дней.' %}",
         addToCalendar: "{% trans 'Добавить в календарь (.ics)' %}",
         rescheduled: "{% trans 'Урок перенесён — ждёт подтверждения учителя.' %}",
+        // Phase 5: tabs + quick-reply + stats + empty states
+        tabUrgent: "{% trans 'Срочно' %}",
+        tabUpcoming: "{% trans 'Предстоящие' %}",
+        tabPast: "{% trans 'Прошедшие' %}",
+        confirmedFast: "{% trans 'Подтверждено ✓' %}",
+        confirmWithMsg: "{% trans '✉ С сообщением' %}",
+        quickRejectBusy: "{% trans 'В это время занят' %}",
+        quickRejectSick: "{% trans 'Заболел, не смогу провести' %}",
+        quickRejectReschedule: "{% trans 'Давайте перенесём — предложите другое время' %}",
+        quickRejectOther: "{% trans 'Другая причина' %}",
+        statTodayLessons: "{% trans 'уроков сегодня' %}",
+        statPending: "{% trans 'ждут подтверждения' %}",
+        statUrgent: "{% trans 'истекают скоро' %}",
+        statUpcoming: "{% trans 'предстоит' %}",
+        emptyUrgentTeacher: "{% trans 'Все запросы обработаны 🎉' %}",
+        emptyUrgentStudent: "{% trans 'Нет уроков, ждущих подтверждения' %}",
+        emptyUpcomingTeacher: "{% trans 'У вас нет предстоящих уроков' %}",
+        emptyUpcomingStudent: "{% trans 'У вас нет предстоящих уроков. Найдите учителя →' %}",
+        emptyPast: "{% trans 'Здесь будут уроки после их завершения' %}",
+        findTeacher: "{% trans 'Найти учителя' %}",
+        today: "{% trans 'Сегодня' %}",
+        tomorrow: "{% trans 'Завтра' %}",
+        urgentBadge: "{% trans 'Сегодня' %}",
+        trialLabel: "{% trans 'Пробный' %}",
+        homeUrl: "{% url 'home' %}",
     },
 };
 </script>

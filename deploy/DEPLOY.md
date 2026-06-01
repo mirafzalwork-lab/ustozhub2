@@ -4,9 +4,14 @@
 - **Nginx** — reverse proxy + статика
 - **Gunicorn** (HTTP/WSGI) → unix socket `/run/gunicorn.sock`
 - **Daphne** (WebSockets/ASGI) → unix socket `/run/daphne.sock` (для `/ws/`)
-- **Redis** — Channels layer
-- **PostgreSQL** (рекомендуется вместо SQLite)
-- **Telegram bot** — отдельный systemd сервис
+- **Redis** — Channels layer + кэш + брокер Celery
+- **PostgreSQL** (ОБЯЗАТЕЛЬНО вместо SQLite — `select_for_update` в биллинге/бронировании на SQLite не работает)
+- **Celery worker** — фоновые задачи: выплаты учителям, освобождение слотов, уведомления (systemd)
+- **Celery beat** — планировщик периодических задач, СТРОГО один экземпляр (systemd)
+- **Telegram bot** — интерактивный бот (polling), отдельный systemd сервис
+
+> ⚠️ Без Celery worker+beat НЕ выполняются выплаты учителям, не освобождаются
+> протухшие холды слотов и не доставляются Telegram-уведомления.
 
 ## 1. Подготовка сервера
 ```bash
@@ -24,7 +29,8 @@ git clone https://github.com/mirafzalwork-lab/ustozhub2.git .
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-pip install gunicorn psycopg2-binary
+pip install gunicorn
+# psycopg3 (psycopg[binary]) и celery уже в requirements.txt — отдельно ставить не нужно
 ```
 
 ## 3. Настройка PostgreSQL
@@ -61,12 +67,21 @@ sudo chown www-data:www-data /var/log/gunicorn /var/log/daphne
 sudo cp deploy/gunicorn.socket /etc/systemd/system/
 sudo cp deploy/gunicorn.service /etc/systemd/system/
 sudo cp deploy/daphne.service /etc/systemd/system/
-sudo cp deploy/telegram-bot.service /etc/systemd/system/
+sudo cp deploy/celery.service /etc/systemd/system/
+sudo cp deploy/celery-beat.service /etc/systemd/system/
+sudo cp deploy/telegram-bot.service /etc/systemd/system/    # обработчик очереди уведомлений
+sudo cp deploy/telegram-poll.service /etc/systemd/system/   # интерактивный бот (команды/WebApp)
 
 sudo systemctl daemon-reload
-sudo systemctl enable --now gunicorn.socket gunicorn.service daphne.service telegram-bot.service
-sudo systemctl status gunicorn daphne telegram-bot
+sudo systemctl enable --now gunicorn.socket gunicorn.service daphne.service \
+    celery.service celery-beat.service telegram-bot.service telegram-poll.service
+sudo systemctl status gunicorn daphne celery celery-beat telegram-bot telegram-poll
 ```
+
+> ВАЖНО: `celery-beat.service` должен работать СТРОГО в одном экземпляре —
+> иначе периодические задачи (в т.ч. выплаты) задвоятся.
+> `telegram-bot.service` — это демон обработки очереди (`process_notifications`),
+> а `telegram-poll.service` — отдельный интерактивный бот (`telegram_bot/bot.py`).
 
 ## 8. Nginx
 ```bash
@@ -95,12 +110,15 @@ source venv/bin/activate
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py collectstatic --noinput
-sudo systemctl restart gunicorn daphne telegram-bot
+sudo systemctl restart gunicorn daphne celery celery-beat telegram-bot telegram-poll
 
 # Логи
 sudo journalctl -u gunicorn -f
 sudo journalctl -u daphne -f
+sudo journalctl -u celery -f
+sudo journalctl -u celery-beat -f
 sudo journalctl -u telegram-bot -f
+sudo journalctl -u telegram-poll -f
 sudo tail -f /var/log/nginx/ustozhubuz_error.log
 ```
 

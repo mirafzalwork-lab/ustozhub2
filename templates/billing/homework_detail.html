@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{{ homework.title }} — UstozHub{% endblock %}
+
+{% block content %}
+{% include 'billing/_homework_common.html' %}
+
+<div class="hw-page" style="max-width:880px;">
+  <a href="{% if role == 'teacher' %}{% url 'teacher_homework_list' %}{% else %}{% url 'student_homework_list' %}{% endif %}"
+     style="color:#7C3AED; text-decoration:none; font-size:14px;">← {% trans 'к списку' %}</a>
+
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; margin: 14px 0 4px;">
+    <h1 style="margin:0;">{{ homework.title }}</h1>
+    <span class="hw-status {{ homework.status }}">{{ homework.get_status_display }}</span>
+  </div>
+
+  <p class="subtitle" style="margin:0 0 16px;">
+    👤 <b>{{ homework.teacher.user.get_full_name|default:homework.teacher.user.username }}</b>
+    {% trans 'для' %} <b>{{ homework.student.get_full_name|default:homework.student.username }}</b>
+    · 📚 {{ homework.subscription.subject.name }}
+    {% if homework.due_at %}
+      · <span class="due-label {% if homework.is_overdue %}overdue{% else %}ok{% endif %}">
+        📅 {% trans 'до' %} {{ homework.due_at|date:"d M Y, H:i" }}
+      </span>
+    {% endif %}
+  </p>
+
+  <!-- Задание -->
+  <div class="hw-card" style="margin-top: 18px;">
+    <h2 style="margin:0 0 10px; font-size:16px; color:#0A2540;">📝 {% trans 'Задание' %}</h2>
+    <div style="white-space: pre-wrap; color:#334155; line-height:1.6;">{{ homework.description }}</div>
+
+    {% if homework.attachments.all %}
+      <h3 style="margin:18px 0 8px; font-size:14px; color:#0A2540;">📎 {% trans 'Файлы' %}</h3>
+      <div class="file-list">
+        {% for a in homework.attachments.all %}
+          <div class="file-item">
+            <a href="{{ a.file.url }}" target="_blank" rel="noopener">{{ a.filename }}</a>
+            <span class="size">{{ a.file_size|filesizeformat }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Сдача -->
+  {% if submission %}
+    <div class="hw-card {{ homework.status }}" style="margin-top: 18px;">
+      <h2 style="margin:0 0 10px; font-size:16px; color:#0A2540;">
+        📤 {% trans 'Сдано' %}
+        <small style="color:#94A3B8; font-weight:400;">{{ submission.submitted_at|date:"d M Y, H:i" }}</small>
+      </h2>
+
+      {% if submission.text_response %}
+        <div style="white-space: pre-wrap; color:#334155; line-height:1.6; margin-bottom: 14px;">{{ submission.text_response }}</div>
+      {% endif %}
+
+      {% if submission.files.all %}
+        <div class="file-list">
+          {% for f in submission.files.all %}
+            <div class="file-item">
+              <a href="{{ f.file.url }}" target="_blank" rel="noopener">{{ f.filename }}</a>
+              <span class="size">{{ f.file_size|filesizeformat }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if submission.grade is not None %}
+        <div style="margin-top: 14px; padding:14px 18px; background: #ECFDF5; border:1px solid #BBF7D0; border-radius:10px;">
+          <div style="font-size:13px; color:#065F46;">{% trans 'Оценка' %}</div>
+          <div style="font-size:30px; font-weight:700; color:#065F46;">{{ submission.grade }}/100</div>
+          {% if submission.feedback %}
+            <div style="margin-top:8px; color:#0F766E; line-height:1.5;">{{ submission.feedback }}</div>
+          {% endif %}
+        </div>
+      {% elif submission.feedback and homework.status == 'returned' %}
+        <div style="margin-top: 14px; padding:14px 18px; background: #FEF2F2; border:1px solid #FECACA; border-radius:10px;">
+          <b style="color:#B91C1C;">{% trans 'Возвращено на доработку:' %}</b>
+          <div style="margin-top:6px; color:#7F1D1D; line-height:1.5;">{{ submission.feedback }}</div>
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <!-- Форма ученика (если ещё не сдано или returned) -->
+  {% if role == 'student' and homework.status in 'assigned,returned'|cut:',' %}
+  {% endif %}
+  {% if role == 'student' and submission_form and homework.status == 'assigned' or role == 'student' and homework.status == 'returned' %}
+    <div class="hw-card" style="margin-top: 18px;">
+      <h2 style="margin:0 0 10px; font-size:16px; color:#0A2540;">
+        {% if homework.status == 'returned' %}🔄 {% trans 'Пересдать работу' %}{% else %}✍️ {% trans 'Сдать работу' %}{% endif %}
+      </h2>
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        <div class="form-row">
+          <label for="{{ submission_form.text_response.id_for_label }}">{% trans 'Ваш ответ' %}</label>
+          {{ submission_form.text_response }}
+        </div>
+        <div class="form-row">
+          <label>{% trans 'Прикрепить файлы (PDF/DOCX/JPG и т.п.)' %}</label>
+          <input type="file" name="files" multiple class="form-input"
+                 accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.mp4,.mp3,.zip">
+        </div>
+        <button type="submit" class="hw-btn-primary">📤 {% trans 'Отправить' %}</button>
+      </form>
+    </div>
+  {% endif %}
+
+  <!-- Форма оценки учителя (если submitted) -->
+  {% if role == 'teacher' and homework.status in 'submitted,graded'|cut:',' %}
+    <div class="hw-card" style="margin-top: 18px;">
+      <h2 style="margin:0 0 10px; font-size:16px; color:#0A2540;">
+        ⭐ {% if homework.status == 'graded' %}{% trans 'Пересмотреть оценку' %}{% else %}{% trans 'Поставить оценку' %}{% endif %}
+      </h2>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="form-row">
+          {% for radio in grade_form.decision %}
+            <label style="display:inline-flex; align-items:center; margin-right:18px; cursor:pointer;">
+              {{ radio.tag }} <span style="margin-left:6px;">{{ radio.choice_label }}</span>
+            </label>
+          {% endfor %}
+        </div>
+        <div class="form-row">
+          <label>{{ grade_form.grade.label }}</label>
+          {{ grade_form.grade }}
+          {% if grade_form.grade.errors %}<div class="err">{{ grade_form.grade.errors }}</div>{% endif %}
+        </div>
+        <div class="form-row">
+          <label>{{ grade_form.feedback.label }}</label>
+          {{ grade_form.feedback }}
+          {% if grade_form.feedback.errors %}<div class="err">{{ grade_form.feedback.errors }}</div>{% endif %}
+        </div>
+        <button type="submit" class="hw-btn-primary">{% trans 'Сохранить' %}</button>
+      </form>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

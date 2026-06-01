@@ -49,6 +49,17 @@
     const $foot = document.getElementById('book-foot');
     const $successFoot = document.getElementById('book-success-foot');
     const $another = document.getElementById('book-another');
+    const $mybookingsLink = document.getElementById('book-mybookings-link');
+    // Live-states
+    const $stateViews = $success ? $success.querySelectorAll('[data-state-view]') : [];
+    const $cdMin = document.getElementById('book-countdown-min');
+    const $cdSec = document.getElementById('book-countdown-sec');
+    const $cdFill = document.getElementById('book-countdown-fill');
+    const $countdown = document.getElementById('book-countdown');
+    const $confirmedWhen = document.getElementById('book-confirmed-when');
+    const $confirmedReply = document.getElementById('book-confirmed-reply');
+    const $confirmedMeeting = document.getElementById('book-confirmed-meeting');
+    const $rejectedReply = document.getElementById('book-rejected-reply');
     // Фильтр по времени дня
     const $timeChips = document.getElementById('book-time-chips');
     const $filterHint = document.getElementById('book-filter-hint');
@@ -72,12 +83,28 @@
         if (!opt || !opt.value) { $price.hidden = true; return; }
         const rate = parseFloat(opt.dataset.rate || '0');
         const isFreeTrial = opt.dataset.freeTrial === '1';
+        const trialPrice = parseFloat(opt.dataset.trialPrice || '0');
+        const trialDuration = parseInt(opt.dataset.trialDuration || '60', 10);
+
+        // Пробный — бесплатный
         if ($trial.checked && isFreeTrial) {
             $price.className = 'book-price is-free';
             $price.innerHTML = '<i class="fa-solid fa-gift"></i> ' + (i18n.priceFree || 'Пробный урок — бесплатно');
             $price.hidden = false;
             return;
         }
+        // Пробный — платный: используем точную сумму trial_price из TeacherSubject
+        if ($trial.checked && !isFreeTrial && trialPrice > 0) {
+            $price.className = 'book-price is-trial-paid';
+            $price.innerHTML = '<i class="fa-solid fa-gem"></i> ' +
+                (i18n.priceTrialPaid || 'Платный пробный:') + ' <strong>' +
+                trialPrice.toLocaleString(cfg.locale) + ' ' + (i18n.priceSum || 'сум') + '</strong> ' +
+                '<span class="book-price__rate">(' + trialDuration + ' ' +
+                (i18n.priceMinutes || 'мин') + ')</span>';
+            $price.hidden = false;
+            return;
+        }
+        // Обычный урок
         const mins = (selectedSlot && selectedSlot.extendedProps.duration_minutes) || 60;
         const cost = Math.round(rate * mins / 60);
         $price.className = 'book-price';
@@ -135,12 +162,142 @@
     function closeModal() {
         modal.hidden = true;
         selectedSlot = null;
+        stopWatcher();
         document.removeEventListener('keydown', _btTrapTab, true);
         document.removeEventListener('keydown', _btTrapEsc);
         if (_btPrevFocus && typeof _btPrevFocus.focus === 'function') {
             try { _btPrevFocus.focus(); } catch (_) {}
         }
         _btPrevFocus = null;
+    }
+
+    // ============================================================
+    // Live booking watcher: countdown + WS listener
+    // ============================================================
+    let watcherTimer = null;
+    let watcherDeadline = null;
+    let watcherTotalMs = 0;
+    let watcherBookingId = null;
+
+    function showState(state) {
+        if (!$success) return;
+        $success.dataset.state = state;
+        $stateViews.forEach(view => {
+            view.hidden = view.dataset.stateView !== state;
+        });
+        updateFooterForState(state);
+    }
+
+    function updateFooterForState(state) {
+        if (!$successFoot) return;
+        const ctaPrimary = $successFoot.querySelector('.btn-primary');
+        const ctaSecondary = $successFoot.querySelector('.btn-secondary');
+        if (state === 'confirmed') {
+            if ($mybookingsLink) {
+                $mybookingsLink.innerHTML = '<i class="fa fa-list-check"></i> ' + (i18n.ctaMyBookings || 'К моим урокам');
+            }
+            if (ctaSecondary) ctaSecondary.textContent = i18n.ctaBookAnother || 'Забронировать ещё';
+        } else if (state === 'rejected' || state === 'expired') {
+            if ($mybookingsLink) {
+                $mybookingsLink.href = '#';
+                $mybookingsLink.innerHTML = '<i class="fa fa-calendar"></i> ' + (i18n.ctaPickOther || 'Выбрать другой слот');
+                $mybookingsLink.onclick = (e) => {
+                    e.preventDefault();
+                    closeModal();
+                    calendar.refetchEvents();
+                };
+            }
+            if (ctaSecondary) ctaSecondary.textContent = i18n.ctaBackToTeacher || 'Назад к учителю';
+        }
+    }
+
+    function startWatcher(booking, fallbackWhen) {
+        watcherBookingId = booking.id;
+        const expiresAt = booking.expires_at ? new Date(booking.expires_at).getTime() : null;
+        watcherDeadline = expiresAt;
+        watcherTotalMs = expiresAt ? Math.max(expiresAt - Date.now(), 0) : 0;
+
+        if ($successWhen) $successWhen.textContent = fallbackWhen;
+        if ($confirmedWhen) $confirmedWhen.textContent = fallbackWhen;
+
+        showState('waiting');
+        tickCountdown();
+        if (watcherTimer) clearInterval(watcherTimer);
+        watcherTimer = setInterval(tickCountdown, 1000);
+        window.addEventListener('ustoz:ws', onWsEvent);
+    }
+
+    function stopWatcher() {
+        if (watcherTimer) { clearInterval(watcherTimer); watcherTimer = null; }
+        window.removeEventListener('ustoz:ws', onWsEvent);
+        watcherBookingId = null;
+        watcherDeadline = null;
+    }
+
+    function tickCountdown() {
+        if (!watcherDeadline || !$cdMin || !$cdSec) return;
+        const remainingMs = Math.max(watcherDeadline - Date.now(), 0);
+        const totalSec = Math.floor(remainingMs / 1000);
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        $cdMin.textContent = String(m).padStart(2, '0');
+        $cdSec.textContent = String(s).padStart(2, '0');
+        if ($cdFill && watcherTotalMs > 0) {
+            const pct = Math.max((remainingMs / watcherTotalMs) * 100, 0);
+            $cdFill.style.width = pct + '%';
+        }
+        if ($countdown) {
+            // Урон → красный когда осталось <2 мин (или <20% времени)
+            const urgent = totalSec <= 120 || (watcherTotalMs && remainingMs / watcherTotalMs < 0.2);
+            $countdown.classList.toggle('is-urgent', urgent);
+        }
+        if (remainingMs <= 0) {
+            // Локальный таймер закончился — показываем expired (сервер уже сам освободит слот)
+            handleExpired();
+        }
+    }
+
+    function onWsEvent(e) {
+        const data = e.detail || {};
+        if (data.type !== 'booking_status_changed') return;
+        const p = data.payload || {};
+        if (!watcherBookingId || p.booking_id !== watcherBookingId) return;
+        if (p.decision === 'confirmed') {
+            handleConfirmed(p);
+        } else if (p.decision === 'rejected') {
+            handleRejected(p);
+        }
+    }
+
+    function handleConfirmed(payload) {
+        if ($confirmedReply) $confirmedReply.textContent = payload.teacher_reply || '';
+        if ($confirmedMeeting) {
+            if (payload.meeting_url) {
+                $confirmedMeeting.href = payload.meeting_url;
+                $confirmedMeeting.hidden = false;
+            } else {
+                $confirmedMeeting.hidden = true;
+            }
+        }
+        showState('confirmed');
+        if (watcherTimer) { clearInterval(watcherTimer); watcherTimer = null; }
+        window.removeEventListener('ustoz:ws', onWsEvent);
+    }
+
+    function handleRejected(payload) {
+        if ($rejectedReply) $rejectedReply.textContent = payload.teacher_reply || '';
+        showState('rejected');
+        if (watcherTimer) { clearInterval(watcherTimer); watcherTimer = null; }
+        window.removeEventListener('ustoz:ws', onWsEvent);
+        // Слот может вернуться в free после reject — refresh
+        try { calendar.refetchEvents(); } catch (_) {}
+    }
+
+    function handleExpired() {
+        showState('expired');
+        if (watcherTimer) { clearInterval(watcherTimer); watcherTimer = null; }
+        window.removeEventListener('ustoz:ws', onWsEvent);
+        try { calendar.refetchEvents(); } catch (_) {}
     }
 
     modal.addEventListener('click', e => {
@@ -270,13 +427,14 @@
                 is_trial: $trial.checked,
                 message: $message.value.trim().slice(0, 500),
             };
-            await api('POST', cfg.urls.book, body);
-            // Экран подтверждения вместо alert + мгновенного редиректа
-            $successWhen.textContent = bookedWhen;
+            const resp = await api('POST', cfg.urls.book, body);
+            const booking = (resp && resp.booking) ? resp.booking : {};
+            // Live watcher: countdown до expires_at + WS-listener на decision
             $formRegion.hidden = true;
             $foot.hidden = true;
             $success.hidden = false;
             $successFoot.hidden = false;
+            startWatcher(booking, bookedWhen);
             // Забронированный слот больше не свободен — убираем с календаря
             const ev = calendar.getEventById(bookedId);
             if (ev) ev.remove();

@@ -370,25 +370,14 @@ class AdminTelegramService:
         Returns:
             bool: True если сообщение отправлено
         """
-        # Сначала ищем привязанного Telegram пользователя
+        # Доставляем ТОЛЬКО по явной привязке аккаунта. Fuzzy-поиск по имени
+        # отправлял личное сообщение постороннему однофамильцу — убрано.
         telegram_user = TelegramUser.objects.filter(
             user=django_user,
             started_bot=True,
             notifications_enabled=True
         ).first()
-        
-        # Если не найден привязанный, ищем среди непривязанных
-        if not telegram_user:
-            telegram_user = TelegramUser.objects.filter(
-                started_bot=True,
-                notifications_enabled=True,
-                user__isnull=True
-            ).filter(
-                models.Q(telegram_username__icontains=django_user.username) |
-                models.Q(first_name__icontains=django_user.first_name) |
-                models.Q(last_name__icontains=django_user.last_name)
-            ).first()
-        
+
         if not telegram_user:
             logger.warning(f"❌ Не найден Telegram пользователь для Django пользователя {django_user.username}")
             return False

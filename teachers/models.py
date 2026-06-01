@@ -562,6 +562,491 @@ class TeacherProfile(models.Model):
         cache.set(cache_key, result, CACHE_TTL)
         return result
 
+    def get_completeness(self):
+        """Возвращает прогресс заполнения профиля учителя.
+
+        Используется в teacher_profile.html для виджета «Профиль заполнен на N%»
+        с конкретными подсказками что добавить для роста.
+
+        Returns: dict {
+            'percent': int 0-100,
+            'missing': list of {'label', 'url_name', 'boost'},
+            'completed': int,
+            'total': int,
+        }
+        """
+        checks = [
+            {
+                'done': bool(self.user.avatar),
+                'label': 'Загрузить аватар',
+                'boost': 25,  # %, +X запросов потенциально
+                'url_name': 'teacher_profile_edit',
+                'anchor': 'section-personal',
+            },
+            {
+                'done': bool(self.bio and len(self.bio) >= 50),
+                'label': 'Написать «О себе» (≥50 символов)',
+                'boost': 30,
+                'url_name': 'teacher_profile_edit',
+                'anchor': 'section-professional',
+            },
+            {
+                'done': bool(self.video_url),
+                'label': 'Добавить видео-визитку',
+                'boost': 40,
+                'url_name': 'teacher_profile_edit',
+                'anchor': 'section-video',
+            },
+            {
+                'done': self.teachersubject_set.exists(),
+                'label': 'Указать предметы и цены',
+                'boost': 100,  # без этого нельзя бронировать
+                'url_name': 'teacher_profile_edit',
+                'anchor': 'section-subjects',
+            },
+            {
+                'done': self.has_schedule(),
+                'label': 'Задать расписание',
+                'boost': 80,  # без этого нет слотов
+                'url_name': 'teacher_calendar',
+                'anchor': '',
+            },
+            {
+                'done': bool(self.city_id),
+                'label': 'Указать город',
+                'boost': 15,
+                'url_name': 'teacher_profile_edit',
+                'anchor': 'section-format',
+            },
+            {
+                'done': bool(self.university),
+                'label': 'Добавить образование',
+                'boost': 12,
+                'url_name': 'teacher_profile_edit',
+                'anchor': 'section-professional',
+            },
+            {
+                'done': bool(self.user.phone),
+                'label': 'Указать телефон',
+                'boost': 10,
+                'url_name': 'teacher_profile_edit',
+                'anchor': 'section-personal',
+            },
+        ]
+        total = len(checks)
+        completed = sum(1 for c in checks if c['done'])
+        percent = int(round(completed / total * 100)) if total else 0
+        # Топ-3 missing, отсортированных по самому большому boost
+        missing = sorted(
+            [c for c in checks if not c['done']],
+            key=lambda c: c['boost'],
+            reverse=True,
+        )[:3]
+        return {
+            'percent': percent,
+            'completed': completed,
+            'total': total,
+            'missing': missing,
+        }
+
+    def calculate_match_score(self, student):
+        """Возвращает совместимость учителя с конкретным студентом (0-100).
+
+        Returns: dict {
+            'score': int 0-100,
+            'factors': list of {'icon', 'label', 'matched', 'weight'},
+            'matched_subjects': list of Subject objects,
+        }
+
+        Логика:
+          subjects (40): пересечение desired_subjects ∩ teacher.subjects
+          budget   (20): teacher.min_price вмещается в [budget_min, budget_max]
+          format   (15): совпадение online/offline/both
+          city     (10): один город (для offline/both)
+          rating   (10): rating × 2 (max 10), 5 нейтрально без отзывов
+          featured ( 5): is_featured
+        """
+        score = 0
+        factors = []
+        matched_subjects = []
+
+        # ─── Subjects (40) ─────────────────────────────────────────
+        try:
+            desired_ids = set(student.desired_subjects.values_list('id', flat=True))
+            teacher_subject_ids = set(self.teachersubject_set.values_list('subject_id', flat=True))
+            inter_ids = desired_ids & teacher_subject_ids
+        except Exception:
+            inter_ids = set()
+        subjects_matched = bool(inter_ids)
+        if subjects_matched:
+            from .models import Subject as _Subject
+            matched_subjects = list(_Subject.objects.filter(id__in=inter_ids).only('id', 'name'))
+            score += 40
+        factors.append({
+            'icon': '📚',
+            'label': (
+                'Преподаёт ' + ', '.join(s.name for s in matched_subjects)
+                if subjects_matched else 'Другие предметы'
+            ),
+            'matched': subjects_matched,
+            'weight': 40,
+        })
+
+        # ─── Budget (20) ────────────────────────────────────────────
+        try:
+            min_price = self.get_min_price() or 0
+        except Exception:
+            min_price = 0
+        budget_max = student.budget_max
+        budget_min = student.budget_min
+        budget_ok = True
+        if budget_max and min_price > budget_max:
+            budget_ok = False
+        if budget_ok:
+            score += 20
+            if budget_max:
+                budget_label = f'В вашем бюджете (до {int(budget_max):,} сум/час)'.replace(',', ' ')
+            else:
+                budget_label = 'Цена обсуждаема'
+        else:
+            budget_label = f'Дороже бюджета ({int(min_price):,} сум/час)'.replace(',', ' ')
+        factors.append({
+            'icon': '💰',
+            'label': budget_label,
+            'matched': budget_ok,
+            'weight': 20,
+        })
+
+        # ─── Format (15) ────────────────────────────────────────────
+        sf = (student.learning_format or 'both')
+        tf = (self.teaching_format or 'both')
+        format_match = (
+            sf == 'both' or tf == 'both' or sf == tf
+        )
+        if format_match:
+            score += 15
+        fmap = {'online': 'Онлайн', 'offline': 'Офлайн', 'both': 'Любой формат'}
+        factors.append({
+            'icon': '🏠' if tf == 'online' else ('📍' if tf == 'offline' else '🌐'),
+            'label': f'{fmap.get(tf, tf)}' + (' — как вы хотите' if format_match else ''),
+            'matched': format_match,
+            'weight': 15,
+        })
+
+        # ─── City (10) ──────────────────────────────────────────────
+        wants_offline = sf in ('offline', 'both')
+        city_match = bool(
+            wants_offline and self.city_id and student.city_id
+            and self.city_id == student.city_id
+        )
+        if city_match:
+            score += 10
+            factors.append({
+                'icon': '🏙️',
+                'label': f'В вашем городе ({self.city.name})',
+                'matched': True,
+                'weight': 10,
+            })
+
+        # ─── Rating (10) ────────────────────────────────────────────
+        rating_val = float(self.rating or 0)
+        if self.total_reviews > 0:
+            r_pts = min(10, int(round(rating_val * 2)))
+            score += r_pts
+            if rating_val >= 4.5:
+                factors.append({
+                    'icon': '⭐',
+                    'label': f'Высокий рейтинг {rating_val:.1f} ({self.total_reviews} отзывов)',
+                    'matched': True,
+                    'weight': 10,
+                })
+
+        # ─── Featured (5) ──────────────────────────────────────────
+        if self.is_featured:
+            score += 5
+            factors.append({
+                'icon': '✨',
+                'label': 'Рекомендованный учитель',
+                'matched': True,
+                'weight': 5,
+            })
+
+        score = max(0, min(100, score))
+        return {
+            'score': score,
+            'factors': factors,
+            'matched_subjects': matched_subjects,
+        }
+
+    @classmethod
+    def get_smart_matches(cls, student, limit=5):
+        """Топ-N учителей для студента, отсортированных по match score.
+
+        Returns: list of dicts:
+            [{'teacher': TeacherProfile, 'score': int, 'factors': [...], 'matched_subjects': [...]}]
+
+        Логика отбора:
+          1. Кандидаты — активные approved учителя, у которых есть хотя бы
+             один совпадающий предмет с desired_subjects студента.
+          2. Если у студента нет desired_subjects — fallback: топ-учителя
+             по рейтингу и featured (без factors).
+          3. Считаем match_score для каждого кандидата, сортируем по score desc.
+        """
+        try:
+            desired_ids = list(student.desired_subjects.values_list('id', flat=True))
+        except Exception:
+            desired_ids = []
+
+        candidates = cls.objects.filter(
+            is_active=True,
+            moderation_status='approved',
+        ).select_related('user', 'city').prefetch_related('teachersubject_set__subject')
+
+        if desired_ids:
+            candidates = candidates.filter(subjects__id__in=desired_ids).distinct()
+        else:
+            # fallback: показать топовых независимо
+            top = list(candidates.order_by('-is_featured', '-rating', '-total_students')[:limit])
+            return [
+                {'teacher': t, 'score': None, 'factors': [], 'matched_subjects': []}
+                for t in top
+            ]
+
+        # Берём с запасом (для разнообразия отсева), считаем score и сортируем
+        pool = list(candidates[:60])
+        scored = []
+        for t in pool:
+            data = t.calculate_match_score(student)
+            data['teacher'] = t
+            scored.append(data)
+        scored.sort(key=lambda d: (-d['score'], -float(d['teacher'].rating or 0)))
+        return scored[:limit]
+
+    # ────────────────────────────────────────────────────────────────────
+    # Phase 9 — Teacher Activity Dashboard
+    # ────────────────────────────────────────────────────────────────────
+    @staticmethod
+    def _period_to_since(period):
+        """'7d'/'30d'/'all' → datetime since (или None для 'all')."""
+        if period == '7d':
+            return timezone.now() - timedelta(days=7)
+        if period == '30d':
+            return timezone.now() - timedelta(days=30)
+        if period == '24h':
+            return timezone.now() - timedelta(hours=24)
+        return None  # all time
+
+    @staticmethod
+    def _period_label(period):
+        return {
+            '24h': 'за 24 часа',
+            '7d': 'за 7 дней',
+            '30d': 'за 30 дней',
+            'all': 'за всё время',
+        }.get(period, period)
+
+    def get_activity_stats(self, period='7d'):
+        """Активность учителя за период (views, viewers, conversations, bookings).
+
+        Используется в teacher_profile.html для дашборда «свой профиль».
+        Кэшируется на 1 минуту — данные часто меняются.
+        """
+        cache_key = f'teacher_activity_{self.id}_{period}'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        since = self._period_to_since(period)
+        # Views
+        views_qs = self.profile_views.all()
+        if since:
+            views_qs = views_qs.filter(viewed_at__gte=since)
+        views_total = views_qs.aggregate(t=models.Sum('views_count'))['t'] or 0
+        viewers_unique = views_qs.values('viewer_user_id', 'viewer_ip').distinct().count()
+
+        # Conversations (учитель — получатель сообщений → conversations.teacher = self)
+        conv_qs = self.conversations.all()
+        if since:
+            conv_qs = conv_qs.filter(created_at__gte=since)
+        conversations_count = conv_qs.count()
+
+        # Bookings (через slot)
+        from .models import Booking as _Booking
+        bookings_qs = _Booking.objects.filter(slot__teacher=self)
+        if since:
+            bookings_qs = bookings_qs.filter(created_at__gte=since)
+        bookings_count = bookings_qs.count()
+
+        # Completed bookings
+        completed_qs = _Booking.objects.filter(
+            slot__teacher=self, status='completed',
+        )
+        if since:
+            completed_qs = completed_qs.filter(ended_at__gte=since)
+        completed_count = completed_qs.count()
+
+        # Pending — текущий snapshot (для tile «нужно подтвердить»)
+        pending_count = _Booking.objects.filter(
+            slot__teacher=self, status='pending',
+        ).count()
+
+        stats = {
+            'views': views_total,
+            'viewers': viewers_unique,
+            'conversations': conversations_count,
+            'bookings': bookings_count,
+            'completed': completed_count,
+            'pending': pending_count,
+            'period': period,
+            'period_label': self._period_label(period),
+        }
+        cache.set(cache_key, stats, CACHE_TTL_SHORT)
+        return stats
+
+    def get_funnel_stats(self, period='7d'):
+        """Воронка views → conversations → bookings → completed с % конверсии.
+
+        Каждый шаг — {label, count, rate_from_prev_pct, icon}.
+        Cache key — отдельный от get_activity_stats для гранулярной инвалидации.
+        """
+        s = self.get_activity_stats(period)
+
+        def _rate(num, den):
+            if not den:
+                return None
+            return round(100 * num / den, 1)
+
+        steps = [
+            {'key': 'views',         'label': 'Просмотры',      'icon': '👁️', 'count': s['views'],         'rate': None},
+            {'key': 'conversations', 'label': 'Беседы',         'icon': '💬', 'count': s['conversations'], 'rate': _rate(s['conversations'], s['views'])},
+            {'key': 'bookings',      'label': 'Бронирования',   'icon': '📅', 'count': s['bookings'],      'rate': _rate(s['bookings'], s['conversations'] or s['views'])},
+            {'key': 'completed',     'label': 'Проведено',      'icon': '✅', 'count': s['completed'],     'rate': _rate(s['completed'], s['bookings'])},
+        ]
+        return {
+            'steps': steps,
+            'period': period,
+            'period_label': self._period_label(period),
+        }
+
+    def get_earnings_stats(self, period='30d'):
+        """Заработок за период: completed bookings × hourly_rate + trial_price_paid.
+
+        Считаем только completed (не pending/confirmed) — это то, что точно заработано.
+        Использует hourly_rate из TeacherSubject (на текущий момент) — упрощение,
+        для точных финансов нужен снапшот цены в Booking. Это достаточно для дашборда.
+        """
+        cache_key = f'teacher_earnings_{self.id}_{period}'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        since = self._period_to_since(period)
+        from .models import Booking as _Booking
+        qs = _Booking.objects.filter(
+            slot__teacher=self, status='completed',
+        ).select_related('slot', 'subject')
+        if since:
+            qs = qs.filter(ended_at__gte=since)
+
+        # Карта subject_id → hourly_rate учителя
+        rates = dict(self.teachersubject_set.values_list('subject_id', 'hourly_rate'))
+        # Fallback для booking без subject — берём минимальную цену учителя
+        fallback_rate = min(rates.values()) if rates else None
+
+        total = 0
+        lessons = 0
+        trial_revenue = 0
+        for b in qs:
+            lessons += 1
+            if b.trial_price_paid:
+                trial_revenue += float(b.trial_price_paid)
+                continue
+            if b.is_trial:
+                continue  # бесплатный пробный — 0
+            rate = rates.get(b.subject_id) if b.subject_id else fallback_rate
+            if rate is not None:
+                total += float(rate)
+        gross = total + trial_revenue
+
+        result = {
+            'gross': int(gross),
+            'lessons': lessons,
+            'avg_per_lesson': int(gross / lessons) if lessons else 0,
+            'period': period,
+            'period_label': self._period_label(period),
+        }
+        cache.set(cache_key, result, CACHE_TTL_SHORT)
+        return result
+
+    def get_first_booking_checklist(self):
+        """Чек-лист для учителя без completed bookings — «5 шагов до первой брони».
+
+        Возвращает list of {key, label, done, hint, action_anchor}.
+        """
+        from .models import Booking as _Booking
+        has_completed = _Booking.objects.filter(
+            slot__teacher=self, status='completed',
+        ).exists()
+        if has_completed:
+            return None  # уже не нужен
+
+        return [
+            {
+                'key': 'avatar',
+                'label': 'Загрузить фото профиля',
+                'done': bool(self.user.avatar),
+                'hint': 'Профили с фото получают в 3 раза больше просмотров',
+                'action_anchor': '#section-personal',
+            },
+            {
+                'key': 'bio',
+                'label': 'Написать «О себе»',
+                'done': bool(self.bio and len(self.bio) >= 50),
+                'hint': 'Минимум 50 символов — расскажите о подходе',
+                'action_anchor': '#section-professional',
+            },
+            {
+                'key': 'video',
+                'label': 'Записать видео-визитку (1-2 мин)',
+                'done': bool(self.video_url),
+                'hint': 'Учителя с видео получают в 5 раз больше бронирований',
+                'action_anchor': '#section-video',
+            },
+            {
+                'key': 'subjects',
+                'label': 'Указать предметы и цены',
+                'done': self.teachersubject_set.exists(),
+                'hint': 'Без предметов вас невозможно забронировать',
+                'action_anchor': '#section-subjects',
+            },
+            {
+                'key': 'schedule',
+                'label': 'Задать расписание',
+                'done': self.has_schedule(),
+                'hint': 'Слоты бронируются только из расписания',
+                'action_anchor': '',  # ведёт на teacher_calendar
+            },
+        ]
+
+    def get_trial_subject(self):
+        """Возвращает TeacherSubject с trial-уроком (приоритет: free → paid), либо None.
+
+        Используется в teacher_detail.html для подсветки trial-CTA в booking-sidebar.
+        Кэшируется на 5 минут.
+        """
+        cache_key = f'teacher_trial_subject_{self.id}'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached if cached != 'NONE' else None
+
+        qs = self.teachersubject_set.select_related('subject')
+        ts = qs.filter(is_free_trial=True).order_by('hourly_rate').first()
+        if ts is None:
+            ts = qs.filter(trial_price__isnull=False).order_by('trial_price').first()
+
+        cache.set(cache_key, ts if ts is not None else 'NONE', CACHE_TTL)
+        return ts
+
     def get_available_weekdays_display(self):
         days = self.available_weekdays.split(',')
         return ', '.join([WEEKDAYS_MAP.get(day.strip(), day) for day in days])
@@ -1071,10 +1556,16 @@ class Review(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ['teacher', 'student', 'subject']
+        # Уникальность через OneToOne(booking) — один Review на один Booking.
+        # Старый unique_together(teacher,student,subject) убран: для подписки
+        # с 8 уроками ученик может оставить 8 отдельных отзывов (по одному на урок).
         ordering = ['-created_at']
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
+        indexes = [
+            models.Index(fields=['teacher', '-created_at']),
+            models.Index(fields=['student', '-created_at']),
+        ]
 
     def __str__(self):
         return f"Отзыв от {self.student.get_full_name()} для {self.teacher.user.get_full_name()}"
@@ -2111,6 +2602,24 @@ class Booking(models.Model):
         verbose_name='Пробный урок',
     )
 
+    # Phase 9.5: цена платного пробного, снэпшот на момент бронирования.
+    # NULL = бесплатный пробный или обычный урок подписки.
+    trial_price_paid = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        null=True, blank=True,
+        verbose_name='Оплачено за пробный',
+        help_text='Снэпшот цены платного пробного на момент бронирования. NULL = бесплатный или не пробный.',
+    )
+
+    # Phase 3: связь с подпиской. Null = разовая бронь (trial или старая логика).
+    subscription = models.ForeignKey(
+        'billing.Subscription',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='bookings',
+        verbose_name='Подписка',
+    )
+
     # Phase 5: ссылка на видеоконференцию (Google Meet/Zoom)
     meeting_url = models.URLField(blank=True, max_length=500)
 
@@ -2182,6 +2691,11 @@ class Booking(models.Model):
                 raise SlotUnavailable(f'Slot {slot_id} is {slot.status}, not free')
             if slot.is_in_past:
                 raise SlotUnavailable(f'Slot {slot_id} is in the past')
+            # Нельзя бронировать слот учителя, снятого с публикации/модерации
+            # (прямой POST в API мимо публичного списка слотов).
+            teacher = slot.teacher
+            if not teacher.is_active or teacher.moderation_status != 'approved':
+                raise SlotUnavailable('Teacher is not available for booking')
             if hold_minutes is not None:
                 expires = timezone.now() + timedelta(minutes=hold_minutes)
             else:
@@ -2287,6 +2801,27 @@ class Booking(models.Model):
             locked.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
             self.refresh_from_db()
 
+    def cancel_by_teacher(self):
+        """Учитель отменяет подтверждённую бронь: slot снова free.
+
+        Race-safe: select_for_update — иначе гонка с Celery mark_completed
+        могла оставить урок completed (и оплаченным), хотя учитель его отменил.
+        Для pending используйте reject().
+        """
+        from django.db import transaction
+        with transaction.atomic():
+            locked = type(self).objects.select_for_update().get(pk=self.pk)
+            if locked.status not in ('pending', 'confirmed'):
+                raise ValueError(f'Cannot cancel booking in status {locked.status}')
+            locked.status = 'cancelled_by_teacher'
+            locked.expires_at = None
+            locked.save(update_fields=['status', 'expires_at', 'updated_at'])
+            slot = TimeSlot.objects.select_for_update().get(pk=locked.slot_id)
+            slot.status = 'free'
+            slot.hold_expires_at = None
+            slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+            self.refresh_from_db()
+
     def reschedule_by_student(self, new_slot_id):
         """Ученик переносит активную бронь на другой свободный слот того же учителя.
 
@@ -2325,30 +2860,45 @@ class Booking(models.Model):
             self.save(update_fields=['slot', 'status', 'expires_at', 'updated_at'])
 
     def expire(self):
-        """Hold протух (вызывается Celery задачей). slot снова free."""
+        """Hold протух (вызывается Celery задачей). slot снова free.
+
+        Race-safe: перечитываем бронь и слот под select_for_update. Без лока
+        задача могла перетереть только что подтверждённую учителем бронь
+        (last-write-wins) и освободить уже забронированный слот.
+        """
         from django.db import transaction
         with transaction.atomic():
-            if self.status != 'pending':
-                return  # уже не pending — игнорируем
-            self.status = 'expired'
-            self.expires_at = None
-            self.save(update_fields=['status', 'expires_at', 'updated_at'])
-            if self.slot.status == 'held':
-                self.slot.status = 'free'
-                self.slot.hold_expires_at = None
-                self.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+            locked = type(self).objects.select_for_update().get(pk=self.pk)
+            if locked.status != 'pending':
+                return  # уже не pending (подтверждена/отменена) — игнорируем
+            locked.status = 'expired'
+            locked.expires_at = None
+            locked.save(update_fields=['status', 'expires_at', 'updated_at'])
+            slot = TimeSlot.objects.select_for_update().get(pk=locked.slot_id)
+            if slot.status == 'held':
+                slot.status = 'free'
+                slot.hold_expires_at = None
+                slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+            self.refresh_from_db()
 
     def mark_completed(self):
         """Урок прошёл (вызывается Celery после end_at).
 
         После завершения просим ученика оставить отзыв (если он ещё не оставлен
         по этой броне) — ключевой шаг для маркетплейса.
+
+        Race-safe: select_for_update — иначе задача могла перетереть отмену
+        учителя/ученика, и отменённый урок всё равно был бы оплачен.
         """
-        if self.status != 'confirmed':
-            return
-        self.status = 'completed'
-        self.ended_at = timezone.now()
-        self.save(update_fields=['status', 'ended_at', 'updated_at'])
+        from django.db import transaction
+        with transaction.atomic():
+            locked = type(self).objects.select_for_update().get(pk=self.pk)
+            if locked.status != 'confirmed':
+                return
+            locked.status = 'completed'
+            locked.ended_at = timezone.now()
+            locked.save(update_fields=['status', 'ended_at', 'updated_at'])
+            self.refresh_from_db()
         try:
             self.request_review()
         except Exception:

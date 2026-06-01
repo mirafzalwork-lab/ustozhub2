@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}{% trans 'Личный кабинет учителя' %} — UstozHub{% endblock %}
+
+{% block content %}
+<style>
+  .tdb { max-width: 1200px; margin: 0 auto; padding: 28px 20px; }
+  .tdb .greet { font-size: 26px; color: #0A2540; margin: 0 0 6px; }
+  .tdb .greet small { color: #64748B; font-size: 14px; font-weight: 400; }
+
+  .tdb-hero { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 22px; }
+  @media (max-width: 900px) { .tdb-hero { grid-template-columns: 1fr; } }
+
+  .tdb-card {
+    border-radius: 14px; padding: 18px 20px; color: #fff;
+    box-shadow: 0 6px 22px rgba(15, 23, 42, .08);
+  }
+  .tdb-card .lbl { font-size: 11px; text-transform: uppercase; opacity: .85; letter-spacing: .6px; }
+  .tdb-card .val { font-size: 28px; font-weight: 700; margin: 4px 0; line-height: 1.1; }
+  .tdb-card .val small { font-size: 13px; opacity: .8; font-weight: 400; margin-left: 4px; }
+  .tdb-card .sub { font-size: 12px; opacity: .82; }
+  .tdb-card.green { background: linear-gradient(135deg, #047857 0%, #10B981 100%); }
+  .tdb-card.purple { background: linear-gradient(135deg, #6D28D9 0%, #A855F7 100%); }
+  .tdb-card.gold { background: linear-gradient(135deg, #B45309 0%, #F59E0B 100%); }
+
+  .earn-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+  @media (max-width: 768px) { .earn-row { grid-template-columns: repeat(2, 1fr); } }
+  .earn-cell {
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 12px;
+    padding: 12px 16px; text-align: center;
+  }
+  .earn-cell .lbl { font-size: 10px; color: #64748B; text-transform: uppercase; letter-spacing: .5px; }
+  .earn-cell .val { font-size: 19px; font-weight: 700; color: #0A2540; margin-top: 3px; }
+  .earn-cell.escrow { background: #FEFCE8; border-color: #FDE68A; }
+
+  .tdb-section { background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 20px 22px; margin-bottom: 18px; }
+  .tdb-section h2 { font-size: 16px; color: #0A2540; margin: 0 0 12px; }
+  .tdb-section h2 .more { float: right; font-size: 13px; color: #6366F1; text-decoration: none; font-weight: 500; }
+
+  .lesson-row { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid #F1F5F9; }
+  .lesson-row:last-child { border-bottom: 0; }
+  .lesson-row .t { font-weight: 600; color: #0A2540; min-width: 60px; }
+  .lesson-row .who { flex: 1; color: #475569; font-size: 14px; }
+  .lesson-row .who small { color: #94A3B8; }
+  .lesson-row .pill { font-size: 10px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  .lesson-row .pill.confirmed { background: #EFF6FF; color: #1D4ED8; }
+  .lesson-row .pill.completed { background: #ECFDF5; color: #065F46; }
+
+  .pending-row { padding: 10px 0; border-bottom: 1px solid #F1F5F9; display: flex; justify-content: space-between; }
+  .pending-row:last-child { border-bottom: 0; }
+  .pending-row a { color: #6366F1; text-decoration: none; font-size: 13px; }
+
+  .hw-row { padding: 10px 0; border-bottom: 1px solid #F1F5F9; display: flex; justify-content: space-between; }
+  .hw-row:last-child { border-bottom: 0; }
+  .hw-row a { color: #7C3AED; text-decoration: none; font-weight: 500; }
+  .hw-row .pill { background: #EFF6FF; color: #1D4ED8; font-size: 10px; padding: 3px 8px; border-radius: 999px; font-weight: 600; }
+
+  .row-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .row-2 { grid-template-columns: 1fr; } }
+
+  .empty { text-align: center; color: #94A3B8; padding: 18px; font-size: 14px; }
+  .tx-mini { font-size: 13px; padding: 6px 0; border-bottom: 1px solid #F1F5F9; display: flex; justify-content: space-between; }
+  .tx-mini.last { border-bottom: 0; }
+  .tx-amt.plus { color: #059669; font-weight: 600; }
+  .tx-amt.minus { color: #DC2626; font-weight: 600; }
+</style>
+
+<div class="tdb">
+  <h1 class="greet">
+    {% trans 'Здравствуйте' %}, {{ request.user.first_name|default:request.user.username }}!
+    <small>{% trans 'Сводка на сегодня' %}</small>
+  </h1>
+
+  <div class="tdb-hero">
+    <div class="tdb-card green">
+      <div class="lbl">💰 {% trans 'На балансе' %}</div>
+      <div class="val">{{ wallet.balance|floatformat:0|intcomma }}<small> сум</small></div>
+      <div class="sub">
+        <a href="{% url 'withdrawals_list' %}" style="color:#fff; text-decoration:underline;">{% trans 'Вывести' %}</a>
+      </div>
+    </div>
+    <div class="tdb-card purple">
+      <div class="lbl">👥 {% trans 'Активных учеников' %}</div>
+      <div class="val">{{ active_students_count }}</div>
+      <div class="sub">
+        <a href="{% url 'teacher_subscribers' %}" style="color:#fff; text-decoration:underline;">{% trans 'Список' %}</a>
+      </div>
+    </div>
+    <div class="tdb-card gold">
+      <div class="lbl">📅 {% trans 'Уроков на неделе' %}</div>
+      <div class="val">{{ week_lessons_count }}</div>
+      <div class="sub">{% trans 'из них сегодня' %}: {{ today_lessons|length }}</div>
+    </div>
+  </div>
+
+  <div class="earn-row">
+    <div class="earn-cell">
+      <div class="lbl">{% trans 'Сегодня' %}</div>
+      <div class="val">{{ earned_today|floatformat:0|intcomma }}</div>
+    </div>
+    <div class="earn-cell">
+      <div class="lbl">{% trans 'Неделя' %}</div>
+      <div class="val">{{ earned_week|floatformat:0|intcomma }}</div>
+    </div>
+    <div class="earn-cell">
+      <div class="lbl">{% trans 'Месяц' %}</div>
+      <div class="val">{{ earned_month|floatformat:0|intcomma }}</div>
+    </div>
+    <div class="earn-cell escrow">
+      <div class="lbl">{% trans 'В эскроу' %}</div>
+      <div class="val">{{ escrow_total|floatformat:0|intcomma }}</div>
+    </div>
+  </div>
+
+  <div class="row-2">
+    <div>
+      <div class="tdb-section">
+        <h2>
+          📅 {% trans 'Расписание на сегодня' %}
+        </h2>
+        {% if today_lessons %}
+          {% for b in today_lessons %}
+            <div class="lesson-row">
+              <div class="t">{{ b.slot.start_at|date:"H:i" }}</div>
+              <div class="who">
+                <b>{{ b.student.get_full_name|default:b.student.username }}</b>
+                <small>· {{ b.subject.name|default:'' }}</small>
+              </div>
+              <span class="pill {{ b.status }}">{{ b.get_status_display }}</span>
+              {% if b.meeting_url %}
+                <a href="{{ b.meeting_url }}" target="_blank" style="color:#6366F1; text-decoration:none; font-size:13px; margin-left:8px;">📹</a>
+              {% endif %}
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty">{% trans 'Сегодня уроков нет' %} 🌴</div>
+        {% endif %}
+      </div>
+
+      {% if pending_bookings %}
+      <div class="tdb-section">
+        <h2>
+          🔔 {% trans 'Требуют подтверждения' %}
+          <span style="background:#FEF3C7; color:#92400E; padding:2px 8px; border-radius:999px; font-size:11px; margin-left:6px;">{{ pending_bookings|length }}</span>
+        </h2>
+        {% for b in pending_bookings %}
+          <div class="pending-row">
+            <div>
+              <b style="color:#0A2540;">{{ b.student.get_full_name|default:b.student.username }}</b>
+              <small style="color:#94A3B8;"> · {{ b.subject.name|default:'' }}</small>
+              <div style="font-size:12px; color:#64748B;">{{ b.slot.start_at|date:"d M, H:i" }}{% if b.is_trial %} · 🎁 пробный{% endif %}</div>
+            </div>
+            <a href="/booking/calendar/">{% trans 'Открыть' %} →</a>
+          </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="tdb-section">
+        <h2>
+          📚 {% trans 'ДЗ ожидают проверки' %}
+          <a href="{% url 'teacher_homework_list' %}" class="more">{% trans 'все →' %}</a>
+        </h2>
+        {% if homework_to_grade %}
+          {% for hw in homework_to_grade %}
+            <div class="hw-row">
+              <div>
+                <a href="{% url 'homework_detail' hw.id %}">{{ hw.title }}</a>
+                <small style="color:#94A3B8;"> · {{ hw.student.get_full_name|default:hw.student.username }}</small>
+                <div style="font-size:12px; color:#64748B;">{% if hw.submission %}{{ hw.submission.submitted_at|date:"d M, H:i" }}{% else %}{{ hw.created_at|date:"d M, H:i" }}{% endif %}</div>
+              </div>
+              <span class="pill">{% trans 'На проверке' %}</span>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty">{% trans 'Все ДЗ проверены' %} 🎉</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div>
+      <div class="tdb-section">
+        <h2>⚡ {% trans 'Быстро' %}</h2>
+        <a href="/booking/calendar/" style="display:block; background:#EEF2FF; color:#4338CA; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500; margin-bottom:8px;">
+          📅 {% trans 'Календарь' %}
+        </a>
+        <a href="{% url 'teacher_homework_create' %}" style="display:block; background:#F5F3FF; color:#7C3AED; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500; margin-bottom:8px;">
+          ✍ {% trans 'Создать ДЗ' %}
+        </a>
+        <a href="{% url 'tariffs_list' %}" style="display:block; background:#FEF3C7; color:#92400E; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500; margin-bottom:8px;">
+          💼 {% trans 'Мои тарифы' %}
+        </a>
+        <a href="{% url 'withdrawals_list' %}" style="display:block; background:#ECFDF5; color:#065F46; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500;">
+          💸 {% trans 'Вывод средств' %}
+        </a>
+      </div>
+
+      <div class="tdb-section">
+        <h2>📊 {% trans 'Заработок всего' %}</h2>
+        <div style="font-size:28px; font-weight:700; color:#0A2540; line-height:1.1;">
+          {{ earned_total|floatformat:0|intcomma }}
+          <small style="font-size:14px; color:#64748B; font-weight:400;">сум</small>
+        </div>
+        <div style="font-size:13px; color:#64748B; margin-top:6px;">{% trans 'выплачено за всё время' %}</div>
+      </div>
+
+      <div class="tdb-section">
+        <h2>💳 {% trans 'Последние транзакции' %}</h2>
+        {% if recent_tx %}
+          {% for tx in recent_tx %}
+            <div class="tx-mini {% if forloop.last %}last{% endif %}">
+              <div>
+                <div style="color:#475569;">{{ tx.get_type_display }}</div>
+                <small style="color:#94A3B8;">{{ tx.created_at|date:"d M, H:i" }}</small>
+              </div>
+              <div class="tx-amt {% if tx.amount > 0 %}plus{% else %}minus{% endif %}">
+                {% if tx.amount > 0 %}+{% endif %}{{ tx.amount|floatformat:0|intcomma }}
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty">{% trans 'Пока пусто' %}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

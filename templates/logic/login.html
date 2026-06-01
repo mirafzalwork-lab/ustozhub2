@@ -410,7 +410,7 @@
                         {{ form.remember_me.label }}
                     </label>
                 </div>
-                <a href="#" class="forgot-link">{% trans 'Забыли пароль?' %}</a>
+                <a href="{% url 'account_reset_password' %}" class="forgot-link">{% trans 'Забыли пароль?' %}</a>
             </div>
 
             <button type="submit" class="submit-btn">

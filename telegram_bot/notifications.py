@@ -89,24 +89,14 @@ class TelegramNotificationService:
         Prepare notification data for a new message.
         Returns (telegram_user, notification_text, reply_markup) or (None, None, None).
         """
-        # Сначала ищем привязанного пользователя
+        # Доставляем ТОЛЬКО по явной привязке аккаунта.
+        # Прежний fuzzy-поиск по icontains имени/username отправлял приватное
+        # превью переписки случайному однофамильцу — это утечка данных.
         telegram_user = TelegramUser.objects.filter(
             user=recipient_user,
             notifications_enabled=True,
             started_bot=True
         ).first()
-
-        # Если не найден привязанный, ищем по email/username среди непривязанных
-        if not telegram_user:
-            telegram_user = TelegramUser.objects.filter(
-                notifications_enabled=True,
-                started_bot=True,
-                user__isnull=True
-            ).filter(
-                models.Q(telegram_username__icontains=recipient_user.username) |
-                models.Q(first_name__icontains=recipient_user.first_name) |
-                models.Q(last_name__icontains=recipient_user.last_name)
-            ).first()
 
         if not telegram_user:
             logger.info(f"User {recipient_user.username} has no Telegram linked or notifications disabled")

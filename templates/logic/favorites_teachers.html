@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load i18n %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}{% trans 'Мои избранные учителя' %} - UstozHub{% endblock %}
 
@@ -427,7 +428,7 @@
                             <div class="teacher-price">
                                 <div class="price-label">{% trans 'От' %}</div>
                                 <div class="price-value">
-                                    {{ min_price.hourly_rate|floatformat:0 }} {% trans 'сум/час' %}
+                                    {{ min_price.hourly_rate|floatformat:0|intcomma }} {% trans 'сум/час' %}
                                 </div>
                             </div>
                         {% endif %}
@@ -463,10 +464,13 @@
 </div>
 
 <script>
-function removeFavorite(teacherId, button) {
-    if (!confirm('{% trans "Удалить учителя из избранного?" %}')) {
-        return;
-    }
+async function removeFavorite(teacherId, button) {
+    const ok = await window.confirmDialog('{% trans "Удалить учителя из избранного?" %}', {
+        okText: '{% trans "Удалить" %}',
+        cancelText: '{% trans "Отмена" %}',
+        danger: true
+    });
+    if (!ok) { return; }
 
     fetch(`/api/favorites/toggle/${teacherId}/`, {
         method: 'POST',
@@ -484,9 +488,10 @@ function removeFavorite(teacherId, button) {
             card.style.opacity = '0';
             card.style.transform = 'scale(0.9)';
             
+            window.flashToast('success', '{% trans "Удалено из избранного" %}');
             setTimeout(() => {
                 card.remove();
-                
+
                 // Проверяем, остались ли учителя
                 const grid = document.querySelector('.teachers-grid');
                 if (grid && grid.children.length === 0) {
@@ -494,11 +499,13 @@ function removeFavorite(teacherId, button) {
                     location.reload();
                 }
             }, 300);
+        } else {
+            window.flashToast('error', '{% trans "Произошла ошибка. Попробуйте позже." %}');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('{% trans "Произошла ошибка. Попробуйте позже." %}');
+        window.flashToast('error', '{% trans "Произошла ошибка. Попробуйте позже." %}');
     });
 }
 </script>

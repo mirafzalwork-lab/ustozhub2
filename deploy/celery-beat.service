@@ -1,0 +1,16 @@
+[Unit]
+Description=UstozHub Celery Beat (scheduler)
+After=network.target redis-server.service postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/ustozhubuz
+EnvironmentFile=/var/www/ustozhubuz/.env
+ExecStart=/var/www/ustozhubuz/venv/bin/celery -A core beat -l info
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

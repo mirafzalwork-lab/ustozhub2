@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}{% trans 'Мои подписки' %} — UstozHub{% endblock %}
+
+{% block content %}
+<style>
+  .subs-page { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  .subs-page h1 { font-size: 28px; color: #0A2540; margin: 0 0 8px; }
+  .subs-page .subtitle { color: #64748B; margin: 0 0 28px; }
+  .subs-section h2 { font-size: 18px; color: #0A2540; margin: 32px 0 16px; }
+
+  .subs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+  .sub-card { border: 1px solid #E2E8F0; border-radius: 14px; padding: 20px; background: #fff; }
+  .sub-card.active { border-color: #14B8A6; box-shadow: 0 4px 14px rgba(20,184,166,.08); }
+  .sub-card .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+  .sub-card h3 { margin: 0; font-size: 17px; color: #0A2540; }
+  .sub-card .status {
+    font-size: 11px; padding: 4px 10px; border-radius: 999px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase;
+  }
+  .sub-card .status.active { background: #ECFDF5; color: #065F46; }
+  .sub-card .status.paused { background: #FFFBEB; color: #92400E; }
+  .sub-card .status.completed { background: #EFF6FF; color: #1D4ED8; }
+  .sub-card .status.cancelled, .sub-card .status.expired { background: #F1F5F9; color: #475569; }
+
+  .sub-card .meta { font-size: 14px; color: #475569; line-height: 1.7; margin: 8px 0; }
+  .sub-card .meta b { color: #0A2540; }
+
+  .progress-bar { background: #F1F5F9; border-radius: 999px; height: 8px; margin: 12px 0; overflow: hidden; }
+  .progress-bar .fill { background: linear-gradient(90deg, #14B8A6, #10B981); height: 100%; transition: width .3s; }
+
+  .empty-state { text-align: center; padding: 60px 20px; background: #F8FAFC; border-radius: 14px; color: #64748B; }
+  .empty-state h2 { color: #0A2540; margin: 0 0 8px; }
+  .empty-state a { display: inline-block; margin-top: 16px; padding: 10px 22px; background: #3B82F6; color: #fff; border-radius: 8px; text-decoration: none; }
+</style>
+
+<div class="subs-page">
+  <h1>{% trans 'Мои подписки' %}</h1>
+  <p class="subtitle">{% trans 'История ваших обучений и активные подписки' %}</p>
+
+  {% if pending_reviews %}
+    <div class="subs-section">
+      <h2>⭐ {% trans 'Оцените прошедшие уроки' %} ({{ pending_reviews|length }})</h2>
+      <div style="display: grid; gap: 12px;">
+        {% for b in pending_reviews %}
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding: 16px 20px; border: 1px solid #FCD34D; background: #FFFBEB; border-radius: 12px;">
+            <div style="min-width: 0;">
+              <div style="font-weight: 600; color: #0A2540;">
+                {{ b.subject.name|default:"Урок" }} {% trans 'с' %} {{ b.slot.teacher.user.get_full_name|default:b.slot.teacher.user.username }}
+              </div>
+              <div style="font-size: 13px; color: #78350F; margin-top: 4px;">
+                {{ b.slot.end_at|date:"d M Y, H:i" }}
+              </div>
+            </div>
+            <a href="{% url 'leave_review' b.id %}?next=/ru/my/subscriptions/"
+               style="background: #F59E0B; color: #fff; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-weight: 500; white-space: nowrap;">⭐ {% trans 'Оценить' %}</a>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if active %}
+    <div class="subs-section">
+      <h2>🟢 {% trans 'Активные' %} ({{ active|length }})</h2>
+      <div class="subs-grid">
+        {% for s in active %}
+          <div class="sub-card active">
+            <div class="head">
+              <h3>{{ s.subject.name }}</h3>
+              <span class="status active">{{ s.get_status_display }}</span>
+            </div>
+            <div class="meta">
+              👤 <b>{{ s.teacher.user.get_full_name|default:s.teacher.user.username }}</b><br>
+              📚 {{ s.lessons_per_week }} {% trans 'в неделю' %} · {{ s.lesson_duration_minutes }} {% trans 'мин/урок' %}<br>
+              📅 {% trans 'до' %} {{ s.expires_at|date:"d M Y" }}
+            </div>
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 13px; color: #64748B;">
+                <span>{% trans 'Прогресс' %}</span>
+                <b style="color: #0A2540;">{{ s.completed_lessons }} / {{ s.total_lessons }}</b>
+              </div>
+              <div class="progress-bar"><div class="fill" style="width: {{ s.progress_percent }}%;"></div></div>
+            </div>
+            <div class="meta" style="margin-top: 12px;">
+              💰 {% trans 'В эскроу' %}: <b>{{ s.escrow_balance|floatformat:0|intcomma }} {% trans 'сум' %}</b><br>
+              💵 {% trans 'Выплачено учителю' %}: <b>{{ s.teacher_earned_so_far|floatformat:0|intcomma }} {% trans 'сум' %}</b>
+              <small style="color:#94A3B8;">({{ s.lessons_paid_out }} {% trans 'уроков' %})</small>
+            </div>
+
+            <button type="button" class="cancel-btn" data-sub-id="{{ s.id }}"
+                    data-escrow="{{ s.escrow_balance|floatformat:0|intcomma }}"
+                    data-remaining="{{ s.remaining_lessons }}">
+              ✕ {% trans 'Отменить подписку' %}
+            </button>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {# модалка подтверждения отмены #}
+  <div id="cancel-modal" class="cancel-modal" hidden role="dialog" aria-modal="true">
+    <div class="cancel-modal-content">
+      <h3>{% trans 'Отменить подписку?' %}</h3>
+      <p style="color:#475569; line-height:1.6; margin: 8px 0 18px;">
+        {% trans 'Будущие забронированные уроки будут отменены, а слоты освободятся для других учеников.' %}
+        <br>
+        {% trans 'Деньги за неиспользованные уроки вернутся на ваш баланс кошелька.' %}
+      </p>
+      <div id="cancel-summary" style="background:#F0F9FF; border:1px solid #BAE6FD; border-radius:10px; padding:14px 18px; margin-bottom:18px; font-size:14px; color:#075985;"></div>
+      <form id="cancel-form" method="post" action="">
+        {% csrf_token %}
+        <label style="display:block; font-size:13px; color:#475569; margin-bottom:6px;">{% trans 'Причина (опционально)' %}:</label>
+        <textarea name="reason" rows="3" style="width:100%; padding:8px 12px; border:1px solid #E2E8F0; border-radius:8px; font-size:14px; box-sizing:border-box;"
+                  placeholder="{% trans 'Например: учителю не подошла программа' %}"></textarea>
+        <div style="display:flex; gap:10px; margin-top:18px;">
+          <button type="submit" class="btn-danger">{% trans 'Да, отменить и вернуть деньги' %}</button>
+          <button type="button" class="btn-secondary" id="cancel-modal-close">{% trans 'Не отменять' %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <style>
+    .cancel-btn { background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA; padding:8px 14px; border-radius:8px; font-size:13px; cursor:pointer; margin-top:14px; width:100%; font-weight:500; transition: background .15s; }
+    .cancel-btn:hover { background:#FEE2E2; }
+    .cancel-modal { position:fixed; inset:0; background:rgba(15,23,42,.5); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+    .cancel-modal[hidden] { display:none; }
+    .cancel-modal-content { background:#fff; border-radius:14px; padding:28px; max-width:480px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,.18); }
+    .cancel-modal-content h3 { margin:0 0 6px; color:#0A2540; font-size:20px; }
+    .btn-danger { background:#DC2626; color:#fff; border:none; padding:10px 18px; border-radius:8px; font-weight:500; cursor:pointer; flex:1; }
+    .btn-danger:hover { background:#B91C1C; }
+    .btn-secondary { background:#F1F5F9; color:#0A2540; border:none; padding:10px 18px; border-radius:8px; font-weight:500; cursor:pointer; }
+  </style>
+  <script>
+    (function() {
+      var modal = document.getElementById('cancel-modal');
+      var form = document.getElementById('cancel-form');
+      var summary = document.getElementById('cancel-summary');
+      var closeBtn = document.getElementById('cancel-modal-close');
+      document.querySelectorAll('.cancel-btn').forEach(function(b){
+        b.addEventListener('click', function() {
+          var subId = b.dataset.subId;
+          var escrow = b.dataset.escrow;
+          var remaining = b.dataset.remaining;
+          form.action = '/ru/subscriptions/' + subId + '/cancel/';
+          summary.innerHTML = '<b>{% trans "Возврат на баланс" %}:</b> ~' + escrow + ' сум<br>' +
+                              '<b>{% trans "Отменено уроков" %}:</b> ' + remaining;
+          modal.hidden = false;
+        });
+      });
+      if (closeBtn) closeBtn.addEventListener('click', function(){ modal.hidden = true; });
+      modal.addEventListener('click', function(e){ if (e.target === modal) modal.hidden = true; });
+    })();
+  </script>
+
+  {% if history %}
+    <div class="subs-section">
+      <h2>📜 {% trans 'История' %} ({{ history|length }})</h2>
+      <div class="subs-grid">
+        {% for s in history %}
+          <div class="sub-card">
+            <div class="head">
+              <h3>{{ s.subject.name }}</h3>
+              <span class="status {% if s.status == 'completed' %}completed{% elif s.status == 'expired' %}expired{% else %}cancelled{% endif %}">
+                {{ s.get_status_display }}
+              </span>
+            </div>
+            <div class="meta">
+              👤 {{ s.teacher.user.get_full_name|default:s.teacher.user.username }}<br>
+              ✅ {{ s.completed_lessons }} / {{ s.total_lessons }} {% trans 'уроков' %}<br>
+              📅 {{ s.started_at|date:"d M Y" }} → {{ s.expires_at|date:"d M Y" }}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if not active and not history %}
+    <div class="empty-state">
+      <h2>{% trans 'У вас пока нет подписок' %}</h2>
+      <p>{% trans 'Найдите учителя и купите тариф, чтобы начать учиться.' %}</p>
+      <a href="{% url 'home' %}">{% trans 'Найти учителя' %}</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

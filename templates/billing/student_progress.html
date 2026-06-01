@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans 'Мой прогресс' %} — UstozHub{% endblock %}
+
+{% block content %}
+<style>
+  .progress-page { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  .progress-page h1 { font-size: 28px; color: #0A2540; margin: 0; }
+  .progress-page .subtitle { color: #64748B; margin: 4px 0 24px; }
+
+  .overall { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 28px; }
+  .overall-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 20px 22px; }
+  .overall-card.success { background: linear-gradient(135deg, #047857, #10B981); color: #fff; border: none; }
+  .overall-card.indigo  { background: linear-gradient(135deg, #4338CA, #6366F1); color: #fff; border: none; }
+  .overall-card.amber   { background: linear-gradient(135deg, #B45309, #D97706); color: #fff; border: none; }
+  .overall-card .lbl { font-size: 12px; opacity: .85; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
+  .overall-card .val { font-size: 28px; font-weight: 700; line-height: 1.1; }
+  .overall-card .val small { font-size: 13px; opacity: .85; font-weight: 400; }
+
+  .sub-progress { background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 22px 26px; margin-bottom: 18px; }
+  .sub-progress h3 { margin: 0 0 4px; font-size: 18px; color: #0A2540; }
+  .sub-progress .teacher { color: #64748B; font-size: 14px; margin-bottom: 14px; }
+
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin: 16px 0; }
+  .metric { padding: 12px 14px; background: #F8FAFC; border-radius: 10px; }
+  .metric .m-lbl { font-size: 11px; color: #64748B; text-transform: uppercase; letter-spacing: .5px; }
+  .metric .m-val { font-size: 22px; font-weight: 700; color: #0A2540; margin-top: 4px; }
+  .metric .m-val.green { color: #047857; }
+  .metric .m-val.amber { color: #B45309; }
+  .metric .m-val.gray  { color: #94A3B8; }
+
+  .progress-bar { background: #F1F5F9; border-radius: 999px; height: 10px; overflow: hidden; margin-top: 6px; }
+  .progress-bar .fill { background: linear-gradient(90deg, #14B8A6, #10B981); height: 100%; transition: width .3s; }
+  .progress-bar .fill.amber { background: linear-gradient(90deg, #F59E0B, #D97706); }
+
+  .next-lesson { margin-top: 16px; padding: 12px 16px; background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 10px; font-size: 14px; color: #075985; }
+  .empty { text-align: center; padding: 50px; background: #F8FAFC; border-radius: 14px; color: #64748B; }
+
+  .badge-streak { display:inline-block; background:#FEF3C7; color:#92400E; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+</style>
+
+<div class="progress-page">
+  <h1>📊 {% trans 'Мой прогресс' %}</h1>
+  <p class="subtitle">{% trans 'Сводка по вашим подпискам, урокам и домашним заданиям' %}</p>
+
+  <div class="overall">
+    <div class="overall-card success">
+      <div class="lbl">{% trans 'Проведено уроков' %}</div>
+      <div class="val">{{ total_completed_lessons }} <small>{% trans 'всего' %}</small></div>
+    </div>
+    <div class="overall-card indigo">
+      <div class="lbl">{% trans 'Домашних заданий' %}</div>
+      <div class="val">{{ total_hw_graded }}/{{ total_homework }} <small>{% trans 'проверено' %}</small></div>
+    </div>
+    <div class="overall-card amber">
+      <div class="lbl">{% trans 'Активных подписок' %}</div>
+      <div class="val">{{ subs|length }}</div>
+    </div>
+  </div>
+
+  {% if subs %}
+    <h2 style="font-size:18px; color:#0A2540; margin:24px 0 12px;">🟢 {% trans 'Активные подписки' %}</h2>
+    {% for s in subs %}
+      <div class="sub-progress">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+          <div>
+            <h3>{{ s.subject.name }}</h3>
+            <div class="teacher">👤 {{ s.teacher.user.get_full_name|default:s.teacher.user.username }}</div>
+          </div>
+          {% if s.learning_streak_weeks %}
+            <span class="badge-streak">🔥 {{ s.learning_streak_weeks }} {% trans 'нед. подряд' %}</span>
+          {% endif %}
+        </div>
+
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:13px; color:#64748B; margin-top:8px;">
+            <span>{% trans 'Прогресс уроков' %}</span>
+            <b style="color:#0A2540;">{{ s.completed_lessons }}/{{ s.total_lessons }} ({{ s.progress_percent }}%)</b>
+          </div>
+          <div class="progress-bar"><div class="fill" style="width:{{ s.progress_percent }}%"></div></div>
+        </div>
+
+        <div class="metric-grid">
+          <div class="metric">
+            <div class="m-lbl">{% trans 'Посещаемость' %}</div>
+            <div class="m-val green">{{ s.attendance_rate }}%</div>
+          </div>
+          <div class="metric">
+            <div class="m-lbl">{% trans 'Средняя оценка ДЗ' %}</div>
+            {% if s.average_grade %}
+              <div class="m-val green">{{ s.average_grade }}<small style="color:#94A3B8;">/100</small></div>
+            {% else %}
+              <div class="m-val gray">—</div>
+            {% endif %}
+          </div>
+          <div class="metric">
+            <div class="m-lbl">{% trans 'ДЗ выполнено' %}</div>
+            <div class="m-val amber">{{ s.homework_graded }}/{{ s.homework_total }}</div>
+          </div>
+          <div class="metric">
+            <div class="m-lbl">{% trans 'На этой неделе' %}</div>
+            <div class="m-val">{{ s.lessons_this_week }} {% trans 'ур.' %}</div>
+          </div>
+        </div>
+
+        {% if s.next_lesson %}
+          <div class="next-lesson">
+            🎯 <b>{% trans 'Следующий урок' %}:</b> {{ s.next_lesson.slot.start_at|date:"d M, H:i" }}
+          </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if history_subs %}
+    <h2 style="font-size:18px; color:#0A2540; margin:24px 0 12px;">📜 {% trans 'История подписок' %}</h2>
+    {% for s in history_subs %}
+      <div class="sub-progress" style="opacity:.75;">
+        <div style="display:flex; justify-content:space-between; gap:12px;">
+          <div>
+            <h3>{{ s.subject.name }} <small style="color:#94A3B8; font-size:14px; font-weight:400;">({{ s.get_status_display }})</small></h3>
+            <div class="teacher">👤 {{ s.teacher.user.get_full_name|default:s.teacher.user.username }} · {{ s.completed_lessons }}/{{ s.total_lessons }} {% trans 'уроков' %}</div>
+          </div>
+          {% if s.average_grade %}
+            <div style="text-align:right;">
+              <div style="font-size:11px; color:#94A3B8; text-transform:uppercase; letter-spacing:.5px;">{% trans 'Средняя ДЗ' %}</div>
+              <div style="font-size:22px; font-weight:700; color:#0A2540;">{{ s.average_grade }}/100</div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if not subs and not history_subs %}
+    <div class="empty">
+      <h2 style="color:#0A2540; margin:0 0 8px;">{% trans 'Подписок пока нет' %}</h2>
+      <p>{% trans 'Купите подписку, чтобы начать обучение и видеть свой прогресс.' %}</p>
+      <a href="{% url 'home' %}" style="display:inline-block; margin-top:16px; padding:10px 22px; background:#3B82F6; color:#fff; border-radius:8px; text-decoration:none;">{% trans 'Найти учителя' %}</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

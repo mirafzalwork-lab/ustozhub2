@@ -16,6 +16,7 @@ django.setup()
 from channels.routing import ProtocolTypeRouter, URLRouter
 
 from channels.auth import AuthMiddlewareStack
+from channels.security.websocket import AllowedHostsOriginValidator
 from teachers.routing import websocket_urlpatterns
 
 # Получаем Django ASGI приложение
@@ -25,11 +26,15 @@ django_asgi_app = get_asgi_application()
 application = ProtocolTypeRouter({
     # HTTP запросы обрабатываются обычным Django
     "http": django_asgi_app,
-    
-    # WebSocket соединения обрабатываются через Channels
-    "websocket": AuthMiddlewareStack(
-        URLRouter(
-            websocket_urlpatterns  # WebSocket URL patterns из teachers.routing
+
+    # WebSocket соединения обрабатываются через Channels.
+    # AllowedHostsOriginValidator проверяет Origin по ALLOWED_HOSTS — защита от
+    # Cross-Site WebSocket Hijacking (сторонний сайт не откроет ws от имени юзера).
+    "websocket": AllowedHostsOriginValidator(
+        AuthMiddlewareStack(
+            URLRouter(
+                websocket_urlpatterns  # WebSocket URL patterns из teachers.routing
+            )
         )
     ),
 })

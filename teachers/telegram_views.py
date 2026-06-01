@@ -40,25 +40,36 @@ def verify_telegram_auth(auth_data: dict, bot_token: str) -> bool:
         
         # Сортируем данные и создаем строку для проверки
         data_check_string = '\n'.join([f'{k}={v}' for k, v in sorted(auth_data_copy.items())])
-        
+
         # Создаем секретный ключ
         secret_key = hashlib.sha256(bot_token.encode()).digest()
-        
+
         # Вычисляем hash
         calculated_hash = hmac.new(
             secret_key,
             data_check_string.encode(),
             hashlib.sha256
         ).hexdigest()
-        
-        # Сравниваем хеши
-        is_valid = calculated_hash == received_hash
-        
-        if not is_valid:
-            logger.warning(f"Telegram auth: неверная подпись данных")
-        
-        return is_valid
-        
+
+        # Сравниваем хеши — constant-time, защита от timing-атак.
+        if not hmac.compare_digest(calculated_hash, str(received_hash)):
+            logger.warning("Telegram auth: неверная подпись данных")
+            return False
+
+        # Защита от replay: auth_date не должен быть старше окна (по умолч. 1 час).
+        # Без этой проверки перехваченный валидный payload логинил бы вечно.
+        import time
+        max_age = getattr(settings, 'TELEGRAM_AUTH_MAX_AGE', 3600)
+        try:
+            auth_date = int(auth_data_copy.get('auth_date', 0))
+        except (TypeError, ValueError):
+            auth_date = 0
+        if auth_date <= 0 or (time.time() - auth_date) > max_age:
+            logger.warning("Telegram auth: auth_date просрочен или отсутствует")
+            return False
+
+        return True
+
     except Exception as e:
         logger.error(f"Ошибка проверки Telegram auth: {e}", exc_info=True)
         return False
@@ -207,7 +218,6 @@ def telegram_auth(request):
         }, status=500)
 
 
-@csrf_exempt
 @require_http_methods(["POST"])
 def link_telegram_account(request):
     """
@@ -332,7 +342,6 @@ def telegram_status(request):
         }, status=500)
 
 
-@csrf_exempt
 @require_http_methods(["POST"])
 def toggle_notifications(request):
     """

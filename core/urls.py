@@ -10,7 +10,7 @@ from django.conf.urls.i18n import i18n_patterns
 from django.views.i18n import set_language  # Добавлен импорт!
 
 from teachers.sitemaps import SITEMAPS
-from teachers.views import robots_txt
+from teachers.views import robots_txt, healthz
 
 urlpatterns = [
     path('i18n/setlang/', set_language, name='set_language'),
@@ -18,17 +18,19 @@ urlpatterns = [
     # SEO: sitemap.xml + robots.txt — вне i18n, на корне домена
     path('sitemap.xml', sitemap, {'sitemaps': SITEMAPS}, name='django.contrib.sitemaps.views.sitemap'),
     path('robots.txt', robots_txt, name='robots_txt'),
+    path('healthz/', healthz, name='healthz'),  # мониторинг (DB + Redis)
 ]
 
 urlpatterns += i18n_patterns(
     path('admin/', admin.site.urls),
+    path('', include('billing.urls')),
     path('', include('teachers.urls')),
     prefix_default_language=True,  # Русский (default) без префикса: /
 )
 
-# Serve media files (user uploads) - works in both DEBUG modes
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
-# Serve static files in development
+# Раздача media/static — ТОЛЬКО в dev. В production /media/ и /static/ отдаёт
+# nginx (см. deploy/nginx.conf). Раньше Django отдавал /media/ безусловно, в т.ч.
+# приватные сертификаты, без access-control и nosniff.
 if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.BASE_DIR / 'static')

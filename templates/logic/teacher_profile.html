@@ -1,6 +1,7 @@
 \{% extends 'base.html' %}
 {% load custom_filters %}
 {% load i18n %}
+{% load humanize %}
 
 {% block title %}{% trans "Мой профиль" %} - UstozHub{% endblock %}
 
@@ -90,6 +91,87 @@
 
     .views-info-text i {
         margin-right: var(--spacing-xs);
+    }
+
+    /* ===== Profile completeness widget (Phase 4 UX) ===== */
+    .completeness-widget {
+        background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+        border: 1px solid #FCD34D;
+        border-radius: var(--radius-lg);
+        padding: 20px 22px;
+        margin-bottom: var(--spacing-lg);
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);
+    }
+    .comp-head {
+        display: flex; align-items: center; gap: 16px;
+        margin-bottom: 14px; flex-wrap: wrap;
+    }
+    .comp-head-left { flex: 1; min-width: 0; }
+    .comp-head h3 {
+        margin: 0 0 4px; font-size: 17px; font-weight: 600;
+        color: #78350F;
+    }
+    .comp-head h3 b { color: #92400E; font-weight: 700; }
+    .comp-head p {
+        margin: 0; font-size: 13px; color: #92400E; line-height: 1.4;
+    }
+    .comp-circle {
+        width: 56px; height: 56px; flex-shrink: 0;
+        border-radius: 50%;
+        background: #FDE68A;
+        display: flex; align-items: center; justify-content: center;
+        position: relative;
+    }
+    .comp-circle::before {
+        content: '';
+        position: absolute; inset: 6px;
+        background: #FFFBEB; border-radius: 50%;
+    }
+    .comp-circle span {
+        position: relative; z-index: 1;
+        font-size: 13px; font-weight: 700; color: #92400E;
+    }
+    .comp-progress-bar {
+        height: 6px; background: #FDE68A; border-radius: 4px;
+        overflow: hidden; margin-bottom: 16px;
+    }
+    .comp-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #F59E0B, #D97706);
+        transition: width .4s ease;
+        border-radius: 4px;
+    }
+    .comp-tips-title {
+        margin: 0 0 8px; font-size: 12px; font-weight: 600;
+        text-transform: uppercase; letter-spacing: .5px; color: #78350F;
+    }
+    .comp-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+    .comp-item-link {
+        display: flex; align-items: center; gap: 12px;
+        padding: 10px 14px;
+        background: #fff; border: 1px solid #FDE68A;
+        border-radius: 10px;
+        text-decoration: none;
+        transition: all .15s ease;
+    }
+    .comp-item-link:hover {
+        background: #FFFBEB; border-color: #F59E0B; transform: translateX(2px);
+        text-decoration: none;
+    }
+    .comp-item-text { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .comp-item-label { font-size: 14px; font-weight: 600; color: #0F172A; }
+    .comp-item-boost {
+        font-size: 11px; font-weight: 600; color: #059669;
+        background: #ECFDF5; padding: 2px 8px; border-radius: 999px;
+        border: 1px solid #BBF7D0;
+    }
+    .comp-item-arrow { color: #94A3B8; font-size: 12px; }
+    .comp-item-link:hover .comp-item-arrow { color: #F59E0B; }
+    @media (max-width: 560px) {
+        .completeness-widget { padding: 16px; }
+        .comp-circle { width: 48px; height: 48px; }
+        .comp-circle span { font-size: 12px; }
+        .comp-head h3 { font-size: 15px; }
     }
 
     /* Алерты для статуса модерации */
@@ -888,58 +970,497 @@
             transform: none;
         }
     }
+
+    /* ============================================
+       📊 Phase 9 — Teacher Activity Dashboard
+       ============================================ */
+    .activity-dash {
+        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 24px;
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+    }
+    .activity-dash::before {
+        content: "";
+        position: absolute;
+        top: -50px; right: -50px;
+        width: 200px; height: 200px;
+        background: radial-gradient(circle, rgba(99,102,241,0.18), transparent 70%);
+        pointer-events: none;
+    }
+    .ad-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+        position: relative;
+        z-index: 1;
+    }
+    .ad-head h2 {
+        font-size: 18px;
+        font-weight: 700;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .ad-head h2 i { font-size: 16px; opacity: 0.7; }
+    .ad-tabs {
+        display: inline-flex;
+        background: rgba(255,255,255,0.08);
+        border-radius: 100px;
+        padding: 3px;
+        gap: 2px;
+    }
+    .ad-tab {
+        background: transparent;
+        color: #94A3B8;
+        border: none;
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 100px;
+        cursor: pointer;
+        transition: all 150ms ease;
+    }
+    .ad-tab:hover { color: white; }
+    .ad-tab.is-active {
+        background: white;
+        color: #0F172A;
+    }
+
+    .ad-tiles {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+        position: relative;
+        z-index: 1;
+    }
+    .ad-tile {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 14px;
+        padding: 14px;
+        transition: all 200ms ease;
+    }
+    .ad-tile:hover {
+        background: rgba(255,255,255,0.1);
+        transform: translateY(-2px);
+    }
+    .ad-tile.is-warn { border-color: #FBBF24; background: rgba(251,191,36,0.1); }
+    .ad-tile__label {
+        font-size: 11px;
+        color: #94A3B8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 6px;
+        font-weight: 600;
+    }
+    .ad-tile__value {
+        font-size: 26px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.1;
+    }
+    .ad-tile__sub {
+        font-size: 11px;
+        color: #94A3B8;
+        margin-top: 4px;
+    }
+    .ad-tile.is-warn .ad-tile__value { color: #FBBF24; }
+
+    /* Funnel */
+    .ad-funnel {
+        margin-top: 18px;
+        padding-top: 18px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        position: relative;
+        z-index: 1;
+    }
+    .ad-funnel__title {
+        font-size: 12px;
+        color: #94A3B8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 12px;
+        font-weight: 600;
+    }
+    .ad-funnel__steps {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+    }
+    .ad-funnel__step {
+        background: rgba(255,255,255,0.06);
+        border-radius: 10px;
+        padding: 10px 12px;
+        position: relative;
+    }
+    .ad-funnel__step + .ad-funnel__step::before {
+        content: "→";
+        position: absolute;
+        left: -12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #475569;
+        font-weight: 700;
+    }
+    .ad-funnel__label {
+        font-size: 11px;
+        color: #94A3B8;
+        display: flex; align-items: center; gap: 4px;
+    }
+    .ad-funnel__count {
+        font-size: 18px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+    .ad-funnel__rate {
+        font-size: 11px;
+        color: #10B981;
+        margin-top: 2px;
+        font-weight: 600;
+    }
+    .ad-funnel__rate.is-warn { color: #F59E0B; }
+    .ad-funnel__rate.is-bad { color: #EF4444; }
+
+    /* Earnings band */
+    .ad-earnings {
+        margin-top: 18px;
+        padding: 14px 18px;
+        background: linear-gradient(90deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05));
+        border: 1px solid rgba(16,185,129,0.3);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        position: relative;
+        z-index: 1;
+    }
+    .ad-earnings__left { display: flex; align-items: center; gap: 12px; }
+    .ad-earnings__icon {
+        width: 40px; height: 40px;
+        background: rgba(16,185,129,0.25);
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px;
+    }
+    .ad-earnings__label {
+        font-size: 12px;
+        color: #6EE7B7;
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+    }
+    .ad-earnings__amount {
+        font-size: 22px;
+        font-weight: 800;
+        color: white;
+        font-variant-numeric: tabular-nums;
+    }
+    .ad-earnings__amount small { font-size: 13px; opacity: 0.7; font-weight: 500; }
+    .ad-earnings__hint {
+        font-size: 12px;
+        color: #94A3B8;
+        max-width: 280px;
+        text-align: right;
+    }
+
+    @media (max-width: 720px) {
+        .activity-dash { padding: 18px; border-radius: 16px; }
+        .ad-tiles { grid-template-columns: repeat(2, 1fr); }
+        .ad-tile__value { font-size: 22px; }
+        .ad-funnel__steps { grid-template-columns: 1fr 1fr; }
+        .ad-funnel__step + .ad-funnel__step::before { display: none; }
+        .ad-earnings { flex-direction: column; align-items: flex-start; }
+        .ad-earnings__hint { text-align: left; }
+    }
+
+    /* ============================================
+       🚀 First-booking checklist (Phase 9)
+       ============================================ */
+    .fbc-widget {
+        background: linear-gradient(135deg, #EEF2FF 0%, #FAF5FF 100%);
+        border: 1px solid #C7D2FE;
+        border-radius: 16px;
+        padding: 22px;
+        margin-bottom: 24px;
+    }
+    .fbc-head {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 6px;
+    }
+    .fbc-title {
+        font-size: 17px; font-weight: 700; color: #312E81;
+        display: flex; align-items: center; gap: 8px; margin: 0;
+    }
+    .fbc-progress {
+        font-size: 14px; font-weight: 700;
+        color: #4338CA;
+        font-variant-numeric: tabular-nums;
+    }
+    .fbc-sub {
+        font-size: 13px; color: #4338CA; opacity: 0.85;
+        margin: 0 0 14px;
+    }
+    .fbc-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+    .fbc-item {
+        background: white;
+        border: 1px solid #E0E7FF;
+        border-radius: 12px;
+        padding: 12px 14px;
+        display: flex; align-items: center; gap: 12px;
+        transition: all 200ms ease;
+        text-decoration: none;
+        color: inherit;
+    }
+    .fbc-item:hover {
+        border-color: #818CF8;
+        transform: translateX(4px);
+    }
+    .fbc-item.is-done {
+        background: #ECFDF5;
+        border-color: #A7F3D0;
+        opacity: 0.85;
+    }
+    .fbc-check {
+        width: 24px; height: 24px;
+        border-radius: 50%;
+        background: #E0E7FF;
+        color: transparent;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 12px;
+        flex-shrink: 0;
+        transition: all 200ms ease;
+    }
+    .fbc-item.is-done .fbc-check {
+        background: #10B981; color: white;
+    }
+    .fbc-item.is-done .fbc-check::before { content: "✓"; }
+    .fbc-text { flex: 1; min-width: 0; }
+    .fbc-label {
+        font-size: 14px; font-weight: 600; color: #1F2937;
+        line-height: 1.3;
+    }
+    .fbc-item.is-done .fbc-label {
+        color: #065F46;
+        text-decoration: line-through;
+        text-decoration-color: rgba(6,95,70,0.3);
+    }
+    .fbc-hint {
+        font-size: 12px; color: #6366F1;
+        margin-top: 2px;
+        line-height: 1.3;
+    }
+    .fbc-item.is-done .fbc-hint { color: #047857; }
+    .fbc-arrow {
+        color: #6366F1; font-size: 14px;
+        flex-shrink: 0;
+        transition: transform 200ms ease;
+    }
+    .fbc-item:hover .fbc-arrow { transform: translateX(4px); }
+    .fbc-item.is-done .fbc-arrow { display: none; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="profile-container">
-    <!-- ✅ НОВОЕ: Виджет статистики просмотров -->
-    <div class="views-widget">
-        <div class="views-widget-header">
-            <div class="views-widget-title">
-                <i class="fas fa-eye views-widget-icon"></i>
-                {% trans 'Статистика просмотров профиля' %}
+    {# ===== Phase 9 — Teacher Activity Dashboard ===== #}
+    <div class="activity-dash" id="activityDash"
+         data-stats-7d='{"views":{{ activity_7d.views }},"viewers":{{ activity_7d.viewers }},"conversations":{{ activity_7d.conversations }},"bookings":{{ activity_7d.bookings }},"completed":{{ activity_7d.completed }},"pending":{{ activity_7d.pending }}}'
+         data-stats-30d='{"views":{{ activity_30d.views }},"viewers":{{ activity_30d.viewers }},"conversations":{{ activity_30d.conversations }},"bookings":{{ activity_30d.bookings }},"completed":{{ activity_30d.completed }},"pending":{{ activity_30d.pending }}}'
+         data-stats-all='{"views":{{ activity_all.views }},"viewers":{{ activity_all.viewers }},"conversations":{{ activity_all.conversations }},"bookings":{{ activity_all.bookings }},"completed":{{ activity_all.completed }},"pending":{{ activity_all.pending }}}'
+         data-earnings-7d='{"gross":{{ earnings_7d.gross }},"lessons":{{ earnings_7d.lessons }}}'
+         data-earnings-30d='{"gross":{{ earnings_30d.gross }},"lessons":{{ earnings_30d.lessons }}}'
+         data-earnings-all='{"gross":{{ earnings_all.gross }},"lessons":{{ earnings_all.lessons }}}'>
+        <div class="ad-head">
+            <h2><i class="fas fa-chart-line"></i> {% trans 'Активность профиля' %}</h2>
+            <div class="ad-tabs" role="tablist">
+                <button type="button" class="ad-tab is-active" data-period="7d">{% trans '7 дней' %}</button>
+                <button type="button" class="ad-tab" data-period="30d">{% trans '30 дней' %}</button>
+                <button type="button" class="ad-tab" data-period="all">{% trans 'Всё время' %}</button>
             </div>
         </div>
-        <div class="views-stats-grid">
-            <div class="views-stat-item">
-                <div class="views-stat-value">{{ views_stats.day }}</div>
-                <div class="views-stat-label">{% trans 'За сегодня' %}</div>
+
+        <div class="ad-tiles">
+            <div class="ad-tile">
+                <div class="ad-tile__label">👁️ {% trans 'Просмотры' %}</div>
+                <div class="ad-tile__value" data-stat="views">{{ activity_7d.views }}</div>
+                <div class="ad-tile__sub"><span data-stat="viewers">{{ activity_7d.viewers }}</span> {% trans 'уникальных' %}</div>
             </div>
-            <div class="views-stat-item">
-                <div class="views-stat-value">{{ views_stats.week }}</div>
-                <div class="views-stat-label">{% trans 'За неделю' %}</div>
+            <div class="ad-tile">
+                <div class="ad-tile__label">💬 {% trans 'Беседы' %}</div>
+                <div class="ad-tile__value" data-stat="conversations">{{ activity_7d.conversations }}</div>
+                <div class="ad-tile__sub">{% trans 'новых диалогов' %}</div>
             </div>
-            <div class="views-stat-item">
-                <div class="views-stat-value">{{ views_stats.total }}</div>
-                <div class="views-stat-label">{% trans 'За всё время' %}</div>
+            <div class="ad-tile">
+                <div class="ad-tile__label">📅 {% trans 'Бронирования' %}</div>
+                <div class="ad-tile__value" data-stat="bookings">{{ activity_7d.bookings }}</div>
+                <div class="ad-tile__sub">{% trans 'заявок получено' %}</div>
+            </div>
+            <div class="ad-tile">
+                <div class="ad-tile__label">✅ {% trans 'Проведено' %}</div>
+                <div class="ad-tile__value" data-stat="completed">{{ activity_7d.completed }}</div>
+                <div class="ad-tile__sub">{% trans 'завершённых уроков' %}</div>
+            </div>
+            <div class="ad-tile{% if activity_all.pending %} is-warn{% endif %}">
+                <div class="ad-tile__label">⏱ {% trans 'Ждут ответа' %}</div>
+                <div class="ad-tile__value" data-stat="pending">{{ activity_all.pending }}</div>
+                <div class="ad-tile__sub">
+                    {% if activity_all.pending %}
+                        <a href="{% url 'my_bookings' %}" style="color:#FBBF24;text-decoration:underline;">{% trans 'Ответить →' %}</a>
+                    {% else %}
+                        {% trans 'нет ожидающих' %}
+                    {% endif %}
+                </div>
             </div>
         </div>
-        <div class="views-info-text">
-            <i class="fas fa-info-circle"></i>
-            {% blocktrans with week=views_stats.week unique=views_stats.unique_week %}Ваш профиль просмотрели <strong>{{ week }}</strong> раз за последнюю неделю. Уникальных посетителей: <strong>{{ unique }}</strong>. Продолжайте обновлять профиль для привлечения новых учеников!{% endblocktrans %}
+
+        <div class="ad-funnel">
+            <div class="ad-funnel__title">{% trans 'Воронка конверсии' %} (<span id="adFunnelPeriod">{{ activity_7d.period_label }}</span>)</div>
+            <div class="ad-funnel__steps" id="adFunnelSteps">
+                {% for step in funnel_7d.steps %}
+                <div class="ad-funnel__step" data-step="{{ step.key }}">
+                    <div class="ad-funnel__label">{{ step.icon }} {{ step.label }}</div>
+                    <div class="ad-funnel__count" data-funnel-count>{{ step.count }}</div>
+                    {% if step.rate is not None %}
+                        <div class="ad-funnel__rate{% if step.rate < 5 %} is-bad{% elif step.rate < 15 %} is-warn{% endif %}" data-funnel-rate>{{ step.rate }}%</div>
+                    {% else %}
+                        <div class="ad-funnel__rate" data-funnel-rate>—</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="ad-earnings">
+            <div class="ad-earnings__left">
+                <div class="ad-earnings__icon">💰</div>
+                <div>
+                    <div class="ad-earnings__label">{% trans 'Заработано' %} <span id="adEarningsPeriod">{{ earnings_7d.period_label }}</span></div>
+                    <div class="ad-earnings__amount">
+                        <span data-earnings="gross">{{ earnings_7d.gross|floatformat:0|intcomma }}</span><small> {% trans 'сум' %}</small>
+                    </div>
+                </div>
+            </div>
+            <div class="ad-earnings__hint">
+                <span data-earnings="lessons">{{ earnings_7d.lessons }}</span> {% trans 'проведённых уроков. Только подтверждённые завершённые занятия.' %}
+            </div>
         </div>
     </div>
+
+    {# ===== Phase 9 — First-booking checklist ===== #}
+    {% if first_booking_checklist %}
+        {% with done_count=0 total_count=first_booking_checklist|length %}
+        <div class="fbc-widget">
+            <div class="fbc-head">
+                <h3 class="fbc-title">🚀 {% trans '5 шагов до первой брони' %}</h3>
+                {% with done=first_booking_done_count total=first_booking_checklist|length %}
+                <span class="fbc-progress">{{ done }} / {{ total }}</span>
+                {% endwith %}
+            </div>
+            <p class="fbc-sub">{% trans 'У вас пока нет проведённых уроков. Сделайте профиль конкурентным — ученики увидят вас в поиске и захотят выбрать.' %}</p>
+            <ul class="fbc-list">
+                {% for item in first_booking_checklist %}
+                    <li>
+                        <a class="fbc-item{% if item.done %} is-done{% endif %}"
+                           href="{% if item.key == 'schedule' %}{% url 'teacher_calendar' %}{% else %}{% url 'teacher_profile_edit' %}{{ item.action_anchor }}{% endif %}">
+                            <span class="fbc-check"></span>
+                            <span class="fbc-text">
+                                <span class="fbc-label">{{ item.label }}</span>
+                                <span class="fbc-hint">{{ item.hint }}</span>
+                            </span>
+                            <span class="fbc-arrow">→</span>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endwith %}
+    {% endif %}
+
+    {# ===== Profile completeness widget — Phase 4 UX ===== #}
+    {% with comp=teacher.get_completeness %}
+    {% if comp.percent < 100 %}
+    <div class="completeness-widget">
+        <div class="comp-head">
+            <div class="comp-head-left">
+                <h3>📋 {% trans 'Профиль заполнен на' %} <b>{{ comp.percent }}%</b></h3>
+                <p>{% blocktrans with done=comp.completed total=comp.total %}{{ done }} из {{ total }} разделов заполнено. Заполните остальное — получайте больше запросов!{% endblocktrans %}</p>
+            </div>
+            <div class="comp-circle" data-percent="{{ comp.percent }}"
+                 style="background: conic-gradient(#F59E0B 0% {{ comp.percent }}%, #FDE68A {{ comp.percent }}% 100%);">
+                <span>{{ comp.percent }}%</span>
+            </div>
+        </div>
+        <div class="comp-progress-bar">
+            <div class="comp-progress-fill" style="width: {{ comp.percent }}%;"></div>
+        </div>
+        {% if comp.missing %}
+        <p class="comp-tips-title">{% trans 'Что добавить в первую очередь:' %}</p>
+        <ul class="comp-list">
+            {% for item in comp.missing %}
+            <li class="comp-item">
+                <a href="{% url item.url_name %}{% if item.anchor %}#{{ item.anchor }}{% endif %}" class="comp-item-link">
+                    <span class="comp-item-text">
+                        <span class="comp-item-label">{{ item.label }}</span>
+                        <span class="comp-item-boost">+{{ item.boost }}% {% trans 'к запросам' %}</span>
+                    </span>
+                    <i class="fas fa-arrow-right comp-item-arrow"></i>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endwith %}
 
     <!-- Алерты статуса модерации -->
     {% if teacher.moderation_status == 'pending' %}
         <div class="alert alert-warning">
             <i class="fas fa-clock"></i>
-            <div>
+            <div style="flex:1; min-width:0;">
                 <strong>{% trans 'Ваш профиль на модерации' %}</strong><br>
-                {% trans 'Администрация проверит ваш профиль в ближайшее время. После одобрения вы сможете получать запросы от учеников и ваш профиль будет виден в поиске.' %}
+                {% trans 'Обычно проверка занимает 24 часа. После одобрения профиль появится в поиске и ученики смогут отправлять запросы.' %}
+                <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+                    <a href="{% url 'teacher_detail' id=teacher.id %}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; background:#fff; color:#92400e; border:1px solid #FCD34D; border-radius:8px; text-decoration:none; font-size:13px; font-weight:600;">
+                        <i class="fas fa-eye"></i> {% trans 'Посмотреть как ученик' %}
+                    </a>
+                    <a href="{% url 'profile_edit' %}" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; background:#fff; color:#92400e; border:1px solid #FCD34D; border-radius:8px; text-decoration:none; font-size:13px; font-weight:600;">
+                        <i class="fas fa-pen"></i> {% trans 'Дополнить профиль' %}
+                    </a>
+                    <a href="https://t.me/{{ TOPUP_TELEGRAM_HANDLE|default:'ustozhub_support' }}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; background:transparent; color:#78350F; text-decoration:none; font-size:13px; font-weight:500;">
+                        <i class="fab fa-telegram-plane"></i> {% trans 'Связаться с поддержкой' %}
+                    </a>
+                </div>
             </div>
         </div>
     {% elif teacher.moderation_status == 'rejected' %}
         <div class="alert alert-danger">
             <i class="fas fa-exclamation-triangle"></i>
-            <div>
-                <strong>{% trans 'Профиль отклонен' %}</strong><br>
+            <div style="flex:1; min-width:0;">
+                <strong>{% trans 'Профиль отклонён' %}</strong><br>
                 {% if teacher.moderation_comment %}
-                    {{ teacher.moderation_comment }}
+                    <span style="display:block; margin-top:4px;">{{ teacher.moderation_comment }}</span>
                 {% else %}
-                    {% trans 'Пожалуйста, свяжитесь с поддержкой для уточнения причины отклонения.' %}
+                    {% trans 'Свяжитесь с поддержкой для уточнения причины отклонения.' %}
                 {% endif %}
+                <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+                    <a href="{% url 'profile_edit' %}" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; background:#fff; color:#991B1B; border:1px solid #FCA5A5; border-radius:8px; text-decoration:none; font-size:13px; font-weight:600;">
+                        <i class="fas fa-pen"></i> {% trans 'Исправить и переотправить' %}
+                    </a>
+                    <a href="https://t.me/{{ TOPUP_TELEGRAM_HANDLE|default:'ustozhub_support' }}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; background:#fff; color:#991B1B; border:1px solid #FCA5A5; border-radius:8px; text-decoration:none; font-size:13px; font-weight:600;">
+                        <i class="fab fa-telegram-plane"></i> {% trans 'Поддержка' %}
+                    </a>
+                </div>
             </div>
         </div>
     {% elif teacher.moderation_status == 'approved' %}
@@ -987,11 +1508,26 @@
                 {% endif %}
             </div>
             <div class="profile-actions">
+                <a href="{% url 'dashboard' %}" class="btn btn-primary" style="background: linear-gradient(135deg, #0F766E, #14B8A6);">
+                    <i class="fas fa-tachometer-alt"></i> {% trans 'Дашборд' %}
+                </a>
                 <a href="{% url 'teacher_profile_edit' %}" class="btn btn-primary">
                     <i class="fas fa-edit"></i> {% trans 'Редактировать профиль' %}
                 </a>
                 <a href="{% url 'teacher_calendar' %}" class="btn btn-primary" style="background: linear-gradient(135deg, #4F46E5, #4338CA);">
                     <i class="fa-regular fa-calendar"></i> {% trans 'Управление расписанием' %}
+                </a>
+                <a href="{% url 'tariffs_list' %}" class="btn btn-primary" style="background: linear-gradient(135deg, #10B981, #059669);">
+                    <i class="fas fa-tags"></i> {% trans 'Мои тарифы' %}
+                </a>
+                <a href="{% url 'teacher_subscribers' %}" class="btn btn-primary" style="background: linear-gradient(135deg, #14B8A6, #0F766E);">
+                    <i class="fas fa-users"></i> {% trans 'Подписчики' %}
+                </a>
+                <a href="{% url 'teacher_homework_list' %}" class="btn btn-primary" style="background: linear-gradient(135deg, #7C3AED, #6D28D9);">
+                    <i class="fas fa-book-open"></i> {% trans 'Домашние задания' %}
+                </a>
+                <a href="{% url 'withdrawals_list' %}" class="btn btn-primary" style="background: linear-gradient(135deg, #B45309, #D97706);">
+                    <i class="fas fa-money-bill-wave"></i> {% trans 'Вывести средства' %}
                 </a>
                 <a href="{% url 'my_bookings_page' %}" class="btn btn-success">
                     <i class="fa-regular fa-calendar-check"></i> {% trans 'Заявки и уроки' %}
@@ -1007,6 +1543,11 @@
                 </a>
             </div>
         </div>
+    </div>
+
+    {# Кошелёк #}
+    <div style="max-width: 1200px; margin: 0 auto;">
+        {% include 'billing/_wallet_card.html' %}
     </div>
 
     <!-- ✅ CTA: управление расписанием (Phase 5.5) -->
@@ -1096,7 +1637,7 @@
                     {{ ts.subject.name }}
                 </div>
                 <div class="subject-price">
-                    {{ ts.hourly_rate|floatformat:0 }} <span>{% trans 'сум/час' %}</span>
+                    {{ ts.hourly_rate|floatformat:0|intcomma }} <span>{% trans 'сум/час' %}</span>
                 </div>
                 {% if ts.is_free_trial %}
                     <span class="free-trial-badge">
@@ -1229,27 +1770,6 @@
                 <div class="info-label">{% trans 'Город' %}</div>
                 <div class="info-value">{{ teacher.city|default:"Не указан" }}</div>
             </div>
-            <div class="info-item full-width">
-                <div class="info-label">{% trans 'Расписание' %}</div>
-                {% if teacher.has_schedule %}
-                <div class="schedule-list">
-                    {% for day_label, intervals in teacher.get_schedule_display %}
-                        {% if intervals %}
-                        <div class="schedule-row">
-                            <span class="weekday-badge">{{ day_label }}</span>
-                            <span class="schedule-times">
-                                {% for from_t, to_t in intervals %}
-                                    {{ from_t }}–{{ to_t }}{% if not forloop.last %},{% endif %}
-                                {% endfor %}
-                            </span>
-                        </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="info-value text-muted">{% trans 'Расписание не указано' %}</div>
-                {% endif %}
-            </div>
         </div>
     </div>
 
@@ -1351,4 +1871,104 @@
         </div>
     </div>
 </div>
+
+<script>
+(function() {
+    'use strict';
+    // ============================================
+    // Phase 9 — Activity Dashboard tab switcher
+    // ============================================
+    var dash = document.getElementById('activityDash');
+    if (!dash) return;
+
+    var PERIOD_LABELS = {
+        '7d':  'за 7 дней',
+        '30d': 'за 30 дней',
+        'all': 'за всё время'
+    };
+
+    var periodCache = {
+        '7d':  parseJSON(dash.getAttribute('data-stats-7d')),
+        '30d': parseJSON(dash.getAttribute('data-stats-30d')),
+        'all': parseJSON(dash.getAttribute('data-stats-all'))
+    };
+    var earningsCache = {
+        '7d':  parseJSON(dash.getAttribute('data-earnings-7d')),
+        '30d': parseJSON(dash.getAttribute('data-earnings-30d')),
+        'all': parseJSON(dash.getAttribute('data-earnings-all'))
+    };
+
+    function parseJSON(s) {
+        try { return JSON.parse(s || '{}'); } catch(_) { return {}; }
+    }
+
+    function fmt(n) {
+        if (n == null) return '0';
+        return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    }
+
+    function recomputeFunnel(s) {
+        function rate(num, den) {
+            if (!den) return null;
+            return Math.round(1000 * num / den) / 10;
+        }
+        return [
+            { key: 'views',         count: s.views,         rate: null },
+            { key: 'conversations', count: s.conversations, rate: rate(s.conversations, s.views) },
+            { key: 'bookings',      count: s.bookings,      rate: rate(s.bookings, s.conversations || s.views) },
+            { key: 'completed',     count: s.completed,     rate: rate(s.completed, s.bookings) }
+        ];
+    }
+
+    function applyPeriod(period) {
+        var s = periodCache[period] || {};
+        // tiles
+        ['views','viewers','conversations','bookings','completed'].forEach(function(k) {
+            var el = dash.querySelector('.ad-tiles [data-stat="' + k + '"]');
+            if (el) el.textContent = fmt(s[k] || 0);
+        });
+        // pending tile всегда показывает current snapshot (data-stats-all.pending)
+        // — не меняется при свитче периода.
+
+        // funnel
+        var steps = recomputeFunnel(s);
+        var stepEls = dash.querySelectorAll('.ad-funnel__step');
+        steps.forEach(function(st, i) {
+            if (!stepEls[i]) return;
+            var c = stepEls[i].querySelector('[data-funnel-count]');
+            var r = stepEls[i].querySelector('[data-funnel-rate]');
+            if (c) c.textContent = fmt(st.count);
+            if (r) {
+                if (st.rate === null) {
+                    r.textContent = '—';
+                    r.className = 'ad-funnel__rate';
+                } else {
+                    r.textContent = st.rate + '%';
+                    r.className = 'ad-funnel__rate' + (st.rate < 5 ? ' is-bad' : (st.rate < 15 ? ' is-warn' : ''));
+                }
+            }
+        });
+        var fp = document.getElementById('adFunnelPeriod');
+        if (fp) fp.textContent = PERIOD_LABELS[period] || period;
+
+        // earnings
+        var e = earningsCache[period] || {};
+        var grossEl = dash.querySelector('[data-earnings="gross"]');
+        var lessonsEl = dash.querySelector('[data-earnings="lessons"]');
+        var ep = document.getElementById('adEarningsPeriod');
+        if (grossEl) grossEl.textContent = fmt(e.gross || 0);
+        if (lessonsEl) lessonsEl.textContent = fmt(e.lessons || 0);
+        if (ep) ep.textContent = PERIOD_LABELS[period] || period;
+    }
+
+    var tabs = dash.querySelectorAll('.ad-tab');
+    tabs.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            tabs.forEach(function(t) { t.classList.remove('is-active'); });
+            tab.classList.add('is-active');
+            applyPeriod(tab.getAttribute('data-period'));
+        });
+    });
+})();
+</script>
 {% endblock %}
