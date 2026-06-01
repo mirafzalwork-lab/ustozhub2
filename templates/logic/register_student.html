@@ -1491,9 +1491,13 @@
 
     // Блокировка кнопки при отправке
     document.getElementById('registerForm').addEventListener('submit', function(e) {
-        const btn = this.querySelector('.submit-btn');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% trans "Регистрация..." %}';
+        // Кнопка называется .reg-nav__btn--submit (раньше искали несуществующий
+        // .submit-btn → TypeError, защита от двойной отправки не срабатывала).
+        const btn = this.querySelector('.reg-nav__btn--submit');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% trans "Регистрация..." %}';
+        }
     });
 
     // ========================================

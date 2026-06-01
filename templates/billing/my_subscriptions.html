@@ -53,7 +53,7 @@
                 {{ b.slot.end_at|date:"d M Y, H:i" }}
               </div>
             </div>
-            <a href="{% url 'leave_review' b.id %}?next=/ru/my/subscriptions/"
+            <a href="{% url 'leave_review' b.id %}?next={% url 'my_subscriptions' %}"
                style="background: #F59E0B; color: #fff; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-weight: 500; white-space: nowrap;">⭐ {% trans 'Оценить' %}</a>
           </div>
         {% endfor %}
@@ -90,6 +90,7 @@
             </div>
 
             <button type="button" class="cancel-btn" data-sub-id="{{ s.id }}"
+                    data-cancel-url="{% url 'subscription_cancel' s.id %}"
                     data-escrow="{{ s.escrow_balance|floatformat:0|intcomma }}"
                     data-remaining="{{ s.remaining_lessons }}">
               ✕ {% trans 'Отменить подписку' %}
@@ -142,10 +143,9 @@
       var closeBtn = document.getElementById('cancel-modal-close');
       document.querySelectorAll('.cancel-btn').forEach(function(b){
         b.addEventListener('click', function() {
-          var subId = b.dataset.subId;
           var escrow = b.dataset.escrow;
           var remaining = b.dataset.remaining;
-          form.action = '/ru/subscriptions/' + subId + '/cancel/';
+          form.action = b.dataset.cancelUrl;
           summary.innerHTML = '<b>{% trans "Возврат на баланс" %}:</b> ~' + escrow + ' сум<br>' +
                               '<b>{% trans "Отменено уроков" %}:</b> ' + remaining;
           modal.hidden = false;

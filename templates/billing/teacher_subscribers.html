@@ -99,6 +99,7 @@
               📊 {% trans 'Открыть прогресс' %}
             </a>
             <button type="button" class="t-cancel-btn" data-sub-id="{{ s.id }}"
+                    data-cancel-url="{% url 'subscription_cancel' s.id %}"
                     data-escrow="{{ s.escrow_balance|floatformat:0|intcomma }}"
                     data-student="{{ s.student.get_full_name|default:s.student.username }}">
               ✕ {% trans 'Отменить подписку (вернуть деньги ученику)' %}
@@ -148,7 +149,7 @@
       var closeBtn = document.getElementById('t-cancel-modal-close');
       document.querySelectorAll('.t-cancel-btn').forEach(function(b){
         b.addEventListener('click', function() {
-          form.action = '/ru/subscriptions/' + b.dataset.subId + '/cancel/';
+          form.action = b.dataset.cancelUrl;
           summary.innerHTML = '<b>{% trans "Ученик" %}:</b> ' + b.dataset.student + '<br>' +
                               '<b>{% trans "Будет возвращено ученику" %}:</b> ' + b.dataset.escrow + ' сум';
           modal.hidden = false;

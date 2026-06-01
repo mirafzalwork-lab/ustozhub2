@@ -11,6 +11,12 @@
 
     const i18n = cfg.i18n || {};
 
+    // Намерение из CTA на странице учителя (?trial=1&subject=N): предзаполняем
+    // модалку, иначе обещание «бесплатный пробный» терялось при открытии.
+    const _urlParams = new URLSearchParams(window.location.search);
+    const pendingTrial = _urlParams.get('trial') === '1';
+    const pendingSubject = _urlParams.get('subject') || '';
+
     // Toast helper (вместо alert)
     let _toastTimer = null;
     function toast(msg, isError) {
@@ -142,8 +148,10 @@
         $duration.textContent = slot.extendedProps.duration_minutes + ' ' + (i18n.minutes || 'мин');
         $error.hidden = true;
         $message.value = '';
-        $trial.checked = false;
-        if ($subject) $subject.value = '';
+        // Предзаполняем из CTA-намерения (пробный по конкретному предмету);
+        // это значения по умолчанию — пользователь может их изменить.
+        $trial.checked = pendingTrial;
+        if ($subject) $subject.value = pendingSubject;
         // показать форму, скрыть успех
         $formRegion.hidden = false;
         $success.hidden = true;

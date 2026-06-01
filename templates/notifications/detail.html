@@ -2,7 +2,7 @@
 {% load static %}
 {% load i18n %}
 
-{% block title %}{{ notification.title }} - Уведомления - UstozHub{% endblock %}
+{% block title %}{{ notification.title }} - {% trans 'Уведомления' %} - UstozHub{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -435,14 +435,14 @@
     <!-- Back Button -->
     <a href="{% url 'notifications_list' %}" class="back-button">
         <i class="fas fa-arrow-left"></i>
-        <span>Назад к уведомлениям</span>
+        <span>{% trans 'Назад к уведомлениям' %}</span>
     </a>
-    
+
     <!-- Breadcrumbs -->
     <div class="breadcrumbs">
-        <a href="{% url 'home' %}">Главная</a>
+        <a href="{% url 'home' %}">{% trans 'Главная' %}</a>
         <i class="fas fa-chevron-right"></i>
-        <a href="{% url 'notifications_list' %}">Уведомления</a>
+        <a href="{% url 'notifications_list' %}">{% trans 'Уведомления' %}</a>
         <i class="fas fa-chevron-right"></i>
         <span>{{ notification.title }}</span>
     </div>
@@ -460,10 +460,10 @@
                 <span class="meta-badge status {% if not is_read %}unread{% endif %}">
                     {% if is_read %}
                         <i class="fas fa-check-circle"></i>
-                        Прочитано
+                        {% trans 'Прочитано' %}
                     {% else %}
                         <i class="fas fa-circle"></i>
-                        Новое
+                        {% trans 'Новое' %}
                     {% endif %}
                 </span>
             </div>
@@ -558,13 +558,15 @@
         <div class="notification-footer">
             <div class="footer-info">
                 <i class="fas fa-info-circle"></i>
-                Целевая аудитория: <strong>{{ notification.get_target_display }}</strong>
+                {% trans 'Целевая аудитория' %}: <strong>{{ notification.get_target_display }}</strong>
             </div>
             
             {% if not is_read %}
-            <button class="mark-read-btn" id="markReadBtn" data-notification-id="{{ notification.id }}">
+            <button class="mark-read-btn" id="markReadBtn"
+                    data-notification-id="{{ notification.id }}"
+                    data-mark-url="{% url 'mark_notification_read' notification.id %}">
                 <i class="fas fa-check"></i>
-                <span>Отметить как прочитанное</span>
+                <span>{% trans 'Отметить как прочитанное' %}</span>
             </button>
             {% endif %}
         </div>
@@ -579,34 +581,33 @@
     
     if (markReadBtn) {
         markReadBtn.addEventListener('click', async function() {
-            const notificationId = this.dataset.notificationId;
+            const _label = '<i class="fas fa-check"></i> {% trans "Отметить как прочитанное" %}';
             this.disabled = true;
-            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обработка...';
-            
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% trans "Обработка..." %}';
+
             try {
-                const response = await fetch(`/notifications/${notificationId}/mark-read/`, {
+                const response = await fetch(this.dataset.markUrl, {
                     method: 'POST',
                     headers: {
                         'X-CSRFToken': '{{ csrf_token }}',
                         'Content-Type': 'application/json'
                     }
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
-                    // Перезагружаем страницу для обновления статуса
                     window.location.reload();
                 } else {
-                    alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                    window.flashToast('error', data.error || '{% trans "Произошла ошибка" %}');
                     this.disabled = false;
-                    this.innerHTML = '<i class="fas fa-check"></i> Отметить как прочитанное';
+                    this.innerHTML = _label;
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Произошла ошибка при обработке запроса');
+                window.flashToast('error', '{% trans "Произошла ошибка при обработке запроса" %}');
                 this.disabled = false;
-                this.innerHTML = '<i class="fas fa-check"></i> Отметить как прочитанное';
+                this.innerHTML = _label;
             }
         });
     }

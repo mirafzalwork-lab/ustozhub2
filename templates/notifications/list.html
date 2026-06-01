@@ -2,7 +2,7 @@
 {% load static %}
 {% load i18n %}
 
-{% block title %}Уведомления - UstozHub{% endblock %}
+{% block title %}{% trans 'Уведомления' %} - UstozHub{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -106,6 +106,9 @@
     }
 
     .notification-card {
+        display: block;
+        text-decoration: none;
+        color: inherit;
         background: var(--bg-primary);
         border: 1px solid var(--border-light);
         border-radius: var(--radius-lg);
@@ -335,16 +338,16 @@
     <div class="page-header">
         <div class="page-title">
             <span class="title-icon"><i class="fas fa-bell"></i></span>
-            <h1>Уведомления</h1>
+            <h1>{% trans 'Уведомления' %}</h1>
             {% if unread_count > 0 %}
             <span class="unread-badge">{{ unread_count }}</span>
             {% endif %}
         </div>
-        
+
         {% if unread_count > 0 %}
         <button class="mark-all-read-btn" id="markAllReadBtn">
             <i class="fas fa-check-double"></i>
-            <span>Отметить все как прочитанные</span>
+            <span>{% trans 'Отметить все как прочитанные' %}</span>
         </button>
         {% endif %}
     </div>
@@ -353,8 +356,8 @@
     {% if notifications %}
     <div class="notifications-list">
         {% for item in notifications %}
-        <div class="notification-card {% if not item.is_read %}unread{% endif %}" 
-             onclick="window.location.href='{% url 'notification_detail' item.id %}'">
+        <a class="notification-card {% if not item.is_read %}unread{% endif %}"
+           href="{% url 'notification_detail' item.id %}">
             <div class="notification-header">
                 <h3 class="notification-title">{{ item.title }}</h3>
                 <span class="notification-date">
@@ -363,24 +366,23 @@
             </div>
 
             <p class="notification-text">{{ item.short_text }}</p>
-            
+
             <div class="notification-footer">
                 <span class="read-status {% if item.is_read %}read{% else %}unread{% endif %}">
                     {% if item.is_read %}
                         <i class="fas fa-check-circle"></i>
-                        <span>Прочитано</span>
+                        <span>{% trans 'Прочитано' %}</span>
                     {% else %}
                         <i class="fas fa-circle"></i>
-                        <span>Новое</span>
+                        <span>{% trans 'Новое' %}</span>
                     {% endif %}
                 </span>
-                
-                <button class="view-details-btn" onclick="event.stopPropagation(); window.location.href='{% url 'notification_detail' item.id %}'">
-                    <span>Подробнее</span>
+                <span class="view-details-btn">
+                    <span>{% trans 'Подробнее' %}</span>
                     <i class="fas fa-arrow-right"></i>
-                </button>
+                </span>
             </div>
-        </div>
+        </a>
         {% endfor %}
     </div>
     
@@ -415,8 +417,8 @@
     <!-- Пустое состояние -->
     <div class="empty-state">
         <span class="empty-icon"><i class="fas fa-bell-slash"></i></span>
-        <h3>У вас пока нет уведомлений</h3>
-        <p>Здесь будут отображаться важные обновления и новости</p>
+        <h3>{% trans 'У вас пока нет уведомлений' %}</h3>
+        <p>{% trans 'Здесь будут отображаться важные обновления и новости' %}</p>
     </div>
     {% endif %}
 </div>
@@ -429,9 +431,10 @@
         e.preventDefault();
         
         const btn = this;
+        const _label = '<i class="fas fa-check-double"></i> {% trans "Отметить все как прочитанные" %}';
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обработка...';
-        
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% trans "Обработка..." %}';
+
         try {
             const response = await fetch('{% url "mark_all_notifications_read" %}', {
                 method: 'POST',
@@ -440,22 +443,21 @@
                     'Content-Type': 'application/json'
                 }
             });
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
-                // Перезагружаем страницу
                 window.location.reload();
             } else {
-                alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                window.flashToast('error', data.error || '{% trans "Произошла ошибка" %}');
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-check-double"></i> Отметить все как прочитанные';
+                btn.innerHTML = _label;
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Произошла ошибка при обработке запроса');
+            window.flashToast('error', '{% trans "Произошла ошибка при обработке запроса" %}');
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-check-double"></i> Отметить все как прочитанные';
+            btn.innerHTML = _label;
         }
     });
 </script>
