@@ -314,7 +314,13 @@
         flex-direction: column;
         border-left: 4px solid var(--success-color);
         position: relative;
+        overflow: hidden;
     }
+
+    /* Карточка-ссылка (stretched link) + кнопка над ней */
+    .card-stretch-link { position: absolute; inset: 0; z-index: 1; font-size: 0; }
+    .student-card .contact-btn { position: relative; z-index: 2; }
+    a.tab-button { text-decoration: none; }
 
     .student-card:hover {
         transform: translateY(-3px);
@@ -1065,14 +1071,14 @@
 <!-- ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК -->
 <div class="tabs-container">
     <div class="tabs-wrapper">
-        <button class="tab-button" onclick="window.location.href='{% url 'home' %}'">
+        <a class="tab-button" href="{% url 'home' %}">
             <i class="fas fa-chalkboard-teacher"></i>
             <span>{% trans 'Учителя' %}</span>
-        </button>
-        <button class="tab-button active">
+        </a>
+        <span class="tab-button active" aria-current="page">
             <i class="fas fa-user-graduate"></i>
             <span>{% trans 'Ученики' %}</span>
-        </button>
+        </span>
     </div>
 </div>
 
@@ -1211,7 +1217,9 @@
             {% if students %}
                 <div class="students-grid">
                     {% for student in students %}
-                        <div class="student-card" onclick="window.location.href='{% url 'student_detail' student.id %}'">
+                        <div class="student-card">
+                            <a class="card-stretch-link" href="{% url 'student_detail' student.id %}"
+                               aria-label="{{ student.user.get_full_name|default:student.user.username }}"></a>
                             <div class="student-content">
                                 <div class="student-header">
                                     <div class="student-avatar">
@@ -1278,7 +1286,7 @@
                                             <div class="budget-period">{% trans 'готов платить' %}</div>
                                         {% endif %}
                                     </div>
-                                    <button class="contact-btn" onclick="event.stopPropagation(); handleMessageClick({{ student.user.id }})">
+                                    <button class="contact-btn" onclick="handleMessageClick({{ student.user.id }})">
                                         <i class="fas fa-paper-plane"></i> {% trans 'Связаться' %}
                                     </button>
                                 </div>

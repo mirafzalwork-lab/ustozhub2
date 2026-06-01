@@ -1364,6 +1364,9 @@
     }
 
     .similar-teacher-card {
+        display: block;
+        text-decoration: none;
+        color: inherit;
         padding: 16px;
         background: #f8f9fa;
         border-radius: 12px;
@@ -2706,7 +2709,7 @@
                         <h3 class="contact-title">{% trans 'Похожие преподаватели' %}</h3>
                         <div class="similar-teachers-grid">
                             {% for similar in similar_teachers %}
-                                <div class="similar-teacher-card" onclick="window.location.href='{% url 'teacher_detail' similar.id %}'">
+                                <a class="similar-teacher-card" href="{% url 'teacher_detail' similar.id %}">
                                     <div class="similar-teacher-header">
                                         <div class="similar-teacher-avatar">
                                             {% if similar.user.avatar %}
@@ -2727,7 +2730,7 @@
                                     <div class="similar-teacher-price">
                                         {% trans 'от' %} {{ similar.get_min_price|floatformat:0|intcomma }} {% trans 'сум/час' %}
                                     </div>
-                                </div>
+                                </a>
                             {% endfor %}
                         </div>
                     </div>

@@ -789,6 +789,7 @@
         font-size: 13px;
         font-weight: 600;
         cursor: pointer;
+        text-decoration: none;
         transition: all var(--transition-speed);
         display: flex;
         align-items: center;
@@ -798,6 +799,21 @@
         min-width: 110px;
         justify-content: center;
         min-height: 40px;
+    }
+
+    /* Stretched-link: вся карточка — ссылка на профиль (z-index 1 поверх текста),
+       а кнопки поднимаем над ней (z-index 2), чтобы работали независимо.
+       Текстовые блоки НЕ поднимаем — клик по ним уходит в ссылку. */
+    .card-stretch-link {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        font-size: 0;
+    }
+    .teacher-card .action-buttons,
+    .teacher-card .show-more-btn {
+        position: relative;
+        z-index: 2;
     }
 
     .contact-btn {
@@ -1667,6 +1683,8 @@
             transition: transform 0.2s, box-shadow 0.2s;
             box-shadow: 0 6px 16px rgba(0,0,0,0.2);
             white-space: nowrap;
+            position: relative;
+            z-index: 2;
         }
         .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,0.28); }
 
@@ -1769,7 +1787,9 @@
                 {% for teacher in featured_teachers %}
                     {% with ts_list=teacher.teachersubject_set.all %}
                     <div class="hero-slide">
-                        <div class="hero-card" onclick="window.location.href='{% url 'teacher_detail' teacher.id %}'">
+                        <div class="hero-card">
+                            <a class="card-stretch-link" href="{% url 'teacher_detail' teacher.id %}"
+                               aria-label="{{ teacher.user.get_full_name|default:teacher.user.username }}"></a>
                             <div class="hero-avatar-wrap">
                                 <div class="hero-avatar">
                                     {% if teacher.user.avatar %}
@@ -1815,7 +1835,7 @@
                                         <small>{% trans 'сум/ч' %}</small>
                                     </span>
                                 </div>
-                                <a class="hero-cta" href="{% url 'teacher_detail' teacher.id %}" onclick="event.stopPropagation();">
+                                <a class="hero-cta" href="{% url 'teacher_detail' teacher.id %}">
                                     {% trans 'Смотреть профиль' %} <i class="fas fa-arrow-right"></i>
                                 </a>
                             </div>
@@ -2057,7 +2077,9 @@
             {% if teachers %}
                 <div class="teachers-grid">
                     {% for teacher in teachers %}
-                        <div class="teacher-card{% if teacher.is_featured %} featured{% endif %}" onclick="window.location.href='{% url 'teacher_detail' teacher.id %}'">
+                        <div class="teacher-card{% if teacher.is_featured %} featured{% endif %}">
+                            <a class="card-stretch-link" href="{% url 'teacher_detail' teacher.id %}"
+                               aria-label="{{ teacher.user.get_full_name|default:teacher.user.username }}"></a>
                             <div class="teacher-card-head">
                                 <div class="teacher-avatar">
                                     {% if teacher.user.avatar %}
@@ -2137,12 +2159,12 @@
                                 </div>
 
                                 <div class="action-buttons">
-                                    <button class="contact-btn" onclick="event.stopPropagation(); handleMessageClick({{ teacher.user.id }})">
+                                    <button class="contact-btn" onclick="handleMessageClick({{ teacher.user.id }})">
                                         <i class="fas fa-comment"></i> {% trans 'Написать' %}
                                     </button>
-                                    <button class="book-btn" onclick="event.stopPropagation(); window.location.href='{% url 'teacher_detail' teacher.id %}'">
+                                    <a class="book-btn" href="{% url 'teacher_detail' teacher.id %}">
                                         {% trans 'Забронировать' %}
-                                    </button>
+                                    </a>
                                 </div>
                             </div>
                         </div>
