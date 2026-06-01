@@ -25,6 +25,14 @@
   table.lessons { width: 100%; border-collapse: collapse; font-size: 14px; }
   table.lessons th, table.lessons td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #F1F5F9; }
   table.lessons th { color: #64748B; font-weight: 500; font-size: 12px; text-transform: uppercase; }
+  table.lessons td.num, table.lessons th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  @media (max-width: 640px) {
+    table.lessons thead { display: none; }
+    table.lessons, table.lessons tbody, table.lessons tr, table.lessons td { display: block; width: 100%; }
+    table.lessons tr { border: 1px solid #E2E8F0; border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; }
+    table.lessons td { border: none; padding: 6px 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; text-align: right; }
+    table.lessons td::before { content: attr(data-label); color: #64748B; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; font-weight: 500; text-align: left; flex-shrink: 0; }
+  }
   .status-pill { font-size: 10px; padding: 3px 8px; border-radius: 999px; font-weight: 600; text-transform: uppercase; }
   .status-pill.completed { background:#ECFDF5; color:#065F46; }
   .status-pill.confirmed { background:#EFF6FF; color:#1D4ED8; }
@@ -76,9 +84,9 @@
         <tbody>
           {% for b in lessons %}
             <tr>
-              <td>{{ b.slot.start_at|date:"d M Y, H:i" }}</td>
-              <td><span class="status-pill {{ b.status }}">{{ b.get_status_display }}</span></td>
-              <td>
+              <td data-label="{% trans 'Дата' %}">{{ b.slot.start_at|date:"d M Y, H:i" }}</td>
+              <td data-label="{% trans 'Статус' %}"><span class="status-pill {{ b.status }}">{{ b.get_status_display }}</span></td>
+              <td data-label="{% trans 'Отзыв' %}">
                 {% if b.review %}
                   <i class="fas fa-star"></i> {{ b.review.rating }}/5
                   {% if b.review.comment %}<br><small style="color:#64748B;">{{ b.review.comment|truncatechars:80 }}</small>{% endif %}
@@ -105,10 +113,10 @@
         <tbody>
           {% for hw in homeworks %}
             <tr>
-              <td>{{ hw.created_at|date:"d M" }}</td>
-              <td><a href="{% url 'homework_detail' hw.id %}" style="color:#7C3AED; text-decoration:none;">{{ hw.title }}</a></td>
-              <td><span class="status-pill">{{ hw.get_status_display }}</span></td>
-              <td>{% if hw.submission and hw.submission.grade is not None %}<b>{{ hw.submission.grade }}/100</b>{% else %}<small style="color:#94A3B8;">—</small>{% endif %}</td>
+              <td data-label="{% trans 'Задано' %}">{{ hw.created_at|date:"d M" }}</td>
+              <td data-label="{% trans 'Название' %}"><a href="{% url 'homework_detail' hw.id %}" style="color:#7C3AED; text-decoration:none;">{{ hw.title }}</a></td>
+              <td data-label="{% trans 'Статус' %}"><span class="status-pill">{{ hw.get_status_display }}</span></td>
+              <td data-label="{% trans 'Оценка' %}" class="num">{% if hw.submission and hw.submission.grade is not None %}<b>{{ hw.submission.grade }}/100</b>{% else %}<small style="color:#94A3B8;">—</small>{% endif %}</td>
             </tr>
           {% endfor %}
         </tbody>

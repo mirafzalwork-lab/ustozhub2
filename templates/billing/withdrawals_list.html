@@ -45,6 +45,18 @@
   .status-pill.completed{ background: #ECFDF5; color: #065F46; }
   .status-pill.rejected { background: #FEF2F2; color: #B91C1C; }
   .status-pill.cancelled{ background: #F1F5F9; color: #475569; }
+  /* Денежные суммы — табличные цифры, выравнивание вправо */
+  table.history td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  /* На мобиле таблица превращается в карточки (5 колонок не помещаются) */
+  @media (max-width: 640px) {
+    table.history thead { display: none; }
+    table.history, table.history tbody, table.history tr, table.history td { display: block; width: 100%; }
+    table.history tr { border: 1px solid #E2E8F0; border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; }
+    table.history td { border: none; padding: 6px 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; text-align: right; }
+    table.history td::before { content: attr(data-label); color: #64748B; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; font-weight: 500; text-align: left; flex-shrink: 0; }
+    table.history td:last-child { justify-content: flex-end; }
+    table.history td:last-child::before { content: ''; }
+  }
 
   .empty-state { text-align: center; padding: 30px 20px; color: #64748B; }
 
@@ -113,7 +125,7 @@
       <thead>
         <tr>
           <th>{% trans 'Дата' %}</th>
-          <th>{% trans 'Сумма' %}</th>
+          <th class="num">{% trans 'Сумма' %}</th>
           <th>{% trans 'Реквизиты' %}</th>
           <th>{% trans 'Статус' %}</th>
           <th></th>
@@ -122,18 +134,18 @@
       <tbody>
         {% for r in requests %}
         <tr>
-          <td>{{ r.created_at|date:"d M Y, H:i" }}</td>
-          <td><b>{{ r.amount|floatformat:0|intcomma }} {% trans 'сум' %}</b></td>
-          <td>{{ r.get_payout_method_display }}<br><small style="color:#94A3B8;">{{ r.payout_details }}</small></td>
-          <td><span class="status-pill {{ r.status }}">{{ r.get_status_display }}</span></td>
-          <td>
+          <td data-label="{% trans 'Дата' %}">{{ r.created_at|date:"d M Y, H:i" }}</td>
+          <td data-label="{% trans 'Сумма' %}" class="num"><b>{{ r.amount|floatformat:0|intcomma }} {% trans 'сум' %}</b></td>
+          <td data-label="{% trans 'Реквизиты' %}">{{ r.get_payout_method_display }}<br><small style="color:#64748B;">{{ r.payout_details }}</small></td>
+          <td data-label="{% trans 'Статус' %}"><span class="status-pill {{ r.status }}">{{ r.get_status_display }}</span></td>
+          <td data-label="">
             {% if r.status == 'pending' %}
             <form method="post" action="{% url 'withdrawal_cancel' r.id %}" style="display:inline" data-confirm="{% trans 'Отменить заявку на вывод?' %}" data-confirm-ok="{% trans 'Отменить заявку' %}" data-confirm-danger>
               {% csrf_token %}
               <button type="submit" style="background:none; border:none; color:#DC2626; cursor:pointer; font-size:13px;">{% trans 'Отменить' %}</button>
             </form>
             {% endif %}
-            {% if r.admin_note %}<div style="font-size:12px; color:#94A3B8; margin-top:4px;">📝 {{ r.admin_note|truncatechars:50 }}</div>{% endif %}
+            {% if r.admin_note %}<div style="font-size:12px; color:#64748B; margin-top:4px;"><i class="fas fa-file-pen"></i> {{ r.admin_note|truncatechars:50 }}</div>{% endif %}
           </td>
         </tr>
         {% endfor %}
