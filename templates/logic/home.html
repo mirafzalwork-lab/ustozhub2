@@ -1787,9 +1787,7 @@
                 {% for teacher in featured_teachers %}
                     {% with ts_list=teacher.teachersubject_set.all %}
                     <div class="hero-slide">
-                        <div class="hero-card">
-                            <a class="card-stretch-link" href="{% url 'teacher_detail' teacher.id %}"
-                               aria-label="{{ teacher.user.get_full_name|default:teacher.user.username }}"></a>
+                        <div class="hero-card" onclick="window.location.href='{% url 'teacher_detail' teacher.id %}'">
                             <div class="hero-avatar-wrap">
                                 <div class="hero-avatar">
                                     {% if teacher.user.avatar %}
@@ -1835,7 +1833,7 @@
                                         <small>{% trans 'сум/ч' %}</small>
                                     </span>
                                 </div>
-                                <a class="hero-cta" href="{% url 'teacher_detail' teacher.id %}">
+                                <a class="hero-cta" href="{% url 'teacher_detail' teacher.id %}" onclick="event.stopPropagation();">
                                     {% trans 'Смотреть профиль' %} <i class="fas fa-arrow-right"></i>
                                 </a>
                             </div>
