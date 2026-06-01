@@ -19,9 +19,10 @@
     border-radius: 16px; padding: 22px 24px; color: #fff;
     box-shadow: 0 8px 26px rgba(15, 23, 42, .08);
   }
-  .sdb-wallet { background: linear-gradient(135deg, #1E40AF 0%, #6366F1 100%); }
-  .sdb-stats  { background: linear-gradient(135deg, #0F766E 0%, #14B8A6 100%); }
-  .sdb-wallet .lbl, .sdb-stats .lbl { font-size: 12px; text-transform: uppercase; opacity: .85; letter-spacing: .6px; }
+  /* Светлые концы затемнены до -600 для контраста белого текста (WCAG AA) */
+  .sdb-wallet { background: linear-gradient(135deg, #1E40AF 0%, #4F46E5 100%); }
+  .sdb-stats  { background: linear-gradient(135deg, #0F766E 0%, #0D9488 100%); }
+  .sdb-wallet .lbl, .sdb-stats .lbl { font-size: 12px; text-transform: uppercase; opacity: .92; letter-spacing: .6px; }
   .sdb-wallet .amt { font-size: 32px; font-weight: 700; margin: 4px 0 12px; }
   .sdb-wallet .amt small { font-size: 14px; opacity: .8; font-weight: 400; }
   .sdb-actions { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -34,7 +35,7 @@
   .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .stat-row .cell { text-align: center; }
   .stat-row .val { font-size: 22px; font-weight: 700; }
-  .stat-row .lbl-sm { font-size: 11px; opacity: .85; text-transform: uppercase; }
+  .stat-row .lbl-sm { font-size: 11px; opacity: .92; text-transform: uppercase; }
 
   .sdb-section {
     background: #fff; border: 1px solid #E2E8F0; border-radius: 14px;

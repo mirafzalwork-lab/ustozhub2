@@ -20,10 +20,11 @@
   .tdb-card .lbl { font-size: 11px; text-transform: uppercase; opacity: .85; letter-spacing: .6px; }
   .tdb-card .val { font-size: 28px; font-weight: 700; margin: 4px 0; line-height: 1.1; }
   .tdb-card .val small { font-size: 13px; opacity: .8; font-weight: 400; margin-left: 4px; }
-  .tdb-card .sub { font-size: 12px; opacity: .82; }
-  .tdb-card.green { background: linear-gradient(135deg, #047857 0%, #10B981 100%); }
-  .tdb-card.purple { background: linear-gradient(135deg, #6D28D9 0%, #A855F7 100%); }
-  .tdb-card.gold { background: linear-gradient(135deg, #B45309 0%, #F59E0B 100%); }
+  .tdb-card .sub { font-size: 12px; opacity: .92; }
+  /* Светлые концы затемнены до -600, чтобы белый текст проходил WCAG AA */
+  .tdb-card.green { background: linear-gradient(135deg, #047857 0%, #059669 100%); }
+  .tdb-card.purple { background: linear-gradient(135deg, #6D28D9 0%, #7C3AED 100%); }
+  .tdb-card.gold { background: linear-gradient(135deg, #92400E 0%, #D97706 100%); }
 
   .earn-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
   @media (max-width: 768px) { .earn-row { grid-template-columns: repeat(2, 1fr); } }
