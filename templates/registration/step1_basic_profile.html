@@ -123,14 +123,11 @@
         <div class="languages-container">
             <div class="language-selector">
                 <select class="language-select" id="languageSelect" onchange="addLanguageFromSelect()">
-                    <option value="">Выберите язык</option>
+                    <option value="">Выберите язык — добавится автоматически</option>
                     {% for value, label in wizard.form.teaching_languages.field.choices %}
                         <option value="{{ value }}">{{ label }}</option>
                     {% endfor %}
                 </select>
-                <button type="button" class="btn-add-language" onclick="addLanguageFromSelect()">
-                    <i class="fas fa-plus"></i> Добавить
-                </button>
             </div>
             
             <!-- Selected languages display -->
@@ -308,10 +305,9 @@
 function addLanguageFromSelect() {
     const select = document.getElementById('languageSelect');
     const value = select.value;
-    
+
     if (!value) {
-        alert('Пожалуйста, выберите язык');
-        return;
+        return;  // ничего не выбрано — просто выходим (без раздражающего alert)
     }
     
     // Находим соответствующий checkbox и проверяем его

@@ -75,8 +75,14 @@ urlpatterns = [
     path('admin-dashboard/reminders/<int:template_id>/toggle/', daily_reminder_toggle, name='daily_reminder_toggle'),
     path('admin-dashboard/reminders/<int:template_id>/test/', daily_reminder_test, name='daily_reminder_test'),
 
-    # New Multi-Step Teacher Registration Wizard
-    path('register/', TeacherRegistrationWizard.as_view(), name='teacher_register'),
+    # New Multi-Step Teacher Registration Wizard.
+    # Для Google-регистрации шаг account_security полностью скрыт (email/пароль уже
+    # есть от Google) — иначе пользователь видел бы пустой шаг и просто жал «Далее».
+    path('register/', TeacherRegistrationWizard.as_view(
+        condition_dict={
+            'account_security': lambda w: not w.request.session.get('is_google_teacher', False),
+        },
+    ), name='teacher_register'),
     path('register/complete/', teacher_register_complete, name='teacher_register_complete'),
     
     path('student/suggestions/', student_suggestions, name='student_suggestions'),

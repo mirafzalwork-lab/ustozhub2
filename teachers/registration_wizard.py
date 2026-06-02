@@ -297,10 +297,11 @@ class TeacherRegistrationWizard(SessionWizardView):
         """Add context data for templates"""
         context = super().get_context_data(form=form, **kwargs)
         
-        # Calculate progress
-        current_step = self.steps.step1 + 1
-        total_steps = len(self.form_list)
-        progress_percentage = (current_step / total_steps) * 100
+        # Progress — учитываем condition_dict (skip-шаги для Google), поэтому
+        # берём steps.count/step1 у formtools, а НЕ len(self.form_list).
+        current_step = self.steps.step1            # 1-based номер текущего шага
+        total_steps = self.steps.count             # реальное число шагов (с учётом skip)
+        progress_percentage = (current_step / total_steps) * 100 if total_steps else 0
         
         # Step information
         step_titles = {
@@ -335,7 +336,7 @@ class TeacherRegistrationWizard(SessionWizardView):
             'progress_percentage': progress_percentage,
             'step_title': step_titles.get(self.steps.current, ''),
             'step_description': step_descriptions.get(self.steps.current, ''),
-            'is_last_step': current_step == total_steps,
+            'is_last_step': self.steps.current == self.steps.last,
             'is_google': self._is_google_registration(),
             'has_draft': has_draft,
         })
@@ -422,6 +423,11 @@ class TeacherRegistrationWizard(SessionWizardView):
         """Create User object"""
         is_google = self._is_google_registration()
         password = form_data.get('password1') or None
+
+        # У Google-регистрации шаг account_security скрыт (condition_dict), поэтому
+        # email берём из сессии, если его нет в данных формы.
+        email = form_data.get('email') or self.request.session.get('google_email')
+        form_data = {**form_data, 'email': email}
 
         # Username мы больше не спрашиваем у пользователя — генерим из first_name.
         # На форме лежит placeholder вида "_g_<hex>", который заменяем на стабильный.

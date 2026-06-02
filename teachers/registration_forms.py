@@ -401,12 +401,13 @@ class Step4AvailabilityFormatForm(forms.Form):
     telegram = forms.CharField(
         max_length=200,
         required=True,
-        label='Telegram',
+        label='Telegram или номер телефона с Telegram',
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': '@username, t.me/username или ссылка',
+            'placeholder': '@username или +998 90 123 45 67',
         }),
-        help_text='@username, ссылка t.me/username или номер телефона. Ученики свяжутся с вами через Telegram.',
+        help_text='Укажите @username, ссылку t.me/username или номер телефона с Telegram '
+                  'в формате +998… — ученики свяжутся с вами через Telegram.',
     )
     
     city = forms.ModelChoiceField(

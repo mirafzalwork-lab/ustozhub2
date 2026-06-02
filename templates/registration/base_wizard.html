@@ -30,10 +30,10 @@
 
         <!-- Step Indicators -->
         <div class="step-indicators">
-            {% for step_name, step_form in wizard.form_list.items %}
-            <div class="step-indicator {% if wizard.steps.current == step_name %}active{% elif wizard.steps.step1 < forloop.counter0 %}pending{% else %}completed{% endif %}">
+            {% for step_name in wizard.steps.all %}
+            <div class="step-indicator {% if wizard.steps.current == step_name %}active{% elif forloop.counter0 < wizard.steps.step0 %}completed{% else %}pending{% endif %}">
                 <div class="step-circle">
-                    {% if wizard.steps.step1 < forloop.counter0 %}
+                    {% if forloop.counter0 < wizard.steps.step0 %}
                         <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                             <polyline points="20 6 9 17 4 12"></polyline>
                         </svg>
