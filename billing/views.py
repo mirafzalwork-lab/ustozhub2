@@ -926,17 +926,21 @@ def student_homework_list(request):
 @login_required
 def my_progress(request):
     """Прогресс ученика — сводка по всем активным подпискам."""
-    subs = (
+    # prefetch bookings__slot и homeworks → свойства прогресса считаются из кэша
+    # (0 доп. запросов на подписку вместо ~8 N+1).
+    subs = list(
         Subscription.objects
         .filter(student=request.user, status__in=Subscription.ACTIVE_STATUSES)
         .select_related('teacher__user', 'subject')
+        .prefetch_related('bookings__slot', 'homeworks')
         .order_by('-created_at')
     )
-    history_subs = (
+    history_subs = list(
         Subscription.objects
         .filter(student=request.user)
         .exclude(status__in=Subscription.ACTIVE_STATUSES)
         .select_related('teacher__user', 'subject')
+        .prefetch_related('bookings__slot', 'homeworks')
         .order_by('-created_at')[:10]
     )
     # Общая статистика по всем подпискам
@@ -944,8 +948,9 @@ def my_progress(request):
     total_completed_lessons = Booking.objects.filter(
         student=request.user, status='completed',
     ).count()
-    total_homework = sum(s.homework_total for s in list(subs) + list(history_subs))
-    total_hw_graded = sum(s.homework_graded for s in list(subs) + list(history_subs))
+    all_subs = subs + history_subs
+    total_homework = sum(s.homework_total for s in all_subs)
+    total_hw_graded = sum(s.homework_graded for s in all_subs)
 
     return render(request, 'billing/student_progress.html', {
         'subs': subs,

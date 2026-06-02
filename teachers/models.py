@@ -1279,6 +1279,7 @@ class TeacherSubject(models.Model):
         # ⚡ ОПТИМИЗАЦИЯ: Индексы для фильтрации по цене
         indexes = [
             models.Index(fields=['teacher', 'hourly_rate']),  # Для фильтра по цене
+            models.Index(fields=['hourly_rate']),  # Диапазон цены по всем учителям (marketplace-фильтр)
             models.Index(fields=['subject']),  # Для фильтра по предмету
         ]
 

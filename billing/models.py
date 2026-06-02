@@ -489,26 +489,50 @@ class Subscription(models.Model):
         return (per_lesson_comm * self.lessons_paid_out).quantize(Decimal('0.01'))
 
     # ---- Progress aggregations (Phase 9) ----
+    #
+    # Эти свойства часто рендерятся СПИСКОМ (страница прогресса) → раньше каждое
+    # било в БД на каждую подписку (N+1). Теперь они считаются в Python из
+    # ОДНОГО списка броней/ДЗ: если вью сделал prefetch_related('bookings__slot',
+    # 'homeworks') — запросов 0; если нет — список грузится один раз и кэшируется
+    # на инстансе (одна загрузка вместо нескольких COUNT'ов). Результаты идентичны.
+
+    def _cached_bookings(self):
+        cache = getattr(self, '_bookings_cache', None)
+        if cache is None:
+            # Если вью сделал prefetch_related('bookings__slot') — берём из кэша
+            # (0 запросов). Иначе грузим один раз со slot одним запросом.
+            if 'bookings' in getattr(self, '_prefetched_objects_cache', {}):
+                cache = list(self.bookings.all())
+            else:
+                cache = list(self.bookings.select_related('slot').all())
+            self._bookings_cache = cache
+        return cache
+
+    def _cached_homeworks(self):
+        cache = getattr(self, '_homeworks_cache', None)
+        if cache is None:
+            cache = list(self.homeworks.all())
+            self._homeworks_cache = cache
+        return cache
 
     @property
     def attendance_rate(self) -> int:
         """Процент посещаемости: completed / (completed + missed) × 100."""
-        from teachers.models import Booking
-        finished = self.bookings.filter(
-            status__in=('completed', 'no_show_student', 'no_show_teacher'),
-        ).count()
-        if finished == 0:
+        bookings = self._cached_bookings()
+        finished = [b for b in bookings
+                    if b.status in ('completed', 'no_show_student', 'no_show_teacher')]
+        if not finished:
             return 0
-        completed = self.bookings.filter(status='completed').count()
-        return int(round(100 * completed / finished))
+        completed = sum(1 for b in finished if b.status == 'completed')
+        return int(round(100 * completed / len(finished)))
 
     @property
     def homework_total(self) -> int:
-        return self.homeworks.count()
+        return len(self._cached_homeworks())
 
     @property
     def homework_graded(self) -> int:
-        return self.homeworks.filter(status='graded').count()
+        return sum(1 for h in self._cached_homeworks() if h.status == 'graded')
 
     @property
     def homework_completion_rate(self) -> int:
@@ -536,22 +560,21 @@ class Subscription(models.Model):
         from django.utils import timezone as tz
         from datetime import timedelta
         now = tz.now()
-        # Понедельник 00:00
         monday = (now - timedelta(days=now.weekday())).replace(
             hour=0, minute=0, second=0, microsecond=0,
         )
         sunday = monday + timedelta(days=7)
-        return self.bookings.filter(
-            slot__start_at__gte=monday, slot__start_at__lt=sunday,
-        ).count()
+        return sum(1 for b in self._cached_bookings()
+                   if b.slot and monday <= b.slot.start_at < sunday)
 
     @property
     def next_lesson(self):
         """Ближайший предстоящий confirmed-урок (или None)."""
         from django.utils import timezone as tz
-        return self.bookings.filter(
-            status='confirmed', slot__start_at__gte=tz.now(),
-        ).select_related('slot').order_by('slot__start_at').first()
+        now = tz.now()
+        upcoming = [b for b in self._cached_bookings()
+                    if b.status == 'confirmed' and b.slot and b.slot.start_at >= now]
+        return min(upcoming, key=lambda b: b.slot.start_at) if upcoming else None
 
     @property
     def learning_streak_weeks(self) -> int:
@@ -564,15 +587,13 @@ class Subscription(models.Model):
         monday_this = (now - timedelta(days=now.weekday())).replace(
             hour=0, minute=0, second=0, microsecond=0,
         )
-
-        # Берём множество (year, week) с completed-уроком за всё время подписки.
         weeks_with_lesson = set()
-        for b in self.bookings.filter(status='completed').select_related('slot'):
-            d = b.slot.start_at.date()
-            iso = d.isocalendar()
+        for b in self._cached_bookings():
+            if b.status != 'completed' or not b.slot:
+                continue
+            iso = b.slot.start_at.date().isocalendar()
             weeks_with_lesson.add((iso.year, iso.week))
 
-        # Идём назад от текущей недели, пока встречаем уроки.
         streak = 0
         cursor = monday_this
         while True:

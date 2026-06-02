@@ -478,7 +478,14 @@ def admin_dashboard(request):
     if not request.user.is_staff:
         messages.error(request, 'У вас нет доступа к админ панели')
         return redirect('home')
-    
+
+    # ~50 агрегатов на загрузку → кэшируем платформенную сводку на 45с
+    # (данные общие для всех админов, не персональные).
+    from django.core.cache import cache as _cache
+    _cached_ctx = _cache.get('admin_dashboard_ctx')
+    if _cached_ctx is not None:
+        return render(request, 'admin/admin_dashboard.html', _cached_ctx)
+
     now = timezone.now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = now - timedelta(days=7)
@@ -645,7 +652,15 @@ def admin_dashboard(request):
         'current_month': current_month.strftime('%B %Y'),
         'now': now,
     }
-    
+
+    # Материализуем queryset'ы (списки), чтобы в кэш легли конкретные данные,
+    # а не ленивые запросы; затем кэшируем сводку на 45с.
+    for _k in ('pending_teachers_list', 'recent_messages', 'recent_teachers',
+               'recent_students', 'recent_tx', 'page_stats', 'top_subjects'):
+        if _k in context:
+            context[_k] = list(context[_k])
+    _cache.set('admin_dashboard_ctx', context, 45)
+
     return render(request, 'admin/admin_dashboard.html', context)
 
 
