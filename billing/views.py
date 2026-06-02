@@ -237,6 +237,238 @@ def subscription_buy(request, tariff_id):
     })
 
 
+# ---------- ТЗ flow: заявка → одобрение → оплата → бронь -------------------
+
+
+_WEEKDAY_RU = {
+    'monday': 'Понедельник', 'tuesday': 'Вторник', 'wednesday': 'Среда',
+    'thursday': 'Четверг', 'friday': 'Пятница', 'saturday': 'Суббота', 'sunday': 'Воскресенье',
+}
+_WEEKDAY_ORDER = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+
+
+@login_required
+def continue_learning(request, teacher_id):
+    """ТЗ шаги 2-3: после пробного — выбор тарифа и отправка заявки на обучение."""
+    teacher = get_object_or_404(
+        TeacherProfile.objects.select_related('user'),
+        pk=teacher_id, is_active=True, moderation_status='approved',
+    )
+    if request.user.user_type != 'student':
+        messages.error(request, 'Только ученик может оформить обучение.')
+        return redirect('teacher_detail', id=teacher.id)
+    if teacher.user_id == request.user.id:
+        messages.error(request, 'Нельзя оформить обучение у самого себя.')
+        return redirect('teacher_detail', id=teacher.id)
+
+    from teachers.models import Booking, Subject, TeacherSubject
+
+    # Предмет: из формы/URL, иначе из последнего пробного, иначе первый предмет учителя.
+    subject = None
+    subject_id = request.POST.get('subject_id') or request.GET.get('subject')
+    if subject_id:
+        subject = Subject.objects.filter(pk=subject_id).first()
+    if subject is None:
+        last_trial = (
+            Booking.objects.filter(student=request.user, slot__teacher=teacher, is_trial=True)
+            .select_related('subject').order_by('-created_at').first()
+        )
+        if last_trial and last_trial.subject_id:
+            subject = last_trial.subject
+    if subject is None:
+        ts = TeacherSubject.objects.filter(teacher=teacher).select_related('subject').first()
+        subject = ts.subject if ts else None
+    if subject is None:
+        messages.error(request, 'У учителя не указаны предметы.')
+        return redirect('teacher_detail', id=teacher.id)
+
+    real_tariffs = list(
+        Tariff.objects.filter(teacher=teacher, subject=subject, is_active=True)
+        .order_by('lessons_per_week')
+    )
+    standard = [] if real_tariffs else SubscriptionService.standard_tariff_options(teacher, subject)
+
+    if request.method == 'POST':
+        preferred = (request.POST.get('preferred_schedule') or '').strip()
+        idem = request.POST.get('idempotency_key') or str(uuid.uuid4())
+        try:
+            if real_tariffs:
+                tariff = get_object_or_404(
+                    Tariff, pk=request.POST.get('tariff_id'),
+                    teacher=teacher, subject=subject, is_active=True,
+                )
+                params = dict(
+                    lessons_per_week=tariff.lessons_per_week,
+                    lesson_duration_minutes=tariff.lesson_duration_minutes,
+                    duration_months=tariff.duration_months,
+                    price_per_month=tariff.price_per_month, tariff=tariff,
+                )
+            else:
+                lpw = int(request.POST.get('lessons_per_week') or 0)
+                opt = next((o for o in standard if o['lessons_per_week'] == lpw), None)
+                if not opt:
+                    raise ValueError('Выберите тариф.')
+                params = dict(
+                    lessons_per_week=opt['lessons_per_week'],
+                    lesson_duration_minutes=opt['lesson_duration_minutes'],
+                    duration_months=opt['duration_months'],
+                    price_per_month=opt['price_per_month'], tariff=None,
+                )
+            SubscriptionService.create_request(
+                student=request.user, teacher=teacher, subject=subject,
+                preferred_schedule=preferred,
+                idempotency_key=f'web-req:{request.user.id}:{teacher.id}:{subject.id}:{idem}',
+                **params,
+            )
+            messages.success(
+                request,
+                'Заявка отправлена учителю. Мы уведомим вас, когда её подтвердят.',
+            )
+            return redirect('my_subscriptions')
+        except AlreadySubscribed as e:
+            messages.warning(request, str(e))
+        except ValueError as e:
+            messages.error(request, str(e))
+
+    return render(request, 'billing/continue_learning.html', {
+        'teacher': teacher, 'subject': subject,
+        'real_tariffs': real_tariffs, 'standard': standard,
+        'idempotency_key': str(uuid.uuid4()),
+    })
+
+
+@login_required
+def teacher_learning_requests(request):
+    """ТЗ шаг 4: учитель видит заявки на обучение и подтверждает/отклоняет."""
+    teacher = _get_teacher_or_403(request)
+    if teacher is None:
+        return redirect('home')
+    requests_qs = (
+        Subscription.objects
+        .filter(teacher=teacher, status=Subscription.Status.PENDING_APPROVAL)
+        .select_related('student', 'subject').order_by('created_at')
+    )
+    return render(request, 'billing/learning_requests.html', {'requests': requests_qs})
+
+
+@login_required
+@require_POST
+def learning_request_action(request, sub_id):
+    """Учитель подтверждает (approve) или отклоняет (reject) заявку."""
+    teacher = _get_teacher_or_403(request)
+    if teacher is None:
+        return redirect('home')
+    sub = get_object_or_404(Subscription, pk=sub_id, teacher=teacher)
+    action = request.POST.get('action')
+    try:
+        if action == 'approve':
+            SubscriptionService.approve_request(sub)
+            messages.success(request, 'Заявка подтверждена. Ученик получит уведомление об оплате.')
+        elif action == 'reject':
+            SubscriptionService.reject_request(sub, reason=(request.POST.get('reason') or '').strip())
+            messages.success(request, 'Заявка отклонена.')
+        else:
+            messages.error(request, 'Неизвестное действие.')
+    except ValueError as e:
+        messages.error(request, str(e))
+    return redirect('teacher_learning_requests')
+
+
+@login_required
+def subscription_pay(request, sub_id):
+    """ТЗ шаг 5: ученик оплачивает одобренную заявку (escrow → ACTIVE)."""
+    sub = get_object_or_404(
+        Subscription.objects.select_related('teacher__user', 'subject'),
+        pk=sub_id, student=request.user,
+    )
+    if sub.status != Subscription.Status.PENDING_PAYMENT:
+        messages.info(request, f'Оплата недоступна: статус «{sub.get_status_display()}».')
+        return redirect('my_subscriptions')
+
+    wallet = request.user.wallet
+    has_enough = wallet.balance >= sub.price_total
+    needed_amount = max(int(sub.price_total - wallet.balance), 0)
+
+    if request.method == 'POST':
+        try:
+            SubscriptionService.pay(sub, idempotency_key=request.POST.get('idempotency_key') or '')
+            messages.success(request, 'Оплата прошла! Теперь выберите удобное расписание.')
+            return redirect('subscription_schedule', sub_id=sub.id)
+        except InsufficientFunds as e:
+            messages.error(request, str(e))
+        except ValueError as e:
+            messages.error(request, str(e))
+
+    return render(request, 'billing/subscription_pay.html', {
+        'sub': sub, 'wallet': wallet, 'has_enough': has_enough,
+        'needed_amount': needed_amount, 'idempotency_key': str(uuid.uuid4()),
+    })
+
+
+@login_required
+def subscription_schedule(request, sub_id):
+    """ТЗ шаг 6: ученик выбирает недельный шаблон → бронируются все уроки."""
+    sub = get_object_or_404(
+        Subscription.objects.select_related('teacher__user', 'subject'),
+        pk=sub_id, student=request.user,
+    )
+    if sub.status != Subscription.Status.ACTIVE:
+        messages.info(request, 'Расписание доступно только для оплаченной подписки.')
+        return redirect('my_subscriptions')
+    if sub.bookings.exists():
+        messages.info(request, 'Расписание уже сформировано.')
+        return redirect('my_bookings_page')
+
+    # Кандидаты слотов из недельного расписания учителя, нарезанные по длительности.
+    from datetime import datetime as _dt, timedelta as _td
+    intervals = sub.teacher.get_schedule_intervals()
+    candidates = []  # [{'day','day_ru','time','label'}]
+    for day in _WEEKDAY_ORDER:
+        for from_str, to_str in intervals.get(day, []):
+            try:
+                cur = _dt.strptime(from_str, '%H:%M')
+                end = _dt.strptime(to_str, '%H:%M')
+            except (ValueError, TypeError):
+                continue
+            step = _td(minutes=sub.lesson_duration_minutes)
+            while cur + step <= end:
+                t = cur.strftime('%H:%M')
+                candidates.append({
+                    'day': day, 'day_ru': _WEEKDAY_RU[day], 'time': t,
+                    'value': f'{day}|{t}',
+                    'label': f'{_WEEKDAY_RU[day]} {t}',
+                })
+                cur += step
+
+    if request.method == 'POST':
+        selected = request.POST.getlist('slot')
+        pattern = []
+        for val in selected:
+            if '|' in val:
+                d, t = val.split('|', 1)
+                if d in _WEEKDAY_RU:
+                    pattern.append({'day': d, 'time': t})
+        if len(pattern) != sub.lessons_per_week:
+            messages.error(
+                request,
+                f'Выберите ровно {sub.lessons_per_week} занятия в неделю (выбрано {len(pattern)}).',
+            )
+        else:
+            try:
+                created = SubscriptionService.book_schedule(sub, pattern)
+                messages.success(
+                    request,
+                    f'Расписание сформировано: забронировано {len(created)} уроков.',
+                )
+                return redirect('my_bookings_page')
+            except ValueError as e:
+                messages.error(request, str(e))
+
+    return render(request, 'billing/subscription_schedule.html', {
+        'sub': sub, 'candidates': candidates,
+    })
+
+
 @login_required
 def my_subscriptions(request):
     """Все подписки текущего ученика (активные + история).

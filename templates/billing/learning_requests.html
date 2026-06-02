@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}{% trans 'Заявки на обучение' %} — UstozHub{% endblock %}
+
+{% block content %}
+<style>
+  .lr-page { max-width: 820px; margin: 0 auto; padding: 32px 24px; }
+  .lr-page h1 { font-size: 26px; color: var(--text-primary,#0A2540); margin: 0 0 20px; }
+  .lr-card { border:1px solid var(--border-color,#E2E8F0); border-radius:14px; padding:20px; margin-bottom:16px; background:#fff; }
+  .lr-card .who { font-weight:700; font-size:17px; color:var(--text-primary,#0A2540); }
+  .lr-card .meta { color:var(--text-secondary,#475569); font-size:14px; margin:6px 0; }
+  .lr-card .pref { background:#F8FAFC; border-radius:8px; padding:10px 12px; font-size:14px; color:#334155; margin:10px 0; }
+  .lr-actions { display:flex; gap:10px; margin-top:14px; }
+  .lr-btn { border:none; border-radius:9px; padding:11px 18px; font-weight:600; cursor:pointer; font-size:14px; }
+  .lr-approve { background:#10B981; color:#fff; }
+  .lr-reject { background:#fff; color:#DC2626; border:1px solid #FCA5A5; }
+  .lr-empty { color:var(--text-tertiary,#6B7280); text-align:center; padding:48px 0; }
+</style>
+
+<div class="lr-page">
+  <h1>{% trans 'Заявки на обучение' %}</h1>
+
+  {% for sub in requests %}
+    <div class="lr-card">
+      <div class="who">{{ sub.student.get_full_name|default:sub.student.username }}</div>
+      <div class="meta">
+        {% trans 'Предмет' %}: <b>{{ sub.subject.name }}</b> ·
+        {{ sub.lessons_per_week }} {% trans 'урок(а)/нед' %} · {{ sub.lesson_duration_minutes }} {% trans 'мин' %} ·
+        {{ sub.duration_months }} {% trans 'мес' %} ·
+        {{ sub.price_total|floatformat:0|intcomma }} {% trans 'сум' %}
+      </div>
+      {% if sub.preferred_schedule %}
+        <div class="pref"><i class="far fa-clock"></i> {{ sub.preferred_schedule }}</div>
+      {% endif %}
+      <div class="lr-actions">
+        <form method="post" action="{% url 'learning_request_action' sub.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="approve">
+          <button type="submit" class="lr-btn lr-approve"><i class="fas fa-check"></i> {% trans 'Подтвердить' %}</button>
+        </form>
+        <form method="post" action="{% url 'learning_request_action' sub.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="reject">
+          <button type="submit" class="lr-btn lr-reject"><i class="fas fa-times"></i> {% trans 'Отклонить' %}</button>
+        </form>
+      </div>
+    </div>
+  {% empty %}
+    <div class="lr-empty"><i class="far fa-inbox fa-2x"></i><p>{% trans 'Новых заявок на обучение нет.' %}</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

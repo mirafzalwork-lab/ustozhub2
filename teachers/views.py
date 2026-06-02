@@ -838,6 +838,8 @@ def detail(request, id):
     # Phase 10.5: Если ученик прошёл пробный с этим учителем за последние 30 дней
     # и ещё не подписан → подсветить тарифы как «рекомендуется после пробного».
     completed_trial_subject_ids = set()
+    has_completed_trial = False
+    continue_subject_id = None
     if request.user.is_authenticated and request.user.user_type == 'student':
         from datetime import timedelta
         from django.utils import timezone as tz
@@ -856,7 +858,11 @@ def detail(request, id):
             student=request.user, teacher=teacher,
             status__in=SubModel.ACTIVE_STATUSES,
         ).values_list('subject_id', flat=True))
-        completed_trial_subject_ids = set(trials_qs) - active_sub_subj_ids
+        completed_trial_ids_all = set(trials_qs)
+        has_completed_trial = bool(completed_trial_ids_all)
+        completed_trial_subject_ids = completed_trial_ids_all - active_sub_subj_ids
+        # Предмет для кнопки «Продолжить обучение» (ещё не подписан по нему).
+        continue_subject_id = next(iter(completed_trial_subject_ids), None)
 
     context = {
         'teacher': teacher,
@@ -869,6 +875,9 @@ def detail(request, id):
         'show_auth_prompt': show_auth_prompt,
         'active_tariffs': active_tariffs,
         'completed_trial_subject_ids': completed_trial_subject_ids,
+        # ТЗ: после пробного — «Продолжить обучение» вместо «Пробный урок».
+        'has_completed_trial': has_completed_trial,
+        'continue_subject_id': continue_subject_id,
     }
 
     return render(request, 'logic/teacher_detail.html', context)

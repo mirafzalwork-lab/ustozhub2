@@ -92,3 +92,13 @@ def release_pending_payouts():
             logger.exception(f'unexpected trial payout error booking={booking.id}: {e}')
 
     return {'paid': paid, 'skipped': skipped, 'errors': errors, 'total': total}
+
+
+@shared_task(name='billing.expire_unpaid_approvals')
+def expire_unpaid_approvals():
+    """Раз в N минут: одобренные, но не оплаченные в срок заявки → EXPIRED."""
+    from .services import SubscriptionService
+    n = SubscriptionService.expire_unpaid_approvals()
+    if n:
+        logger.info(f'expire_unpaid_approvals: expired {n} unpaid approvals')
+    return n

@@ -60,6 +60,11 @@ app.conf.beat_schedule = {
         'task': 'billing.release_pending_payouts',
         'schedule': 300.0,
     },
+    # ТЗ flow: одобренные, но не оплаченные в срок заявки → EXPIRED
+    'expire-unpaid-approvals-every-15min': {
+        'task': 'billing.expire_unpaid_approvals',
+        'schedule': 900.0,
+    },
     # --- Обслуживание очереди Telegram-уведомлений ---
     # Саму очередь обрабатывает демон telegram-bot.service (process_notifications
     # --daemon). Здесь — только сервисные задачи, которых демон не делает.

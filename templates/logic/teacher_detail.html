@@ -2589,6 +2589,26 @@
                     </div>
 
                     <div class="booking-actions">
+                        {% if has_completed_trial %}
+                            {# ТЗ: после пробного — «Продолжить обучение» вместо пробного/разового #}
+                            {% if continue_subject_id %}
+                            <a href="{% url 'continue_learning' teacher_id=teacher.id %}?subject={{ continue_subject_id }}" class="btn-primary btn-trial-primary">
+                                <i class="trial-emoji fas fa-graduation-cap" aria-hidden="true"></i>
+                                <span class="trial-text">
+                                    <span class="trial-headline">{% trans 'Продолжить обучение' %}</span>
+                                    <span class="trial-sub">{% trans 'Выбрать тариф и записаться' %}</span>
+                                </span>
+                            </a>
+                            {% else %}
+                            <a href="{% url 'my_subscriptions' %}" class="btn-primary btn-trial-primary">
+                                <i class="trial-emoji fas fa-graduation-cap" aria-hidden="true"></i>
+                                <span class="trial-text">
+                                    <span class="trial-headline">{% trans 'Вы уже учитесь' %}</span>
+                                    <span class="trial-sub">{% trans 'К моим подпискам' %}</span>
+                                </span>
+                            </a>
+                            {% endif %}
+                        {% else %}
                         {% with trial_ts=teacher.get_trial_subject %}
                         {% if trial_ts and trial_ts.is_free_trial %}
                             {# PRIMARY: бесплатный пробный — главный hook marketplace'а #}
@@ -2624,6 +2644,7 @@
                             </a>
                         {% endif %}
                         {% endwith %}
+                        {% endif %}
 
                         <div class="booking-actions-row">
                             {% if user.is_authenticated and user != teacher.user %}

@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}{% trans 'Продолжить обучение' %} — UstozHub{% endblock %}
+
+{% block content %}
+<style>
+  .cl-page { max-width: 760px; margin: 0 auto; padding: 32px 24px; }
+  .cl-page h1 { font-size: 26px; color: var(--text-primary,#0A2540); margin: 0 0 6px; }
+  .cl-page .subtitle { color: var(--text-secondary,#475569); margin: 0 0 24px; }
+  .tariff-opt { display:block; border:2px solid var(--border-color,#E2E8F0); border-radius:14px;
+    padding:18px 20px; margin-bottom:14px; cursor:pointer; background:#fff; transition:border-color .15s; }
+  .tariff-opt:hover { border-color:#3B82F6; }
+  .tariff-opt input { margin-right:10px; }
+  .tariff-opt .tname { font-weight:700; font-size:16px; color:var(--text-primary,#0A2540); }
+  .tariff-opt .tmeta { color:var(--text-secondary,#475569); font-size:14px; margin-top:4px; }
+  .tariff-opt .tprice { font-size:20px; font-weight:700; color:#B45309; margin-top:8px; }
+  .cl-field { margin:20px 0; }
+  .cl-field label { display:block; font-weight:600; margin-bottom:6px; color:var(--text-primary,#0A2540); }
+  .cl-field textarea { width:100%; border:1px solid var(--border-color,#E2E8F0); border-radius:10px; padding:10px; font:inherit; }
+  .cl-submit { background:#3B82F6; color:#fff; border:none; border-radius:10px; padding:14px 22px;
+    font-size:16px; font-weight:600; cursor:pointer; width:100%; }
+  .cl-note { color:var(--text-tertiary,#6B7280); font-size:13px; margin-top:14px; }
+</style>
+
+<div class="cl-page">
+  <h1>{% trans 'Продолжить обучение с' %} {{ teacher.user.get_full_name|default:teacher.user.username }}</h1>
+  <p class="subtitle">{% trans 'Предмет' %}: <b>{{ subject.name }}</b> · {% trans 'выберите тариф и отправьте заявку учителю' %}</p>
+
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="subject_id" value="{{ subject.id }}">
+    <input type="hidden" name="idempotency_key" value="{{ idempotency_key }}">
+
+    {% if real_tariffs %}
+      {% for t in real_tariffs %}
+        <label class="tariff-opt">
+          <input type="radio" name="tariff_id" value="{{ t.id }}" {% if forloop.first %}checked{% endif %} required>
+          <span class="tname">{{ t.name|default:t.subject.name }}</span>
+          <div class="tmeta">{{ t.lessons_per_week }} {% trans 'урок(а)/нед' %} · {{ t.lesson_duration_minutes }} {% trans 'мин' %} · {{ t.duration_months }} {% trans 'мес' %}</div>
+          <div class="tprice">{{ t.total_price|floatformat:0|intcomma }} <small>{% trans 'сум' %}</small></div>
+        </label>
+      {% endfor %}
+    {% else %}
+      <p class="subtitle">{% trans 'У учителя нет своих тарифов — предлагаем стандартные:' %}</p>
+      {% for o in standard %}
+        <label class="tariff-opt">
+          <input type="radio" name="lessons_per_week" value="{{ o.lessons_per_week }}" {% if forloop.first %}checked{% endif %} required>
+          <span class="tname">{{ o.name }}</span>
+          <div class="tmeta">{{ o.lessons_per_week }} {% trans 'урок(а)/нед' %} · {{ o.lesson_duration_minutes }} {% trans 'мин' %} · 1 {% trans 'мес' %}</div>
+          <div class="tprice">{{ o.total_price|floatformat:0|intcomma }} <small>{% trans 'сум' %}</small></div>
+        </label>
+      {% endfor %}
+    {% endif %}
+
+    <div class="cl-field">
+      <label for="pref">{% trans 'Предпочтительное расписание (необязательно)' %}</label>
+      <textarea id="pref" name="preferred_schedule" rows="3" placeholder="{% trans 'Например: будни после 18:00, или Пн/Ср/Пт утром' %}"></textarea>
+    </div>
+
+    <button type="submit" class="cl-submit">{% trans 'Отправить заявку учителю' %}</button>
+    <p class="cl-note">{% trans 'Оплата только после подтверждения заявки учителем. Сейчас деньги не списываются.' %}</p>
+  </form>
+</div>
+{% endblock %}

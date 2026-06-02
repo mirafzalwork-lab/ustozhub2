@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}{% trans 'Оплата обучения' %} — UstozHub{% endblock %}
+
+{% block content %}
+<style>
+  .pay-page { max-width: 640px; margin: 0 auto; padding: 32px 24px; }
+  .pay-page h1 { font-size: 26px; color: var(--text-primary,#0A2540); margin: 0 0 6px; }
+  .pay-card { border:1px solid var(--border-color,#E2E8F0); border-radius:14px; padding:24px; background:#fff; margin:20px 0; }
+  .pay-row { display:flex; justify-content:space-between; padding:8px 0; color:var(--text-secondary,#475569); }
+  .pay-row.total { border-top:1px solid var(--border-color,#E2E8F0); margin-top:8px; padding-top:14px; font-size:20px; font-weight:700; color:var(--text-primary,#0A2540); }
+  .pay-btn { background:#10B981; color:#fff; border:none; border-radius:10px; padding:14px 22px; font-size:16px; font-weight:600; cursor:pointer; width:100%; }
+  .pay-warn { background:#FEF3C7; border:1px solid #F59E0B; border-radius:10px; padding:14px; color:#92400E; margin:16px 0; }
+  .pay-topup { display:inline-block; margin-top:10px; color:#B45309; font-weight:600; }
+</style>
+
+<div class="pay-page">
+  <h1>{% trans 'Оплата обучения' %}</h1>
+  <p style="color:var(--text-secondary,#475569);">{{ sub.teacher.user.get_full_name|default:sub.teacher.user.username }} · {{ sub.subject.name }}</p>
+
+  <div class="pay-card">
+    <div class="pay-row"><span>{% trans 'Уроков в неделю' %}</span><b>{{ sub.lessons_per_week }}</b></div>
+    <div class="pay-row"><span>{% trans 'Всего уроков' %}</span><b>{{ sub.total_lessons }}</b></div>
+    <div class="pay-row"><span>{% trans 'Длительность урока' %}</span><b>{{ sub.lesson_duration_minutes }} {% trans 'мин' %}</b></div>
+    <div class="pay-row"><span>{% trans 'Срок' %}</span><b>{{ sub.duration_months }} {% trans 'мес' %}</b></div>
+    <div class="pay-row total"><span>{% trans 'К оплате' %}</span><span>{{ sub.price_total|floatformat:0|intcomma }} {% trans 'сум' %}</span></div>
+  </div>
+
+  <div class="pay-row"><span>{% trans 'Баланс кошелька' %}</span><b>{{ wallet.balance|floatformat:0|intcomma }} {% trans 'сум' %}</b></div>
+
+  {% if has_enough %}
+    <form method="post" style="margin-top:16px;">
+      {% csrf_token %}
+      <input type="hidden" name="idempotency_key" value="{{ idempotency_key }}">
+      <button type="submit" class="pay-btn"><i class="fas fa-lock"></i> {% trans 'Оплатить и начать обучение' %}</button>
+    </form>
+  {% else %}
+    <div class="pay-warn">
+      {% trans 'Недостаточно средств.' %} {% trans 'Не хватает' %}: <b>{{ needed_amount|intcomma }} {% trans 'сум' %}</b>.
+      <br><a class="pay-topup" href="{% url 'wallet_topup_request' %}?next={{ request.path|urlencode }}">{% trans 'Пополнить кошелёк' %} →</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

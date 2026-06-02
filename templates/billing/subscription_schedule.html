@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans 'Выбор расписания' %} — UstozHub{% endblock %}
+
+{% block content %}
+<style>
+  .sch-page { max-width: 760px; margin: 0 auto; padding: 32px 24px; }
+  .sch-page h1 { font-size: 26px; color: var(--text-primary,#0A2540); margin: 0 0 6px; }
+  .sch-page .subtitle { color: var(--text-secondary,#475569); margin: 0 0 20px; }
+  .sch-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:10px; margin-bottom:20px; }
+  .sch-opt { border:2px solid var(--border-color,#E2E8F0); border-radius:10px; padding:12px; cursor:pointer; background:#fff; font-size:14px; }
+  .sch-opt input { margin-right:8px; }
+  .sch-opt.checked { border-color:#3B82F6; background:#EFF6FF; }
+  .sch-submit { background:#3B82F6; color:#fff; border:none; border-radius:10px; padding:14px 22px; font-size:16px; font-weight:600; cursor:pointer; width:100%; }
+  .sch-counter { font-weight:700; color:#3B82F6; }
+  .sch-empty { color:var(--text-tertiary,#6B7280); text-align:center; padding:40px 0; }
+</style>
+
+<div class="sch-page">
+  <h1>{% trans 'Выберите расписание' %}</h1>
+  <p class="subtitle">
+    {% blocktrans with n=sub.lessons_per_week %}Отметьте {{ n }} занятия в неделю — система забронирует все уроки на весь период.{% endblocktrans %}
+    {% trans 'Выбрано' %}: <span class="sch-counter" id="cnt">0</span> / {{ sub.lessons_per_week }}
+  </p>
+
+  {% if candidates %}
+  <form method="post" id="schForm">
+    {% csrf_token %}
+    <div class="sch-grid">
+      {% for c in candidates %}
+        <label class="sch-opt" data-opt>
+          <input type="checkbox" name="slot" value="{{ c.value }}"> {{ c.label }}
+        </label>
+      {% endfor %}
+    </div>
+    <button type="submit" class="sch-submit">{% trans 'Забронировать уроки' %}</button>
+  </form>
+  <script>
+    (function(){
+      var need = {{ sub.lessons_per_week }};
+      var form = document.getElementById('schForm');
+      var cnt = document.getElementById('cnt');
+      function sync(){
+        var boxes = form.querySelectorAll('input[name="slot"]');
+        var checked = form.querySelectorAll('input[name="slot"]:checked');
+        cnt.textContent = checked.length;
+        boxes.forEach(function(b){
+          b.closest('[data-opt]').classList.toggle('checked', b.checked);
+          if(!b.checked) b.disabled = (checked.length >= need);
+        });
+      }
+      form.addEventListener('change', sync); sync();
+    })();
+  </script>
+  {% else %}
+    <div class="sch-empty">
+      <p>{% trans 'У учителя пока не задано недельное расписание — попросите его открыть свободные часы.' %}</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

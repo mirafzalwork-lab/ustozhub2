@@ -28,6 +28,13 @@ urlpatterns = [
     path('my/subscriptions/', views.my_subscriptions, name='my_subscriptions'),
     path('profile/subscribers/', views.teacher_subscribers, name='teacher_subscribers'),
 
+    # ТЗ flow: заявка → одобрение → оплата → бронь
+    path('learn/<int:teacher_id>/continue/', views.continue_learning, name='continue_learning'),
+    path('profile/learning-requests/', views.teacher_learning_requests, name='teacher_learning_requests'),
+    path('learning-requests/<uuid:sub_id>/action/', views.learning_request_action, name='learning_request_action'),
+    path('subscriptions/<uuid:sub_id>/pay/', views.subscription_pay, name='subscription_pay'),
+    path('subscriptions/<uuid:sub_id>/schedule/', views.subscription_schedule, name='subscription_schedule'),
+
     # Вывод средств
     path('profile/withdrawals/', views.withdrawals_list, name='withdrawals_list'),
     path('profile/withdrawals/<uuid:wr_id>/cancel/', views.withdrawal_cancel, name='withdrawal_cancel'),
