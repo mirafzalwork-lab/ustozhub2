@@ -2679,6 +2679,11 @@ def google_complete_teacher(request):
         request.session[key] = value
 
     try:
+        # У пользователя автоматически создаётся Wallet (OneToOne, on_delete=PROTECT)
+        # через post_save-сигнал — он блокирует удаление. Сначала снимаем его,
+        # иначе stub остаётся, и wizard падает на коллизии уникального email.
+        from billing.models import Wallet
+        Wallet.objects.filter(user=user).delete()
         user.delete()
         logger.info(f"Google stub user deleted before teacher wizard: {google_data['google_email']}")
     except Exception as e:
