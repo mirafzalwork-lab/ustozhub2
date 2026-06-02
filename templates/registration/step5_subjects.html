@@ -226,18 +226,20 @@
         if (!card) return;
         var group = card.querySelector('.trial-price-group');
         var input = group ? group.querySelector('.trial-price-input') : null;
-        function sync() {
+        function sync(userAction) {
             if (!group) return;
             if (checkbox.checked) {
                 group.style.display = 'none';
                 if (input) input.value = '';
             } else {
                 group.style.display = '';
-                if (input) input.focus();
+                // Фокус ставим только при действии пользователя (снял галочку),
+                // а не на загрузке страницы — иначе фокус «прыгал» бы вниз.
+                if (userAction && input) input.focus();
             }
         }
-        checkbox.addEventListener('change', sync);
-        sync();
+        checkbox.addEventListener('change', function () { sync(true); });
+        sync(false);
     }
 
     document.addEventListener('DOMContentLoaded', function () {
