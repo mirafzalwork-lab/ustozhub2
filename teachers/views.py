@@ -978,7 +978,9 @@ def login_view(request):
                 if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
                     return redirect(next_url)
 
-                return redirect('profile')
+                # Главная залогиненного пользователя — его дашборд (роутится по
+                # user_type). Дашборд сам редиректит на онбординг, если профиля нет.
+                return redirect('dashboard')
             else:
                 messages.error(request, 'Неверный email или пароль')
     else:

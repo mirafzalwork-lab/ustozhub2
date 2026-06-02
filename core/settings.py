@@ -287,7 +287,9 @@ AUTH_USER_MODEL = 'teachers.User'
 
 # Authentication URLs
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'home'
+# Главная залогиненного пользователя — дашборд (роутится по user_type;
+# сам редиректит на онбординг, если профиль не заполнен).
+LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'home'
 
 # =============================================================================

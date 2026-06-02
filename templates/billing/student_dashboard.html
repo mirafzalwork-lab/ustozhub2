@@ -84,8 +84,13 @@
 
 <div class="sdb">
   <h1 class="greet">
-    {% trans 'Привет' %}, {{ request.user.first_name|default:request.user.username }}!
-    <small>{% trans 'Что нового на сегодня' %}</small>
+    {% if recent_trials_to_convert %}{% with top=recent_trials_to_convert.0 %}
+      {% trans 'Привет' %}, {{ request.user.first_name|default:request.user.username }}!
+      <small>{% blocktrans with tutor=top.teacher.user.get_full_name|default:top.teacher.user.username %}Готовы продолжить занятия с {{ tutor }}?{% endblocktrans %}</small>
+    {% endwith %}{% else %}
+      {% trans 'Привет' %}, {{ request.user.first_name|default:request.user.username }}!
+      <small>{% trans 'Что нового на сегодня' %}</small>
+    {% endif %}
   </h1>
 
   {% if recent_trials_to_convert %}
@@ -112,6 +117,7 @@
           </div>
         </div>
         {% if item.tariffs %}
+          <div class="conv-label">{% trans 'Подписаться и продолжить' %}:</div>
           <div class="conv-tariffs">
             {% for t in item.tariffs %}
               <a href="{% url 'subscription_buy' t.id %}" class="conv-tariff">
@@ -121,8 +127,9 @@
               </a>
             {% endfor %}
           </div>
+          <a href="{% url 'home' %}#teachers" class="conv-alt">{% trans 'Попробовать другого учителя' %} →</a>
         {% else %}
-          <a href="{% url 'home' %}" class="conv-btn">{% trans 'У учителя пока нет тарифов — посмотреть других' %} →</a>
+          <a href="{% url 'home' %}#teachers" class="conv-btn">{% trans 'У учителя пока нет тарифов — посмотреть других' %} →</a>
         {% endif %}
       </div>
     {% endfor %}
@@ -159,6 +166,13 @@
       padding: 10px 14px; border-radius: 8px; text-decoration: none;
       font-weight: 500; font-size: 13px;
     }
+    .conv-label { font-size: 13px; font-weight: 700; color: #78350F; margin-bottom: 8px; }
+    .conv-alt {
+      display: inline-block; margin-top: 12px; color: #92400E;
+      text-decoration: none; font-weight: 600; font-size: 13px;
+      border-bottom: 1px dashed #B45309; padding-bottom: 1px;
+    }
+    .conv-alt:hover { color: #78350F; }
   </style>
   {% endif %}
 
