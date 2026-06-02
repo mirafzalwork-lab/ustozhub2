@@ -1280,6 +1280,125 @@ class RefundLessonTests(TestCase):
         self.assertEqual(sub.escrow_balance, Decimal('0.00'))
 
 
+class LearningRequestFlowTests(TestCase):
+    """ТЗ-флоу: заявка → одобрение → оплата → бронь."""
+
+    def setUp(self):
+        from billing.platform_account import get_or_create_platform_user
+        self.platform = get_or_create_platform_user()
+        self.teacher, self.subject = _make_teacher_with_subject('lr_t')
+        self.tariff = _make_tariff(self.teacher, self.subject,
+                                   lessons_per_week=2, duration_months=1,
+                                   price=Decimal('800000'))
+        self.student = _make_student_with_balance('lr_s', balance=Decimal('1000000'))
+
+    def _request(self, key='1'):
+        t = self.tariff
+        return SubscriptionService.create_request(
+            student=self.student, teacher=self.teacher, subject=self.subject,
+            lessons_per_week=t.lessons_per_week,
+            lesson_duration_minutes=t.lesson_duration_minutes,
+            duration_months=t.duration_months, price_per_month=t.price_per_month,
+            tariff=t, preferred_schedule='будни вечером',
+            idempotency_key=f'lr-req-{key}',
+        )
+
+    def test_request_does_not_charge_or_book(self):
+        sub = self._request()
+        self.assertEqual(sub.status, Subscription.Status.PENDING_APPROVAL)
+        self.assertEqual(sub.escrow_balance, Decimal('0.00'))
+        self.student.wallet.refresh_from_db()
+        self.assertEqual(self.student.wallet.balance, Decimal('1000000'))  # не списано
+        from teachers.models import Booking
+        self.assertEqual(Booking.objects.filter(subscription=sub).count(), 0)
+
+    def test_duplicate_request_blocked(self):
+        self._request('a')
+        with self.assertRaises(AlreadySubscribed):
+            self._request('b')
+
+    def test_idempotent_request(self):
+        s1 = self._request('same')
+        s2 = self._request('same')
+        self.assertEqual(s1.id, s2.id)
+
+    def test_cannot_pay_before_approval(self):
+        sub = self._request()
+        with self.assertRaises(ValueError):
+            SubscriptionService.pay(sub, idempotency_key='x')
+
+    def test_full_flow_request_approve_pay_book(self):
+        from teachers.models import Booking
+        sub = self._request()
+
+        SubscriptionService.approve_request(sub)
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, Subscription.Status.PENDING_PAYMENT)
+        self.assertIsNotNone(sub.approved_at)
+        self.assertIsNotNone(sub.approval_expires_at)
+
+        SubscriptionService.pay(sub, idempotency_key='pay1')
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, Subscription.Status.ACTIVE)
+        self.assertEqual(sub.escrow_balance, Decimal('800000.00'))
+        self.student.wallet.refresh_from_db()
+        self.assertEqual(self.student.wallet.balance, Decimal('200000.00'))
+        # До бронирования уроков ещё нет.
+        self.assertEqual(Booking.objects.filter(subscription=sub).count(), 0)
+
+        pattern = [{'day': 'monday', 'time': '10:00'}, {'day': 'wednesday', 'time': '10:00'}]
+        created = SubscriptionService.book_schedule(sub, pattern)
+        self.assertEqual(len(created), sub.total_lessons)  # 8
+        self.assertTrue(all(b.status == 'confirmed' for b in created))
+        self.assertTrue(all(b.meeting_url for b in created))
+        sub.refresh_from_db()
+        self.assertEqual(sub.weekly_pattern, pattern)
+
+    def test_reject_keeps_money(self):
+        sub = self._request()
+        SubscriptionService.reject_request(sub, reason='нет мест')
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, Subscription.Status.CANCELLED_BY_TEACHER)
+        self.student.wallet.refresh_from_db()
+        self.assertEqual(self.student.wallet.balance, Decimal('1000000'))
+
+    def test_pay_after_expiry_fails_and_expires(self):
+        from django.utils import timezone
+        from datetime import timedelta
+        sub = self._request()
+        SubscriptionService.approve_request(sub)
+        sub.refresh_from_db()
+        sub.approval_expires_at = timezone.now() - timedelta(hours=1)
+        sub.save(update_fields=['approval_expires_at'])
+        with self.assertRaises(ValueError):
+            SubscriptionService.pay(sub, idempotency_key='late')
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, Subscription.Status.EXPIRED)
+
+    def test_expire_unpaid_approvals_task(self):
+        from django.utils import timezone
+        from datetime import timedelta
+        sub = self._request()
+        SubscriptionService.approve_request(sub)
+        sub.refresh_from_db()
+        sub.approval_expires_at = timezone.now() - timedelta(minutes=5)
+        sub.save(update_fields=['approval_expires_at'])
+        n = SubscriptionService.expire_unpaid_approvals()
+        self.assertEqual(n, 1)
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, Subscription.Status.EXPIRED)
+
+    def test_standard_tariff_options_priced_from_hourly(self):
+        # hourly_rate = 50000 (из _make_teacher_with_subject)
+        opts = SubscriptionService.standard_tariff_options(self.teacher, self.subject)
+        self.assertEqual(len(opts), 3)
+        self.assertEqual(opts[0]['lessons_per_week'], 1)
+        # 50000 × (60/60) × 1 × 4 = 200000
+        self.assertEqual(opts[0]['price_per_month'], Decimal('200000'))
+        self.assertEqual(opts[2]['lessons_per_week'], 3)
+        self.assertEqual(opts[2]['price_per_month'], Decimal('600000'))
+
+
 class TeacherNoShowSettleTests(TestCase):
     """settle_after_end: учитель не пришёл → no_show_teacher без выплаты."""
 

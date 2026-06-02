@@ -8,6 +8,7 @@
 """
 from __future__ import annotations
 
+import logging
 from datetime import datetime, time as dt_time, timedelta
 from decimal import Decimal
 from typing import Optional
@@ -20,6 +21,17 @@ from django.utils import timezone
 from .models import Subscription, Tariff, Transaction, Wallet, WithdrawalRequest
 
 User = get_user_model()
+
+logger = logging.getLogger(__name__)
+
+
+def _safe_reverse(name, args=None):
+    """reverse, не падающий если URL ещё не подключён (для уведомлений)."""
+    from django.urls import reverse
+    try:
+        return reverse(name, args=args or [])
+    except Exception:
+        return ''
 
 
 # Дни недели для weekly_schedule (соответствуют datetime.weekday() 0..6).
@@ -357,16 +369,347 @@ class SubscriptionService:
 
             return subscription
 
+    # ---- ТЗ flow: заявка → одобрение → оплата → бронь --------------------
+
+    @staticmethod
+    def standard_tariff_options(teacher, subject) -> list:
+        """Стандартные тарифы 1/2/3 урока в неделю, если у учителя нет своих.
+
+        Цена считается от почасовой ставки учителя по этому предмету:
+        price_per_month = hourly_rate × (длительность/60) × уроков_в_нед × 4.
+        Возвращает список dict'ов (НЕ моделей) — фронт показывает как опции.
+        """
+        from teachers.models import TeacherSubject
+        ts = TeacherSubject.objects.filter(teacher=teacher, subject=subject).first()
+        hourly = Decimal(ts.hourly_rate) if ts and ts.hourly_rate else Decimal('50000')
+        duration_minutes = 60
+        options = []
+        for lpw, name in [(1, 'Базовый'), (2, 'Стандарт'), (3, 'Интенсив')]:
+            ppm = (hourly * Decimal(duration_minutes) / Decimal(60)
+                   * lpw * Tariff.WEEKS_PER_MONTH).quantize(Decimal('1'))
+            options.append({
+                'name': name,
+                'lessons_per_week': lpw,
+                'lesson_duration_minutes': duration_minutes,
+                'duration_months': 1,
+                'price_per_month': ppm,
+                'total_price': ppm,
+                'total_lessons': lpw * Tariff.WEEKS_PER_MONTH,
+                'is_standard': True,
+            })
+        return options
+
+    @classmethod
+    def create_request(
+        cls, *, student, teacher, subject,
+        lessons_per_week, lesson_duration_minutes, duration_months, price_per_month,
+        tariff=None, preferred_schedule='', idempotency_key,
+    ) -> Subscription:
+        """Шаг 3 ТЗ: ученик отправляет заявку на обучение (БЕЗ оплаты).
+
+        Создаёт Subscription в статусе PENDING_APPROVAL. Деньги не списываются,
+        уроки не бронируются — всё это после одобрения учителем и оплаты.
+        """
+        if not idempotency_key:
+            raise ValueError('idempotency_key is required')
+
+        existing = Subscription.objects.filter(
+            purchase_idempotency_key=idempotency_key,
+        ).first()
+        if existing is not None:
+            return existing
+
+        price_per_month = Decimal(price_per_month)
+        total_lessons = lessons_per_week * Tariff.WEEKS_PER_MONTH * duration_months
+        price_total = (price_per_month * duration_months).quantize(Decimal('0.01'))
+        price_per_lesson = (
+            (price_total / total_lessons).quantize(Decimal('0.01'))
+            if total_lessons else Decimal('0.00')
+        )
+        commission_rate = Decimal(settings.PLATFORM_COMMISSION_RATE)
+
+        with transaction.atomic():
+            # Сериализация по кошельку ученика (как в purchase) + защита от дублей.
+            Wallet.objects.select_for_update().get(user=student)
+            already = Subscription.objects.filter(
+                student=student, teacher=teacher, subject=subject,
+                status__in=Subscription.ACTIVE_STATUSES,
+            ).exists()
+            if already:
+                raise AlreadySubscribed(
+                    'У вас уже есть заявка или активная подписка к этому учителю по этому предмету.'
+                )
+            sub = Subscription.objects.create(
+                student=student, teacher=teacher, subject=subject, tariff=tariff,
+                status=Subscription.Status.PENDING_APPROVAL,
+                lessons_per_week=lessons_per_week,
+                lesson_duration_minutes=lesson_duration_minutes,
+                duration_months=duration_months,
+                total_lessons=total_lessons,
+                price_total=price_total,
+                price_per_lesson=price_per_lesson,
+                commission_rate=commission_rate,
+                escrow_balance=Decimal('0.00'),
+                preferred_schedule=(preferred_schedule or '')[:2000],
+                purchase_idempotency_key=idempotency_key,
+            )
+
+        cls._notify(
+            teacher.user, 'Новая заявка на обучение',
+            f'{student.get_full_name() or student.username} хочет заниматься: '
+            f'{subject.name}, {lessons_per_week} урок(а)/нед.',
+            _safe_reverse('teacher_learning_requests'),
+        )
+        return sub
+
+    @classmethod
+    def approve_request(cls, subscription) -> Subscription:
+        """Шаг 4 ТЗ: учитель подтверждает заявку → ученик может оплатить."""
+        with transaction.atomic():
+            sub = (Subscription.objects.select_for_update()
+                   .select_related('student', 'subject').get(pk=subscription.pk))
+            if sub.status != Subscription.Status.PENDING_APPROVAL:
+                raise ValueError(
+                    f'Заявку нельзя подтвердить в статусе «{sub.get_status_display()}».'
+                )
+            now = timezone.now()
+            sub.status = Subscription.Status.PENDING_PAYMENT
+            sub.approved_at = now
+            sub.approval_expires_at = now + timedelta(hours=cls.APPROVAL_PAYMENT_HOURS)
+            sub.save(update_fields=['status', 'approved_at', 'approval_expires_at', 'updated_at'])
+        cls._notify(
+            sub.student, 'Заявка одобрена — оплатите обучение',
+            f'Учитель подтвердил вашу заявку ({sub.subject.name}). '
+            f'Оплатите тариф в течение {cls.APPROVAL_PAYMENT_HOURS} ч, чтобы начать.',
+            _safe_reverse('subscription_pay', args=[sub.id]),
+        )
+        return sub
+
+    @classmethod
+    def reject_request(cls, subscription, *, reason: str = '') -> Subscription:
+        """Шаг 4 ТЗ: учитель отклоняет заявку. Деньги не затрагиваются."""
+        with transaction.atomic():
+            sub = (Subscription.objects.select_for_update()
+                   .select_related('student', 'subject').get(pk=subscription.pk))
+            if sub.status != Subscription.Status.PENDING_APPROVAL:
+                raise ValueError(
+                    f'Заявку нельзя отклонить в статусе «{sub.get_status_display()}».'
+                )
+            sub.status = Subscription.Status.CANCELLED_BY_TEACHER
+            sub.cancelled_at = timezone.now()
+            sub.cancellation_reason = (reason or 'Отклонено учителем')[:500]
+            sub.save(update_fields=['status', 'cancelled_at', 'cancellation_reason', 'updated_at'])
+        cls._notify(
+            sub.student, 'Заявка отклонена',
+            f'Учитель отклонил заявку на обучение ({sub.subject.name}). '
+            f'Деньги не списаны — вы можете выбрать другого учителя.',
+            _safe_reverse('home'),
+        )
+        return sub
+
+    @classmethod
+    def pay(cls, subscription, *, idempotency_key: str = '') -> Subscription:
+        """Шаг 5 ТЗ: ученик оплачивает одобренную заявку → подписка ACTIVE.
+
+        Деньги уходят в эскроу; уроки бронируются отдельно (book_schedule).
+        """
+        # Шаг 0: протухшую заявку помечаем EXPIRED в ОТДЕЛЬНОЙ транзакции —
+        # иначе raise внутри основного atomic откатил бы и сам перевод в EXPIRED.
+        expired = False
+        with transaction.atomic():
+            sub = Subscription.objects.select_for_update().get(pk=subscription.pk)
+            if sub.status != Subscription.Status.PENDING_PAYMENT:
+                raise ValueError(
+                    f'Оплата недоступна в статусе «{sub.get_status_display()}».'
+                )
+            if sub.approval_expires_at and sub.approval_expires_at < timezone.now():
+                sub.status = Subscription.Status.EXPIRED
+                sub.save(update_fields=['status', 'updated_at'])
+                expired = True
+        if expired:
+            raise ValueError('Срок оплаты заявки истёк. Оформите заявку заново.')
+
+        with transaction.atomic():
+            sub = Subscription.objects.select_for_update().select_related('subject').get(pk=subscription.pk)
+            if sub.status != Subscription.Status.PENDING_PAYMENT:
+                raise ValueError(
+                    f'Оплата недоступна в статусе «{sub.get_status_display()}».'
+                )
+            now = timezone.now()
+            wallet = Wallet.objects.select_for_update().get(user=sub.student_id)
+            if wallet.balance < sub.price_total:
+                raise InsufficientFunds(
+                    f'Недостаточно средств: на балансе {wallet.balance}, нужно {sub.price_total}. '
+                    f'Пополните кошелёк.'
+                )
+            sub.status = Subscription.Status.ACTIVE
+            sub.started_at = now
+            sub.expires_at = now + timedelta(days=sub.duration_months * 30)
+            sub.escrow_balance = sub.price_total
+            sub.save(update_fields=['status', 'started_at', 'expires_at', 'escrow_balance', 'updated_at'])
+
+            WalletService.debit(
+                user=sub.student, amount=sub.price_total,
+                tx_type=Transaction.Type.PURCHASE,
+                idempotency_key=f'sub-purchase:{sub.id}',
+                description=f'Оплата обучения ({sub.subject.name})',
+            )
+            Transaction.objects.filter(
+                idempotency_key=f'sub-purchase:{sub.id}'
+            ).update(related_subscription=sub)
+
+        cls._notify(
+            sub.student, 'Оплата прошла — выберите расписание',
+            f'Обучение активно. Выберите удобные дни и время — '
+            f'{sub.lessons_per_week} урок(а) в неделю.',
+            _safe_reverse('subscription_schedule', args=[sub.id]),
+        )
+        return sub
+
+    @classmethod
+    def book_schedule(cls, subscription, weekly_pattern: list) -> list:
+        """Шаг 6 ТЗ: по выбранному недельному шаблону бронируем все уроки.
+
+        weekly_pattern: [{"day": "monday", "time": "18:00"}, ...]
+        Длина шаблона должна совпадать с lessons_per_week.
+        """
+        from teachers.models import Booking
+        with transaction.atomic():
+            sub = (Subscription.objects.select_for_update()
+                   .select_related('teacher', 'subject').get(pk=subscription.pk))
+            if sub.status != Subscription.Status.ACTIVE:
+                raise ValueError('Расписание доступно только для активной (оплаченной) подписки.')
+            if Booking.objects.filter(subscription=sub).exists():
+                raise ValueError('Расписание уже сформировано.')
+            if not weekly_pattern or not isinstance(weekly_pattern, list):
+                raise ValueError('Не выбран шаблон расписания.')
+            created = cls._generate_bookings_from_pattern(sub, weekly_pattern)
+            sub.weekly_pattern = weekly_pattern
+            sub.save(update_fields=['weekly_pattern', 'updated_at'])
+        return created
+
+    @classmethod
+    def expire_unpaid_approvals(cls) -> int:
+        """Celery: одобренные, но неоплаченные в срок заявки → EXPIRED."""
+        now = timezone.now()
+        stale = list(Subscription.objects.filter(
+            status=Subscription.Status.PENDING_PAYMENT,
+            approval_expires_at__lt=now,
+        ))
+        count = 0
+        for sub in stale:
+            with transaction.atomic():
+                locked = Subscription.objects.select_for_update().get(pk=sub.pk)
+                if locked.status != Subscription.Status.PENDING_PAYMENT:
+                    continue
+                if not locked.approval_expires_at or locked.approval_expires_at >= timezone.now():
+                    continue
+                locked.status = Subscription.Status.EXPIRED
+                locked.save(update_fields=['status', 'updated_at'])
+                count += 1
+            cls._notify(
+                sub.student, 'Срок оплаты заявки истёк',
+                'Одобренная заявка не была оплачена вовремя и истекла. '
+                'При желании оформите заявку заново.',
+                _safe_reverse('home'),
+            )
+        return count
+
+    @classmethod
+    def _generate_bookings_from_pattern(cls, subscription, weekly_pattern: list) -> list:
+        """Бронирует total_lessons уроков по недельному шаблону (day/time).
+
+        Идёт по неделям вперёд; для каждого вхождения шаблона создаёт/занимает
+        TimeSlot и Booking(confirmed). Занятые слоты пропускает (ищет на след.
+        неделе). Останавливается, когда набрал total_lessons или вышел лимит.
+        """
+        from teachers.models import Booking, TimeSlot
+
+        teacher = subscription.teacher
+        student = subscription.student
+        subject = subscription.subject
+        duration = timedelta(minutes=subscription.lesson_duration_minutes)
+        needed = subscription.total_lessons
+        tz = timezone.get_current_timezone()
+        now = timezone.now()
+
+        day_index = {k: i for i, k in enumerate(_WEEKDAY_KEYS)}
+        plan = []
+        for entry in weekly_pattern:
+            d = day_index.get((entry.get('day') or '').lower())
+            try:
+                t = dt_time.fromisoformat(entry.get('time'))
+            except (ValueError, TypeError):
+                t = None
+            if d is not None and t is not None:
+                plan.append((d, t))
+        if not plan:
+            return []
+
+        created = []
+        start_date = (now + timedelta(days=1)).date()
+        end_date = start_date + timedelta(
+            weeks=subscription.duration_months * 4 * cls.LOOKAHEAD_WEEKS_MULTIPLIER
+        )
+        cursor = start_date
+        while cursor < end_date and len(created) < needed:
+            wd = cursor.weekday()
+            for (d, t) in plan:
+                if d != wd or len(created) >= needed:
+                    continue
+                start_dt = timezone.make_aware(datetime.combine(cursor, t), tz)
+                slot_end = start_dt + duration
+                if start_dt < now:
+                    continue
+                slot = TimeSlot.objects.filter(
+                    teacher=teacher, start_at=start_dt, end_at=slot_end,
+                ).first()
+                if slot is None:
+                    slot = TimeSlot.objects.create(
+                        teacher=teacher, start_at=start_dt, end_at=slot_end, status='free',
+                    )
+                elif slot.status != 'free':
+                    continue
+                slot.status = 'booked'
+                slot.save(update_fields=['status', 'updated_at'])
+                booking = Booking.objects.create(
+                    slot=slot, student=student, subject=subject,
+                    status='confirmed', is_trial=False, subscription=subscription,
+                )
+                if not (booking.meeting_url or '').strip():
+                    booking.meeting_url = booking.build_meeting_url()
+                    booking.save(update_fields=['meeting_url', 'updated_at'])
+                created.append(booking)
+            cursor += timedelta(days=1)
+        return created
+
+    @staticmethod
+    def _notify(user, title: str, text: str, url: str = '') -> None:
+        """Лёгкое in-app уведомление (не критично — заворачиваем в try)."""
+        try:
+            from teachers.models import Notification
+            Notification.objects.create(
+                title=title[:200], short_text=text[:300], full_text=text,
+                target='specific_user', target_user=user,
+                action_url=url or '', priority=5, is_active=True,
+            )
+        except Exception:
+            logger.warning('SubscriptionService._notify failed', exc_info=True)
+
     # ---- internal helpers ----
 
     # ---- cancellation / refund -------------------------------------------
 
     # Какие статусы считаем «активными» — только их можно отменить.
     CANCELLABLE_STATUSES = (
+        Subscription.Status.PENDING_APPROVAL,
         Subscription.Status.ACTIVE,
         Subscription.Status.PAUSED,
         Subscription.Status.PENDING_PAYMENT,
     )
+
+    # Сколько часов даётся ученику на оплату ПОСЛЕ одобрения заявки учителем.
+    APPROVAL_PAYMENT_HOURS = 72
 
     @classmethod
     def cancel(

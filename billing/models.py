@@ -315,17 +315,20 @@ class Subscription(models.Model):
     """
 
     class Status(models.TextChoices):
-        PENDING_PAYMENT = 'pending_payment', 'Ожидает оплаты'
+        PENDING_APPROVAL = 'pending_approval', 'Ожидает подтверждения учителя'
+        PENDING_PAYMENT = 'pending_payment', 'Одобрена, ожидает оплаты'
         ACTIVE = 'active', 'Активна'
         PAUSED = 'paused', 'Приостановлена'
         COMPLETED = 'completed', 'Завершена (все уроки)'
         EXPIRED = 'expired', 'Истёкла (срок вышел)'
         CANCELLED_BY_STUDENT = 'cancelled_by_student', 'Отменена учеником'
-        CANCELLED_BY_TEACHER = 'cancelled_by_teacher', 'Отменена учителем'
+        CANCELLED_BY_TEACHER = 'cancelled_by_teacher', 'Отклонена/отменена учителем'
         CANCELLED_BY_ADMIN = 'cancelled_by_admin', 'Отменена администрацией'
 
-    # Активные статусы — нельзя купить вторую подписку с тем же учителем и предметом.
+    # Активные статусы — нельзя создать вторую заявку/подписку с тем же
+    # учителем и предметом, пока есть незавершённая в одном из этих статусов.
     ACTIVE_STATUSES = (
+        Status.PENDING_APPROVAL,
         Status.PENDING_PAYMENT,
         Status.ACTIVE,
         Status.PAUSED,
@@ -401,6 +404,25 @@ class Subscription(models.Model):
     expires_at = models.DateTimeField(null=True, blank=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
     cancellation_reason = models.TextField(blank=True, default='')
+
+    # ---- Flow «заявка → одобрение → оплата → бронь» (ТЗ) ----
+    approved_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Когда учитель подтвердил заявку на обучение.',
+    )
+    approval_expires_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Дедлайн оплаты одобренной заявки (после — EXPIRED).',
+    )
+    preferred_schedule = models.TextField(
+        blank=True, default='',
+        help_text='Предпочтительное расписание/пожелания ученика из заявки.',
+    )
+    weekly_pattern = models.JSONField(
+        null=True, blank=True, default=None,
+        help_text='Подтверждённый недельный шаблон броней: [{"day":"monday","time":"18:00"}, ...].',
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
