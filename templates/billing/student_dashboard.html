@@ -120,7 +120,7 @@
           <div class="conv-label">{% trans 'Подписаться и продолжить' %}:</div>
           <div class="conv-tariffs">
             {% for t in item.tariffs %}
-              <a href="{% url 'subscription_buy' t.id %}" class="conv-tariff">
+              <a href="{% url 'continue_learning' teacher_id=item.teacher.id %}?subject={{ t.subject_id }}" class="conv-tariff">
                 <div class="tname">{{ t.name|default:t.subject.name }}</div>
                 <div class="tmeta">{{ t.lessons_per_week }}× /{% trans 'нед' %} · {{ t.duration_months }} {% trans 'мес' %}</div>
                 <div class="tprice">{{ t.total_price|floatformat:0|intcomma }} <small>сум</small></div>
@@ -129,7 +129,7 @@
           </div>
           <a href="{% url 'home' %}#teachers" class="conv-alt">{% trans 'Попробовать другого учителя' %} →</a>
         {% else %}
-          <a href="{% url 'home' %}#teachers" class="conv-btn">{% trans 'У учителя пока нет тарифов — посмотреть других' %} →</a>
+          <a href="{% url 'continue_learning' teacher_id=item.teacher.id %}?subject={{ item.subject.id }}" class="conv-btn">{% trans 'Продолжить обучение' %} →</a>
         {% endif %}
       </div>
     {% endfor %}
