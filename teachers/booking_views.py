@@ -815,6 +815,19 @@ def booking_cancel_api(request, booking_id):
                 logger.info(f'Trial refund: booking={booking.id}, amount={refunded}')
         except Exception as e:
             logger.error(f'Trial refund failed for booking={booking.id}: {e}', exc_info=True)
+    # Урок подписки: возвращаем его стоимость ученику и ужимаем пакет, иначе
+    # деньги зависают в эскроу и подписка не сможет завершиться.
+    elif booking.subscription_id:
+        try:
+            from billing.services import SubscriptionService
+            by = 'student' if request.user.pk == booking.student_id else 'teacher'
+            refunded = SubscriptionService.refund_lesson(
+                booking, cancelled_by=by, reason='Отмена урока',
+            )
+            if refunded > 0:
+                logger.info(f'Lesson refund: booking={booking.id}, amount={refunded}')
+        except Exception as e:
+            logger.error(f'Lesson refund failed for booking={booking.id}: {e}', exc_info=True)
 
     return JsonResponse({'booking': _booking_to_dict(booking)})
 
@@ -1183,6 +1196,13 @@ def lesson_room(request, booking_id):
         state = 'too_early'
     elif now > open_until:
         state = 'too_late'
+
+    # Учёт присутствия: фиксируем вход стороны в комнату (для no-show логики).
+    if state == 'ok':
+        try:
+            booking.record_join(is_teacher=is_teacher)
+        except Exception:
+            logger.warning('record_join failed for booking %s', booking.pk, exc_info=True)
 
     jitsi_base = (getattr(settings, 'JITSI_BASE_URL', 'https://meet.jit.si') or '').rstrip('/')
     # Домен-хост для External API (без схемы)

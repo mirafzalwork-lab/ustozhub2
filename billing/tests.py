@@ -1205,3 +1205,134 @@ class WalletRaceConditionTests(TransactionTestCase):
                              f'не должно быть 2 успешных debit\'а: {successes}')
         # 0 успехов = оба упали (SQLite-locking), 1 = классический PG-сценарий
         self.assertIn(len(successes), (0, 1))
+
+
+# ---------- Week-2: lesson refund + teacher no-show -----------------------
+
+
+class RefundLessonTests(TestCase):
+    """Возврат стоимости отменённого урока подписки (фикс «зависшего эскроу»)."""
+
+    def setUp(self):
+        from billing.platform_account import get_or_create_platform_user
+        self.platform = get_or_create_platform_user()
+        self.teacher, self.subject = _make_teacher_with_subject('w2_t')
+        self.tariff = _make_tariff(self.teacher, self.subject,
+                                   lessons_per_week=2, duration_months=1,
+                                   price=Decimal('800000'))
+        self.student = _make_student_with_balance('w2_s', balance=Decimal('1000000'))
+        self.subscription = SubscriptionService.purchase(
+            student=self.student, tariff=self.tariff,
+            idempotency_key='w2-purchase',
+        )
+
+    def _first_booking(self):
+        from teachers.models import Booking
+        return Booking.objects.filter(subscription=self.subscription).first()
+
+    def test_refund_returns_escrow_and_shrinks_package(self):
+        booking = self._first_booking()
+        self.student.wallet.refresh_from_db()
+        balance_before = self.student.wallet.balance  # 200000 после покупки
+
+        refunded = SubscriptionService.refund_lesson(booking, cancelled_by='teacher',
+                                                      reason='тест')
+        self.assertEqual(refunded, Decimal('100000.00'))
+
+        self.subscription.refresh_from_db()
+        self.student.wallet.refresh_from_db()
+        # Деньги вернулись ученику, эскроу уменьшился, пакет ужался на 1 урок.
+        self.assertEqual(self.student.wallet.balance, balance_before + Decimal('100000.00'))
+        self.assertEqual(self.subscription.escrow_balance, Decimal('700000.00'))
+        self.assertEqual(self.subscription.total_lessons, 7)
+
+    def test_refund_is_idempotent(self):
+        booking = self._first_booking()
+        SubscriptionService.refund_lesson(booking, cancelled_by='student')
+        second = SubscriptionService.refund_lesson(booking, cancelled_by='student')
+        self.assertEqual(second, Decimal('0.00'))
+        self.subscription.refresh_from_db()
+        # total_lessons ужался ровно один раз.
+        self.assertEqual(self.subscription.total_lessons, 7)
+
+    def test_refund_blocked_after_payout(self):
+        booking = self._first_booking()
+        booking.status = 'completed'
+        booking.save()
+        self.assertTrue(SubscriptionService.release_lesson_payout(booking))
+        # За оплаченный урок возврата быть не может.
+        refunded = SubscriptionService.refund_lesson(booking, cancelled_by='teacher')
+        self.assertEqual(refunded, Decimal('0.00'))
+
+    def test_last_lesson_delegates_to_full_cancel(self):
+        # Искусственно сводим подписку к одному оставшемуся уроку.
+        sub = self.subscription
+        sub.total_lessons = 1
+        sub.escrow_balance = Decimal('100000.00')
+        sub.save(update_fields=['total_lessons', 'escrow_balance'])
+        booking = self._first_booking()
+
+        SubscriptionService.refund_lesson(booking, cancelled_by='student',
+                                          reason='последний урок')
+        sub.refresh_from_db()
+        # Подписка отменена целиком, эскроу обнулён.
+        self.assertEqual(sub.status, Subscription.Status.CANCELLED_BY_STUDENT)
+        self.assertEqual(sub.escrow_balance, Decimal('0.00'))
+
+
+class TeacherNoShowSettleTests(TestCase):
+    """settle_after_end: учитель не пришёл → no_show_teacher без выплаты."""
+
+    def setUp(self):
+        from billing.platform_account import get_or_create_platform_user
+        self.platform = get_or_create_platform_user()
+        self.teacher, self.subject = _make_teacher_with_subject('w2ns_t')
+        self.tariff = _make_tariff(self.teacher, self.subject)
+        self.student = _make_student_with_balance('w2ns_s', balance=Decimal('1000000'))
+        self.subscription = SubscriptionService.purchase(
+            student=self.student, tariff=self.tariff, idempotency_key='w2ns-purchase',
+        )
+
+    def _jitsi_booking(self):
+        from teachers.models import Booking
+        b = Booking.objects.filter(subscription=self.subscription).first()
+        b.meeting_url = b.build_meeting_url()  # наш Jitsi → присутствие отслеживается
+        b.save(update_fields=['meeting_url'])
+        return b
+
+    def test_teacher_no_show_marks_status_and_refunds(self):
+        b = self._jitsi_booking()
+        self.student.wallet.refresh_from_db()
+        balance_before = self.student.wallet.balance
+        total_before = self.subscription.total_lessons
+
+        # Учитель не открывал комнату → teacher_joined_at is None.
+        result = b.settle_after_end()
+        self.assertEqual(result, 'no_show_teacher')
+        b.refresh_from_db()
+        self.assertEqual(b.status, 'no_show_teacher')
+
+        # Возврат стоимости урока ученику (то, что делает _refund_teacher_no_show).
+        SubscriptionService.refund_lesson(b, cancelled_by='teacher',
+                                          reason='Учитель не подключился')
+        self.student.wallet.refresh_from_db()
+        self.subscription.refresh_from_db()
+        self.assertEqual(self.student.wallet.balance, balance_before + Decimal('100000.00'))
+        self.assertEqual(self.subscription.total_lessons, total_before - 1)
+
+    def test_teacher_present_completes(self):
+        b = self._jitsi_booking()
+        b.record_join(is_teacher=True)
+        result = b.settle_after_end()
+        self.assertEqual(result, 'completed')
+        b.refresh_from_db()
+        self.assertEqual(b.status, 'completed')
+
+    def test_record_join_idempotent(self):
+        b = self._jitsi_booking()
+        b.record_join(is_teacher=True)
+        first = b.teacher_joined_at
+        self.assertIsNotNone(first)
+        b.record_join(is_teacher=True)
+        self.assertEqual(b.teacher_joined_at, first)
+        self.assertIsNotNone(b.started_at)

@@ -2627,6 +2627,12 @@ class Booking(models.Model):
     started_at = models.DateTimeField(null=True, blank=True)
     ended_at = models.DateTimeField(null=True, blank=True)
 
+    # Присутствие: когда каждая сторона впервые открыла комнату урока.
+    # Используется, чтобы НЕ платить учителю за урок, на который он не пришёл
+    # (см. settle_after_end / mark_completed_lessons).
+    teacher_joined_at = models.DateTimeField(null=True, blank=True)
+    student_joined_at = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -2906,6 +2912,55 @@ class Booking(models.Model):
             self.request_review()
         except Exception:
             logger.warning('request_review failed for booking %s', self.pk, exc_info=True)
+
+    def record_join(self, *, is_teacher: bool):
+        """Фиксирует факт входа стороны в комнату урока (для учёта присутствия).
+
+        Идемпотентно: первое значение не перезаписывается. Пишем через
+        .update(), чтобы не словить гонку двух одновременных открытий комнаты.
+        """
+        now = timezone.now()
+        updates = {}
+        if is_teacher and self.teacher_joined_at is None:
+            updates['teacher_joined_at'] = now
+        if (not is_teacher) and self.student_joined_at is None:
+            updates['student_joined_at'] = now
+        if not updates:
+            return
+        if self.started_at is None:
+            updates['started_at'] = now
+        updates['updated_at'] = now
+        type(self).objects.filter(pk=self.pk).update(**updates)
+        for field, value in updates.items():
+            setattr(self, field, value)
+
+    def settle_after_end(self) -> str:
+        """Решает судьбу confirmed-урока после end_at на основе присутствия.
+
+        Если урок ведётся в нашем Jitsi и учитель так и не подключился —
+        статус no_show_teacher (без выплаты; возврат ученику делает Celery-задача).
+        Иначе — completed (учитель был на месте; неявка ученика выплату не отменяет).
+
+        Для внешних ссылок (Zoom и т.п.) сигнала о присутствии нет → completed
+        по времени (прежнее поведение, чтобы не штрафовать учителя ложно).
+
+        Возвращает итоговый статус-строку.
+        """
+        from django.db import transaction
+        with transaction.atomic():
+            locked = type(self).objects.select_for_update().get(pk=self.pk)
+            if locked.status != 'confirmed':
+                return locked.status
+            teacher_no_show = locked.is_jitsi_meeting() and locked.teacher_joined_at is None
+            if teacher_no_show:
+                locked.status = 'no_show_teacher'
+                locked.ended_at = timezone.now()
+                locked.save(update_fields=['status', 'ended_at', 'updated_at'])
+                self.refresh_from_db()
+                return 'no_show_teacher'
+        # Учитель присутствовал (или присутствие не отслеживается) — завершаем штатно.
+        self.mark_completed()
+        return self.status
 
     def request_review(self):
         """Создаёт уведомление ученику с просьбой оценить прошедший урок.

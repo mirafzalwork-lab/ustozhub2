@@ -218,6 +218,14 @@ def _send_reminder_for_booking(booking, kind):
             except Exception:
                 bookings_url = '/my/bookings/'
 
+            # Не рассылаем сырую ссылку на видео-комнату (её мог бы открыть кто
+            # угодно). Вместо неё — ссылка на нашу комнату урока, доступную только
+            # участникам после аутентификации (см. lesson_room).
+            try:
+                room_url = f"{site_url}{reverse('lesson_room', args=[booking.id])}"
+            except Exception:
+                room_url = booking.meeting_url
+
             ctx = {
                 'recipient_name': recipient_user.get_full_name() or recipient_user.username,
                 'teacher_name': teacher_user.get_full_name() or teacher_user.username,
@@ -225,7 +233,7 @@ def _send_reminder_for_booking(booking, kind):
                 'subject_name': booking.subject.name if booking.subject else '',
                 'start_at': slot.start_at.strftime('%d.%m.%Y %H:%M'),
                 'duration_minutes': slot.duration_minutes,
-                'meeting_url': booking.meeting_url,
+                'meeting_url': room_url,
                 'kind': kind,
                 'site_url': site_url,
                 'bookings_url': bookings_url,
@@ -259,8 +267,8 @@ def _send_reminder_for_booking(booking, kind):
                 full = f'{short}.\n\nУчитель: {teacher_user.get_full_name() or teacher_user.username}\n' \
                        f'Ученик: {student_user.get_full_name() or student_user.username}\n' \
                        f'Когда: {ctx["start_at"]}'
-                if booking.meeting_url:
-                    full += f'\n\nСсылка: {booking.meeting_url}'
+                if room_url:
+                    full += f'\n\nСсылка на урок: {room_url}'
                 Notification.objects.create(
                     title=subject_line,
                     short_text=short,
@@ -325,22 +333,52 @@ def mark_completed_lessons() -> int:
     from .models import Booking
 
     now = timezone.now()
-    to_complete = Booking.objects.filter(
+    to_settle = Booking.objects.filter(
         status='confirmed',
         slot__end_at__lt=now,
     ).select_related('slot')
 
     count = 0
-    for booking in to_complete:
+    no_show = 0
+    for booking in to_settle:
         try:
-            booking.mark_completed()
-            count += 1
+            result = booking.settle_after_end()
+            if result == 'no_show_teacher':
+                no_show += 1
+                _refund_teacher_no_show(booking)
+            elif result == 'completed':
+                count += 1
         except Exception as e:
             logger.error(
                 f'mark_completed_lessons: failed for booking {booking.pk}: {e}',
                 exc_info=True,
             )
 
-    if count:
-        logger.info(f'mark_completed_lessons: completed {count} lessons')
+    if count or no_show:
+        logger.info(
+            f'mark_completed_lessons: completed {count}, teacher no-show {no_show}'
+        )
     return count
+
+
+def _refund_teacher_no_show(booking) -> None:
+    """Учитель не пришёл на урок → возврат ученику (без выплаты учителю).
+
+    Платный пробный → refund_trial; урок подписки → refund_lesson.
+    Бесплатный пробный / разовый урок — возвращать нечего.
+    """
+    try:
+        if booking.is_trial and booking.trial_price_paid:
+            from billing.services import TrialService
+            TrialService.refund_trial(booking, reason='Учитель не подключился к уроку')
+        elif booking.subscription_id:
+            from billing.services import SubscriptionService
+            SubscriptionService.refund_lesson(
+                booking, cancelled_by='teacher',
+                reason='Учитель не подключился к уроку',
+            )
+    except Exception as e:
+        logger.error(
+            f'_refund_teacher_no_show failed for booking {booking.pk}: {e}',
+            exc_info=True,
+        )

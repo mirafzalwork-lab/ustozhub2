@@ -595,6 +595,78 @@ class SubscriptionService:
             return not already_paid
 
     @classmethod
+    def refund_lesson(cls, booking, *, cancelled_by: str = 'teacher', reason: str = '') -> Decimal:
+        """Вернуть ученику стоимость ОДНОГО отменённого урока подписки.
+
+        Закрывает баг «зависшего эскроу»: при отмене отдельного урока деньги за
+        него раньше навсегда оставались в escrow, а подписка не могла дойти до
+        completed (completed_lessons/lessons_paid_out никогда не догоняли
+        total_lessons). Теперь стоимость урока возвращается на кошелёк ученика,
+        а пакет уменьшается на 1 урок — инвариант снова сходится.
+
+        Если это был последний урок пакета — делегируем полной отмене подписки
+        (cls.cancel), т.к. total_lessons не может стать 0 (CheckConstraint).
+
+        Идемпотентно по key='lesson-refund:<booking.id>'. Возвращает сумму
+        возврата (0, если нечего/уже возвращено/уже выплачено учителю).
+        """
+        if booking.subscription_id is None:
+            return Decimal('0.00')
+
+        refund_key = f'lesson-refund:{booking.id}'
+        payout_key = f'lesson-payout:{booking.id}'
+        if Transaction.objects.filter(idempotency_key=refund_key).exists():
+            return Decimal('0.00')
+        # За проведённый-и-оплаченный урок возврата быть не может.
+        if Transaction.objects.filter(idempotency_key=payout_key).exists():
+            return Decimal('0.00')
+
+        with transaction.atomic():
+            sub = (
+                Subscription.objects
+                .select_for_update()
+                .select_related('student')
+                .get(pk=booking.subscription_id)
+            )
+            # Повторная проверка под локом (закрывает гонку с release_lesson_payout).
+            if Transaction.objects.filter(idempotency_key=refund_key).exists():
+                return Decimal('0.00')
+            if Transaction.objects.filter(idempotency_key=payout_key).exists():
+                return Decimal('0.00')
+
+            # Последний урок пакета — нельзя уменьшить total_lessons до 0,
+            # поэтому отменяем подписку целиком (вернёт весь остаток эскроу).
+            if sub.total_lessons <= 1 and sub.status in cls.CANCELLABLE_STATUSES:
+                result = cls.cancel(sub, cancelled_by=cancelled_by, reason=reason or 'Отмена урока')
+                return Decimal(result.get('refunded', Decimal('0.00')))
+
+            amount = min(sub.price_per_lesson, sub.escrow_balance).quantize(Decimal('0.01'))
+            if amount <= 0:
+                return Decimal('0.00')
+
+            sub.escrow_balance = sub.escrow_balance - amount
+            sub.total_lessons = sub.total_lessons - 1
+            sub.save(update_fields=['escrow_balance', 'total_lessons', 'updated_at'])
+
+            WalletService.credit(
+                user=sub.student,
+                amount=amount,
+                tx_type=Transaction.Type.REFUND,
+                idempotency_key=refund_key,
+                description=f'Возврат за отменённый урок подписки. {reason}'[:300],
+                related_booking=booking,
+            )
+            Transaction.objects.filter(idempotency_key=refund_key).update(related_subscription=sub)
+
+            # Если после уменьшения пакета все оставшиеся уроки уже выплачены —
+            # подписка фактически завершена.
+            if sub.status == Subscription.Status.ACTIVE and sub.lessons_paid_out >= sub.total_lessons:
+                sub.status = Subscription.Status.COMPLETED
+                sub.save(update_fields=['status', 'updated_at'])
+
+            return amount
+
+    @classmethod
     def _generate_bookings_for_subscription(cls, subscription: Subscription) -> list:
         """Заполняет slots/bookings для подписки из teacher.weekly_schedule.
 
