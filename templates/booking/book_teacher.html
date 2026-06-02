@@ -285,7 +285,7 @@
         </div>
         <footer class="cal-modal__foot" id="book-foot">
             <div style="flex:1; font-size:12px; color:var(--cal-muted,#64748B);" id="book-foot-hint">
-                {% trans "У учителя будет 15 минут для подтверждения" %}
+                {% trans "Учитель подтвердит заявку до начала урока — вы получите уведомление" %}
             </div>
             <button type="button" class="btn btn-secondary" data-close id="book-cancel">{% trans "Отмена" %}</button>
             <button type="button" class="btn btn-primary" id="book-confirm">
@@ -325,7 +325,7 @@ window.UstozBook = {
     i18n: {
         loginRequired: "{% trans 'Войдите в систему, чтобы забронировать урок' %}",
         teachersCantBook: "{% trans 'Учителя не могут бронировать уроки' %}",
-        success: "{% trans 'Заявка отправлена! Учителю даётся 15 минут.' %}",
+        success: "{% trans 'Заявка отправлена! Учитель подтвердит её до начала урока.' %}",
         minutes: "{% trans 'мин' %}",
         priceFree: "{% trans 'Пробный урок — бесплатно' %}",
         priceFmt: "{% trans 'Стоимость урока:' %}",

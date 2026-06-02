@@ -711,13 +711,14 @@ def booking_create_api(request):
         if teacher_subject is None:
             return _json_error('Учитель не преподаёт этот предмет', status=400)
 
-        # Анти-абуз: один пробный на (student, teacher, subject).
+        # Анти-абуз: один пробный на пару (student, teacher) — см. _existing_trial_qs.
         from billing.services import TrialService
         if TrialService._existing_trial_qs(
-            request.user, slot_obj.teacher, subject,
+            request.user, slot_obj.teacher,
         ).exists():
             return _json_error(
-                'У вас уже есть пробный урок с этим учителем по этому предмету.',
+                'У вас уже был пробный урок с этим учителем. '
+                'Пробный доступен только один раз — оформите подписку, чтобы продолжить.',
                 status=409,
             )
 
@@ -1279,7 +1280,7 @@ def _notify_teacher_about_booking(booking: Booking):
             full_text=(
                 f'Ученик {student_name} запросил бронирование на {slot_str}.\n\n'
                 f'Сообщение: {booking.student_message or "—"}\n\n'
-                f'Подтвердите или отклоните до {deadline_str} (за час до начала урока), '
+                f'Подтвердите или отклоните до {deadline_str} (не позднее чем за 5 минут до начала урока), '
                 f'иначе слот снова станет свободным.'
             ),
             target='specific_user',

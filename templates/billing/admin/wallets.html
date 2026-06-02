@@ -62,6 +62,8 @@
         <h2>💰 Пополнить / Списать</h2>
         <form method="post" action="{% url 'admin_wallet_topup_action' user.id %}" id="topup-form">
           {% csrf_token %}
+          {# Одноразовый токен: повторный submit той же формы (двойной клик / refresh) → no-op #}
+          <input type="hidden" name="op_token" value="{{ op_token }}">
           <div class="ab-form-row">
             <label>Операция</label>
             <select name="operation" required id="topup-op">

@@ -184,6 +184,8 @@ def wallet_search(request):
     return render(request, 'billing/admin/wallets.html', {
         'q': q, 'results': results, 'user': user,
         'wallet': wallet, 'transactions': transactions,
+        # Одноразовый токен идемпотентности для формы top-up (см. wallet_topup_action).
+        'op_token': uuid.uuid4().hex,
     })
 
 
@@ -212,7 +214,16 @@ def wallet_topup_action(request, user_id):
         messages.error(request, 'Сумма должна быть положительной.')
         return redirect(back_url)
 
-    idem = f'admin-{operation}:{uuid.uuid4()}'
+    # Идемпотентность: ключ выводится из одноразового токена формы, а НЕ из
+    # свежего uuid на каждый запрос. Двойной клик / refresh / resubmit шлёт тот
+    # же op_token → WalletService увидит существующую транзакцию и сделает no-op
+    # вместо повторного зачисления. Fallback на uuid — только если токена нет
+    # (старая открытая вкладка), чтобы не сломать операцию.
+    op_token = (request.POST.get('op_token') or '').strip()[:64]
+    if op_token:
+        idem = f'admin-{operation}:{target.pk}:{op_token}'
+    else:
+        idem = f'admin-{operation}:{uuid.uuid4()}'
     description = f'[admin {request.user.username}] {reason or operation}'
 
     try:

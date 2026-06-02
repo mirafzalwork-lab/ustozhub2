@@ -865,15 +865,25 @@ class TrialService:
     """
 
     @staticmethod
-    def _existing_trial_qs(student, teacher, subject):
-        """Уже существующий пробный (любой непустой статус) у этого ученика."""
+    def _existing_trial_qs(student, teacher, subject=None):
+        """Уже существующий пробный у этого ученика с этим УЧИТЕЛЕМ.
+
+        Правило (ТЗ): один пробный на пару (student, teacher) — не на предмет.
+        Поэтому `subject` в фильтре НЕ участвует (параметр оставлен в сигнатуре
+        для обратной совместимости вызовов).
+
+        «Израсходованным» считаем любой пробный, КРОМЕ не состоявшихся по вине
+        учителя/системы (отклонён учителем или истёк без подтверждения) — там
+        ученику честно даём попробовать снова. Собственная отмена ученика
+        (cancelled_by_student) попытку расходует — иначе тривиальный обход
+        «отменил → забронировал заново» давал бы безлимит бесплатных пробных.
+        """
         from teachers.models import Booking
         return Booking.objects.filter(
             student=student,
             slot__teacher=teacher,
-            subject=subject,
             is_trial=True,
-        ).exclude(status__in=['expired', 'cancelled_by_student', 'cancelled_by_teacher'])
+        ).exclude(status__in=['expired', 'cancelled_by_teacher'])
 
     @classmethod
     def book_paid_trial(
@@ -900,10 +910,11 @@ class TrialService:
 
         with transaction.atomic():
             # 1) Анти-абуз: один пробный на (student, teacher, subject).
-            existing = cls._existing_trial_qs(student, teacher, subject).first()
+            existing = cls._existing_trial_qs(student, teacher).first()
             if existing is not None:
                 raise TrialAlreadyTaken(
-                    'У вас уже есть пробный урок с этим учителем по этому предмету.'
+                    'У вас уже был пробный урок с этим учителем. '
+                    'Пробный доступен только один раз — оформите подписку, чтобы продолжить.'
                 )
 
             # 2) Проверка слота (быстрая, до debit'а).

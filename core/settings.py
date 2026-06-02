@@ -194,6 +194,17 @@ else:
         }
     }
 
+# В production запрещаем неявный SQLite-fallback. На SQLite select_for_update —
+# no-op, а вся БД берёт единый write-lock: это ломает корректность бронирований
+# и денежных выплат под конкурентностью (см. deploy/DEPLOY.md). Отказ должен быть
+# громким на старте, а не тихой потерей денег под нагрузкой.
+if not DEBUG and DATABASES['default']['ENGINE'].endswith('sqlite3'):
+    raise ImproperlyConfigured(
+        'DATABASE_URL не задан (или указывает на SQLite), но DEBUG=False. '
+        'Платёжная и booking-логика требуют PostgreSQL (select_for_update). '
+        'Задайте DATABASE_URL=postgres://user:pass@host:5432/dbname.'
+    )
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {

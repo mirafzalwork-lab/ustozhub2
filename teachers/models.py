@@ -2656,18 +2656,21 @@ class Booking(models.Model):
 
     # ---------- Lifecycle методы ----------
 
-    # За сколько часов до начала урока истекает окно подтверждения.
-    CONFIRM_LEAD_HOURS = 1
+    # За сколько минут до начала урока истекает окно подтверждения.
+    # Бизнес-правило: учитель может подтвердить заявку (в т.ч. пробную)
+    # вплоть до CONFIRM_LEAD_MINUTES минут до старта — без искусственных
+    # ограничений «за час».
+    CONFIRM_LEAD_MINUTES = 5
 
     @classmethod
     def compute_hold_expiry(cls, slot, now=None):
-        """Дедлайн подтверждения брони: за CONFIRM_LEAD_HOURS до начала урока.
+        """Дедлайн подтверждения брони: за CONFIRM_LEAD_MINUTES до начала урока.
 
-        Если до урока осталось меньше часа — даём учителю подтвердить
+        Если до урока осталось меньше этого окна — даём учителю подтвердить
         вплоть до самого начала (иначе заявка истекла бы сразу).
         """
         now = now or timezone.now()
-        deadline = slot.start_at - timedelta(hours=cls.CONFIRM_LEAD_HOURS)
+        deadline = slot.start_at - timedelta(minutes=cls.CONFIRM_LEAD_MINUTES)
         if deadline <= now:
             deadline = slot.start_at
         return deadline
