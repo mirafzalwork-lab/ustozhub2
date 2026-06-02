@@ -541,6 +541,7 @@ class Subscription(models.Model):
         if total == 0:
             return 0
         return int(round(100 * self.homework_graded / total))
+    
 
     @property
     def average_grade(self):

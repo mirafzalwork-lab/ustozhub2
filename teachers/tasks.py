@@ -198,7 +198,7 @@ def _send_reminder_for_booking(booking, kind):
     from django.core.mail import EmailMultiAlternatives
     from django.template.loader import render_to_string
     from django.urls import reverse
-    from django.utils import translation
+    from django.utils import translation, timezone
     from .models import Notification
 
     slot = booking.slot
@@ -231,7 +231,9 @@ def _send_reminder_for_booking(booking, kind):
                 'teacher_name': teacher_user.get_full_name() or teacher_user.username,
                 'student_name': student_user.get_full_name() or student_user.username,
                 'subject_name': booking.subject.name if booking.subject else '',
-                'start_at': slot.start_at.strftime('%d.%m.%Y %H:%M'),
+                # localtime: slot.start_at хранится в UTC (USE_TZ=True); без
+                # перевода в Asia/Tashkent напоминание показывало бы время на 5ч раньше.
+                'start_at': timezone.localtime(slot.start_at).strftime('%d.%m.%Y %H:%M'),
                 'duration_minutes': slot.duration_minutes,
                 'meeting_url': room_url,
                 'kind': kind,
@@ -329,13 +331,18 @@ def mark_completed_lessons() -> int:
     Помечает confirmed-бронирования как completed после end_at слота.
     Запускается Celery Beat каждые 5 минут.
     """
+    from datetime import timedelta
     from django.utils import timezone
     from .models import Booking
 
     now = timezone.now()
+    # Завершаем урок только после закрытия окна входа в комнату (end_at + 30 мин,
+    # как в lesson_room). Иначе опоздавший/затянувшийся урок мог быть помечен
+    # no_show_teacher до того, как учитель реально подключился.
+    settle_cutoff = now - timedelta(minutes=30)
     to_settle = Booking.objects.filter(
         status='confirmed',
-        slot__end_at__lt=now,
+        slot__end_at__lt=settle_cutoff,
     ).select_related('slot')
 
     count = 0

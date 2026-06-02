@@ -1161,6 +1161,79 @@ class ProgressTests(TestCase):
         self.assertEqual(r.status_code, 404)
 
 
+class BugfixHardeningTests(TestCase):
+    """Регрессии на исправленные баги (деньги/lifecycle)."""
+
+    def setUp(self):
+        from billing.platform_account import get_or_create_platform_user
+        self.platform = get_or_create_platform_user()
+        self.teacher, self.subject = _make_teacher_with_subject('bf_t')
+        self.tariff = _make_tariff(self.teacher, self.subject, lessons_per_week=2,
+                                   duration_months=1, price=Decimal('800000'))
+        self.student = _make_student_with_balance('bf_s', balance=Decimal('1000000'))
+        self.sub = SubscriptionService.purchase(
+            student=self.student, tariff=self.tariff, idempotency_key='bf-buy',
+        )
+
+    def test_payout_blocked_after_refund(self):
+        """Возврат за урок → выплата учителю невозможна (нет двойной оплаты)."""
+        from teachers.models import Booking
+        b = Booking.objects.filter(subscription=self.sub).first()
+        b.status = 'completed'; b.save()
+        SubscriptionService.refund_lesson(b, cancelled_by='admin', reason='спор')
+        ok = SubscriptionService.release_lesson_payout(b)
+        self.assertFalse(ok)
+        self.teacher.user.wallet.refresh_from_db()
+        self.assertEqual(self.teacher.user.wallet.balance, Decimal('0.00'))
+
+    def test_cannot_cancel_started_lesson(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from teachers.models import Booking
+        b = Booking.objects.filter(subscription=self.sub).select_related('slot').first()
+        # Двигаем слот в прошлое (имитируем уже начавшийся урок).
+        b.slot.start_at = timezone.now() - timedelta(minutes=10)
+        b.slot.end_at = timezone.now() + timedelta(minutes=50)
+        b.slot.save(update_fields=['start_at', 'end_at'])
+        b.status = 'confirmed'; b.save()
+        with self.assertRaises(ValueError):
+            b.cancel_by_student()
+        with self.assertRaises(ValueError):
+            b.cancel_by_teacher()
+
+    def test_create_hold_rejects_started_slot(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from teachers.models import TimeSlot, Booking, SlotUnavailable
+        slot = TimeSlot.objects.create(
+            teacher=self.teacher,
+            start_at=timezone.now() - timedelta(minutes=1),
+            end_at=timezone.now() + timedelta(minutes=59),
+            status='free',
+        )
+        with self.assertRaises(SlotUnavailable):
+            Booking.create_hold(slot_id=slot.id, student=self.student, subject=self.subject)
+
+    def test_cancel_settles_past_confirmed_lesson(self):
+        """Прошедший confirmed-урок при отмене подписки оплачивается учителю,
+        а не молча возвращается ученику (#3 gap)."""
+        from datetime import timedelta
+        from django.utils import timezone
+        from teachers.models import Booking
+        b = Booking.objects.filter(subscription=self.sub).select_related('slot').first()
+        # Урок прошёл, учитель присутствовал, но mark_completed не успел.
+        b.slot.start_at = timezone.now() - timedelta(hours=2)
+        b.slot.end_at = timezone.now() - timedelta(hours=1)
+        b.slot.save(update_fields=['start_at', 'end_at'])
+        b.meeting_url = b.build_meeting_url()
+        b.record_join(is_teacher=True)  # учитель был
+        b.save()
+        SubscriptionService.cancel(self.sub, cancelled_by='student', reason='тест')
+        self.teacher.user.wallet.refresh_from_db()
+        # За проведённый урок учитель получил 85% (800000/8=100000 → 85000).
+        self.assertEqual(self.teacher.user.wallet.balance, Decimal('85000.00'))
+
+
 class WalletRaceConditionTests(TransactionTestCase):
     """Race test: два параллельных debit'а на 60 при балансе 100.
 

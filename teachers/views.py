@@ -1737,9 +1737,14 @@ def start_conversation(request, user_id):
     
     # Определяем, кто учитель, а кто ученик
     if current_user.user_type == 'teacher':
-        teacher_profile = current_user.teacher_profile
+        try:
+            teacher_profile = current_user.teacher_profile
+        except TeacherProfile.DoesNotExist:
+            # «Сирота»-учитель без профиля (брошенная регистрация) — не 500.
+            messages.error(request, 'Завершите регистрацию учителя, чтобы писать сообщения')
+            return redirect('home')
         student = target_user
-        
+
         # Проверяем, что целевой пользователь - ученик
         if target_user.user_type != 'student':
             messages.error(request, 'Вы можете писать только ученикам')

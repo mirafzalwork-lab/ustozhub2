@@ -2718,8 +2718,12 @@ class Booking(models.Model):
             slot = TimeSlot.objects.select_for_update().get(pk=slot_id)
             if slot.status != 'free':
                 raise SlotUnavailable(f'Slot {slot_id} is {slot.status}, not free')
-            if slot.is_in_past:
-                raise SlotUnavailable(f'Slot {slot_id} is in the past')
+            # Нельзя бронировать слот, который уже начался (или прошёл): урок
+            # «в процессе/в прошлом» не подлежит бронированию. Используем start_at,
+            # а не end_at (is_in_past), иначе слот «идёт прямо сейчас» считался бы
+            # доступным и hold рождался бы уже протухшим.
+            if slot.start_at <= timezone.now():
+                raise SlotUnavailable(f'Slot {slot_id} has already started')
             # Нельзя бронировать слот учителя, снятого с публикации/модерации
             # (прямой POST в API мимо публичного списка слотов).
             teacher = slot.teacher
@@ -2822,6 +2826,10 @@ class Booking(models.Model):
             locked = type(self).objects.select_for_update().get(pk=self.pk)
             if locked.status not in ('pending', 'confirmed'):
                 raise ValueError(f'Cannot cancel booking in status {locked.status}')
+            # Нельзя отменить уже начавшийся/прошедший урок (иначе возврат за
+            # проведённый урок). Спор по такому уроку — через dispute-флоу.
+            if locked.slot.start_at <= timezone.now():
+                raise ValueError('Нельзя отменить начавшийся урок')
             locked.status = 'cancelled_by_student'
             locked.expires_at = None
             locked.save(update_fields=['status', 'expires_at', 'updated_at'])
@@ -2842,6 +2850,8 @@ class Booking(models.Model):
             locked = type(self).objects.select_for_update().get(pk=self.pk)
             if locked.status not in ('pending', 'confirmed'):
                 raise ValueError(f'Cannot cancel booking in status {locked.status}')
+            if locked.slot.start_at <= timezone.now():
+                raise ValueError('Нельзя отменить начавшийся урок')
             locked.status = 'cancelled_by_teacher'
             locked.expires_at = None
             locked.save(update_fields=['status', 'expires_at', 'updated_at'])
@@ -2860,20 +2870,24 @@ class Booking(models.Model):
         """
         from django.db import transaction
         with transaction.atomic():
-            if self.status not in ('pending', 'confirmed'):
-                raise ValueError(f'Нельзя перенести бронь в статусе {self.get_status_display()}')
-            if str(new_slot_id) == str(self.slot_id):
+            # Перечитываем бронь под локом — иначе параллельный confirm() мог
+            # уже перевести её в confirmed/booked между read во вьюхе и сюда,
+            # и мы бы откатили подтверждённый урок на стейле.
+            locked = type(self).objects.select_for_update().get(pk=self.pk)
+            if locked.status not in ('pending', 'confirmed'):
+                raise ValueError(f'Нельзя перенести бронь в статусе {locked.get_status_display()}')
+            if str(new_slot_id) == str(locked.slot_id):
                 raise ValueError('Это тот же самый слот')
 
             new_slot = TimeSlot.objects.select_for_update().get(pk=new_slot_id)
-            if new_slot.teacher_id != self.slot.teacher_id:
+            if new_slot.teacher_id != locked.slot.teacher_id:
                 raise ValueError('Новый слот принадлежит другому учителю')
             if new_slot.status != 'free':
                 raise SlotUnavailable(f'Слот {new_slot_id} уже занят')
-            if new_slot.is_in_past:
-                raise SlotUnavailable(f'Слот {new_slot_id} в прошлом')
+            if new_slot.start_at <= timezone.now():
+                raise SlotUnavailable(f'Слот {new_slot_id} уже начался или в прошлом')
 
-            old_slot = TimeSlot.objects.select_for_update().get(pk=self.slot_id)
+            old_slot = TimeSlot.objects.select_for_update().get(pk=locked.slot_id)
             old_slot.status = 'free'
             old_slot.hold_expires_at = None
             old_slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
@@ -2883,10 +2897,11 @@ class Booking(models.Model):
             new_slot.hold_expires_at = expires
             new_slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
 
-            self.slot = new_slot
-            self.status = 'pending'
-            self.expires_at = expires
-            self.save(update_fields=['slot', 'status', 'expires_at', 'updated_at'])
+            locked.slot = new_slot
+            locked.status = 'pending'
+            locked.expires_at = expires
+            locked.save(update_fields=['slot', 'status', 'expires_at', 'updated_at'])
+            self.refresh_from_db()
 
     def expire(self):
         """Hold протух (вызывается Celery задачей). slot снова free.

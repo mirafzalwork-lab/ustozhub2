@@ -188,8 +188,14 @@ class WalletService:
                     reference=reference,
                 )
             except IntegrityError:
-                # Гонка: другой процесс успел создать транзакцию между select и create.
-                return Transaction.objects.get(idempotency_key=idempotency_key)
+                # Гонка по idempotency_key: другой процесс успел создать ту же
+                # транзакцию между select и create → возвращаем её. Но если это
+                # НЕ дубль ключа (например, нарушение другого constraint) —
+                # пробрасываем реальную ошибку, а не маскируем под идемпотентность.
+                existing = Transaction.objects.filter(idempotency_key=idempotency_key).first()
+                if existing is not None:
+                    return existing
+                raise
 
             wallet.balance = new_balance
             wallet.last_transaction_at = timezone.now()
@@ -829,6 +835,27 @@ class SubscriptionService:
 
             # 2) Отменить будущие confirmed bookings + освободить слоты.
             now = timezone.now()
+
+            # 1.5) Прошедшие, но ещё не завершённые уроки (slot закончился, а
+            # mark_completed_lessons не успел) доурегулируем как обычно: учитель
+            # был → completed + выплата; не был → no_show (деньги вернутся ниже
+            # в остатке эскроу). Иначе их стоимость молча уходила бы ученику.
+            past_unsettled = list(
+                Booking.objects
+                .filter(subscription=sub, status='confirmed', slot__end_at__lte=now)
+                .select_related('slot')
+            )
+            for b in past_unsettled:
+                try:
+                    if b.settle_after_end() == 'completed':
+                        cls.release_lesson_payout(b)
+                except PayoutError:
+                    pass
+                except Exception:
+                    logger.warning('cancel(): settle past lesson %s failed', b.pk, exc_info=True)
+            if past_unsettled:
+                sub.refresh_from_db()  # escrow/lessons_paid_out изменились
+
             future = list(
                 Booking.objects
                 .filter(subscription=sub, status__in=('confirmed', 'pending'),
@@ -907,6 +934,10 @@ class SubscriptionService:
             booking_id=booking.id, status=LessonDispute.Status.OPEN,
         ).exists():
             raise PayoutError('по уроку открыт спор — выплата заморожена')
+        # Если за урок уже сделан возврат ученику (спор решён в его пользу /
+        # отмена) — платить учителю НЕЛЬЗЯ, иначе урок «оплачивается» дважды.
+        if Transaction.objects.filter(idempotency_key=f'lesson-refund:{booking.id}').exists():
+            return False
 
         payout_key = f'lesson-payout:{booking.id}'
         commission_key = f'commission:{booking.id}'

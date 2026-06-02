@@ -24,7 +24,7 @@
   {% if teacher.total_reviews %}
   ,"aggregateRating": {
     "@type": "AggregateRating",
-    "ratingValue": "{{ teacher.average_rating|default:0|floatformat:1 }}",
+    "ratingValue": "{{ teacher.rating|default:0|floatformat:1 }}",
     "reviewCount": "{{ teacher.total_reviews }}",
     "bestRating": "5",
     "worstRating": "1"

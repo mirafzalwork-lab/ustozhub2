@@ -992,6 +992,12 @@ def booking_set_meeting_url_api(request, booking_id):
     if not ok:
         return _json_error(err, status=400)
 
+    # Пустую ссылку трактуем как «вернуть нашу Jitsi-комнату», а НЕ «убрать
+    # комнату». Иначе учитель мог обнулить meeting_url → is_jitsi_meeting()==False
+    # → settle_after_end никогда не пометит no-show → выплата без присутствия.
+    if not url:
+        url = booking.build_meeting_url()
+
     booking.meeting_url = url
     booking.save(update_fields=['meeting_url', 'updated_at'])
     return JsonResponse({'booking': _booking_to_dict(booking)})
@@ -1260,6 +1266,18 @@ def lesson_attendance_api(request, booking_id):
     is_student = (booking.student_id == user.pk)
     if not (is_teacher or is_student):
         return _json_error('Доступ запрещён', status=403)
+
+    # Присутствие засчитываем только для подтверждённого урока и только в окне
+    # реального занятия (−15 мин … +30 мин), как в lesson_room. Иначе сторона
+    # могла бы «отметиться» в любой момент и обойти детект no-show / накрутить
+    # секунды присутствия.
+    from datetime import timedelta
+    now = timezone.now()
+    if booking.status != 'confirmed':
+        return _json_error('Урок не подтверждён', status=409)
+    if not (booking.slot.start_at - timedelta(minutes=15) <= now
+            <= booking.slot.end_at + timedelta(minutes=30)):
+        return _json_error('Вне окна урока', status=409)
 
     event = (request.POST.get('event') or '').strip()
     if event == 'join':
