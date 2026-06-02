@@ -351,6 +351,7 @@
         if (!res.ok) {
             const err = new Error(data.error || `HTTP ${res.status}`);
             err.status = res.status;
+            err.data = data;
             throw err;
         }
         return data;
@@ -447,7 +448,23 @@
             const ev = calendar.getEventById(bookedId);
             if (ev) ev.remove();
         } catch (e) {
-            $error.textContent = e.message;
+            const topupUrl = e.data && e.data.topup_url;
+            if (topupUrl) {
+                // Недостаточно средств → показываем кнопку «Пополнить баланс»,
+                // которая ведёт на пополнение и возвращает обратно к бронированию.
+                $error.textContent = '';
+                const msg = document.createElement('div');
+                msg.textContent = e.message;
+                msg.style.marginBottom = '10px';
+                const btn = document.createElement('a');
+                btn.href = topupUrl;
+                btn.className = 'btn btn-primary';
+                btn.textContent = (cfg.i18n && cfg.i18n.topup) || 'Пополнить баланс';
+                $error.appendChild(msg);
+                $error.appendChild(btn);
+            } else {
+                $error.textContent = e.message;
+            }
             $error.hidden = false;
         } finally {
             $confirm.disabled = false;

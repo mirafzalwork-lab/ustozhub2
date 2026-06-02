@@ -139,8 +139,8 @@ def _slot_to_event(slot: TimeSlot) -> dict:
     }
 
 
-def _json_error(message: str, status: int = 400):
-    return JsonResponse({'error': message}, status=status)
+def _json_error(message: str, status: int = 400, **extra):
+    return JsonResponse({'error': message, **extra}, status=status)
 
 
 _VALID_DAY_KEYS = {'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'}
@@ -755,10 +755,18 @@ def booking_create_api(request):
                     message=message,
                 )
             except InsufficientFunds as e:
+                from urllib.parse import urlencode
+                topup_url = reverse('wallet_topup_request') + '?' + urlencode({
+                    'amount': int(teacher_subject.trial_price),
+                    'next': reverse('book_teacher_page',
+                                    kwargs={'teacher_id': slot_obj.teacher_id}),
+                })
                 return _json_error(
                     f'Недостаточно средств на балансе для оплаты пробного урока '
                     f'({int(teacher_subject.trial_price)} сум). Пополните кошелёк.',
                     status=402,
+                    code='insufficient_funds',
+                    topup_url=topup_url,
                 )
             except TrialAlreadyTaken as e:
                 return _json_error(str(e), status=409)
