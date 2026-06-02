@@ -420,6 +420,10 @@ class SubscriptionService:
             return existing
 
         price_per_month = Decimal(price_per_month)
+        # Защита от мусорных параметров (прямой вызов мимо формы): total_lessons
+        # обязан быть > 0 (иначе нарушится CheckConstraint подписки).
+        if lessons_per_week < 1 or duration_months < 1 or price_per_month <= 0:
+            raise ValueError('Некорректные параметры тарифа.')
         total_lessons = lessons_per_week * Tariff.WEEKS_PER_MONTH * duration_months
         price_total = (price_per_month * duration_months).quantize(Decimal('0.01'))
         price_per_lesson = (

@@ -1729,3 +1729,244 @@ class EnrollmentViewTests(TestCase):
         self.assertEqual(r.status_code, 404)
         sub.refresh_from_db()
         self.assertEqual(sub.status, Subscription.Status.PENDING_APPROVAL)
+
+
+# ---------- Enrollment flow: integration (flow → lessons → payout) --------
+
+
+class EnrollmentIntegrationTests(TestCase):
+    def setUp(self):
+        from billing.platform_account import get_or_create_platform_user
+        self.platform = get_or_create_platform_user()
+        self.teacher, self.subject = _make_teacher_with_subject('in_t')
+        self.student = _make_student_with_balance('in_s', balance=Decimal('3000000'))
+
+    def _active_scheduled(self, lpw=2, months=1, price=Decimal('800000'),
+                          pattern=None, key='1'):
+        tariff = _make_tariff(self.teacher, self.subject,
+                              lessons_per_week=lpw, duration_months=months, price=price)
+        sub = SubscriptionService.create_request(
+            student=self.student, teacher=self.teacher, subject=self.subject,
+            lessons_per_week=lpw, lesson_duration_minutes=60, duration_months=months,
+            price_per_month=price, tariff=tariff, preferred_schedule='', idempotency_key=f'in-{key}',
+        )
+        SubscriptionService.approve_request(sub)
+        SubscriptionService.pay(sub, idempotency_key=f'in-pay-{key}')
+        sub.refresh_from_db()
+        pattern = pattern or [{'day': 'monday', 'time': '10:00'}, {'day': 'wednesday', 'time': '10:00'}]
+        SubscriptionService.book_schedule(sub, pattern)
+        sub.refresh_from_db()
+        return sub
+
+    def test_create_request_rejects_bad_params(self):
+        with self.assertRaises(ValueError):
+            SubscriptionService.create_request(
+                student=self.student, teacher=self.teacher, subject=self.subject,
+                lessons_per_week=0, lesson_duration_minutes=60, duration_months=1,
+                price_per_month=Decimal('800000'), tariff=None,
+                preferred_schedule='', idempotency_key='bad-1',
+            )
+        with self.assertRaises(ValueError):
+            SubscriptionService.create_request(
+                student=self.student, teacher=self.teacher, subject=self.subject,
+                lessons_per_week=2, lesson_duration_minutes=60, duration_months=1,
+                price_per_month=Decimal('0'), tariff=None,
+                preferred_schedule='', idempotency_key='bad-2',
+            )
+
+    def test_full_flow_to_payout(self):
+        sub = self._active_scheduled()
+        self.assertEqual(sub.bookings.count(), 8)
+        b = sub.bookings.first()
+        b.status = 'completed'
+        b.save()  # сигнал completed_lessons += 1
+        self.assertTrue(SubscriptionService.release_lesson_payout(b))
+        sub.refresh_from_db()
+        self.teacher.user.wallet.refresh_from_db()
+        self.platform.wallet.refresh_from_db()
+        self.assertEqual(self.teacher.user.wallet.balance, Decimal('85000.00'))
+        self.assertEqual(self.platform.wallet.balance, Decimal('15000.00'))
+        self.assertEqual(sub.escrow_balance, Decimal('700000.00'))
+        self.assertEqual(sub.lessons_paid_out, 1)
+
+    def test_multi_month_books_all_lessons(self):
+        sub = self._active_scheduled(lpw=2, months=2, price=Decimal('800000'), key='mm')
+        self.assertEqual(sub.total_lessons, 16)  # 2 × 4 × 2
+        self.assertEqual(sub.bookings.count(), 16)
+
+    def test_book_schedule_skips_taken_slot(self):
+        from datetime import datetime, timedelta
+        from django.utils import timezone
+        from teachers.models import TimeSlot, Booking
+        # Готовим активную подписку (без расписания) — создаём вручную через сервис.
+        tariff = _make_tariff(self.teacher, self.subject, lessons_per_week=2,
+                              duration_months=1, price=Decimal('800000'))
+        sub = SubscriptionService.create_request(
+            student=self.student, teacher=self.teacher, subject=self.subject,
+            lessons_per_week=2, lesson_duration_minutes=60, duration_months=1,
+            price_per_month=Decimal('800000'), tariff=tariff,
+            preferred_schedule='', idempotency_key='in-skip',
+        )
+        SubscriptionService.approve_request(sub)
+        SubscriptionService.pay(sub, idempotency_key='in-skip-pay')
+        sub.refresh_from_db()
+        # Занимаем ближайший понедельник 10:00 другим учеником.
+        tz = timezone.get_current_timezone()
+        now = timezone.now()
+        d = (now + timedelta(days=1)).date()
+        while d.weekday() != 0:  # ближайший понедельник
+            d += timedelta(days=1)
+        start = timezone.make_aware(datetime.combine(d, datetime.min.time()).replace(hour=10), tz)
+        TimeSlot.objects.create(teacher=self.teacher, start_at=start,
+                                end_at=start + timedelta(minutes=60), status='booked')
+        created = SubscriptionService.book_schedule(
+            sub, [{'day': 'monday', 'time': '10:00'}, {'day': 'wednesday', 'time': '10:00'}],
+        )
+        # Всё равно набрали 8 уроков, и ни один не попал на занятый слот.
+        self.assertEqual(len(created), 8)
+        self.assertFalse(any(b.slot.start_at == start for b in created))
+
+    def test_reschedule_keeps_subscription_and_escrow(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from teachers.models import TimeSlot
+        sub = self._active_scheduled(key='resch')
+        b = sub.bookings.order_by('slot__start_at').first()
+        escrow_before = sub.escrow_balance
+        new_start = b.slot.start_at + timedelta(days=14)
+        new_slot = TimeSlot.objects.create(
+            teacher=self.teacher, start_at=new_start,
+            end_at=new_start + timedelta(minutes=60), status='free',
+        )
+        b.reschedule_by_student(new_slot.id)
+        b.refresh_from_db()
+        sub.refresh_from_db()
+        self.assertEqual(b.slot_id, new_slot.id)
+        self.assertEqual(b.subscription_id, sub.id)
+        self.assertEqual(b.status, 'pending')  # учитель переподтверждает
+        self.assertEqual(sub.escrow_balance, escrow_before)
+
+    def test_cancel_lesson_refund_in_flow(self):
+        sub = self._active_scheduled(key='cl')
+        b = sub.bookings.first()
+        self.student.wallet.refresh_from_db()
+        bal_before = self.student.wallet.balance
+        refunded = SubscriptionService.refund_lesson(b, cancelled_by='student')
+        self.assertEqual(refunded, Decimal('100000.00'))
+        sub.refresh_from_db()
+        self.student.wallet.refresh_from_db()
+        self.assertEqual(sub.total_lessons, 7)
+        self.assertEqual(sub.escrow_balance, Decimal('700000.00'))
+        self.assertEqual(self.student.wallet.balance, bal_before + Decimal('100000.00'))
+
+    def test_cancel_subscription_frees_future_slots(self):
+        sub = self._active_scheduled(key='free')
+        slot_ids = list(sub.bookings.values_list('slot_id', flat=True))
+        SubscriptionService.cancel(sub, cancelled_by='student')
+        from teachers.models import TimeSlot, Booking
+        # Будущие брони отменены, их слоты свободны.
+        active = Booking.objects.filter(subscription=sub, status__in=('pending', 'confirmed')).count()
+        self.assertEqual(active, 0)
+        freed = TimeSlot.objects.filter(id__in=slot_ids, status='free').count()
+        self.assertEqual(freed, len(slot_ids))
+
+    def test_can_request_again_after_reject(self):
+        tariff = _make_tariff(self.teacher, self.subject, lessons_per_week=2,
+                              duration_months=1, price=Decimal('800000'))
+        sub = SubscriptionService.create_request(
+            student=self.student, teacher=self.teacher, subject=self.subject,
+            lessons_per_week=2, lesson_duration_minutes=60, duration_months=1,
+            price_per_month=Decimal('800000'), tariff=tariff,
+            preferred_schedule='', idempotency_key='rej-1',
+        )
+        SubscriptionService.reject_request(sub, reason='нет мест')
+        # После отклонения можно подать заявку заново.
+        sub2 = SubscriptionService.create_request(
+            student=self.student, teacher=self.teacher, subject=self.subject,
+            lessons_per_week=2, lesson_duration_minutes=60, duration_months=1,
+            price_per_month=Decimal('800000'), tariff=tariff,
+            preferred_schedule='', idempotency_key='rej-2',
+        )
+        self.assertEqual(sub2.status, Subscription.Status.PENDING_APPROVAL)
+        self.assertNotEqual(sub.id, sub2.id)
+
+    def test_ledger_invariant_after_payout(self):
+        from django.db.models import Sum
+        sub = self._active_scheduled(key='ledger')
+        b = sub.bookings.first()
+        b.status = 'completed'
+        b.save()
+        SubscriptionService.release_lesson_payout(b)
+        # Для каждого кошелька: balance == SUM(completed tx).
+        for user in (self.student, self.teacher.user, self.platform):
+            w = user.wallet
+            w.refresh_from_db()
+            total = (Transaction.objects
+                     .filter(wallet=w, status=Transaction.Status.COMPLETED)
+                     .aggregate(s=Sum('amount'))['s']) or Decimal('0.00')
+            self.assertEqual(w.balance, total, f'ledger mismatch for {user.username}')
+
+    def test_expire_task_ignores_not_yet_expired(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        tariff = _make_tariff(self.teacher, self.subject, lessons_per_week=2,
+                              duration_months=1, price=Decimal('800000'))
+        sub = SubscriptionService.create_request(
+            student=self.student, teacher=self.teacher, subject=self.subject,
+            lessons_per_week=2, lesson_duration_minutes=60, duration_months=1,
+            price_per_month=Decimal('800000'), tariff=tariff,
+            preferred_schedule='', idempotency_key='notexp',
+        )
+        SubscriptionService.approve_request(sub)
+        sub.refresh_from_db()
+        sub.approval_expires_at = timezone.now() + timedelta(hours=10)  # ещё не истёк
+        sub.save(update_fields=['approval_expires_at'])
+        n = SubscriptionService.expire_unpaid_approvals()
+        self.assertEqual(n, 0)
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, Subscription.Status.PENDING_PAYMENT)
+
+
+class EnrollmentConcurrencyTests(TransactionTestCase):
+    reset_sequences = True
+
+    def test_concurrent_pay_charges_once(self):
+        """Две одновременные оплаты одной заявки → списание ровно один раз
+        (гарантирует UNIQUE idempotency_key на дебете sub-purchase:<id>)."""
+        import threading
+        from django.db import connection
+        teacher, subject = _make_teacher_with_subject('cc_t')
+        student = _make_student_with_balance('cc_s', balance=Decimal('1000000'))
+        tariff = _make_tariff(teacher, subject, lessons_per_week=2,
+                              duration_months=1, price=Decimal('800000'))
+        sub = SubscriptionService.create_request(
+            student=student, teacher=teacher, subject=subject,
+            lessons_per_week=2, lesson_duration_minutes=60, duration_months=1,
+            price_per_month=Decimal('800000'), tariff=tariff,
+            preferred_schedule='', idempotency_key='cc-req',
+        )
+        SubscriptionService.approve_request(sub)
+
+        results = []
+
+        def worker(tag):
+            try:
+                SubscriptionService.pay(sub, idempotency_key=f'cc-{tag}')
+                results.append(('ok', tag))
+            except Exception as e:
+                results.append((type(e).__name__, tag))
+            finally:
+                connection.close()
+
+        t1 = threading.Thread(target=worker, args=('a',))
+        t2 = threading.Thread(target=worker, args=('b',))
+        t1.start(); t2.start(); t1.join(); t2.join()
+
+        student.wallet.refresh_from_db()
+        # Главный инвариант: списано ровно один раз (баланс 200000), не дважды.
+        self.assertEqual(student.wallet.balance, Decimal('200000.00'))
+        # Один дебет sub-purchase.
+        debits = Transaction.objects.filter(
+            idempotency_key=f'sub-purchase:{sub.id}',
+        ).count()
+        self.assertEqual(debits, 1)
