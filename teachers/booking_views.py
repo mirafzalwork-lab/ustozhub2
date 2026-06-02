@@ -1185,9 +1185,18 @@ def book_teacher_page(request, teacher_id: int):
         )
     )
 
+    # Баланс кошелька ученика — чтобы показать нехватку до клика по платному пробному.
+    wallet_balance = None
+    if request.user.is_authenticated and request.user.user_type == 'student':
+        try:
+            wallet_balance = int(request.user.wallet.balance)
+        except Exception:
+            wallet_balance = 0
+
     return render(request, 'booking/book_teacher.html', {
         'teacher': teacher,
         'teacher_subjects': teacher_subjects,
+        'wallet_balance': wallet_balance,
     })
 
 

@@ -102,11 +102,29 @@
         // Пробный — платный: используем точную сумму trial_price из TeacherSubject
         if ($trial.checked && !isFreeTrial && trialPrice > 0) {
             $price.className = 'book-price is-trial-paid';
-            $price.innerHTML = '<i class="fa-solid fa-gem"></i> ' +
+            let html = '<i class="fa-solid fa-gem"></i> ' +
                 (i18n.priceTrialPaid || 'Платный пробный:') + ' <strong>' +
                 trialPrice.toLocaleString(cfg.locale) + ' ' + (i18n.priceSum || 'сум') + '</strong> ' +
                 '<span class="book-price__rate">(' + trialDuration + ' ' +
                 (i18n.priceMinutes || 'мин') + ')</span>';
+            // Баланс ученика известен заранее — показываем нехватку ДО клика.
+            if (typeof cfg.balance === 'number') {
+                const bal = cfg.balance.toLocaleString(cfg.locale);
+                if (cfg.balance < trialPrice) {
+                    const need = (trialPrice - cfg.balance).toLocaleString(cfg.locale);
+                    const url = cfg.urls.topup + '?amount=' + Math.round(trialPrice) +
+                        '&next=' + encodeURIComponent(location.pathname);
+                    html += '<div class="book-price__warn">' +
+                        (i18n.priceBalance || 'На балансе:') + ' ' + bal + ' ' + (i18n.priceSum || 'сум') +
+                        ' — ' + (i18n.priceNotEnough || 'не хватает') + ' ' + need + '. ' +
+                        '<a class="book-topup-link" href="' + url + '">' +
+                        (i18n.topup || 'Пополнить баланс') + '</a></div>';
+                } else {
+                    html += '<div class="book-price__ok">' +
+                        (i18n.priceBalance || 'На балансе:') + ' ' + bal + ' ' + (i18n.priceSum || 'сум') + '</div>';
+                }
+            }
+            $price.innerHTML = html;
             $price.hidden = false;
             return;
         }

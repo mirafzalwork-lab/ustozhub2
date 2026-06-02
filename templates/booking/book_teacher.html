@@ -73,6 +73,13 @@
     .book-price.is-free { background: #FEF3C7; border-color: #FDE68A; color: #92400E; }
     .book-price strong { font-weight: 700; }
     .book-price__rate { color: var(--cal-muted, #64748B); font-size: 12.5px; }
+    .book-price__warn { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #FCA5A5; color: #B91C1C; font-size: 13px; }
+    .book-price__ok { margin-top: 6px; color: #065F46; font-size: 13px; }
+    .book-topup-link {
+        display: inline-block; margin-top: 6px; background: #2563EB; color: #fff;
+        padding: 6px 12px; border-radius: 7px; text-decoration: none; font-weight: 600; font-size: 13px;
+    }
+    .book-topup-link:hover { background: #1D4ED8; }
 
     /* Экран подтверждения */
     .book-success { text-align: center; padding: 12px 8px 4px; }
@@ -322,14 +329,18 @@ window.UstozBook = {
     csrf: document.querySelector('[name=csrfmiddlewaretoken]').value,
     isAuth: {{ user.is_authenticated|yesno:'true,false' }},
     isStudent: {% if user.is_authenticated and user.user_type == 'student' %}true{% else %}false{% endif %},
+    balance: {% if wallet_balance is not None %}{{ wallet_balance }}{% else %}null{% endif %},
     urls: {
         slots:  "{% url 'public_teacher_slots' teacher_id=teacher.pk %}",
         book:   "{% url 'booking_create_api' %}",
         login:  "{% url 'login' %}?next={{ request.path|urlencode }}",
         myBookings: "{% url 'my_bookings_page' %}",
+        topup:  "{% url 'wallet_topup_request' %}",
     },
     i18n: {
         topup: "{% trans 'Пополнить баланс' %}",
+        priceBalance: "{% trans 'На балансе:' %}",
+        priceNotEnough: "{% trans 'не хватает' %}",
         loginRequired: "{% trans 'Войдите в систему, чтобы забронировать урок' %}",
         teachersCantBook: "{% trans 'Учителя не могут бронировать уроки' %}",
         success: "{% trans 'Заявка отправлена! Учитель подтвердит её до начала урока.' %}",
