@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}{% trans 'Споры по урокам' %} — Admin{% endblock %}
+
+{% block content %}
+<style>
+  .ad-page { max-width: 960px; margin: 0 auto; padding: 28px 20px; }
+  .ad-page h1 { font-size: 24px; margin: 0 0 14px; color: var(--text-primary,#0A2540); }
+  .ad-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+  .ad-tab { padding:7px 14px; border-radius:20px; border:1px solid var(--border-color,#E2E8F0); text-decoration:none; color:#334155; font-size:13px; }
+  .ad-tab.active { background:#0A2540; color:#fff; border-color:#0A2540; }
+  .ad-card { border:1px solid var(--border-color,#E2E8F0); border-radius:12px; padding:16px 18px; margin-bottom:14px; background:#fff; }
+  .ad-meta { color:var(--text-secondary,#475569); font-size:14px; margin:4px 0; }
+  .ad-reason { background:#F8FAFC; border-radius:8px; padding:10px 12px; font-size:14px; margin:10px 0; }
+  .ad-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px; }
+  .ad-actions input[type=text] { flex:1; min-width:180px; border:1px solid var(--border-color,#E2E8F0); border-radius:8px; padding:9px; }
+  .ad-btn { border:none; border-radius:8px; padding:10px 16px; font-weight:600; cursor:pointer; font-size:14px; }
+  .ad-refund { background:#10B981; color:#fff; }
+  .ad-reject { background:#fff; color:#B91C1C; border:1px solid #FCA5A5; }
+  .ad-badge { font-size:12px; padding:2px 8px; border-radius:10px; background:#FEF3C7; color:#92400E; }
+  .ad-empty { color:var(--text-tertiary,#6B7280); text-align:center; padding:40px 0; }
+</style>
+
+<div class="ad-page">
+  <h1>{% trans 'Споры по урокам' %} <span class="ad-badge">{% trans 'открытых' %}: {{ open_count }}</span></h1>
+
+  <div class="ad-tabs">
+    {% for val, label in statuses %}
+      <a class="ad-tab {% if status == val %}active{% endif %}" href="?status={{ val }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  {% for d in disputes %}
+    <div class="ad-card">
+      <div><b>{{ d.student.get_full_name|default:d.student.username }}</b>
+        {% trans 'против' %}
+        <b>{{ d.booking.slot.teacher.user.get_full_name|default:d.booking.slot.teacher.user.username }}</b></div>
+      <div class="ad-meta">
+        {{ d.booking.subject.name|default:'—' }} ·
+        {% trans 'урок' %} {{ d.booking.slot.start_at|date:"d.m.Y H:i" }} ·
+        {% trans 'открыт' %} {{ d.created_at|date:"d.m.Y H:i" }} ·
+        {% trans 'статус' %}: <b>{{ d.get_status_display }}</b>
+      </div>
+      <div class="ad-reason">{{ d.reason }}</div>
+      {% if d.admin_note %}<div class="ad-meta">{% trans 'Заметка админа' %}: {{ d.admin_note }}</div>{% endif %}
+
+      {% if d.status == 'open' %}
+        <form method="post" action="{% url 'admin_dispute_action' d.id %}">
+          {% csrf_token %}
+          <div class="ad-actions">
+            <input type="text" name="note" placeholder="{% trans 'Заметка (необязательно)' %}">
+            <button type="submit" name="action" value="refund" class="ad-btn ad-refund">{% trans 'Вернуть ученику' %}</button>
+            <button type="submit" name="action" value="reject" class="ad-btn ad-reject">{% trans 'Отклонить (выплата учителю)' %}</button>
+          </div>
+        </form>
+      {% endif %}
+    </div>
+  {% empty %}
+    <div class="ad-empty"><i class="far fa-folder-open fa-2x"></i><p>{% trans 'Споров нет.' %}</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

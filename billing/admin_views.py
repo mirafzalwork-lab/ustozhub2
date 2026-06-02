@@ -18,10 +18,11 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .models import Subscription, Transaction, Wallet, WithdrawalRequest
+from .models import LessonDispute, Subscription, Transaction, Wallet, WithdrawalRequest
 from .platform_account import get_or_create_platform_user
 from .services import (
-    CancellationError, SubscriptionService, WalletService, WithdrawalError, WithdrawalService,
+    CancellationError, DisputeError, DisputeService,
+    SubscriptionService, WalletService, WithdrawalError, WithdrawalService,
 )
 
 User = get_user_model()
@@ -35,6 +36,48 @@ def staff_required(view):
             return redirect('home')
         return view(request, *args, **kwargs)
     return _wrapped
+
+
+# ---------- Disputes (ТЗ шаг 8) ----------
+
+
+@staff_required
+def disputes_manage(request):
+    """Список споров по урокам + разрешение (возврат / отклонение)."""
+    status = request.GET.get('status', 'open')
+    qs = (
+        LessonDispute.objects
+        .select_related('booking__slot__teacher__user', 'booking__subject', 'student')
+        .order_by('-created_at')
+    )
+    if status in dict(LessonDispute.Status.choices):
+        qs = qs.filter(status=status)
+    open_count = LessonDispute.objects.filter(status=LessonDispute.Status.OPEN).count()
+    return render(request, 'billing/admin/disputes.html', {
+        'disputes': qs[:100], 'status': status, 'open_count': open_count,
+        'statuses': LessonDispute.Status.choices,
+    })
+
+
+@staff_required
+@require_POST
+def dispute_action(request, dispute_id):
+    """Админ разрешает спор: refund (ученику) или reject (выплата учителю)."""
+    d = get_object_or_404(LessonDispute, pk=dispute_id)
+    action = request.POST.get('action')
+    note = (request.POST.get('note') or '').strip()
+    try:
+        if action == 'refund':
+            DisputeService.resolve_refund(d, admin=request.user, note=note)
+            messages.success(request, 'Спор решён в пользу ученика — средства возвращены.')
+        elif action == 'reject':
+            DisputeService.resolve_reject(d, admin=request.user, note=note)
+            messages.success(request, 'Спор отклонён — выплата ушла учителю.')
+        else:
+            messages.error(request, 'Неизвестное действие.')
+    except DisputeError as e:
+        messages.error(request, str(e))
+    return redirect('admin_billing_disputes')
 
 
 # ---------- Hub ----------

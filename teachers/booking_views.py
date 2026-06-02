@@ -571,6 +571,20 @@ def _booking_to_dict(b: Booking, has_review: bool | None = None) -> dict:
     """
     if has_review is None:
         has_review = Review.objects.filter(booking=b).exists()
+    # Спор (ТЗ шаг 8): кнопка доступна для завершённого оплаченного урока в
+    # пределах grace-окна, если спора ещё нет.
+    from datetime import timedelta as _td
+    from django.conf import settings as _st
+    try:
+        _disp = b.dispute
+    except Exception:
+        _disp = None
+    _grace = getattr(_st, 'PAYOUT_GRACE_HOURS', 24)
+    _has_money = bool(b.subscription_id) or bool(b.is_trial and b.trial_price_paid)
+    _within_grace = (b.slot.end_at + _td(hours=_grace)) > timezone.now()
+    _can_dispute = bool(
+        b.status == 'completed' and _has_money and _disp is None and _within_grace
+    )
     return {
         'id': str(b.id),
         'status': b.status,
@@ -588,6 +602,10 @@ def _booking_to_dict(b: Booking, has_review: bool | None = None) -> dict:
         # Отзыв: ученик может оценить завершённый урок (или обновить отзыв)
         'review_url': reverse('leave_review', args=[b.id]),
         'has_review': has_review,
+        # Спор по уроку
+        'dispute_url': reverse('dispute_open', args=[b.id]),
+        'dispute_status': _disp.status if _disp else None,
+        'can_dispute': _can_dispute,
         'subject': {
             'id': b.subject.pk,
             'name': b.subject.name,
@@ -1029,7 +1047,7 @@ def my_bookings_api(request):
     upcoming = request.GET.get('upcoming', '').lower() in ('1', 'true', 'yes')
 
     qs = Booking.objects.select_related(
-        'slot__teacher__user', 'student', 'subject'
+        'slot__teacher__user', 'student', 'subject', 'dispute'
     )
     if request.user.user_type == 'student':
         qs = qs.filter(student=request.user)

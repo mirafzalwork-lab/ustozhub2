@@ -25,13 +25,16 @@ SIMPLE_STATIC_STORAGES = {
 
 from billing.models import (
     Homework, HomeworkAttachment, HomeworkSubmission, HomeworkSubmissionFile,
-    Subscription, Tariff, Transaction, Wallet, WithdrawalRequest,
+    LessonDispute, Subscription, Tariff, Transaction, Wallet, WithdrawalRequest,
 )
 from billing.services import (
     AlreadySubscribed,
     CancellationError,
+    DisputeError,
+    DisputeService,
     InsufficientFunds,
     NotEnoughCapacity,
+    PayoutError,
     SubscriptionService,
     WalletService,
     WithdrawalAmountError,
@@ -1925,6 +1928,177 @@ class EnrollmentIntegrationTests(TestCase):
         self.assertEqual(n, 0)
         sub.refresh_from_db()
         self.assertEqual(sub.status, Subscription.Status.PENDING_PAYMENT)
+
+
+# ---------- Disputes (ТЗ шаг 8) -------------------------------------------
+
+
+class LessonDisputeTests(TestCase):
+    def setUp(self):
+        from billing.platform_account import get_or_create_platform_user
+        self.platform = get_or_create_platform_user()
+        self.teacher, self.subject = _make_teacher_with_subject('di_t')
+        self.tariff = _make_tariff(self.teacher, self.subject, lessons_per_week=2,
+                                   duration_months=1, price=Decimal('800000'))
+        self.student = _make_student_with_balance('di_s', balance=Decimal('1000000'))
+        sub = SubscriptionService.create_request(
+            student=self.student, teacher=self.teacher, subject=self.subject,
+            lessons_per_week=2, lesson_duration_minutes=60, duration_months=1,
+            price_per_month=Decimal('800000'), tariff=self.tariff,
+            preferred_schedule='', idempotency_key='di-req',
+        )
+        SubscriptionService.approve_request(sub)
+        SubscriptionService.pay(sub, idempotency_key='di-pay')
+        sub.refresh_from_db()
+        SubscriptionService.book_schedule(
+            sub, [{'day': 'monday', 'time': '10:00'}, {'day': 'wednesday', 'time': '10:00'}],
+        )
+        self.sub = sub
+        self.booking = sub.bookings.first()
+        self.booking.status = 'completed'
+        self.booking.save()
+
+    def test_open_freezes_payout(self):
+        DisputeService.open(self.booking, student=self.student, reason='учитель не дал материал')
+        with self.assertRaises(PayoutError):
+            SubscriptionService.release_lesson_payout(self.booking)
+        self.teacher.user.wallet.refresh_from_db()
+        self.assertEqual(self.teacher.user.wallet.balance, Decimal('0.00'))
+
+    def test_open_requires_completed(self):
+        b2 = self.sub.bookings.exclude(pk=self.booking.pk).first()  # confirmed
+        with self.assertRaises(DisputeError):
+            DisputeService.open(b2, student=self.student, reason='x')
+
+    def test_open_blocked_after_payout(self):
+        SubscriptionService.release_lesson_payout(self.booking)
+        with self.assertRaises(DisputeError):
+            DisputeService.open(self.booking, student=self.student, reason='поздно')
+
+    def test_cannot_open_twice(self):
+        DisputeService.open(self.booking, student=self.student, reason='раз')
+        with self.assertRaises(DisputeError):
+            DisputeService.open(self.booking, student=self.student, reason='два')
+
+    def test_open_by_wrong_user(self):
+        other = _make_student_with_balance('di_other', balance=Decimal('0'))
+        with self.assertRaises(DisputeError):
+            DisputeService.open(self.booking, student=other, reason='чужой')
+
+    def test_resolve_refund_returns_money(self):
+        d = DisputeService.open(self.booking, student=self.student, reason='проблема')
+        self.student.wallet.refresh_from_db()
+        bal_before = self.student.wallet.balance
+        admin = _make_student_with_balance('di_admin', balance=Decimal('0'))
+        DisputeService.resolve_refund(d, admin=admin, note='подтверждено')
+        d.refresh_from_db()
+        self.sub.refresh_from_db()
+        self.student.wallet.refresh_from_db()
+        self.assertEqual(d.status, LessonDispute.Status.RESOLVED_REFUND)
+        self.assertEqual(self.student.wallet.balance, bal_before + Decimal('100000.00'))
+        self.assertEqual(self.sub.total_lessons, 7)
+
+    def test_resolve_reject_pays_teacher(self):
+        d = DisputeService.open(self.booking, student=self.student, reason='проблема')
+        admin = _make_student_with_balance('di_admin2', balance=Decimal('0'))
+        DisputeService.resolve_reject(d, admin=admin, note='необоснованно')
+        d.refresh_from_db()
+        self.teacher.user.wallet.refresh_from_db()
+        self.platform.wallet.refresh_from_db()
+        self.assertEqual(d.status, LessonDispute.Status.RESOLVED_REJECTED)
+        self.assertEqual(self.teacher.user.wallet.balance, Decimal('85000.00'))
+        self.assertEqual(self.platform.wallet.balance, Decimal('15000.00'))
+
+    def test_cancel_dispute_allows_payout(self):
+        d = DisputeService.open(self.booking, student=self.student, reason='ошибся')
+        DisputeService.cancel(d, student=self.student)
+        ok = SubscriptionService.release_lesson_payout(self.booking)
+        self.assertTrue(ok)
+        self.teacher.user.wallet.refresh_from_db()
+        self.assertEqual(self.teacher.user.wallet.balance, Decimal('85000.00'))
+
+    def test_free_lesson_not_disputable(self):
+        from teachers.models import TimeSlot, Booking
+        from datetime import timedelta
+        from django.utils import timezone
+        past = timezone.now() - timedelta(days=1)
+        sl = TimeSlot.objects.create(teacher=self.teacher, start_at=past,
+                                     end_at=past + timedelta(minutes=60), status='booked')
+        free_b = Booking.objects.create(slot=sl, student=self.student, subject=self.subject,
+                                        status='completed', is_trial=False)
+        with self.assertRaises(DisputeError):
+            DisputeService.open(free_b, student=self.student, reason='нет денег по уроку')
+
+
+@override_settings(STORAGES=SIMPLE_STATIC_STORAGES)
+class DisputeViewTests(TestCase):
+    def setUp(self):
+        from billing.platform_account import get_or_create_platform_user
+        self.platform = get_or_create_platform_user()
+        self.teacher, self.subject = _make_teacher_with_subject('dv_t')
+        self.tariff = _make_tariff(self.teacher, self.subject, lessons_per_week=2,
+                                   duration_months=1, price=Decimal('800000'))
+        self.student = _make_student_with_balance('dv_s', balance=Decimal('1000000'))
+        sub = SubscriptionService.create_request(
+            student=self.student, teacher=self.teacher, subject=self.subject,
+            lessons_per_week=2, lesson_duration_minutes=60, duration_months=1,
+            price_per_month=Decimal('800000'), tariff=self.tariff,
+            preferred_schedule='', idempotency_key='dv-req',
+        )
+        SubscriptionService.approve_request(sub)
+        SubscriptionService.pay(sub, idempotency_key='dv-pay')
+        sub.refresh_from_db()
+        SubscriptionService.book_schedule(
+            sub, [{'day': 'monday', 'time': '10:00'}, {'day': 'wednesday', 'time': '10:00'}],
+        )
+        self.booking = sub.bookings.first()
+        self.booking.status = 'completed'
+        self.booking.save()
+        self.admin = User.objects.create_user(
+            username='dv_admin', email='a@x.com', password='x' * 12,
+            user_type='student', is_staff=True,
+        )
+
+    def _url(self, name, *args):
+        from django.urls import reverse
+        return reverse(name, args=args)
+
+    def test_student_opens_dispute_via_http(self):
+        self.client.login(username='dv_s', password='x' * 12)
+        r = self.client.post(self._url('dispute_open', self.booking.id),
+                             {'reason': 'учитель не подключился к уроку'})
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(LessonDispute.objects.filter(booking=self.booking,
+                        status=LessonDispute.Status.OPEN).exists())
+
+    def test_open_too_short_reason_rejected(self):
+        self.client.login(username='dv_s', password='x' * 12)
+        r = self.client.post(self._url('dispute_open', self.booking.id), {'reason': 'плохо'})
+        self.assertEqual(r.status_code, 200)  # re-render с ошибкой
+        self.assertFalse(LessonDispute.objects.filter(booking=self.booking).exists())
+
+    def test_cannot_open_dispute_on_others_lesson(self):
+        _make_student_with_balance('dv_other', balance=Decimal('0'))
+        self.client.login(username='dv_other', password='x' * 12)
+        r = self.client.post(self._url('dispute_open', self.booking.id),
+                             {'reason': 'чужой урок длинная причина'})
+        self.assertEqual(r.status_code, 404)
+
+    def test_admin_page_requires_staff(self):
+        self.client.login(username='dv_s', password='x' * 12)  # не staff
+        r = self.client.get(self._url('admin_billing_disputes'))
+        self.assertEqual(r.status_code, 302)  # redirect home
+
+    def test_admin_resolves_refund_via_http(self):
+        DisputeService.open(self.booking, student=self.student, reason='проблема с уроком')
+        d = LessonDispute.objects.get(booking=self.booking)
+        self.client.login(username='dv_admin', password='x' * 12)
+        self.assertEqual(self.client.get(self._url('admin_billing_disputes')).status_code, 200)
+        r = self.client.post(self._url('admin_dispute_action', d.id),
+                             {'action': 'refund', 'note': 'ок'})
+        self.assertEqual(r.status_code, 302)
+        d.refresh_from_db()
+        self.assertEqual(d.status, LessonDispute.Status.RESOLVED_REFUND)
 
 
 class EnrollmentConcurrencyTests(TransactionTestCase):

@@ -215,6 +215,16 @@
                 <i class="fa-solid fa-star"></i> ${lbl}
             </a>`);
         }
+        // Спор (ТЗ шаг 8): ученик может открыть спор по оплаченному уроку в grace-окне.
+        if (cfg.role === 'student' && b.dispute_status) {
+            buttons.push(`<span class="bk-btn secondary" style="cursor:default">
+                <i class="fa-solid fa-flag"></i> ${i18n.disputeStatus || 'Спор'}: ${escapeHtml(b.dispute_status)}
+            </span>`);
+        } else if (cfg.role === 'student' && b.can_dispute && b.dispute_url) {
+            buttons.push(`<a class="bk-btn danger" href="${b.dispute_url}">
+                <i class="fa-solid fa-flag"></i> ${i18n.openDispute || 'Открыть спор'}
+            </a>`);
+        }
         return buttons.join('');
     }
 

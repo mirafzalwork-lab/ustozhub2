@@ -469,6 +469,53 @@ def subscription_schedule(request, sub_id):
     })
 
 
+# ---------- Disputes (ТЗ шаг 8): ученик открывает/отзывает ----------------
+
+
+@login_required
+def dispute_open(request, booking_id):
+    """Ученик открывает спор по проведённому оплаченному уроку."""
+    from teachers.models import Booking
+    from .services import DisputeError, DisputeService
+    booking = get_object_or_404(
+        Booking.objects.select_related('slot__teacher__user', 'subject'),
+        pk=booking_id, student=request.user,
+    )
+    existing = getattr(booking, 'dispute', None)
+    if request.method == 'POST':
+        reason = (request.POST.get('reason') or '').strip()
+        if len(reason) < 10:
+            messages.error(request, 'Опишите проблему подробнее (минимум 10 символов).')
+        else:
+            try:
+                DisputeService.open(booking, student=request.user, reason=reason)
+                messages.success(
+                    request,
+                    'Спор открыт. Администрация рассмотрит его; выплата учителю заморожена.',
+                )
+                return redirect('my_bookings_page')
+            except DisputeError as e:
+                messages.error(request, str(e))
+    return render(request, 'billing/dispute_open.html', {
+        'booking': booking, 'existing': existing,
+    })
+
+
+@login_required
+@require_POST
+def dispute_cancel(request, dispute_id):
+    """Ученик отзывает свой открытый спор."""
+    from .models import LessonDispute
+    from .services import DisputeError, DisputeService
+    d = get_object_or_404(LessonDispute, pk=dispute_id, student=request.user)
+    try:
+        DisputeService.cancel(d, student=request.user)
+        messages.success(request, 'Спор отозван.')
+    except DisputeError as e:
+        messages.error(request, str(e))
+    return redirect('my_bookings_page')
+
+
 @login_required
 def my_subscriptions(request):
     """Все подписки текущего ученика (активные + история).

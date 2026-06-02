@@ -18,7 +18,7 @@ from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from .models import Subscription, Tariff, Transaction, Wallet, WithdrawalRequest
+from .models import LessonDispute, Subscription, Tariff, Transaction, Wallet, WithdrawalRequest
 
 User = get_user_model()
 
@@ -902,6 +902,11 @@ class SubscriptionService:
             raise PayoutError('booking без subscription — нечего выплачивать')
         if booking.status != 'completed':
             raise PayoutError(f'booking.status={booking.status}, ожидался completed')
+        # Заморозка выплаты на время открытого спора (ТЗ шаг 8).
+        if LessonDispute.objects.filter(
+            booking_id=booking.id, status=LessonDispute.Status.OPEN,
+        ).exists():
+            raise PayoutError('по уроку открыт спор — выплата заморожена')
 
         payout_key = f'lesson-payout:{booking.id}'
         commission_key = f'commission:{booking.id}'
@@ -1418,6 +1423,11 @@ class TrialService:
             raise PayoutError('booking не является платным пробным')
         if booking.status != 'completed':
             raise PayoutError(f'booking.status={booking.status}, ожидался completed')
+        # Заморозка выплаты на время открытого спора (ТЗ шаг 8).
+        if LessonDispute.objects.filter(
+            booking_id=booking.id, status=LessonDispute.Status.OPEN,
+        ).exists():
+            raise PayoutError('по уроку открыт спор — выплата заморожена')
 
         payout_key = f'trial-payout:{booking.id}'
         if Transaction.objects.filter(idempotency_key=payout_key).exists():
@@ -1498,3 +1508,134 @@ class TrialService:
                 related_booking=b,
             )
             return Decimal(b.trial_price_paid)
+
+
+# ---------- DisputeService (ТЗ шаг 8) -------------------------------------
+
+
+class DisputeError(Exception):
+    """Спор нельзя открыть/разрешить в текущем состоянии."""
+
+
+class DisputeService:
+    """Споры по проведённым урокам. Пока спор открыт — выплата заморожена."""
+
+    @staticmethod
+    def _is_paid_out(booking) -> bool:
+        keys = [f'lesson-payout:{booking.id}', f'trial-payout:{booking.id}']
+        return Transaction.objects.filter(idempotency_key__in=keys).exists()
+
+    @classmethod
+    def open(cls, booking, *, student, reason: str):
+        """Ученик открывает спор по завершённому оплаченному уроку.
+
+        Возможно только: урок completed, деньги ещё в эскроу (не выплачены),
+        у урока есть удержанные средства (подписка или платный пробный),
+        спор ещё не открывался.
+        """
+        if booking.student_id != getattr(student, 'id', student):
+            raise DisputeError('Спор может открыть только ученик этого урока.')
+        if booking.status != 'completed':
+            raise DisputeError('Спор можно открыть только по завершённому уроку.')
+        has_money = bool(booking.subscription_id) or bool(
+            booking.is_trial and booking.trial_price_paid
+        )
+        if not has_money:
+            raise DisputeError('По этому уроку нет удержанных средств.')
+        if cls._is_paid_out(booking):
+            raise DisputeError('Урок уже оплачен учителю — спор невозможен.')
+
+        with transaction.atomic():
+            if LessonDispute.objects.filter(booking_id=booking.id).exists():
+                raise DisputeError('Спор по этому уроку уже существует.')
+            dispute = LessonDispute.objects.create(
+                booking=booking, student=booking.student,
+                reason=(reason or '')[:2000], status=LessonDispute.Status.OPEN,
+            )
+        # Уведомляем учителя + админ-канал косвенно через учителя.
+        try:
+            teacher_user = booking.slot.teacher.user
+            SubscriptionService._notify(
+                teacher_user, 'Открыт спор по уроку',
+                'Ученик открыл спор по проведённому уроку. Выплата заморожена до решения администрации.',
+                _safe_reverse('my_bookings_page'),
+            )
+        except Exception:
+            logger.warning('dispute open notify failed', exc_info=True)
+        return dispute
+
+    @classmethod
+    def cancel(cls, dispute, *, student):
+        """Ученик отзывает свой спор (деньги пойдут учителю в обычном порядке)."""
+        with transaction.atomic():
+            d = LessonDispute.objects.select_for_update().get(pk=dispute.pk)
+            if d.student_id != getattr(student, 'id', student):
+                raise DisputeError('Можно отозвать только свой спор.')
+            if d.status != LessonDispute.Status.OPEN:
+                raise DisputeError('Спор уже разрешён.')
+            d.status = LessonDispute.Status.CANCELLED
+            d.resolved_at = timezone.now()
+            d.save(update_fields=['status', 'resolved_at'])
+        return d
+
+    @classmethod
+    def resolve_refund(cls, dispute, *, admin, note: str = ''):
+        """Админ решает спор в пользу ученика → возврат средств."""
+        with transaction.atomic():
+            d = (LessonDispute.objects.select_for_update()
+                 .select_related('booking').get(pk=dispute.pk))
+            if d.status != LessonDispute.Status.OPEN:
+                raise DisputeError('Спор уже разрешён.')
+            booking = d.booking
+            if booking.subscription_id:
+                SubscriptionService.refund_lesson(
+                    booking, cancelled_by='admin', reason='Спор решён в пользу ученика',
+                )
+            elif booking.is_trial and booking.trial_price_paid:
+                TrialService.refund_trial(booking, reason='Спор решён в пользу ученика')
+            d.status = LessonDispute.Status.RESOLVED_REFUND
+            d.resolved_by = admin
+            d.resolved_at = timezone.now()
+            d.admin_note = (note or '')[:1000]
+            d.save(update_fields=['status', 'resolved_by', 'resolved_at', 'admin_note'])
+        cls._notify_resolution(d, refunded=True)
+        return d
+
+    @classmethod
+    def resolve_reject(cls, dispute, *, admin, note: str = ''):
+        """Админ отклоняет спор → выплата уходит учителю."""
+        with transaction.atomic():
+            d = (LessonDispute.objects.select_for_update()
+                 .select_related('booking').get(pk=dispute.pk))
+            if d.status != LessonDispute.Status.OPEN:
+                raise DisputeError('Спор уже разрешён.')
+            # Сначала закрываем спор (чтобы guard в payout не сработал), потом платим.
+            d.status = LessonDispute.Status.RESOLVED_REJECTED
+            d.resolved_by = admin
+            d.resolved_at = timezone.now()
+            d.admin_note = (note or '')[:1000]
+            d.save(update_fields=['status', 'resolved_by', 'resolved_at', 'admin_note'])
+            booking = d.booking
+            try:
+                if booking.subscription_id:
+                    SubscriptionService.release_lesson_payout(booking)
+                elif booking.is_trial and booking.trial_price_paid:
+                    TrialService.release_trial_payout(booking)
+            except PayoutError as e:
+                # Не критично: фоновая задача доведёт выплату (спор уже закрыт).
+                logger.warning('dispute reject payout deferred: %s', e)
+        cls._notify_resolution(d, refunded=False)
+        return d
+
+    @staticmethod
+    def _notify_resolution(dispute, *, refunded: bool):
+        try:
+            title = ('Спор решён в вашу пользу' if refunded
+                     else 'Спор отклонён')
+            text = ('Администрация вернула средства за оспоренный урок.' if refunded
+                    else 'Администрация отклонила спор — урок засчитан, оплата ушла учителю.')
+            SubscriptionService._notify(
+                dispute.student, title, text, _safe_reverse('my_bookings_page'),
+            )
+        except Exception:
+            logger.warning('dispute resolution notify failed', exc_info=True)

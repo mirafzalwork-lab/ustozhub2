@@ -11,6 +11,8 @@ urlpatterns = [
     path('admin-dashboard/billing/withdrawals/<uuid:wr_id>/action/', admin_views.withdrawal_action, name='admin_withdrawal_action'),
     path('admin-dashboard/billing/subscriptions/', admin_views.subscriptions_manage, name='admin_billing_subscriptions'),
     path('admin-dashboard/billing/subscriptions/<uuid:sub_id>/cancel/', admin_views.subscription_admin_cancel, name='admin_subscription_cancel'),
+    path('admin-dashboard/billing/disputes/', admin_views.disputes_manage, name='admin_billing_disputes'),
+    path('admin-dashboard/billing/disputes/<uuid:dispute_id>/action/', admin_views.dispute_action, name='admin_dispute_action'),
 
     # Тарифы — управление учителем
     path('profile/tariffs/', views.tariffs_list, name='tariffs_list'),
@@ -34,6 +36,10 @@ urlpatterns = [
     path('learning-requests/<uuid:sub_id>/action/', views.learning_request_action, name='learning_request_action'),
     path('subscriptions/<uuid:sub_id>/pay/', views.subscription_pay, name='subscription_pay'),
     path('subscriptions/<uuid:sub_id>/schedule/', views.subscription_schedule, name='subscription_schedule'),
+
+    # Споры (ТЗ шаг 8)
+    path('lessons/<uuid:booking_id>/dispute/', views.dispute_open, name='dispute_open'),
+    path('disputes/<uuid:dispute_id>/cancel/', views.dispute_cancel, name='dispute_cancel'),
 
     # Вывод средств
     path('profile/withdrawals/', views.withdrawals_list, name='withdrawals_list'),

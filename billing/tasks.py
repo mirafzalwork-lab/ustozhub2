@@ -43,6 +43,7 @@ def release_pending_payouts():
     sub_candidates = (
         Booking.objects
         .filter(status='completed', subscription__isnull=False, slot__end_at__lt=threshold)
+        .exclude(dispute__status='open')  # заморозка выплаты на время спора
         .select_related('subscription', 'slot')
         .order_by('slot__end_at')[:500]
     )
@@ -71,6 +72,7 @@ def release_pending_payouts():
             trial_price_paid__isnull=False,
             slot__end_at__lt=threshold,
         )
+        .exclude(dispute__status='open')  # заморозка выплаты на время спора
         .select_related('slot__teacher__user', 'student')
         .order_by('slot__end_at')[:500]
     )

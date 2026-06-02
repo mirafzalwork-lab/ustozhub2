@@ -110,6 +110,7 @@
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
       <a href="{% url 'admin_billing_wallets' %}" class="ab-btn ab-btn-success">💰 Пополнить баланс пользователю</a>
       <a href="{% url 'admin_billing_withdrawals' %}?status=pending" class="ab-btn ab-btn-warning">📥 Обработать выводы ({{ pending_withdrawals }})</a>
+      <a href="{% url 'admin_billing_disputes' %}?status=open" class="ab-btn ab-btn-warning">⚖️ Споры по урокам</a>
       <a href="/admin/billing/" class="ab-btn ab-btn-secondary">Django Admin (детально)</a>
     </div>
   </div>

@@ -840,3 +840,54 @@ class HomeworkSubmissionFile(models.Model):
 
     def __str__(self) -> str:
         return f'{self.filename} ({self.file_size}B)'
+
+
+# ---------- LessonDispute (спор по уроку, ТЗ шаг 8) ------------------------
+
+
+class LessonDispute(models.Model):
+    """Спор ученика по проведённому уроку (период проверки до выплаты учителю).
+
+    Пока спор OPEN — выплата учителю по этому уроку заморожена (см.
+    release_lesson_payout / release_trial_payout). Админ решает:
+      * resolve_refund   — деньги возвращаются ученику (refund_lesson/refund_trial);
+      * resolve_rejected — спор отклонён, выплата уходит учителю.
+    """
+
+    class Status(models.TextChoices):
+        OPEN = 'open', 'Открыт'
+        RESOLVED_REFUND = 'resolved_refund', 'Решён в пользу ученика (возврат)'
+        RESOLVED_REJECTED = 'resolved_rejected', 'Отклонён (выплата учителю)'
+        CANCELLED = 'cancelled', 'Отозван учеником'
+
+    OPEN_STATUSES = (Status.OPEN,)
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    booking = models.OneToOneField(
+        'teachers.Booking', on_delete=models.CASCADE, related_name='dispute',
+    )
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='disputes',
+    )
+    reason = models.TextField(max_length=2000)
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.OPEN, db_index=True,
+    )
+    admin_note = models.TextField(blank=True, default='', max_length=1000)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Спор по уроку'
+        verbose_name_plural = 'Споры по урокам'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', '-created_at']),
+        ]
+
+    def __str__(self) -> str:
+        return f'Dispute#{str(self.id)[:8]} booking={self.booking_id} {self.status}'
