@@ -1,4 +1,5 @@
 {% load static %}
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -28,6 +29,29 @@
         .conv-link:hover{background:#FC7702;color:#fff}
         .profile-link{color:#1a1a1a;text-decoration:none;font-weight:600;transition:color .2s}
         .profile-link:hover{color:#FC7702}
+        /* Сгруппированный сайдбар + бейджи */
+        .sidebar-group{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:#94A3B8;padding:14px 18px 4px;font-weight:700}
+        .sidebar-menu li a{display:flex;align-items:center;gap:10px}
+        .sb-badge{margin-left:auto;background:#FC7702;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:700}
+        .sb-badge.danger{background:#DC2626}
+        /* Секции дашборда */
+        .sec-h{font-size:15px;font-weight:700;color:#0A2540;margin:8px 0 12px;display:flex;align-items:center;gap:8px}
+        .attn-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:26px}
+        .attn-card{display:flex;align-items:center;gap:14px;padding:16px 18px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;text-decoration:none;color:#1a1a1a;transition:transform .15s,box-shadow .15s}
+        .attn-card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.08)}
+        .attn-card.hot{border-color:#FCA5A5;background:#FEF2F2}
+        .attn-ico{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;background:#F1F5F9;color:#475569;flex:none}
+        .attn-card.hot .attn-ico{background:#FEE2E2;color:#DC2626}
+        .attn-n{font-size:24px;font-weight:800;line-height:1}
+        .attn-l{font-size:13px;color:#64748B;margin-top:2px}
+        .fin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:26px}
+        .fin-card{padding:16px 18px;border-radius:12px;background:#fff;border:1px solid #e5e7eb}
+        .fin-card.brand{background:linear-gradient(135deg,#4338CA,#6366F1);border:none;color:#fff}
+        .fin-card .fl{font-size:11px;color:#64748B;text-transform:uppercase;letter-spacing:.4px}
+        .fin-card.brand .fl{color:#fff;opacity:.85}
+        .fin-card .fv{font-size:20px;font-weight:800;color:#0A2540;margin-top:5px}
+        .fin-card.brand .fv{color:#fff}
+        .fin-card .fv small{font-size:12px;font-weight:600;opacity:.7}
     </style>
 </head>
 <body>
@@ -37,15 +61,26 @@
             <img src="{% static 'logo/new_logo.png' %}" alt="UstozHub" style="height: 32px; width: auto;">
         </div>
         <ul class="sidebar-menu">
+            <li class="sidebar-group">Обзор</li>
             <li><a href="{% url 'admin_dashboard' %}" class="active"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
-            <li><a href="{% url 'admin_billing_hub' %}"><i class="fas fa-coins"></i> <span>💰 Финансы</span></a></li>
+
+            <li class="sidebar-group">Требует внимания</li>
+            <li><a href="/admin/teachers/teacherprofile/?moderation_status__exact=pending"><i class="fas fa-user-check"></i> <span>Модерация</span>{% if admin_badges.moderation %}<span class="sb-badge">{{ admin_badges.moderation }}</span>{% endif %}</a></li>
+            <li><a href="{% url 'admin_billing_withdrawals' %}?status=pending"><i class="fas fa-money-bill-wave"></i> <span>Выводы</span>{% if admin_badges.withdrawals %}<span class="sb-badge">{{ admin_badges.withdrawals }}</span>{% endif %}</a></li>
+            <li><a href="{% url 'admin_billing_disputes' %}?status=open"><i class="fas fa-scale-balanced"></i> <span>Споры</span>{% if admin_badges.disputes %}<span class="sb-badge danger">{{ admin_badges.disputes }}</span>{% endif %}</a></li>
+            <li><a href="{% url 'admin_billing_subscriptions' %}?status=pending_approval"><i class="fas fa-user-graduate"></i> <span>Заявки</span>{% if admin_badges.requests %}<span class="sb-badge">{{ admin_badges.requests }}</span>{% endif %}</a></li>
+
+            <li class="sidebar-group">Финансы</li>
+            <li><a href="{% url 'admin_billing_hub' %}"><i class="fas fa-coins"></i> <span>Финансы</span></a></li>
             <li><a href="{% url 'admin_billing_wallets' %}"><i class="fas fa-wallet"></i> <span>Кошельки</span></a></li>
-            <li><a href="{% url 'admin_billing_withdrawals' %}"><i class="fas fa-money-bill-wave"></i> <span>Выводы</span></a></li>
             <li><a href="{% url 'admin_billing_subscriptions' %}"><i class="fas fa-graduation-cap"></i> <span>Подписки</span></a></li>
+
+            <li class="sidebar-group">Коммуникации</li>
             <li><a href="{% url 'admin_messages' %}"><i class="fas fa-comments"></i> <span>Сообщения</span></a></li>
             <li><a href="{% url 'telegram_management' %}"><i class="fab fa-telegram"></i> <span>Telegram</span></a></li>
             <li><a href="{% url 'daily_reminders_list' %}"><i class="fas fa-clock"></i> <span>Напоминания</span></a></li>
-            <li><a href="/admin/teachers/teacherprofile/?moderation_status__exact=pending"><i class="fas fa-check-circle"></i> <span>Модерация</span></a></li>
+
+            <li class="sidebar-group">Система</li>
             <li><a href="{% url 'home' %}"><i class="fas fa-globe"></i> <span>На сайт</span></a></li>
             <li><a href="/admin/"><i class="fas fa-cog"></i> <span>Django Admin</span></a></li>
             <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> <span>Выход</span></a></li>
@@ -84,6 +119,39 @@
         </div>
         {% endfor %}
         {% endif %}
+
+        <!-- ТРЕБУЕТ ВНИМАНИЯ -->
+        <div class="sec-h"><i class="fas fa-bolt" style="color:#FC7702"></i> Требует внимания
+            {% if attention_total %}<span class="sb-badge" style="margin-left:0">{{ attention_total }}</span>{% endif %}</div>
+        <div class="attn-grid">
+            <a class="attn-card {% if pending_teachers %}hot{% endif %}" href="/admin/teachers/teacherprofile/?moderation_status__exact=pending">
+                <div class="attn-ico"><i class="fas fa-user-check"></i></div>
+                <div><div class="attn-n">{{ pending_teachers }}</div><div class="attn-l">Учителя на модерации</div></div>
+            </a>
+            <a class="attn-card {% if pending_withdrawals %}hot{% endif %}" href="{% url 'admin_billing_withdrawals' %}?status=pending">
+                <div class="attn-ico"><i class="fas fa-money-bill-wave"></i></div>
+                <div><div class="attn-n">{{ pending_withdrawals }}</div><div class="attn-l">Заявки на вывод</div></div>
+            </a>
+            <a class="attn-card {% if open_disputes %}hot{% endif %}" href="{% url 'admin_billing_disputes' %}?status=open">
+                <div class="attn-ico"><i class="fas fa-scale-balanced"></i></div>
+                <div><div class="attn-n">{{ open_disputes }}</div><div class="attn-l">Открытые споры</div></div>
+            </a>
+            <a class="attn-card {% if pending_requests %}hot{% endif %}" href="{% url 'admin_billing_subscriptions' %}?status=pending_approval">
+                <div class="attn-ico"><i class="fas fa-user-graduate"></i></div>
+                <div><div class="attn-n">{{ pending_requests }}</div><div class="attn-l">Заявки на обучение</div></div>
+            </a>
+        </div>
+
+        <!-- ФИНАНСЫ -->
+        <div class="sec-h"><i class="fas fa-coins" style="color:#6366F1"></i> Финансы платформы
+            <span style="font-weight:400;color:#94A3B8;font-size:13px">· за 30 дней</span></div>
+        <div class="fin-grid">
+            <div class="fin-card brand"><div class="fl">Баланс платформы</div><div class="fv">{{ platform_balance|floatformat:0|intcomma }} <small>сум</small></div></div>
+            <div class="fin-card"><div class="fl">Комиссия (30 дн)</div><div class="fv">{{ commission_month|floatformat:0|intcomma }} <small>сум</small></div></div>
+            <div class="fin-card"><div class="fl">В эскроу</div><div class="fv">{{ total_escrow|floatformat:0|intcomma }} <small>сум</small></div></div>
+            <div class="fin-card"><div class="fl">Выплаты (30 дн)</div><div class="fv">{{ payouts_month|floatformat:0|intcomma }} <small>сум</small></div></div>
+            <div class="fin-card"><div class="fl">Активные подписки</div><div class="fv">{{ active_subscriptions }}</div></div>
+        </div>
 
         <!-- BILLING QUICK ACTIONS -->
         <div style="background: linear-gradient(135deg, #4338CA 0%, #6366F1 100%); color: #fff; border-radius: 14px; padding: 20px 24px; margin-bottom: 22px;">

@@ -24,6 +24,7 @@
 </style>
 
 <div class="ad-page">
+  {% with active_tab='disputes' %}{% include 'billing/admin/_base.html' %}{% endwith %}
   <h1>{% trans 'Споры по урокам' %} <span class="ad-badge">{% trans 'открытых' %}: {{ open_count }}</span></h1>
 
   <div class="ad-tabs">

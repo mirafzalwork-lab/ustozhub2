@@ -563,7 +563,31 @@ def admin_dashboard(request):
         teacher_count=Count('teacherprofile'),
         student_interest_count=Count('interested_students')
     ).order_by('-teacher_count')[:10]
-    
+
+    # ========== ФИНАНСЫ + «ТРЕБУЕТ ВНИМАНИЯ» ==========
+    from decimal import Decimal as _D
+    from billing.models import (
+        LessonDispute, Subscription as _Sub, Transaction as _Tx, WithdrawalRequest as _Wd,
+    )
+    from billing.platform_account import get_or_create_platform_user
+    _platform = get_or_create_platform_user()
+    total_escrow = _Sub.objects.filter(
+        status__in=_Sub.ACTIVE_STATUSES,
+    ).aggregate(s=Sum('escrow_balance'))['s'] or _D('0')
+    platform_balance = _platform.wallet.balance
+    commission_month = _Tx.objects.filter(
+        wallet=_platform.wallet, type=_Tx.Type.COMMISSION, created_at__gte=month_ago,
+    ).aggregate(s=Sum('amount'))['s'] or _D('0')
+    payouts_month = _Tx.objects.filter(
+        type=_Tx.Type.LESSON_PAYOUT, created_at__gte=month_ago,
+    ).aggregate(s=Sum('amount'))['s'] or _D('0')
+    active_subscriptions = _Sub.objects.filter(status=_Sub.Status.ACTIVE).count()
+    # «Требует внимания»
+    pending_withdrawals = _Wd.objects.filter(status='pending').count()
+    open_disputes = LessonDispute.objects.filter(status=LessonDispute.Status.OPEN).count()
+    pending_requests = _Sub.objects.filter(status=_Sub.Status.PENDING_APPROVAL).count()
+    attention_total = pending_teachers + pending_withdrawals + open_disputes + pending_requests
+
     context = {
         # Метрики пользователей
         'total_teachers': total_teachers,
@@ -607,6 +631,17 @@ def admin_dashboard(request):
         'top_subjects': top_subjects,
     
         # Вспомогательные данные
+        # Финансы платформы
+        'total_escrow': total_escrow,
+        'platform_balance': platform_balance,
+        'commission_month': commission_month,
+        'payouts_month': payouts_month,
+        'active_subscriptions': active_subscriptions,
+        # Требует внимания
+        'pending_withdrawals': pending_withdrawals,
+        'open_disputes': open_disputes,
+        'pending_requests': pending_requests,
+        'attention_total': attention_total,
         'current_month': current_month.strftime('%B %Y'),
         'now': now,
     }

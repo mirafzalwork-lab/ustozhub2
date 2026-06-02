@@ -135,3 +135,35 @@ def unread_notifications_count(request):
     except Exception as e:
         logger.error(f"Error in unread_notifications_count for user_id={request.user.pk}: {e}", exc_info=True)
         return {'unread_notifications_count': 0}
+
+
+def admin_nav_badges(request):
+    """Счётчики «требует внимания» для админ-навигации (только для staff).
+
+    Кэшируется на короткое время, чтобы не бить БД на каждом запросе.
+    Доступны в шаблонах как admin_badges.{moderation,withdrawals,disputes,requests,total}.
+    """
+    user = getattr(request, 'user', None)
+    if not (user and user.is_authenticated and user.is_staff):
+        return {}
+    try:
+        cache_key = 'admin_nav_badges'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return {'admin_badges': cached}
+
+        from .models import TeacherProfile
+        from billing.models import LessonDispute, Subscription, WithdrawalRequest
+
+        badges = {
+            'moderation': TeacherProfile.objects.filter(moderation_status='pending').count(),
+            'withdrawals': WithdrawalRequest.objects.filter(status='pending').count(),
+            'disputes': LessonDispute.objects.filter(status=LessonDispute.Status.OPEN).count(),
+            'requests': Subscription.objects.filter(status=Subscription.Status.PENDING_APPROVAL).count(),
+        }
+        badges['total'] = sum(badges.values())
+        cache.set(cache_key, badges, 30)  # 30s — свежо, но без нагрузки
+        return {'admin_badges': badges}
+    except Exception as e:
+        logger.error(f"Error in admin_nav_badges: {e}", exc_info=True)
+        return {}
