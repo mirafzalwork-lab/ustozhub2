@@ -156,9 +156,40 @@
         },
     });
 
+    // ---- Учёт реального присутствия (без polling: только вход/выход) ----
+    // navigator.sendBeacon — fire-and-forget, не блокирует и переживает закрытие
+    // вкладки. ≈2 запроса на участника за урок.
+    const attUrl = "{% url 'lesson_attendance_api' booking.id %}";
+    const csrf = "{{ csrf_token }}";
+    let joinedAt = null;
+
+    function report(event, seconds) {
+        try {
+            const data = new FormData();
+            data.append('event', event);
+            data.append('csrfmiddlewaretoken', csrf);
+            if (seconds != null) data.append('seconds', String(seconds));
+            navigator.sendBeacon(attUrl, data);
+        } catch (e) { /* не критично */ }
+    }
+    function reportLeave() {
+        if (joinedAt) {
+            report('leave', Math.round((Date.now() - joinedAt) / 1000));
+            joinedAt = null;
+        }
+    }
+
+    api.addEventListener('videoConferenceJoined', function () {
+        joinedAt = Date.now();
+        report('join');
+    });
+    api.addEventListener('videoConferenceLeft', reportLeave);
+    window.addEventListener('pagehide', reportLeave);
+
     // По завершению — возвращаем к списку уроков
     const back = "{% url 'my_bookings_page' %}";
     api.addEventListener('readyToClose', function () {
+        reportLeave();
         window.location.href = back;
     });
 })();

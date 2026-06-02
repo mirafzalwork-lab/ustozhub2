@@ -42,7 +42,7 @@ from .booking_views import (
     booking_confirm_api, booking_reject_api,
     booking_set_meeting_url_api, booking_reschedule_api,
     my_bookings_api, my_bookings_page, book_teacher_page,
-    lesson_room, leave_review, booking_ical,
+    lesson_room, lesson_attendance_api, leave_review, booking_ical,
 )
 
 urlpatterns = [
@@ -151,6 +151,7 @@ urlpatterns = [
     path('my/bookings/', my_bookings_page, name='my_bookings_page'),
     path('bookings/<uuid:booking_id>/calendar.ics', booking_ical, name='booking_ical'),
     path('lesson/<uuid:booking_id>/', lesson_room, name='lesson_room'),
+    path('lesson/<uuid:booking_id>/attendance/', lesson_attendance_api, name='lesson_attendance_api'),
     path('review/<uuid:booking_id>/', leave_review, name='leave_review'),
 
     # Legal pages (footer links)

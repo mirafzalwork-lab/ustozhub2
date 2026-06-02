@@ -1215,12 +1215,8 @@ def lesson_room(request, booking_id):
     elif now > open_until:
         state = 'too_late'
 
-    # Учёт присутствия: фиксируем вход стороны в комнату (для no-show логики).
-    if state == 'ok':
-        try:
-            booking.record_join(is_teacher=is_teacher)
-        except Exception:
-            logger.warning('record_join failed for booking %s', booking.pk, exc_info=True)
+    # Присутствие НЕ фиксируем на открытии страницы — только по реальному
+    # подключению к видео-конференции (событие Jitsi → lesson_attendance_api).
 
     jitsi_base = (getattr(settings, 'JITSI_BASE_URL', 'https://meet.jit.si') or '').rstrip('/')
     # Домен-хост для External API (без схемы)
@@ -1240,6 +1236,42 @@ def lesson_room(request, booking_id):
         'other_name': other_name,
         'open_from': open_from,
     })
+
+
+@authenticated_required
+@require_http_methods(['POST'])
+def lesson_attendance_api(request, booking_id):
+    """Приём событий реального присутствия в видео-уроке (Jitsi iframe API).
+
+    Вызывается через navigator.sendBeacon — без постоянного опроса, только на
+    вход/выход из конференции (≈2 запроса на участника за урок).
+    Body (form): event='join'|'leave', seconds=<int> (для leave).
+
+    'join'  → фиксируем РЕАЛЬНОЕ подключение стороны (это и есть сигнал, по
+              которому решается выплата в settle_after_end).
+    'leave' → накапливаем фактические секунды присутствия (для прозрачности).
+    """
+    booking = get_object_or_404(
+        Booking.objects.select_related('slot__teacher'), pk=booking_id,
+    )
+    user = request.user
+    tp = getattr(user, 'teacher_profile', None)
+    is_teacher = bool(tp and booking.slot.teacher_id == tp.pk)
+    is_student = (booking.student_id == user.pk)
+    if not (is_teacher or is_student):
+        return _json_error('Доступ запрещён', status=403)
+
+    event = (request.POST.get('event') or '').strip()
+    if event == 'join':
+        try:
+            booking.record_join(is_teacher=is_teacher)
+        except Exception:
+            logger.warning('record_join failed for booking %s', booking.pk, exc_info=True)
+    elif event == 'leave':
+        booking.add_presence_seconds(is_teacher=is_teacher, seconds=request.POST.get('seconds', 0))
+    else:
+        return _json_error('Неизвестное событие', status=400)
+    return JsonResponse({'ok': True})
 
 
 @authenticated_required

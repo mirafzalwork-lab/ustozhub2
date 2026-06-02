@@ -44,6 +44,12 @@
         {% trans 'открыт' %} {{ d.created_at|date:"d.m.Y H:i" }} ·
         {% trans 'статус' %}: <b>{{ d.get_status_display }}</b>
       </div>
+      <div class="ad-meta">
+        <i class="fas fa-video"></i> {% trans 'Присутствие' %}:
+        {% trans 'учитель' %} <b>{% widthratio d.booking.teacher_present_seconds 60 1 %} {% trans 'мин' %}</b>,
+        {% trans 'ученик' %} <b>{% widthratio d.booking.student_present_seconds 60 1 %} {% trans 'мин' %}</b>
+        {% if not d.booking.teacher_joined_at %} · <span style="color:#B91C1C">{% trans 'учитель не подключался' %}</span>{% endif %}
+      </div>
       <div class="ad-reason">{{ d.reason }}</div>
       {% if d.admin_note %}<div class="ad-meta">{% trans 'Заметка админа' %}: {{ d.admin_note }}</div>{% endif %}
 

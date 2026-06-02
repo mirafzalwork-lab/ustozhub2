@@ -2627,11 +2627,16 @@ class Booking(models.Model):
     started_at = models.DateTimeField(null=True, blank=True)
     ended_at = models.DateTimeField(null=True, blank=True)
 
-    # Присутствие: когда каждая сторона впервые открыла комнату урока.
+    # Присутствие: когда каждая сторона РЕАЛЬНО подключилась к видео-конференции
+    # (событие Jitsi videoConferenceJoined, а не просто открытие страницы).
     # Используется, чтобы НЕ платить учителю за урок, на который он не пришёл
     # (см. settle_after_end / mark_completed_lessons).
     teacher_joined_at = models.DateTimeField(null=True, blank=True)
     student_joined_at = models.DateTimeField(null=True, blank=True)
+    # Фактически проведённые в звонке секунды (накапливаются по событию выхода).
+    # Для прозрачности и разбора споров; жёстко выплату не блокируют.
+    teacher_present_seconds = models.PositiveIntegerField(default=0)
+    student_present_seconds = models.PositiveIntegerField(default=0)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -2933,6 +2938,24 @@ class Booking(models.Model):
         type(self).objects.filter(pk=self.pk).update(**updates)
         for field, value in updates.items():
             setattr(self, field, value)
+
+    def add_presence_seconds(self, *, is_teacher: bool, seconds: int):
+        """Накопить фактические секунды присутствия (по событию выхода из звонка).
+
+        Клампим до разумного потолка (длительность урока + 30 мин), чтобы
+        подделанное значение не раздуло метрику. Race-safe через F().
+        """
+        from django.db.models import F
+        try:
+            seconds = int(seconds)
+        except (TypeError, ValueError):
+            return
+        if seconds <= 0:
+            return
+        cap = self.slot.duration_minutes * 60 + 1800
+        seconds = min(seconds, cap)
+        field = 'teacher_present_seconds' if is_teacher else 'student_present_seconds'
+        type(self).objects.filter(pk=self.pk).update(**{field: F(field) + seconds})
 
     def settle_after_end(self) -> str:
         """Решает судьбу confirmed-урока после end_at на основе присутствия.

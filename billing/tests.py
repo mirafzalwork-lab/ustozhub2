@@ -2101,6 +2101,83 @@ class DisputeViewTests(TestCase):
         self.assertEqual(d.status, LessonDispute.Status.RESOLVED_REFUND)
 
 
+class LessonAttendanceTests(TestCase):
+    """Реальное присутствие в видео-уроке (события Jitsi → endpoint)."""
+
+    def setUp(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from teachers.models import TimeSlot, Booking
+        self.teacher, self.subject = _make_teacher_with_subject('at_t')
+        self.student = _make_student_with_balance('at_s', balance=Decimal('0'))
+        start = timezone.now() + timedelta(minutes=5)
+        self.slot = TimeSlot.objects.create(
+            teacher=self.teacher, start_at=start,
+            end_at=start + timedelta(minutes=60), status='booked',
+        )
+        self.booking = Booking.objects.create(
+            slot=self.slot, student=self.student, subject=self.subject,
+            status='confirmed', is_trial=False,
+        )
+        self.booking.meeting_url = self.booking.build_meeting_url()
+        self.booking.save(update_fields=['meeting_url'])
+
+    def _url(self):
+        from django.urls import reverse
+        return reverse('lesson_attendance_api', args=[self.booking.id])
+
+    def test_teacher_join_event_sets_real_join(self):
+        self.client.login(username='at_t', password='x' * 12)
+        r = self.client.post(self._url(), {'event': 'join'})
+        self.assertEqual(r.status_code, 200)
+        self.booking.refresh_from_db()
+        self.assertIsNotNone(self.booking.teacher_joined_at)
+        self.assertIsNone(self.booking.student_joined_at)
+
+    def test_leave_accumulates_and_clamps_seconds(self):
+        self.client.login(username='at_t', password='x' * 12)
+        self.client.post(self._url(), {'event': 'join'})
+        self.client.post(self._url(), {'event': 'leave', 'seconds': '600'})
+        self.booking.refresh_from_db()
+        self.assertEqual(self.booking.teacher_present_seconds, 600)
+        # Подделанное огромное значение клампится (60мин*60 + 1800 = 5400).
+        self.client.post(self._url(), {'event': 'leave', 'seconds': '999999'})
+        self.booking.refresh_from_db()
+        self.assertEqual(self.booking.teacher_present_seconds, 600 + 5400)
+
+    def test_non_participant_forbidden(self):
+        _make_student_with_balance('at_x', balance=Decimal('0'))
+        self.client.login(username='at_x', password='x' * 12)
+        r = self.client.post(self._url(), {'event': 'join'})
+        self.assertEqual(r.status_code, 403)
+        self.booking.refresh_from_db()
+        self.assertIsNone(self.booking.teacher_joined_at)
+        self.assertIsNone(self.booking.student_joined_at)
+
+    def test_settle_uses_real_join_not_page_open(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        # Учитель реально подключился (через endpoint) → урок завершается оплатой.
+        self.client.login(username='at_t', password='x' * 12)
+        self.client.post(self._url(), {'event': 'join'})
+        # Сдвигаем слот в прошлое и завершаем.
+        self.slot.start_at = timezone.now() - timedelta(minutes=70)
+        self.slot.end_at = timezone.now() - timedelta(minutes=10)
+        self.slot.save(update_fields=['start_at', 'end_at'])
+        self.booking.refresh_from_db()
+        self.assertEqual(self.booking.settle_after_end(), 'completed')
+
+    def test_settle_no_join_is_no_show(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        # Никто не подключался → no_show_teacher.
+        self.slot.start_at = timezone.now() - timedelta(minutes=70)
+        self.slot.end_at = timezone.now() - timedelta(minutes=10)
+        self.slot.save(update_fields=['start_at', 'end_at'])
+        self.booking.refresh_from_db()
+        self.assertEqual(self.booking.settle_after_end(), 'no_show_teacher')
+
+
 class EnrollmentConcurrencyTests(TransactionTestCase):
     reset_sequences = True
 
