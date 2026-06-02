@@ -1798,7 +1798,7 @@
                                 </div>
                                 <span class="hero-rating-pill">
                                     <i class="fas fa-star"></i> {{ teacher.rating|default:"5.0"|floatformat:1 }}
-                                    <span class="reviews">({{ teacher.reviews.count }})</span>
+                                    <span class="reviews">({{ teacher.total_reviews }})</span>
                                 </span>
                             </div>
 
@@ -2107,7 +2107,7 @@
                                         {% for ts in teacher.teachersubject_set.all|slice:":3" %}
                                             <span class="subject-tag">{{ ts.subject.name }}</span>
                                         {% endfor %}
-                                        {% with subj_total=teacher.teachersubject_set.count %}
+                                        {% with subj_total=teacher.teachersubject_set.all|length %}
                                             {% if subj_total > 3 %}
                                                 <span class="subject-tag subject-tag--more">+{{ subj_total|add:"-3" }}</span>
                                             {% endif %}

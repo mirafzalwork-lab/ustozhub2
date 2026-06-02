@@ -72,15 +72,27 @@ class User(AbstractUser):
         ]
 
     def save(self, *args, **kwargs):
+        # Пере-сжимаем аватар ТОЛЬКО когда он реально поменялся — иначе на каждом
+        # save() (правка профиля, обновление счётчиков и т.п.) шёл синхронный
+        # декод/энкод JPEG в request-потоке.
+        update_fields = kwargs.get('update_fields')
+        avatar_changed = True
+        if update_fields is not None and 'avatar' not in update_fields:
+            avatar_changed = False
+        elif self.pk and not self._state.adding:
+            try:
+                old_name = type(self).objects.only('avatar').get(pk=self.pk).avatar.name or ''
+                avatar_changed = old_name != ((self.avatar.name or '') if self.avatar else '')
+            except type(self).DoesNotExist:
+                avatar_changed = True
+
         super().save(*args, **kwargs)
-        
-        # Проверяем наличие аватара и существование файла
-        if self.avatar and hasattr(self.avatar, 'path') and os.path.exists(self.avatar.path):
+
+        if avatar_changed and self.avatar and hasattr(self.avatar, 'path') and os.path.exists(self.avatar.path):
             try:
                 img = Image.open(self.avatar.path)
                 if img.height > 300 or img.width > 300:
-                    output_size = (300, 300)
-                    img.thumbnail(output_size)
+                    img.thumbnail((300, 300))
                     img.save(self.avatar.path)
             except (IOError, OSError) as e:
                 # Логируем ошибку, но не прерываем сохранение пользователя
@@ -2650,6 +2662,8 @@ class Booking(models.Model):
             models.Index(fields=['status', 'expires_at']),
             models.Index(fields=['status', '-created_at']),
             models.Index(fields=['slot', 'status']),
+            # Горячий путь: уроки подписки (дашборды прогресса, выплаты).
+            models.Index(fields=['subscription', 'status']),
         ]
         constraints = [
             # На slot может быть только один Booking в активных статусах

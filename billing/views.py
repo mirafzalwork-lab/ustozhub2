@@ -1034,11 +1034,14 @@ def student_dashboard(request):
         avg_grade = round(float(avg_grade), 1)
 
     # Часы изучено: сумма длительностей completed-уроков
-    hours_studied = 0.0
-    for b in Booking.objects.filter(student=request.user, status='completed').only('slot__start_at', 'slot__end_at').select_related('slot'):
-        delta = b.slot.end_at - b.slot.start_at
-        hours_studied += delta.total_seconds() / 3600
-    hours_studied = round(hours_studied, 1)
+    # Часы изучено — одним агрегатом в БД (а не загрузкой всех уроков в Python).
+    from django.db.models import DurationField, ExpressionWrapper, F
+    _dur = Booking.objects.filter(
+        student=request.user, status='completed',
+    ).aggregate(total=Sum(ExpressionWrapper(
+        F('slot__end_at') - F('slot__start_at'), output_field=DurationField(),
+    )))['total']
+    hours_studied = round(_dur.total_seconds() / 3600, 1) if _dur else 0.0
 
     # Последние транзакции (3 шт)
     recent_tx = (
@@ -1061,36 +1064,44 @@ def student_dashboard(request):
         .select_related('slot__teacher__user', 'subject')
         .order_by('-slot__end_at')
     )
-    # Отфильтруем те, для которых уже есть активная подписка к (teacher, subject)
+    # Батчим: вместо 2 запросов на каждый пробный — 2 запроса на всех.
+    from collections import defaultdict
+    trials = list(completed_trials[:12])
+    pairs = {(t.slot.teacher_id, t.subject_id) for t in trials
+             if t.slot.teacher_id and t.subject_id}
+    # (teacher, subject), по которым уже есть активная подписка — одним запросом.
+    subscribed_pairs = set(
+        Subscription.objects.filter(
+            student=request.user, status__in=Subscription.ACTIVE_STATUSES,
+        ).values_list('teacher_id', 'subject_id')
+    )
+    # Тарифы для всех нужных учителей/предметов — одним запросом.
+    tariffs_by_pair = defaultdict(list)
+    if pairs:
+        t_ids = {p[0] for p in pairs}
+        s_ids = {p[1] for p in pairs}
+        for t in (Tariff.objects.filter(teacher_id__in=t_ids, subject_id__in=s_ids, is_active=True)
+                  .order_by('lessons_per_week', 'duration_months')):
+            tariffs_by_pair[(t.teacher_id, t.subject_id)].append(t)
+
     recent_trials_to_convert = []
-    for b in completed_trials:
-        teacher_p = b.slot.teacher
-        subj = b.subject
-        if not teacher_p or not subj:
+    seen = set()
+    for b in trials:
+        key = (b.slot.teacher_id, b.subject_id)
+        if not key[0] or not key[1] or key in subscribed_pairs or key in seen:
             continue
-        already_subscribed = Subscription.objects.filter(
-            student=request.user,
-            teacher=teacher_p,
-            subject=subj,
-            status__in=Subscription.ACTIVE_STATUSES,
-        ).exists()
-        if already_subscribed:
-            continue
-        # Подгружаем тарифы этого учителя по этому предмету
-        teacher_tariffs = Tariff.objects.filter(
-            teacher=teacher_p, subject=subj, is_active=True,
-        ).order_by('lessons_per_week', 'duration_months')[:3]
+        seen.add(key)
         delta_h = int((now - b.slot.end_at).total_seconds() / 3600)
         recent_trials_to_convert.append({
             'booking': b,
-            'teacher': teacher_p,
-            'subject': subj,
-            'tariffs': list(teacher_tariffs),
+            'teacher': b.slot.teacher,
+            'subject': b.subject,
+            'tariffs': tariffs_by_pair.get(key, [])[:3],
             'hours_since': delta_h,
             'days_since': delta_h // 24,
         })
-    # Покажем максимум 3 активных конверсии, чтобы не захламлять
-    recent_trials_to_convert = recent_trials_to_convert[:3]
+        if len(recent_trials_to_convert) >= 3:
+            break
 
     return render(request, 'billing/student_dashboard.html', {
         'wallet': wallet,

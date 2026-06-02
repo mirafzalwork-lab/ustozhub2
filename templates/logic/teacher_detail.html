@@ -21,11 +21,11 @@
   "jobTitle": "{% trans 'Репетитор' %}",
   {% if teacher.bio %}"description": "{{ teacher.bio|truncatechars:300|escapejs }}",{% endif %}
   "worksFor": {"@type":"EducationalOrganization","name":"UstozHub","url":"https://ustozhubedu.uz/"}
-  {% if teacher.reviews.count %}
+  {% if teacher.total_reviews %}
   ,"aggregateRating": {
     "@type": "AggregateRating",
     "ratingValue": "{{ teacher.average_rating|default:0|floatformat:1 }}",
-    "reviewCount": "{{ teacher.reviews.count }}",
+    "reviewCount": "{{ teacher.total_reviews }}",
     "bestRating": "5",
     "worstRating": "1"
   }
@@ -2461,7 +2461,7 @@
             <div class="content-card">
                 <h2 class="card-title">
                     <i class="fas fa-star"></i>
-                    {% trans 'Отзывы' %} ({{ reviews.count }})
+                    {% trans 'Отзывы' %} ({{ teacher.total_reviews }})
                 </h2>
 
                 {% if rating_stats.avg_knowledge %}

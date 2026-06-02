@@ -151,7 +151,10 @@ class Transaction(models.Model):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['wallet', '-created_at']),
-            models.Index(fields=['type', 'status']),
+            # Подсчёт заработка учителя/комиссии по кошельку и типу.
+            models.Index(fields=['wallet', 'type', 'status']),
+            # Доход платформы/выплаты за период (revenue по типу+статусу+дате).
+            models.Index(fields=['type', 'status', '-created_at']),
             models.Index(fields=['related_booking']),
             models.Index(fields=['related_subscription']),
         ]

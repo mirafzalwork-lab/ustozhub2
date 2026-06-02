@@ -98,15 +98,24 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'core.urls'
 
+_TEMPLATE_LOADERS = [
+    'django.template.loaders.filesystem.Loader',
+    'django.template.loaders.app_directories.Loader',
+]
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [TEMPLATES_DIRS,],
-        'APP_DIRS': True,
+        # APP_DIRS несовместим с явными loaders. В проде — cached.Loader
+        # (шаблон компилируется один раз и кэшируется в памяти процесса),
+        # в DEBUG — обычные загрузчики ради авто-перезагрузки.
         'OPTIONS': {
             'libraries': {
                 'custom_filters': 'teachers.templatetags.custom_filters',
             },
+            'loaders': _TEMPLATE_LOADERS if DEBUG else [
+                ('django.template.loaders.cached.Loader', _TEMPLATE_LOADERS),
+            ],
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
@@ -177,6 +186,9 @@ def _parse_database_url(url: str) -> dict:
         'HOST': p.hostname or '',
         'PORT': str(p.port) if p.port else '',
         'CONN_MAX_AGE': int(os.environ.get('DB_CONN_MAX_AGE', '60')),
+        # Переиспользуем соединения, но проверяем их живость (Django 4.1+),
+        # чтобы persistent-коннекты не падали на «stale connection».
+        'CONN_HEALTH_CHECKS': True,
         'OPTIONS': {
             # Для PG включаем SSL по умолчанию в проде (отключить можно через env)
             'sslmode': os.environ.get('DB_SSLMODE', 'prefer'),
@@ -285,6 +297,11 @@ STORAGES = {
 }
 
 AUTH_USER_MODEL = 'teachers.User'
+
+# Сессии: храним в кэше (Redis в проде) с фолбэком в БД — убирает SELECT/UPDATE
+# django_session на каждый авторизованный запрос, но сохраняет durability.
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+SESSION_CACHE_ALIAS = 'default'
 
 # Authentication URLs
 LOGIN_URL = 'login'

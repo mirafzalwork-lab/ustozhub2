@@ -840,18 +840,24 @@ def detail(request, id):
 
     reviews = teacher.reviews.select_related('student', 'subject').order_by('-created_at')
 
-    rating_stats = reviews.aggregate(
+    # Один проход вместо AVG + 5×COUNT (6 запросов → 1) по отзывам учителя.
+    _agg = reviews.aggregate(
         avg_knowledge=Avg('knowledge_rating'),
         avg_communication=Avg('communication_rating'),
-        avg_punctuality=Avg('punctuality_rating')
+        avg_punctuality=Avg('punctuality_rating'),
+        r5=Count('id', filter=Q(rating=5)),
+        r4=Count('id', filter=Q(rating=4)),
+        r3=Count('id', filter=Q(rating=3)),
+        r2=Count('id', filter=Q(rating=2)),
+        r1=Count('id', filter=Q(rating=1)),
     )
-
+    rating_stats = {
+        'avg_knowledge': _agg['avg_knowledge'],
+        'avg_communication': _agg['avg_communication'],
+        'avg_punctuality': _agg['avg_punctuality'],
+    }
     rating_distribution = {
-        5: reviews.filter(rating=5).count(),
-        4: reviews.filter(rating=4).count(),
-        3: reviews.filter(rating=3).count(),
-        2: reviews.filter(rating=2).count(),
-        1: reviews.filter(rating=1).count(),
+        5: _agg['r5'], 4: _agg['r4'], 3: _agg['r3'], 2: _agg['r2'], 1: _agg['r1'],
     }
 
     is_favorite = False
