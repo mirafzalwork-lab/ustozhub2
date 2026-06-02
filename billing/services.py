@@ -583,6 +583,14 @@ class SubscriptionService:
                 raise ValueError('Расписание уже сформировано.')
             if not weekly_pattern or not isinstance(weekly_pattern, list):
                 raise ValueError('Не выбран шаблон расписания.')
+            if len(weekly_pattern) != sub.lessons_per_week:
+                raise ValueError(
+                    f'Выберите ровно {sub.lessons_per_week} занятия в неделю '
+                    f'(выбрано {len(weekly_pattern)}).'
+                )
+            # Защита от прямого POST в обход UI: каждое (день, время) должно
+            # попадать в рабочие часы учителя и не повторяться.
+            cls._validate_pattern_within_schedule(sub, weekly_pattern)
             created = cls._generate_bookings_from_pattern(sub, weekly_pattern)
             sub.weekly_pattern = weekly_pattern
             sub.save(update_fields=['weekly_pattern', 'updated_at'])
@@ -614,6 +622,38 @@ class SubscriptionService:
                 _safe_reverse('home'),
             )
         return count
+
+    @classmethod
+    def _validate_pattern_within_schedule(cls, subscription, weekly_pattern: list) -> None:
+        """Каждое (день, время) шаблона должно попадать в рабочие часы учителя
+        с запасом на длительность урока и не дублироваться."""
+        intervals = subscription.teacher.get_schedule_intervals()
+        dur = subscription.lesson_duration_minutes
+        seen = set()
+        for entry in weekly_pattern:
+            day = (entry.get('day') or '').lower()
+            try:
+                t = dt_time.fromisoformat(entry.get('time'))
+            except (ValueError, TypeError):
+                raise ValueError('Некорректное время в расписании.')
+            key = (day, t.strftime('%H:%M'))
+            if key in seen:
+                raise ValueError('В шаблоне есть повторяющийся слот.')
+            seen.add(key)
+            start_min = t.hour * 60 + t.minute
+            end_min = start_min + dur
+            fits = False
+            for from_str, to_str in intervals.get(day, []):
+                try:
+                    f = dt_time.fromisoformat(from_str)
+                    to = dt_time.fromisoformat(to_str)
+                except (ValueError, TypeError):
+                    continue
+                if start_min >= f.hour * 60 + f.minute and end_min <= to.hour * 60 + to.minute:
+                    fits = True
+                    break
+            if not fits:
+                raise ValueError('Выбранное время вне рабочих часов учителя.')
 
     @classmethod
     def _generate_bookings_from_pattern(cls, subscription, weekly_pattern: list) -> list:
