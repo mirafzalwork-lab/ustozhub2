@@ -89,6 +89,12 @@ def billing_hub(request):
 
     Показывает ключевые метрики и ссылки на разделы.
     """
+    # ~18 агрегатов на загрузку → кэшируем сводку на 45с (данные общие).
+    from django.core.cache import cache as _cache
+    _c = _cache.get('billing_hub_ctx')
+    if _c is not None:
+        return render(request, 'billing/admin/hub.html', _c)
+
     now = timezone.now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     month_ago = now - timedelta(days=30)
@@ -161,7 +167,7 @@ def billing_hub(request):
         id__in=TeacherProfile.objects.values_list('user_id', flat=True),
     ).count()
 
-    return render(request, 'billing/admin/hub.html', {
+    ctx = {
         'platform': platform,
         'platform_balance': platform_balance,
         'total_escrow': total_escrow,
@@ -176,13 +182,15 @@ def billing_hub(request):
         'approved_withdrawals': approved_withdrawals,
         'withdrawals_month_amount': withdrawals_month_amount,
         # Phase 10:
-        'recent_transactions': recent_transactions,
-        'recent_subs': recent_subs,
-        'recent_withdrawals': recent_withdrawals,
+        'recent_transactions': list(recent_transactions),
+        'recent_subs': list(recent_subs),
+        'recent_withdrawals': list(recent_withdrawals),
         'new_users_24h': new_users_24h,
         'pending_moderation_count': pending_moderation_count,
         'orphan_teacher_users_count': orphan_teacher_users_count,
-    })
+    }
+    _cache.set('billing_hub_ctx', ctx, 45)
+    return render(request, 'billing/admin/hub.html', ctx)
 
 
 # ---------- Wallet search + top-up ----------
