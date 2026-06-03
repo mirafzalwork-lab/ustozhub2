@@ -841,19 +841,22 @@ def booking_cancel_api(request, booking_id):
                 logger.info(f'Trial refund: booking={booking.id}, amount={refunded}')
         except Exception as e:
             logger.error(f'Trial refund failed for booking={booking.id}: {e}', exc_info=True)
-    # Урок подписки: возвращаем его стоимость ученику и ужимаем пакет, иначе
-    # деньги зависают в эскроу и подписка не сможет завершиться.
+    # Урок подписки: применяем политику отмены (v2 Шаг 5). Заблаговременная
+    # отмена → возврат в квоту; поздняя отмена ученика → урок списывается
+    # учителю. Иначе деньги зависали бы в эскроу.
     elif booking.subscription_id:
         try:
             from billing.services import SubscriptionService
             by = 'student' if request.user.pk == booking.student_id else 'teacher'
-            refunded = SubscriptionService.refund_lesson(
+            result = SubscriptionService.cancel_lesson(
                 booking, cancelled_by=by, reason='Отмена урока',
             )
-            if refunded > 0:
-                logger.info(f'Lesson refund: booking={booking.id}, amount={refunded}')
+            logger.info(
+                f'Lesson cancel: booking={booking.id}, policy={result["policy"]}, '
+                f'refunded={result["refunded"]}, charged={result["charged"]}'
+            )
         except Exception as e:
-            logger.error(f'Lesson refund failed for booking={booking.id}: {e}', exc_info=True)
+            logger.error(f'Lesson cancel failed for booking={booking.id}: {e}', exc_info=True)
 
     return JsonResponse({'booking': _booking_to_dict(booking)})
 

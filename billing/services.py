@@ -1046,7 +1046,7 @@ class SubscriptionService:
     # ---- payout / completion --------------------------------------------
 
     @classmethod
-    def release_lesson_payout(cls, booking) -> bool:
+    def release_lesson_payout(cls, booking, *, allow_late_cancel: bool = False) -> bool:
         """Начислить деньги учителю и комиссию платформе за один проведённый урок.
 
         Атомарно:
@@ -1058,6 +1058,10 @@ class SubscriptionService:
           - lessons_paid_out += 1
           - если lessons_paid_out == total_lessons → status='completed'
 
+        allow_late_cancel: если True, допускает выплату по уроку, который ученик
+        отменил слишком поздно (cancelled_by_student) — штраф за позднюю отмену
+        уходит учителю (v2 Шаг 5).
+
         Возвращает True если payout произошёл, False если уже был сделан раньше.
         """
         from .platform_account import get_or_create_platform_user
@@ -1065,10 +1069,13 @@ class SubscriptionService:
         if booking.subscription_id is None:
             raise PayoutError('booking без subscription — нечего выплачивать')
         # Доставленный урок = учитель отработал: completed ИЛИ ученик не пришёл
-        # (no_show_student) — в обоих случаях деньги принадлежат учителю.
-        if booking.status not in ('completed', 'no_show_student'):
+        # (no_show_student); либо поздняя отмена ученика (штраф учителю).
+        allowed_statuses = ['completed', 'no_show_student']
+        if allow_late_cancel:
+            allowed_statuses.append('cancelled_by_student')
+        if booking.status not in allowed_statuses:
             raise PayoutError(
-                f'booking.status={booking.status}, ожидался completed/no_show_student'
+                f'booking.status={booking.status}, ожидался {"/".join(allowed_statuses)}'
             )
         # Заморозка выплаты на время открытого спора (ТЗ шаг 8).
         if LessonDispute.objects.filter(
@@ -1229,6 +1236,44 @@ class SubscriptionService:
                 sub.save(update_fields=['status', 'updated_at'])
 
             return amount
+
+    @classmethod
+    def cancel_lesson(cls, booking, *, cancelled_by: str, reason: str = '') -> dict:
+        """Политика отмены ОДНОГО урока подписки (v2 Шаг 5).
+
+        Правила:
+          * учитель отменяет → всегда полный возврат ученику (вина учителя);
+          * ученик отменяет заблаговременно (> CANCELLATION_FULL_REFUND_HOURS до
+            начала) → полный возврат, урок возвращается в квоту;
+          * ученик отменяет поздно (≤ порога) → урок списывается, штраф уходит
+            учителю (release_lesson_payout с allow_late_cancel).
+
+        Возвращает {'refunded': Decimal, 'charged': bool, 'policy': str}.
+        Предполагается, что статус booking уже переведён в cancelled_by_* вызовом
+        Booking.cancel_by_student/cancel_by_teacher.
+        """
+        if booking.subscription_id is None:
+            return {'refunded': Decimal('0.00'), 'charged': False, 'policy': 'not_subscription'}
+
+        # Учитель отменил — полный возврат независимо от времени.
+        if cancelled_by != 'student':
+            refunded = cls.refund_lesson(booking, cancelled_by=cancelled_by, reason=reason)
+            return {'refunded': refunded, 'charged': False, 'policy': 'teacher_full_refund'}
+
+        # Ученик: смотрим, насколько заблаговременно отменил.
+        threshold = timedelta(hours=settings.CANCELLATION_FULL_REFUND_HOURS)
+        lead = booking.slot.start_at - timezone.now()
+        if lead >= threshold:
+            refunded = cls.refund_lesson(booking, cancelled_by='student', reason=reason)
+            return {'refunded': refunded, 'charged': False, 'policy': 'student_full_refund'}
+
+        # Поздняя отмена — урок засчитывается учителю (без возврата ученику).
+        try:
+            cls.release_lesson_payout(booking, allow_late_cancel=True)
+        except PayoutError:
+            # Например, уже выплачен/возвращён — деньги тронуты не будут.
+            pass
+        return {'refunded': Decimal('0.00'), 'charged': True, 'policy': 'student_late_charge'}
 
     @classmethod
     def _generate_bookings_for_subscription(cls, subscription: Subscription) -> list:
