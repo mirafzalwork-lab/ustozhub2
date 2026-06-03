@@ -666,12 +666,14 @@ class SubscriptionService:
                 raise ValueError('Выбранное время вне рабочих часов учителя.')
 
     @classmethod
-    def _generate_bookings_from_pattern(cls, subscription, weekly_pattern: list) -> list:
-        """Бронирует total_lessons уроков по недельному шаблону (day/time).
+    def _generate_bookings_from_pattern(cls, subscription, weekly_pattern: list,
+                                        count: int = None) -> list:
+        """Бронирует уроки по недельному шаблону (day/time).
 
         Идёт по неделям вперёд; для каждого вхождения шаблона создаёт/занимает
         TimeSlot и Booking(confirmed). Занятые слоты пропускает (ищет на след.
-        неделе). Останавливается, когда набрал total_lessons или вышел лимит.
+        неделе). Останавливается, когда набрал нужное число уроков (count или
+        total_lessons) или вышел лимит.
         """
         from teachers.models import Booking, TimeSlot
 
@@ -679,7 +681,7 @@ class SubscriptionService:
         student = subscription.student
         subject = subscription.subject
         duration = timedelta(minutes=subscription.lesson_duration_minutes)
-        needed = subscription.total_lessons
+        needed = count if count is not None else subscription.total_lessons
         tz = timezone.get_current_timezone()
         now = timezone.now()
 
@@ -1043,6 +1045,95 @@ class SubscriptionService:
             'cancelled_bookings': cancelled_count,
         }
 
+    # ---- pause / resume (v2 Шаг 6) ---------------------------------------
+
+    @classmethod
+    def pause(cls, subscription: Subscription, *, reason: str = '') -> int:
+        """Приостановить активную подписку.
+
+        Деньги (escrow) остаются за подпиской — возврата нет. Будущие брони
+        снимаются и слоты освобождаются (календарь учителя на паузе свободен).
+        Прошедшие уроки не трогаем. Возвращает число снятых будущих броней.
+        """
+        from teachers.models import Booking
+        with transaction.atomic():
+            sub = Subscription.objects.select_for_update().get(pk=subscription.pk)
+            if sub.status != Subscription.Status.ACTIVE:
+                raise CancellationError(
+                    f'Приостановить можно только активную подписку '
+                    f'(сейчас «{sub.get_status_display()}»).'
+                )
+            now = timezone.now()
+            future = list(
+                Booking.objects
+                .filter(subscription=sub, status__in=('confirmed', 'pending'),
+                        slot__start_at__gt=now)
+                .select_related('slot')
+            )
+            freed = 0
+            for b in future:
+                b.status = 'expired'
+                b.expires_at = None
+                b.save(update_fields=['status', 'expires_at', 'updated_at'])
+                if b.slot and b.slot.status in ('booked', 'held'):
+                    b.slot.status = 'free'
+                    b.slot.hold_expires_at = None
+                    b.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+                freed += 1
+            sub.status = Subscription.Status.PAUSED
+            sub.paused_at = now
+            if reason:
+                sub.cancellation_reason = (reason or '').strip()[:1000]
+            sub.save(update_fields=['status', 'paused_at', 'cancellation_reason', 'updated_at'])
+
+        try:
+            cls._notify(sub.student, 'Подписка приостановлена',
+                        f'Подписка с {sub.teacher} на паузе. Возобновите в любой момент.')
+        except Exception:
+            logger.warning('pause notify failed sub=%s', sub.pk, exc_info=True)
+        return freed
+
+    @classmethod
+    def resume(cls, subscription: Subscription) -> int:
+        """Возобновить приостановленную подписку.
+
+        Срок (expires_at) сдвигается на длительность паузы, расписание
+        перегенерируется на оставшиеся уроки (total_lessons − completed_lessons).
+        Возвращает число вновь созданных броней.
+        """
+        with transaction.atomic():
+            sub = (Subscription.objects.select_for_update()
+                   .select_related('teacher', 'student', 'subject').get(pk=subscription.pk))
+            if sub.status != Subscription.Status.PAUSED:
+                raise CancellationError(
+                    f'Возобновить можно только приостановленную подписку '
+                    f'(сейчас «{sub.get_status_display()}»).'
+                )
+            now = timezone.now()
+            # Сдвигаем срок на длительность паузы.
+            if sub.paused_at and sub.expires_at:
+                sub.expires_at = sub.expires_at + (now - sub.paused_at)
+            sub.status = Subscription.Status.ACTIVE
+            sub.paused_at = None
+            sub.save(update_fields=['status', 'paused_at', 'expires_at', 'updated_at'])
+
+            remaining = max(0, sub.total_lessons - sub.completed_lessons)
+            created = []
+            if remaining > 0:
+                if sub.weekly_pattern:
+                    created = cls._generate_bookings_from_pattern(
+                        sub, sub.weekly_pattern, count=remaining)
+                else:
+                    created = cls._generate_bookings_for_subscription(sub, count=remaining)
+
+        try:
+            cls._notify(sub.student, 'Подписка возобновлена',
+                        f'Подписка с {sub.teacher} снова активна. '
+                        f'Запланировано уроков: {len(created)}.')
+        except Exception:
+            logger.warning('resume notify failed sub=%s', sub.pk, exc_info=True)
+        return len(created)
+
     # ---- payout / completion --------------------------------------------
 
     @classmethod
@@ -1276,7 +1367,8 @@ class SubscriptionService:
         return {'refunded': Decimal('0.00'), 'charged': True, 'policy': 'student_late_charge'}
 
     @classmethod
-    def _generate_bookings_for_subscription(cls, subscription: Subscription) -> list:
+    def _generate_bookings_for_subscription(cls, subscription: Subscription,
+                                            count: int = None) -> list:
         """Заполняет slots/bookings для подписки из teacher.weekly_schedule.
 
         Алгоритм:
@@ -1286,7 +1378,7 @@ class SubscriptionService:
           - Для каждого получившегося куска: либо переиспользуем существующий
             TimeSlot(status=free), либо создаём новый TimeSlot.
           - Помечаем его как 'booked' и создаём Booking(status='confirmed').
-          - Останавливаемся, когда набрали total_lessons.
+          - Останавливаемся, когда набрали нужное число (count или total_lessons).
         """
         from teachers.models import Booking, TimeSlot
 
@@ -1294,7 +1386,7 @@ class SubscriptionService:
         student = subscription.student
         subject = subscription.subject
         duration = timedelta(minutes=subscription.lesson_duration_minutes)
-        needed = subscription.total_lessons
+        needed = count if count is not None else subscription.total_lessons
 
         schedule = teacher.get_schedule_intervals()
         if not any(schedule.values()):
