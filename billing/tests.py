@@ -1363,6 +1363,8 @@ class LearningRequestFlowTests(TestCase):
         from billing.platform_account import get_or_create_platform_user
         self.platform = get_or_create_platform_user()
         self.teacher, self.subject = _make_teacher_with_subject('lr_t')
+        # Design A: бронирование идёт по реальным слотам календаря — открываем их из шаблона.
+        self.teacher.generate_slots_from_template(weeks=12, slot_minutes=60)
         self.tariff = _make_tariff(self.teacher, self.subject,
                                    lessons_per_week=2, duration_months=1,
                                    price=Decimal('800000'))
@@ -1697,6 +1699,8 @@ class EnrollmentViewTests(TestCase):
         from billing.platform_account import get_or_create_platform_user
         self.platform = get_or_create_platform_user()
         self.teacher, self.subject = _make_teacher_with_subject('ev_t')
+        # Design A: бронирование идёт по реальным слотам календаря — открываем их из шаблона.
+        self.teacher.generate_slots_from_template(weeks=12, slot_minutes=60)
         self.teacher.moderation_status = 'approved'
         self.teacher.is_active = True
         self.teacher.save()
@@ -1824,6 +1828,8 @@ class EnrollmentIntegrationTests(TestCase):
         from billing.platform_account import get_or_create_platform_user
         self.platform = get_or_create_platform_user()
         self.teacher, self.subject = _make_teacher_with_subject('in_t')
+        # Design A: бронирование идёт по реальным слотам календаря — открываем их из шаблона.
+        self.teacher.generate_slots_from_template(weeks=12, slot_minutes=60)
         self.student = _make_student_with_balance('in_s', balance=Decimal('3000000'))
 
     def _active_scheduled(self, lpw=2, months=1, price=Decimal('800000'),
@@ -1902,8 +1908,12 @@ class EnrollmentIntegrationTests(TestCase):
         while d.weekday() != 0:  # ближайший понедельник
             d += timedelta(days=1)
         start = timezone.make_aware(datetime.combine(d, datetime.min.time()).replace(hour=10), tz)
-        TimeSlot.objects.create(teacher=self.teacher, start_at=start,
-                                end_at=start + timedelta(minutes=60), status='booked')
+        # Слот уже открыт шаблоном — помечаем его занятым (а не плодим дубль).
+        taken = TimeSlot.objects.filter(
+            teacher=self.teacher, start_at=start, status='free').first()
+        self.assertIsNotNone(taken)
+        taken.status = 'booked'
+        taken.save(update_fields=['status'])
         created = SubscriptionService.book_schedule(
             sub, [{'day': 'monday', 'time': '10:00'}, {'day': 'wednesday', 'time': '10:00'}],
         )
@@ -2026,6 +2036,8 @@ class LessonDisputeTests(TestCase):
         from billing.platform_account import get_or_create_platform_user
         self.platform = get_or_create_platform_user()
         self.teacher, self.subject = _make_teacher_with_subject('di_t')
+        # Design A: бронирование идёт по реальным слотам календаря — открываем их из шаблона.
+        self.teacher.generate_slots_from_template(weeks=12, slot_minutes=60)
         self.tariff = _make_tariff(self.teacher, self.subject, lessons_per_week=2,
                                    duration_months=1, price=Decimal('800000'))
         self.student = _make_student_with_balance('di_s', balance=Decimal('1000000'))
@@ -2124,6 +2136,8 @@ class DisputeViewTests(TestCase):
         from billing.platform_account import get_or_create_platform_user
         self.platform = get_or_create_platform_user()
         self.teacher, self.subject = _make_teacher_with_subject('dv_t')
+        # Design A: бронирование идёт по реальным слотам календаря — открываем их из шаблона.
+        self.teacher.generate_slots_from_template(weeks=12, slot_minutes=60)
         self.tariff = _make_tariff(self.teacher, self.subject, lessons_per_week=2,
                                    duration_months=1, price=Decimal('800000'))
         self.student = _make_student_with_balance('dv_s', balance=Decimal('1000000'))

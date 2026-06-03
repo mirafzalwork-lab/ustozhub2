@@ -113,6 +113,11 @@
                 <i class="fas fa-money-bill"></i> {% trans 'Выплачено учителю' %}: <b>{{ s.teacher_earned_so_far|floatformat:0|intcomma }} {% trans 'сум' %}</b>
                 <small style="color:#94A3B8;">({{ s.lessons_paid_out }} {% trans 'уроков' %})</small>
               </div>
+              {% if s.status == 'active' and s.num_active_bookings < s.total_lessons %}
+                <a href="{% url 'subscription_schedule' s.id %}" class="pay-btn" style="background:var(--accent-color,#3B82F6); margin-top:12px;">
+                  <i class="fas fa-calendar-plus"></i> {% trans 'Дозаписать расписание' %} ({{ s.num_active_bookings }}/{{ s.total_lessons }})
+                </a>
+              {% endif %}
               {% if s.status == 'paused' %}
                 <div class="sub-step-box" style="margin-top:12px;">
                   <i class="fas fa-pause"></i>

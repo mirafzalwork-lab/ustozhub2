@@ -589,8 +589,15 @@ class SubscriptionService:
                    .select_related('teacher', 'subject').get(pk=subscription.pk))
             if sub.status != Subscription.Status.ACTIVE:
                 raise ValueError('Расписание доступно только для активной (оплаченной) подписки.')
-            if Booking.objects.filter(subscription=sub).exists():
-                raise ValueError('Расписание уже сформировано.')
+            # Дозапись: бронируем недостающие уроки (total − активные брони),
+            # чтобы при нехватке слотов ученик мог вернуться и добрать позже.
+            # Отменённые брони не считаем — иначе оплаченные уроки «потерялись» бы.
+            already = Booking.objects.filter(subscription=sub).exclude(
+                status__in=['cancelled_by_student', 'cancelled_by_teacher']
+            ).count()
+            remaining = sub.total_lessons - already
+            if remaining <= 0:
+                raise ValueError('Все уроки уже забронированы.')
             if not weekly_pattern or not isinstance(weekly_pattern, list):
                 raise ValueError('Не выбран шаблон расписания.')
             if len(weekly_pattern) != sub.lessons_per_week:
@@ -599,9 +606,9 @@ class SubscriptionService:
                     f'(выбрано {len(weekly_pattern)}).'
                 )
             # Защита от прямого POST в обход UI: каждое (день, время) должно
-            # попадать в рабочие часы учителя и не повторяться.
+            # соответствовать реальному свободному слоту календаря и не повторяться.
             cls._validate_pattern_within_schedule(sub, weekly_pattern)
-            created = cls._generate_bookings_from_pattern(sub, weekly_pattern)
+            created = cls._generate_bookings_from_pattern(sub, weekly_pattern, count=remaining)
             sub.weekly_pattern = weekly_pattern
             sub.save(update_fields=['weekly_pattern', 'updated_at'])
         return created
@@ -635,10 +642,24 @@ class SubscriptionService:
 
     @classmethod
     def _validate_pattern_within_schedule(cls, subscription, weekly_pattern: list) -> None:
-        """Каждое (день, время) шаблона должно попадать в рабочие часы учителя
-        с запасом на длительность урока и не дублироваться."""
-        intervals = subscription.teacher.get_schedule_intervals()
-        dur = subscription.lesson_duration_minutes
+        """Каждое (день, время) шаблона должно соответствовать РЕАЛЬНОМУ свободному
+        слоту календаря учителя нужной длительности; без повторов.
+
+        Design A: источник истины — реальные TimeSlot(status='free'), а не шаблон
+        weekly_schedule. Так бронируются только слоты, которые учитель открыл сам.
+        """
+        from teachers.models import TimeSlot
+        dur = timedelta(minutes=subscription.lesson_duration_minutes)
+        now = timezone.now()
+        available = set()  # {(day_key, 'HH:MM')} среди реальных свободных слотов вперёд
+        free = TimeSlot.objects.filter(
+            teacher=subscription.teacher, status='free', start_at__gte=now,
+        )
+        for s in free:
+            if (s.end_at - s.start_at) != dur:
+                continue
+            local = timezone.localtime(s.start_at)
+            available.add((_WEEKDAY_KEYS[local.weekday()], local.strftime('%H:%M')))
         seen = set()
         for entry in weekly_pattern:
             day = (entry.get('day') or '').lower()
@@ -650,20 +671,8 @@ class SubscriptionService:
             if key in seen:
                 raise ValueError('В шаблоне есть повторяющийся слот.')
             seen.add(key)
-            start_min = t.hour * 60 + t.minute
-            end_min = start_min + dur
-            fits = False
-            for from_str, to_str in intervals.get(day, []):
-                try:
-                    f = dt_time.fromisoformat(from_str)
-                    to = dt_time.fromisoformat(to_str)
-                except (ValueError, TypeError):
-                    continue
-                if start_min >= f.hour * 60 + f.minute and end_min <= to.hour * 60 + to.minute:
-                    fits = True
-                    break
-            if not fits:
-                raise ValueError('Выбранное время вне рабочих часов учителя.')
+            if key not in available:
+                raise ValueError('Выбранного слота нет среди свободных слотов учителя.')
 
     @classmethod
     def _generate_bookings_from_pattern(cls, subscription, weekly_pattern: list,
@@ -713,14 +722,12 @@ class SubscriptionService:
                 slot_end = start_dt + duration
                 if start_dt < now:
                     continue
+                # Design A: бронируем ТОЛЬКО реальные свободные слоты из календаря учителя.
+                # Если на эту неделю учитель не открыл слот — пропускаем (ничего не создаём).
                 slot = TimeSlot.objects.filter(
-                    teacher=teacher, start_at=start_dt, end_at=slot_end,
+                    teacher=teacher, start_at=start_dt, end_at=slot_end, status='free',
                 ).first()
                 if slot is None:
-                    slot = TimeSlot.objects.create(
-                        teacher=teacher, start_at=start_dt, end_at=slot_end, status='free',
-                    )
-                elif slot.status != 'free':
                     continue
                 slot.status = 'booked'
                 slot.save(update_fields=['status', 'updated_at'])

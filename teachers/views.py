@@ -1275,9 +1275,14 @@ def profile_view(request):
                 if first_booking_checklist else 0
             )
 
+            # Счётчики лидов (ученики, проявившие интерес) — для бейджа на кнопке
+            from .leads import count_teacher_leads
+            lead_counts = count_teacher_leads(teacher_profile)
+
             return render(request, 'logic/teacher_profile.html', {
                 'teacher': teacher_profile,
                 'views_stats': views_stats,
+                'lead_counts': lead_counts,
                 'activity_7d': activity_7d,
                 'activity_30d': activity_30d,
                 'activity_all': activity_all,

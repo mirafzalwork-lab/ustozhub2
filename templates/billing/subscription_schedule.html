@@ -40,8 +40,9 @@
 <div class="sch-page">
   <h1>{% trans 'Выберите расписание' %}</h1>
   <p class="subtitle">
-    {% blocktrans with n=sub.lessons_per_week %}Отметьте {{ n }} занятия в неделю — система забронирует все уроки на весь период.{% endblocktrans %}
-    {% trans 'Выбрано' %}: <span class="sch-counter" id="cnt">0</span> / {{ sub.lessons_per_week }}
+    {% blocktrans with n=sub.lessons_per_week %}Ниже — свободные слоты из календаря учителя. Отметьте {{ n }} в неделю: система забронирует эти реальные слоты по неделям на весь период подписки.{% endblocktrans %}
+    {% if booked_count %}<br><b>{% trans 'Уже забронировано' %}: {{ booked_count }} / {{ sub.total_lessons }}</b>{% endif %}
+    <br>{% trans 'Выбрано' %}: <span class="sch-counter" id="cnt">0</span> / {{ sub.lessons_per_week }}
   </p>
 
   {% if candidates %}
@@ -51,6 +52,7 @@
       {% for c in candidates %}
         <label class="sch-opt" data-opt>
           <input type="checkbox" name="slot" value="{{ c.value }}"> {{ c.label }}
+          <small style="color: var(--text-tertiary,#6B7280);" title="{% trans 'Свободных слотов на это время' %}">· {{ c.count }}×</small>
         </label>
       {% endfor %}
     </div>

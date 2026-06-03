@@ -370,30 +370,43 @@ def subscription_schedule(request, sub_id):
     if sub.status != Subscription.Status.ACTIVE:
         messages.info(request, 'Расписание доступно только для оплаченной подписки.')
         return redirect('my_subscriptions')
-    if sub.bookings.exists():
-        messages.info(request, 'Расписание уже сформировано.')
+    _active_bk = sub.bookings.exclude(
+        status__in=['cancelled_by_student', 'cancelled_by_teacher']
+    )
+    booked_count = _active_bk.count()
+    if booked_count >= sub.total_lessons:
+        messages.info(request, 'Все уроки уже забронированы.')
         return redirect('my_bookings_page')
 
-    # Кандидаты слотов из недельного расписания учителя, нарезанные по длительности.
-    from datetime import datetime as _dt, timedelta as _td
-    intervals = sub.teacher.get_schedule_intervals()
-    candidates = []  # [{'day','day_ru','time','label'}]
+    # Кандидаты — ТОЛЬКО реальные свободные слоты из календаря учителя
+    # (status='free', будущие, длительностью ровно как урок). Ничего не выдумываем.
+    from datetime import timedelta as _td
+    from django.utils import timezone as _tz
+    from teachers.models import TimeSlot
+    now = _tz.now()
+    dur = _td(minutes=sub.lesson_duration_minutes)
+    slot_counts = {}  # (day_key, 'HH:MM') -> число свободных слотов вперёд
+    free_slots = (
+        TimeSlot.objects
+        .filter(teacher=sub.teacher, status='free', start_at__gte=now)
+        .order_by('start_at')
+    )
+    for s in free_slots:
+        if (s.end_at - s.start_at) != dur:
+            continue
+        local = _tz.localtime(s.start_at)
+        key = (_WEEKDAY_ORDER[local.weekday()], local.strftime('%H:%M'))
+        slot_counts[key] = slot_counts.get(key, 0) + 1
+
+    candidates = []  # [{'day','day_ru','time','value','label','count'}]
     for day in _WEEKDAY_ORDER:
-        for from_str, to_str in intervals.get(day, []):
-            try:
-                cur = _dt.strptime(from_str, '%H:%M')
-                end = _dt.strptime(to_str, '%H:%M')
-            except (ValueError, TypeError):
-                continue
-            step = _td(minutes=sub.lesson_duration_minutes)
-            while cur + step <= end:
-                t = cur.strftime('%H:%M')
-                candidates.append({
-                    'day': day, 'day_ru': _WEEKDAY_RU[day], 'time': t,
-                    'value': f'{day}|{t}',
-                    'label': f'{_WEEKDAY_RU[day]} {t}',
-                })
-                cur += step
+        for t in sorted(tm for (d, tm) in slot_counts if d == day):
+            candidates.append({
+                'day': day, 'day_ru': _WEEKDAY_RU[day], 'time': t,
+                'value': f'{day}|{t}',
+                'label': f'{_WEEKDAY_RU[day]} {t}',
+                'count': slot_counts[(day, t)],
+            })
 
     if request.method == 'POST':
         selected = request.POST.getlist('slot')
@@ -411,16 +424,34 @@ def subscription_schedule(request, sub_id):
         else:
             try:
                 created = SubscriptionService.book_schedule(sub, pattern)
+                total_booked = sub.bookings.exclude(
+                    status__in=['cancelled_by_student', 'cancelled_by_teacher']
+                ).count()
+                if total_booked >= sub.total_lessons:
+                    messages.success(
+                        request,
+                        f'Расписание сформировано: забронировано {len(created)} уроков.',
+                    )
+                    return redirect('my_bookings_page')
+                # Частично: свободных слотов учителя не хватило на весь объём.
                 messages.success(
                     request,
-                    f'Расписание сформировано: забронировано {len(created)} уроков.',
+                    f'Забронировано ещё {len(created)} уроков по свободным слотам учителя '
+                    f'({total_booked} из {sub.total_lessons}).',
                 )
-                return redirect('my_bookings_page')
+                messages.info(
+                    request,
+                    'Остальные уроки можно добрать здесь же, когда учитель откроет новые '
+                    'слоты в календаре — напишите ему с просьбой добавить время.',
+                )
+                return redirect('subscription_schedule', sub_id=sub.id)
             except ValueError as e:
                 messages.error(request, str(e))
 
     return render(request, 'billing/subscription_schedule.html', {
         'sub': sub, 'candidates': candidates,
+        'booked_count': booked_count,
+        'remaining': sub.total_lessons - booked_count,
     })
 
 
@@ -479,11 +510,14 @@ def my_subscriptions(request):
     чтобы ученик мог оценить каждый урок отдельно.
     """
     from teachers.models import Booking
+    from django.db.models import Count, Q
 
     subs = (
         Subscription.objects
         .filter(student=request.user)
         .select_related('teacher__user', 'subject', 'tariff')
+        .annotate(num_active_bookings=Count('bookings', filter=~Q(
+            bookings__status__in=['cancelled_by_student', 'cancelled_by_teacher'])))
         .order_by('-created_at')
     )
     active = [s for s in subs if s.status in Subscription.ACTIVE_STATUSES]
