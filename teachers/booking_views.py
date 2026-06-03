@@ -910,12 +910,19 @@ _MEETING_URL_ALLOWED_SCHEMES = ('https://',)
 
 def _validate_meeting_url(url: str) -> tuple[bool, str]:
     """
-    Простая валидация URL для встречи: должен быть http(s), длина ≤ 500,
-    выглядит как URL. Возвращает (ok, error_msg).
+    Валидация URL для встречи: должен быть http(s), длина ≤ 500, выглядит как URL.
+
+    Анти-обход (v2 Шаг 7): если ALLOW_EXTERNAL_MEETING_URLS выключено (по умолчанию),
+    внешние ссылки (Zoom/Meet и т.п.) запрещены — разрешена только встроенная
+    Jitsi-комната. Это закрывает канал увода урока с платформы и сохраняет
+    корректный детект неявок (присутствие трекается только в нашей комнате).
+
+    Возвращает (ok, error_msg).
     """
+    from django.conf import settings
     url = (url or '').strip()
     if not url:
-        return True, ''  # пусто — это ок, учитель может оставить пустым
+        return True, ''  # пусто — это ок, подставится наша Jitsi-комната
     if len(url) > _MEETING_URL_MAX_LEN:
         return False, f'URL слишком длинный (макс {_MEETING_URL_MAX_LEN})'
     if not url.lower().startswith(_MEETING_URL_ALLOWED_SCHEMES):
@@ -928,6 +935,14 @@ def _validate_meeting_url(url: str) -> tuple[bool, str]:
             return False, 'Некорректный URL'
     except Exception:
         return False, 'Некорректный URL'
+    # Запрет внешних ссылок (кроме нашей Jitsi-комнаты).
+    if not getattr(settings, 'ALLOW_EXTERNAL_MEETING_URLS', False):
+        base = (getattr(settings, 'JITSI_BASE_URL', '') or '').rstrip('/')
+        if not (base and url.startswith(base)):
+            return False, (
+                'Внешние ссылки на встречу отключены. Оставьте поле пустым — '
+                'урок пройдёт во встроенной видеокомнате платформы.'
+            )
     return True, ''
 
 

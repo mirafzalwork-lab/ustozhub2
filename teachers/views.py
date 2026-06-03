@@ -27,7 +27,7 @@ from .models import (
     TeacherSubject, Certificate, User, Favorite, FavoriteStudent,
     Conversation, Message, Review, ViewCounter, TelegramUser,
     SubjectCategory, SubjectSearchLog, Notification, NotificationRead,
-    DailyReminderTemplate, Booking,
+    DailyReminderTemplate, Booking, LeadOptOut,
 )
 from .search import (
     normalize_query, build_teacher_search_q,
@@ -125,8 +125,29 @@ def can_view_contact_info(request, profile_owner):
     # Администратор всегда видит контакты
     if request.user.is_staff or request.user.is_superuser:
         return True
-    
-    # Обычные пользователи НЕ могут видеть контакты — общение только через платформу
+
+    # Анти-обход (v2 Шаг 7): контакты открываются только после порога доверия —
+    # когда между учеником и учителем проведено достаточно оплаченных уроков
+    # (платформа уже заработала на связке). До этого — общение только в чате.
+    try:
+        from .contact_filter import paid_lessons_between, should_mask_for_pair
+        viewer = request.user
+        owner = profile_owner
+        teacher_profile = None
+        student_user = None
+        if getattr(viewer, 'user_type', None) == 'teacher' and getattr(owner, 'user_type', None) == 'student':
+            teacher_profile = getattr(viewer, 'teacher_profile', None)
+            student_user = owner
+        elif getattr(viewer, 'user_type', None) == 'student' and getattr(owner, 'user_type', None) == 'teacher':
+            teacher_profile = getattr(owner, 'teacher_profile', None)
+            student_user = viewer
+        if teacher_profile and student_user:
+            # should_mask=False ⇒ порог пройден ⇒ контакты можно показать.
+            return not should_mask_for_pair(student_user, teacher_profile)
+    except Exception:
+        pass
+
+    # По умолчанию — контакты скрыты, общение только через платформу.
     return False
 
 
@@ -1505,6 +1526,30 @@ def toggle_favorite_student(request, student_id):
 
 
 @login_required
+def lead_opt_out(request, teacher_id):
+    """Ученик говорит учителю «не интересно».
+
+    Создаёт LeadOptOut: учитель теряет право писать первым и пропадает из
+    раздела «Потенциальные ученики». Повторный вызов снимает отказ (toggle).
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Неверный метод'})
+
+    if request.user.user_type != 'student':
+        return JsonResponse({'success': False, 'error': 'Доступ запрещен'})
+
+    teacher = get_object_or_404(TeacherProfile, id=teacher_id)
+
+    opt, created = LeadOptOut.objects.get_or_create(
+        student=request.user, teacher=teacher
+    )
+    if not created:
+        opt.delete()
+        return JsonResponse({'success': True, 'opted_out': False})
+    return JsonResponse({'success': True, 'opted_out': True})
+
+
+@login_required
 def my_favorite_teachers(request):
     """Список избранных учителей для ученика"""
     if request.user.user_type != 'student':
@@ -1526,6 +1571,70 @@ def my_favorite_students(request):
     favorites = FavoriteStudent.objects.select_related('student__user', 'student__city').filter(teacher=request.user.teacher_profile)
     students = [f.student for f in favorites]
     return render(request, 'logic/favorites_students.html', {'students': students})
+
+
+@login_required
+def potential_students(request):
+    """Раздел «Потенциальные ученики» (лиды) для учителя.
+
+    Показывает горячих (🔥 пробный урок) и тёплых (⭐ избранное) лидов.
+    Фильтр ?status=hot|warm. Для каждого лида определяется состояние диалога:
+    можно ли написать первым / ждём ответа / переписка уже идёт.
+    """
+    from .leads import (
+        get_teacher_leads, count_teacher_leads,
+        LEAD_HOT, LEAD_WARM, LEAD_STATUS_LABELS,
+        teacher_can_send_in_conversation,
+    )
+
+    if request.user.user_type != 'teacher' or not hasattr(request.user, 'teacher_profile'):
+        messages.error(request, 'Доступ запрещен')
+        return redirect('home')
+
+    teacher_profile = request.user.teacher_profile
+
+    all_leads = get_teacher_leads(teacher_profile)
+    counts = count_teacher_leads(teacher_profile)
+
+    status_filter = request.GET.get('status')
+    if status_filter in (LEAD_HOT, LEAD_WARM):
+        visible = [l for l in all_leads if l['status'] == status_filter]
+    else:
+        status_filter = None
+        visible = all_leads
+
+    # Состояние переписки по каждому лиду одним запросом (без N+1).
+    student_ids = [l['student_user'].id for l in visible]
+    conv_by_student = {
+        c.student_id: c
+        for c in Conversation.objects.filter(
+            teacher=teacher_profile, student_id__in=student_ids
+        )
+    }
+
+    items = []
+    for l in visible:
+        student_user = l['student_user']
+        conv = conv_by_student.get(student_user.id)
+        if conv is None:
+            chat_state = 'can_write'        # можно отправить первое сообщение
+        else:
+            allowed, _r = teacher_can_send_in_conversation(conv)
+            chat_state = 'open' if allowed else 'awaiting_reply'
+        items.append({
+            **l,
+            'status_label': LEAD_STATUS_LABELS.get(l['status'], ''),
+            'conversation': conv,
+            'chat_state': chat_state,
+        })
+
+    return render(request, 'logic/potential_students.html', {
+        'items': items,
+        'counts': counts,
+        'status_filter': status_filter,
+        'LEAD_HOT': LEAD_HOT,
+        'LEAD_WARM': LEAD_WARM,
+    })
 
 
 @login_required
@@ -1694,8 +1803,11 @@ def conversation_detail(request, conversation_id):
                 message = form.save(commit=False)
                 message.conversation = conversation
                 message.sender = user
+                # Анти-обход: маскируем контакты до порога доверия (v2 Шаг 7).
+                from .contact_filter import apply_contact_policy
+                message.content, _masked = apply_contact_policy(conversation, message.content)
                 message.save()
-                
+
                 # Обновляем время последнего обновления переписки
                 conversation.save()  # updated_at обновится автоматически
                 
@@ -1749,6 +1861,21 @@ def start_conversation(request, user_id):
         if target_user.user_type != 'student':
             messages.error(request, 'Вы можете писать только ученикам')
             return redirect('home')
+
+        # ГЕЙТИНГ: учитель пишет первым только лидам (избранное / пробный урок).
+        # Если ученик уже отвечал в существующем чате — это обычная переписка,
+        # ограничение снимается.
+        from .leads import teacher_can_open_conversation
+        existing = Conversation.objects.filter(
+            teacher=teacher_profile, student=student
+        ).first()
+        if not teacher_can_open_conversation(teacher_profile, student, existing):
+            messages.error(
+                request,
+                'Написать можно только ученикам, которые добавили вас в избранное '
+                'или забронировали пробный урок.'
+            )
+            return redirect('student_detail', id=student.id)
     else:
         # Текущий пользователь - ученик
         if target_user.user_type != 'teacher':
@@ -1792,12 +1919,27 @@ def send_message_ajax(request, conversation_id):
     try:
         conversation = _get_user_conversation(user, conversation_id)
 
+        # АНТИСПАМ: учитель вправе отправить только одно первое сообщение,
+        # пока ученик не ответил.
+        if user == conversation.teacher.user:
+            from .leads import teacher_can_send_in_conversation
+            allowed, _reason = teacher_can_send_in_conversation(conversation)
+            if not allowed:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Вы уже отправили первое сообщение. '
+                             'Дождитесь ответа ученика, чтобы продолжить переписку.'
+                }, status=403)
+
         # Проверяем форму
         form = MessageForm(request.POST)
         if form.is_valid():
             message = form.save(commit=False)
             message.conversation = conversation
             message.sender = user
+            # Анти-обход: маскируем контакты до порога доверия (v2 Шаг 7).
+            from .contact_filter import apply_contact_policy
+            message.content, _masked = apply_contact_policy(conversation, message.content)
             message.save()
 
             # Обновляем время последнего обновления переписки

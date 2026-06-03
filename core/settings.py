@@ -417,6 +417,18 @@ CANCELLATION_FULL_REFUND_HOURS = int(
     os.environ.get('CANCELLATION_FULL_REFUND_HOURS', '24')
 )
 
+# --- Анти-обход платформы (v2 Шаг 7) ---
+# Маскировать контакты (телефоны/ссылки/@) в чате, пока в паре (ученик, учитель)
+# меньше этого числа оплаченных уроков. 0 — отключить маскировку.
+CONTACT_MASK_MIN_PAID_LESSONS = int(
+    os.environ.get('CONTACT_MASK_MIN_PAID_LESSONS', '5')
+)
+# Разрешать ли учителю задавать внешнюю видеоссылку (Zoom/Meet). По умолчанию
+# нет — только своя Jitsi-комната (защита от обхода + корректный детект неявок).
+ALLOW_EXTERNAL_MEETING_URLS = (
+    os.environ.get('ALLOW_EXTERNAL_MEETING_URLS', 'false').lower() == 'true'
+)
+
 # Минимальное число месяцев в подписке.
 SUBSCRIPTION_MIN_MONTHS = int(os.environ.get('SUBSCRIPTION_MIN_MONTHS', '1'))
 

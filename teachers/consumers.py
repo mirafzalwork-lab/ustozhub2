@@ -256,6 +256,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     await self.send_error('Too many messages, please wait')
                     return
                 
+                # ✅ Антиспам: учитель не может отправить второе сообщение,
+                # пока ученик не ответил на первое.
+                if await self.teacher_first_message_blocked():
+                    await self.send_error(
+                        'Вы уже отправили первое сообщение. '
+                        'Дождитесь ответа ученика, чтобы продолжить переписку.'
+                    )
+                    return
+
                 # ✅ Сохраняем сообщение в БД
                 chat_message = await self.save_message(message_text)
                 
@@ -377,6 +386,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return False
 
     @database_sync_to_async
+    def teacher_first_message_blocked(self):
+        """True, если отправитель — учитель и он уже исчерпал право на одно
+        первое сообщение (ученик ещё не ответил)."""
+        try:
+            if not self.conversation:
+                return False
+            if self.user != self.conversation.teacher.user:
+                return False
+            from .leads import teacher_can_send_in_conversation
+            allowed, _reason = teacher_can_send_in_conversation(self.conversation)
+            return not allowed
+        except Exception as e:
+            logger.error(f"Error in teacher_first_message_blocked: {e}", exc_info=True)
+            return False
+
+    @database_sync_to_async
     def save_message(self, message_text):
         """
         ✅ Сохраняет сообщение в БД с обработкой исключений
@@ -385,7 +410,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             if not self.conversation:
                 logger.error(f"Conversation not loaded for user_id={self.user.pk}")
                 return None
-            
+
+            # Анти-обход: маскируем контакты до порога доверия (v2 Шаг 7).
+            from .contact_filter import apply_contact_policy
+            message_text, _masked = apply_contact_policy(self.conversation, message_text)
+
             message = Message.objects.create(
                 conversation=self.conversation,
                 sender=self.user,
