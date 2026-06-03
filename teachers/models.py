@@ -2651,6 +2651,10 @@ class Booking(models.Model):
     teacher_present_seconds = models.PositiveIntegerField(default=0)
     student_present_seconds = models.PositiveIntegerField(default=0)
 
+    # Аудит переносов: сколько раз эту бронь переносил ученик и когда последний раз.
+    reschedule_count = models.PositiveSmallIntegerField(default=0)
+    rescheduled_at = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -2864,10 +2868,18 @@ class Booking(models.Model):
     def reschedule_by_student(self, new_slot_id):
         """Ученик переносит активную бронь на другой свободный слот того же учителя.
 
-        Старый слот освобождается, новый берётся в hold, бронь возвращается в
-        статус pending (учитель должен заново подтвердить новое время).
-        Race-safe: select_for_update на обоих слотах.
+        Правила (v2 Шаг 3):
+          * нельзя переносить позже чем за RESCHEDULE_MIN_LEAD_HOURS до начала урока;
+          * для урока в рамках оплаченной подписки действует месячный лимит переносов
+            (SUBSCRIPTION_FREE_RESCHEDULES_PER_MONTH) и НОВЫЙ слот сразу становится
+            подтверждённым (confirmed) — слоты учителя уже его доступность, повторное
+            подтверждение не нужно, оплаченный урок не «теряется»;
+          * разовый/пробный урок (без подписки) переносится в pending+hold — учитель
+            подтверждает новое время, как раньше.
+        Аудит: reschedule_count++ и rescheduled_at.
+        Race-safe: select_for_update на брони и обоих слотах.
         """
+        from django.conf import settings
         from django.db import transaction
         with transaction.atomic():
             # Перечитываем бронь под локом — иначе параллельный confirm() мог
@@ -2879,12 +2891,35 @@ class Booking(models.Model):
             if str(new_slot_id) == str(locked.slot_id):
                 raise ValueError('Это тот же самый слот')
 
+            now = timezone.now()
+            # Дедлайн: запрещаем перенос слишком близко к началу текущего урока.
+            lead_hours = settings.RESCHEDULE_MIN_LEAD_HOURS
+            if locked.slot.start_at - now < timedelta(hours=lead_hours):
+                raise ValueError(
+                    f'Перенести урок можно не позднее чем за {lead_hours} ч до начала.'
+                )
+
+            is_subscription = locked.subscription_id is not None
+
+            # Месячный лимит переносов — только для подписочных уроков.
+            sub = None
+            if is_subscription:
+                from billing.models import Subscription
+                sub = Subscription.objects.select_for_update().get(pk=locked.subscription_id)
+                period = now.strftime('%Y-%m')
+                limit = settings.SUBSCRIPTION_FREE_RESCHEDULES_PER_MONTH
+                used = sub.reschedules_used if sub.reschedules_period == period else 0
+                if used >= limit:
+                    raise ValueError(
+                        f'Лимит переносов в этом месяце исчерпан ({limit}).'
+                    )
+
             new_slot = TimeSlot.objects.select_for_update().get(pk=new_slot_id)
             if new_slot.teacher_id != locked.slot.teacher_id:
                 raise ValueError('Новый слот принадлежит другому учителю')
             if new_slot.status != 'free':
                 raise SlotUnavailable(f'Слот {new_slot_id} уже занят')
-            if new_slot.start_at <= timezone.now():
+            if new_slot.start_at <= now:
                 raise SlotUnavailable(f'Слот {new_slot_id} уже начался или в прошлом')
 
             old_slot = TimeSlot.objects.select_for_update().get(pk=locked.slot_id)
@@ -2892,16 +2927,42 @@ class Booking(models.Model):
             old_slot.hold_expires_at = None
             old_slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
 
-            expires = self.compute_hold_expiry(new_slot)
-            new_slot.status = 'held'
-            new_slot.hold_expires_at = expires
-            new_slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+            if is_subscription:
+                # Оплаченный урок не теряем: новый слот сразу booked + confirmed.
+                new_slot.status = 'booked'
+                new_slot.hold_expires_at = None
+                new_slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+                locked.slot = new_slot
+                locked.status = 'confirmed'
+                locked.expires_at = None
+            else:
+                # Разовый/пробный урок — снова в hold, ждёт подтверждения учителя.
+                expires = self.compute_hold_expiry(new_slot)
+                new_slot.status = 'held'
+                new_slot.hold_expires_at = expires
+                new_slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+                locked.slot = new_slot
+                locked.status = 'pending'
+                locked.expires_at = expires
 
-            locked.slot = new_slot
-            locked.status = 'pending'
-            locked.expires_at = expires
-            locked.save(update_fields=['slot', 'status', 'expires_at', 'updated_at'])
+            locked.reschedule_count = (locked.reschedule_count or 0) + 1
+            locked.rescheduled_at = now
+            locked.save(update_fields=[
+                'slot', 'status', 'expires_at',
+                'reschedule_count', 'rescheduled_at', 'updated_at',
+            ])
+
+            # Фиксируем месячный счётчик переносов подписки.
+            if sub is not None:
+                if sub.reschedules_period == now.strftime('%Y-%m'):
+                    sub.reschedules_used = sub.reschedules_used + 1
+                else:
+                    sub.reschedules_period = now.strftime('%Y-%m')
+                    sub.reschedules_used = 1
+                sub.save(update_fields=['reschedules_used', 'reschedules_period', 'updated_at'])
+
             self.refresh_from_db()
+            return locked.status
 
     def expire(self):
         """Hold протух (вызывается Celery задачей). slot снова free.

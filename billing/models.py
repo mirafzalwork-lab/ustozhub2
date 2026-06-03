@@ -402,6 +402,13 @@ class Subscription(models.Model):
         help_text='Сколько уроков уже выплачено учителю (после grace window).',
     )
 
+    # ---- Лимит переносов (на подписку, окно — календарный месяц) ----
+    reschedules_used = models.PositiveSmallIntegerField(default=0)
+    reschedules_period = models.CharField(
+        max_length=7, blank=True, default='',
+        help_text='Месяц действия счётчика переносов в формате YYYY-MM.',
+    )
+
     # ---- Даты ----
     started_at = models.DateTimeField(null=True, blank=True)
     expires_at = models.DateTimeField(null=True, blank=True)

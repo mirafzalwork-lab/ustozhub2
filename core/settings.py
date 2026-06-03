@@ -408,6 +408,15 @@ SUBSCRIPTION_FREE_RESCHEDULES_PER_MONTH = int(
     os.environ.get('SUBSCRIPTION_FREE_RESCHEDULES_PER_MONTH', '2')
 )
 
+# Минимальный запас (в часах) до начала урока, в который ещё можно перенести бронь.
+RESCHEDULE_MIN_LEAD_HOURS = int(os.environ.get('RESCHEDULE_MIN_LEAD_HOURS', '4'))
+
+# Порог (в часах) до начала урока для полного возврата при отмене урока подписки.
+# Отмена раньше порога → урок возвращается в квоту; позже → списывается учителю.
+CANCELLATION_FULL_REFUND_HOURS = int(
+    os.environ.get('CANCELLATION_FULL_REFUND_HOURS', '24')
+)
+
 # Минимальное число месяцев в подписке.
 SUBSCRIPTION_MIN_MONTHS = int(os.environ.get('SUBSCRIPTION_MIN_MONTHS', '1'))
 

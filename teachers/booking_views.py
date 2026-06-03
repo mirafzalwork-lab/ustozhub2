@@ -883,7 +883,7 @@ def booking_reschedule_api(request, booking_id):
         return _json_error('slot_id обязателен')
 
     try:
-        booking.reschedule_by_student(new_slot_id)
+        new_status = booking.reschedule_by_student(new_slot_id)
     except SlotUnavailable as e:
         return _json_error(f'Слот недоступен: {e}', status=409)
     except TimeSlot.DoesNotExist:
@@ -891,9 +891,11 @@ def booking_reschedule_api(request, booking_id):
     except ValueError as e:
         return _json_error(str(e), status=409)
 
-    # Уведомляем учителя о новой заявке на подтверждение
+    # Подписочный урок переносится сразу в confirmed (повторное подтверждение не
+    # нужно) — просто уведомляем учителя о смене времени. Разовый/пробный урок
+    # возвращается в pending → учитель должен подтвердить новое время.
     _notify_teacher_about_booking(booking)
-    logger.info(f'Booking rescheduled: {booking.pk} → slot={new_slot_id}')
+    logger.info(f'Booking rescheduled: {booking.pk} → slot={new_slot_id} (status={new_status})')
     return JsonResponse({'booking': _booking_to_dict(booking)})
 
 

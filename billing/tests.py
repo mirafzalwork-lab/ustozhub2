@@ -1928,8 +1928,12 @@ class EnrollmentIntegrationTests(TestCase):
         sub.refresh_from_db()
         self.assertEqual(b.slot_id, new_slot.id)
         self.assertEqual(b.subscription_id, sub.id)
-        self.assertEqual(b.status, 'pending')  # учитель переподтверждает
+        # v2 Шаг 3: подписочный урок остаётся confirmed (повторное подтверждение
+        # учителя не требуется — слоты учителя уже его доступность).
+        self.assertEqual(b.status, 'confirmed')
+        self.assertEqual(new_slot.__class__.objects.get(pk=new_slot.id).status, 'booked')
         self.assertEqual(sub.escrow_balance, escrow_before)
+        self.assertEqual(b.reschedule_count, 1)
 
     def test_cancel_lesson_refund_in_flow(self):
         sub = self._active_scheduled(key='cl')
