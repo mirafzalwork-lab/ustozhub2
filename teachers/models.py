@@ -2922,6 +2922,28 @@ class Booking(models.Model):
             if new_slot.start_at <= now:
                 raise SlotUnavailable(f'Слот {new_slot_id} уже начался или в прошлом')
 
+            # Недельная квота (v2 Шаг 4): нельзя переносом превысить число уроков
+            # в неделю по тарифу — иначе ученик стащил бы 4 урока в одну неделю.
+            if is_subscription and sub is not None:
+                monday = (new_slot.start_at
+                          - timedelta(days=new_slot.start_at.weekday())
+                          ).replace(hour=0, minute=0, second=0, microsecond=0)
+                next_monday = monday + timedelta(days=7)
+                week_active = (
+                    type(self).objects
+                    .filter(subscription_id=sub.pk,
+                            status__in=('pending', 'confirmed'),
+                            slot__start_at__gte=monday,
+                            slot__start_at__lt=next_monday)
+                    .exclude(pk=locked.pk)
+                    .count()
+                )
+                if week_active >= sub.lessons_per_week:
+                    raise ValueError(
+                        f'В выбранной неделе уже максимум уроков по вашему тарифу '
+                        f'({sub.lessons_per_week}). Выберите другую неделю.'
+                    )
+
             old_slot = TimeSlot.objects.select_for_update().get(pk=locked.slot_id)
             old_slot.status = 'free'
             old_slot.hold_expires_at = None

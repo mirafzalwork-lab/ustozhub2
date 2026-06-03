@@ -1918,7 +1918,9 @@ class EnrollmentIntegrationTests(TestCase):
         sub = self._active_scheduled(key='resch')
         b = sub.bookings.order_by('slot__start_at').first()
         escrow_before = sub.escrow_balance
-        new_start = b.slot.start_at + timedelta(days=14)
+        # +56 дней — заведомо пустая неделя за пределами сгенерированных уроков
+        # (иначе сработает недельная квота v2 Шаг 4).
+        new_start = b.slot.start_at + timedelta(days=56)
         new_slot = TimeSlot.objects.create(
             teacher=self.teacher, start_at=new_start,
             end_at=new_start + timedelta(minutes=60), status='free',
