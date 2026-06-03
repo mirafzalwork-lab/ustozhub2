@@ -1612,6 +1612,36 @@ class FavoriteStudent(models.Model):
     def __str__(self):
         return f"{self.teacher.user.get_full_name()} -> {self.student.user.get_full_name()}"
 
+
+class LeadOptOut(models.Model):
+    """Ученик сказал учителю «не интересно».
+
+    Контроль на стороне спроса: даже если ученик остаётся в избранном или
+    бронировал пробный, наличие записи здесь лишает учителя права писать
+    ПЕРВЫМ и убирает ученика из раздела «Потенциальные ученики» этого учителя.
+    На уже открытую переписку не влияет (для жёсткой блокировки — отдельный механизм).
+    """
+    student = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='lead_opt_outs',
+        verbose_name='Ученик',
+    )
+    teacher = models.ForeignKey(
+        TeacherProfile, on_delete=models.CASCADE, related_name='lead_opt_outs',
+        verbose_name='Учитель',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['student', 'teacher']
+        verbose_name = 'Отказ ученика от лида'
+        verbose_name_plural = 'Отказы учеников от лидов'
+        indexes = [
+            models.Index(fields=['teacher', 'student']),
+        ]
+
+    def __str__(self):
+        return f"{self.student.get_full_name()} ✕ {self.teacher.user.get_full_name()}"
+
 class TelegramUser(models.Model):
     """Модель для хранения Telegram-пользователей"""
     user = models.OneToOneField(

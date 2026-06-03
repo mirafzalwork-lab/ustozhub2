@@ -6,6 +6,7 @@ from .views import (
     login_view, students_list, logout_view, register_choose, register_student,
     teacher_profile_edit, student_profile_edit, toggle_profile_status,
     toggle_favorite_teacher, toggle_favorite_student,
+    lead_opt_out, potential_students,
     my_favorite_teachers, my_favorite_students,
     student_suggestions,
     conversations_list, conversation_detail, start_conversation,
@@ -97,8 +98,10 @@ urlpatterns = [
     # Favorites
     path('favorites/teachers/', my_favorite_teachers, name='my_favorite_teachers'),
     path('favorites/students/', my_favorite_students, name='my_favorite_students'),
+    path('leads/', potential_students, name='potential_students'),
     path('api/favorites/toggle/<int:teacher_id>/', toggle_favorite_teacher, name='toggle_favorite_teacher'),
     path('api/favorites/student/toggle/<int:student_id>/', toggle_favorite_student, name='toggle_favorite_student'),
+    path('api/leads/opt-out/<int:teacher_id>/', lead_opt_out, name='lead_opt_out'),
     
     # Telegram API
     path('api/telegram/auth/', telegram_auth, name='telegram_auth'),
