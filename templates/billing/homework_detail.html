@@ -32,7 +32,7 @@
     <div style="white-space: pre-wrap; color:#334155; line-height:1.6;">{{ homework.description }}</div>
 
     {% if homework.attachments.all %}
-      <h3 style="margin:18px 0 8px; font-size:14px; color:#0A2540;">📎 {% trans 'Файлы' %}</h3>
+      <h3 style="margin:18px 0 8px; font-size:14px; color:#0A2540;"><i class="fas fa-paperclip"></i> {% trans 'Файлы' %}</h3>
       <div class="file-list">
         {% for a in homework.attachments.all %}
           <div class="file-item">
@@ -48,7 +48,7 @@
   {% if submission %}
     <div class="hw-card {{ homework.status }}" style="margin-top: 18px;">
       <h2 style="margin:0 0 10px; font-size:16px; color:#0A2540;">
-        📤 {% trans 'Сдано' %}
+        <i class="fas fa-paper-plane"></i> {% trans 'Сдано' %}
         <small style="color:#94A3B8; font-weight:400;">{{ submission.submitted_at|date:"d M Y, H:i" }}</small>
       </h2>
 
@@ -85,12 +85,11 @@
   {% endif %}
 
   <!-- Форма ученика (если ещё не сдано или returned) -->
-  {% if role == 'student' and homework.status in 'assigned,returned'|cut:',' %}
-  {% endif %}
-  {% if role == 'student' and submission_form and homework.status == 'assigned' or role == 'student' and homework.status == 'returned' %}
+  {% if role == 'student' and submission_form %}
+  {% if homework.status == 'assigned' or homework.status == 'returned' %}
     <div class="hw-card" style="margin-top: 18px;">
       <h2 style="margin:0 0 10px; font-size:16px; color:#0A2540;">
-        {% if homework.status == 'returned' %}🔄 {% trans 'Пересдать работу' %}{% else %}✍️ {% trans 'Сдать работу' %}{% endif %}
+        {% if homework.status == 'returned' %}<i class="fas fa-rotate-left"></i> {% trans 'Пересдать работу' %}{% else %}<i class="fas fa-pen"></i> {% trans 'Сдать работу' %}{% endif %}
       </h2>
       <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
@@ -103,9 +102,10 @@
           <input type="file" name="files" multiple class="form-input"
                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.mp4,.mp3,.zip">
         </div>
-        <button type="submit" class="hw-btn-primary">📤 {% trans 'Отправить' %}</button>
+        <button type="submit" class="hw-btn-primary"><i class="fas fa-paper-plane"></i> {% trans 'Отправить' %}</button>
       </form>
     </div>
+  {% endif %}
   {% endif %}
 
   <!-- Форма оценки учителя (если submitted) -->

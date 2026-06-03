@@ -60,7 +60,7 @@
   </div>
 
   {% if subs %}
-    <h2 style="font-size:18px; color:#0A2540; margin:24px 0 12px;">🟢 {% trans 'Активные подписки' %}</h2>
+    <h2 style="font-size:18px; color:#0A2540; margin:24px 0 12px;"><i class="fas fa-circle" style="color:var(--success-color); font-size:.7em; vertical-align:middle"></i> {% trans 'Активные подписки' %}</h2>
     {% for s in subs %}
       <div class="sub-progress">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
@@ -106,7 +106,7 @@
 
         {% if s.next_lesson %}
           <div class="next-lesson">
-            🎯 <b>{% trans 'Следующий урок' %}:</b> {{ s.next_lesson.slot.start_at|date:"d M, H:i" }}
+            <i class="fas fa-bullseye"></i> <b>{% trans 'Следующий урок' %}:</b> {{ s.next_lesson.slot.start_at|date:"d M, H:i" }}
           </div>
         {% endif %}
       </div>

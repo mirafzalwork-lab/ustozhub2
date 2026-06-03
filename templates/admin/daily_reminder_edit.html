@@ -136,7 +136,7 @@
                             <option value="{{ code }}"
                                 {% if instance and instance.period == code %}selected
                                 {% elif not instance and prefill_period == code %}selected{% endif %}>
-                                {% if code == 'morning' %}☀️{% else %}🌙{% endif %} {{ label }}
+                                {{ label }}
                             </option>
                         {% endfor %}
                     </select>
@@ -157,7 +157,7 @@
 
             <label for="id_text">Текст сообщения</label>
             <textarea id="id_text" name="text" required maxlength="4000"
-                      placeholder="☀️ *Доброе утро!*&#10;&#10;Загляните на UstozHub..."
+                      placeholder="*Доброе утро!*&#10;&#10;Загляните на UstozHub..."
             >{% if instance %}{{ instance.text }}{% endif %}</textarea>
             <div class="hint">
                 <span id="charCount">0</span> / 4000 символов.

@@ -29,7 +29,9 @@
       {% trans 'По этому уроку уже есть спор со статусом' %}: <b>{{ existing.get_status_display }}</b>.
     </div>
     {% if existing.status == 'open' %}
-      <form method="post" action="{% url 'dispute_cancel' existing.id %}">
+      <form method="post" action="{% url 'dispute_cancel' existing.id %}"
+            data-confirm="{% trans 'Отозвать спор? Выплата учителю за этот урок будет разморожена.' %}"
+            data-confirm-ok="{% trans 'Отозвать' %}" data-confirm-danger>
         {% csrf_token %}
         <button type="submit" class="dsp-btn" style="background:#64748B;">{% trans 'Отозвать спор' %}</button>
       </form>

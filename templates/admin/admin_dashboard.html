@@ -157,7 +157,7 @@
         <div style="background: linear-gradient(135deg, #4338CA 0%, #6366F1 100%); color: #fff; border-radius: 14px; padding: 20px 24px; margin-bottom: 22px;">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom: 14px;">
                 <div>
-                    <div style="font-size:13px; opacity:.85; text-transform:uppercase; letter-spacing:.5px;">💰 Финансы платформы</div>
+                    <div style="font-size:13px; opacity:.85; text-transform:uppercase; letter-spacing:.5px;"><i class="fas fa-coins"></i> Финансы платформы</div>
                     <h2 style="margin:4px 0 0; font-size:22px; font-weight:700;">Управление кошельками, выводами, подписками</h2>
                 </div>
                 <a href="{% url 'admin_billing_hub' %}" style="background:#fff; color:#4338CA; padding:10px 22px; border-radius:8px; text-decoration:none; font-weight:600; white-space:nowrap;">Открыть полностью →</a>
@@ -165,19 +165,19 @@
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px;">
                 <a href="{% url 'admin_billing_wallets' %}" style="background:rgba(255,255,255,.15); color:#fff; padding:14px 18px; border-radius:10px; text-decoration:none;">
                     <div style="font-size:13px; opacity:.85;">Кошельки</div>
-                    <div style="font-size:17px; font-weight:600; margin-top:4px;">💰 Пополнить баланс →</div>
+                    <div style="font-size:17px; font-weight:600; margin-top:4px;"><i class="fas fa-coins"></i> Пополнить баланс →</div>
                 </a>
                 <a href="{% url 'admin_billing_withdrawals' %}?status=pending" style="background:rgba(255,255,255,.15); color:#fff; padding:14px 18px; border-radius:10px; text-decoration:none;">
                     <div style="font-size:13px; opacity:.85;">Заявки на вывод</div>
-                    <div style="font-size:17px; font-weight:600; margin-top:4px;">💸 Обработать →</div>
+                    <div style="font-size:17px; font-weight:600; margin-top:4px;"><i class="fas fa-money-bill-wave"></i> Обработать →</div>
                 </a>
                 <a href="{% url 'admin_billing_subscriptions' %}" style="background:rgba(255,255,255,.15); color:#fff; padding:14px 18px; border-radius:10px; text-decoration:none;">
                     <div style="font-size:13px; opacity:.85;">Подписки</div>
-                    <div style="font-size:17px; font-weight:600; margin-top:4px;">📚 Все подписки →</div>
+                    <div style="font-size:17px; font-weight:600; margin-top:4px;"><i class="fas fa-graduation-cap"></i> Все подписки →</div>
                 </a>
                 <a href="/admin/billing/" style="background:rgba(255,255,255,.15); color:#fff; padding:14px 18px; border-radius:10px; text-decoration:none;">
                     <div style="font-size:13px; opacity:.85;">Django Admin</div>
-                    <div style="font-size:17px; font-weight:600; margin-top:4px;">⚙️ Детально →</div>
+                    <div style="font-size:17px; font-weight:600; margin-top:4px;"><i class="fas fa-gear"></i> Детально →</div>
                 </a>
             </div>
         </div>
@@ -215,7 +215,7 @@
         <!-- QUICK TELEGRAM BROADCAST -->
         <div class="tg-quick">
             <div class="tg-quick-title"><i class="fab fa-telegram" style="color:#0088cc"></i> Быстрая рассылка Telegram</div>
-            <form class="tg-quick-form" method="POST" action="{% url 'send_broadcast_message' %}" onsubmit="return confirm('Отправить сообщение выбранной группе?')">
+            <form class="tg-quick-form" method="POST" action="{% url 'send_broadcast_message' %}" onsubmit="return confirm('Отправить рассылку выбранной группе в Telegram? Действие необратимо.')">
                 {% csrf_token %}
                 <textarea name="message" placeholder="Введите сообщение для рассылки..." required></textarea>
                 <select name="recipients">
@@ -534,5 +534,6 @@
         btn.classList.add('active');
     }
     </script>
+    {% include 'admin/_mobile_nav.html' %}
 </body>
 </html>

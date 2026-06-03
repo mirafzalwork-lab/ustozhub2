@@ -11,7 +11,8 @@
   .pay-card { border:1px solid var(--border-color,#E2E8F0); border-radius:14px; padding:24px; background:#fff; margin:20px 0; }
   .pay-row { display:flex; justify-content:space-between; padding:8px 0; color:var(--text-secondary,#475569); }
   .pay-row.total { border-top:1px solid var(--border-color,#E2E8F0); margin-top:8px; padding-top:14px; font-size:20px; font-weight:700; color:var(--text-primary,#0A2540); }
-  .pay-btn { background:#10B981; color:#fff; border:none; border-radius:10px; padding:14px 22px; font-size:16px; font-weight:600; cursor:pointer; width:100%; }
+  .pay-btn { background:var(--accent-color,#3B82F6); color:#fff; border:none; border-radius:10px; padding:14px 22px; font-size:16px; font-weight:600; cursor:pointer; width:100%; }
+  .pay-btn:hover { background:var(--accent-hover,#2563EB); }
   .pay-warn { background:#FEF3C7; border:1px solid #F59E0B; border-radius:10px; padding:14px; color:#92400E; margin:16px 0; }
   .pay-topup { display:inline-block; margin-top:10px; color:#B45309; font-weight:600; }
   .pay-deadline { background:#FFFBEB; border:1px solid #FDE68A; border-radius:10px; padding:12px 16px; color:#92400E; font-weight:600; margin:16px 0; font-size:14px; }
@@ -39,7 +40,9 @@
   {% endif %}
 
   {% if has_enough %}
-    <form method="post" style="margin-top:16px;">
+    <form method="post" style="margin-top:16px;"
+          data-confirm="{% blocktrans with price=sub.price_total|floatformat:0|intcomma %}С баланса спишется {{ price }} сум и зарезервируется до проведения уроков. Оплатить?{% endblocktrans %}"
+          data-confirm-ok="{% trans 'Оплатить' %}">
       {% csrf_token %}
       <input type="hidden" name="idempotency_key" value="{{ idempotency_key }}">
       <button type="submit" class="pay-btn"><i class="fas fa-lock"></i> {% trans 'Оплатить и начать обучение' %}</button>

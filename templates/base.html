@@ -1138,57 +1138,29 @@
             }
 
             .mobile-toggle {
-                display: block;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 42px;
+                height: 42px;
+                border-radius: 10px;
+                color: var(--primary-color);
             }
+            .mobile-toggle:active { background: var(--bg-hover); }
 
-            /* Скрываем обычные кнопки, но оставляем иконку сообщений */
-            .nav-actions .nav-btn:not(.nav-btn-primary):not(.messages-icon-btn) {
-                display: none;
+            /* На телефоне в шапке остаётся ТОЛЬКО кнопка-гамбургер.
+               Язык, уведомления, сообщения, профиль/вход/регистрация —
+               всё перенесено внутрь меню-гамбургера. */
+            .nav-actions > .language-switcher,
+            .nav-actions > .notifications-icon-btn,
+            .nav-actions > .messages-icon-btn,
+            .nav-actions > .profile-container,
+            .nav-actions > .nav-btn {
+                display: none !important;
             }
 
             .nav-actions {
                 gap: 8px;
-            }
-
-            /* Регистрация кнопка компактнее */
-            .nav-btn-primary {
-                padding: 8px 12px;
-                font-size: 13px;
-            }
-
-            .nav-btn-primary span {
-                display: inline; /* Оставляем текст на мобильных */
-            }
-
-            /* Иконка сообщений и уведомлений остаётся видимой на мобильных */
-            .messages-icon-btn,
-            .notifications-icon-btn {
-                width: 40px;
-                height: 40px;
-                font-size: 18px;
-                color: var(--primary-color);
-            }
-
-            .messages-icon-btn i,
-            .notifications-icon-btn i {
-                font-size: 18px;
-                color: var(--primary-color);
-            }
-
-            .messages-badge,
-            .notifications-badge {
-                top: 4px;
-                right: 4px;
-                font-size: 9px;
-                padding: 1px 5px;
-                min-width: 16px;
-            }
-
-            /* Profile avatar меньше */
-            .profile-avatar {
-                width: 36px !important;
-                height: 36px !important;
-                font-size: 14px;
             }
 
             main {
@@ -1226,39 +1198,14 @@
                 width: auto;
             }
 
-            .nav-btn-primary {
-                padding: 6px 10px;
-                font-size: 12px;
-            }
-
-            .messages-icon-btn,
-            .notifications-icon-btn {
-                width: 36px;
-                height: 36px;
-                font-size: 16px;
-                color: var(--primary-color);
-            }
-
-            .messages-icon-btn i,
-            .notifications-icon-btn i {
-                font-size: 16px;
-                color: var(--primary-color);
-            }
-
             .mobile-toggle {
-                width: 36px;
-                height: 36px;
-                font-size: 16px;
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
             }
 
             main {
                 margin-top: 52px;
-            }
-
-            .profile-avatar {
-                width: 32px !important;
-                height: 32px !important;
-                font-size: 12px;
             }
         }
 
@@ -1331,9 +1278,7 @@
                 <!-- Language Switcher -->
                 <div class="language-switcher" id="languageSwitcher">
                     <button class="language-btn" onclick="toggleLanguageDropdown(event)">
-                        <span class="flag-icon">
-                            {% if LANGUAGE_CODE == 'ru' %}🇷🇺{% elif LANGUAGE_CODE == 'uz' %}🇺🇿{% else %}🇺🇸{% endif %}
-                        </span>
+                        <i class="fas fa-globe flag-icon" aria-hidden="true"></i>
                         <span class="lang-text">
                             {% if LANGUAGE_CODE == 'ru' %}RU{% elif LANGUAGE_CODE == 'uz' %}UZ{% else %}EN{% endif %}
                         </span>
@@ -1347,15 +1292,14 @@
                             <input type="hidden" name="language" id="selectedLanguage">
                             
                             <button type="button" class="language-option {% if LANGUAGE_CODE == 'ru' %}active{% endif %}" onclick="changeLanguage('ru')">
-                                <span class="flag-icon">🇷🇺</span>
-                                <span>RU</span>
+<span>RU</span>
                                 {% if LANGUAGE_CODE == 'ru' %}
                                 <i class="fas fa-check check-icon"></i>
                                 {% endif %}
                             </button>
                             
                             <button type="button" class="language-option {% if LANGUAGE_CODE == 'uz' %}active{% endif %}" onclick="changeLanguage('uz')">
-                                <span class="flag-icon">🇺🇿</span>
+                                <span class="flag-icon" aria-hidden="true"></span>
                                 <span>UZ</span>
                                 {% if LANGUAGE_CODE == 'uz' %}
                                 <i class="fas fa-check check-icon"></i>
@@ -1363,7 +1307,7 @@
                             </button>
                             
                             <button type="button" class="language-option {% if LANGUAGE_CODE == 'en' %}active{% endif %}" onclick="changeLanguage('en')">
-                                <span class="flag-icon">🇺🇸</span>
+                                <span class="flag-icon" aria-hidden="true"></span>
                                 <span>EN</span>
                                 {% if LANGUAGE_CODE == 'en' %}
                                 <i class="fas fa-check check-icon"></i>
@@ -1419,8 +1363,8 @@
                             </div>
 
                             <a href="{% url 'dashboard' %}" class="dropdown-item">
-                                <i class="fas fa-house"></i>
-                                <span>{% trans 'Главная' %}</span>
+                                <i class="fas fa-gauge-high"></i>
+                                <span>{% trans 'Кабинет' %}</span>
                             </a>
 
                             <a href="{% url 'profile' %}" class="dropdown-item">
@@ -1440,10 +1384,6 @@
                                 <a href="{% url 'teacher_learning_requests' %}" class="dropdown-item">
                                     <i class="fas fa-user-graduate"></i>
                                     <span>{% trans 'Заявки на обучение' %}</span>
-                                </a>
-                                <a href="{% url 'profile' %}" class="dropdown-item">
-                                    <i class="fas fa-chalkboard"></i>
-                                    <span>{% trans 'Мои занятия' %}</span>
                                 </a>
                             {% elif user.user_type == 'student' %}
                                 <a href="{% url 'my_bookings_page' %}" class="dropdown-item">
@@ -1521,7 +1461,7 @@
                     
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <button type="button" class="language-option {% if LANGUAGE_CODE == 'ru' %}active{% endif %}" onclick="changeMobileLanguage('ru')" style="width: 100%;">
-                            <span class="flag-icon">🇷🇺</span>
+                            <span class="flag-icon" aria-hidden="true"></span>
                             <span>Русский</span>
                             {% if LANGUAGE_CODE == 'ru' %}
                             <i class="fas fa-check check-icon"></i>
@@ -1529,7 +1469,7 @@
                         </button>
                         
                         <button type="button" class="language-option {% if LANGUAGE_CODE == 'uz' %}active{% endif %}" onclick="changeMobileLanguage('uz')" style="width: 100%;">
-                            <span class="flag-icon">🇺🇿</span>
+                            <span class="flag-icon" aria-hidden="true"></span>
                             <span>O'zbekcha</span>
                             {% if LANGUAGE_CODE == 'uz' %}
                             <i class="fas fa-check check-icon"></i>
@@ -1537,7 +1477,7 @@
                         </button>
                         
                         <button type="button" class="language-option {% if LANGUAGE_CODE == 'en' %}active{% endif %}" onclick="changeMobileLanguage('en')" style="width: 100%;">
-                            <span class="flag-icon">🇺🇸</span>
+                            <span class="flag-icon" aria-hidden="true"></span>
                             <span>English</span>
                             {% if LANGUAGE_CODE == 'en' %}
                             <i class="fas fa-check check-icon"></i>
@@ -1549,19 +1489,28 @@
 
             {% if user.is_authenticated %}
                 <a href="{% url 'dashboard' %}" class="mobile-menu-item">
-                    <i class="fas fa-house"></i>
-                    <span>{% trans 'Главная' %}</span>
+                    <i class="fas fa-gauge-high"></i>
+                    <span>{% trans 'Кабинет' %}</span>
                 </a>
                 <a href="{% url 'profile' %}" class="mobile-menu-item">
                     <i class="fas fa-user"></i>
                     <span>{% trans 'Мой профиль' %}</span>
                 </a>
-                <a href="{% url 'conversations_list' %}" class="mobile-menu-item messages-icon-btn" style="position: relative;">
-                    <i class="fas fa-comments"></i>
+                <a href="{% url 'conversations_list' %}" class="mobile-menu-item" style="position: relative;">
+                    <i class="fas fa-comment-dots"></i>
                     <span>{% trans 'Сообщения' %}</span>
                     {% if unread_messages_count > 0 %}
-                        <span class="messages-badge" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: #dc3545; color: white; border-radius: 12px; padding: 2px 8px; font-size: 11px; font-weight: 700; min-width: 20px; text-align: center;">
+                        <span style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: #dc3545; color: white; border-radius: 12px; padding: 2px 8px; font-size: 11px; font-weight: 700; min-width: 20px; text-align: center;">
                             {{ unread_messages_count }}
+                        </span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'notifications_list' %}" class="mobile-menu-item" style="position: relative;">
+                    <i class="fas fa-bell"></i>
+                    <span>{% trans 'Уведомления' %}</span>
+                    {% if unread_notifications_count > 0 %}
+                        <span style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: #dc3545; color: white; border-radius: 12px; padding: 2px 8px; font-size: 11px; font-weight: 700; min-width: 20px; text-align: center;">
+                            {{ unread_notifications_count }}
                         </span>
                     {% endif %}
                 </a>
@@ -1571,9 +1520,15 @@
                     <span>{% trans 'Избранное' %}</span>
                 </a>
                 {% endif %}
+                {% if user.user_type != 'teacher' %}
                 <a href="{% url 'teacher_register' %}" class="mobile-menu-item">
                     <i class="fas fa-chalkboard-teacher"></i>
                     <span>{% trans 'Стать учителем' %}</span>
+                </a>
+                {% endif %}
+                <a href="{% url 'profile_edit' %}" class="mobile-menu-item">
+                    <i class="fas fa-cog"></i>
+                    <span>{% trans 'Настройки' %}</span>
                 </a>
                 <div style="height: 1px; background: #f0f0f0; margin: 16px 0;"></div>
                 <form method="post" action="{% url 'logout' %}">
@@ -1631,8 +1586,8 @@
     <!-- Mobile bottom navigation (app-like): Главная / Учителя / Сообщения / Профиль -->
     <nav class="bottom-nav" aria-label="{% trans 'Основная навигация' %}">
         <a href="{% url 'dashboard' %}" class="bottom-nav-item">
-            <i class="fas fa-house" aria-hidden="true"></i>
-            <span>{% trans 'Главная' %}</span>
+            <i class="fas fa-gauge-high" aria-hidden="true"></i>
+            <span>{% trans 'Кабинет' %}</span>
         </a>
         <a href="{% url 'home' %}" class="bottom-nav-item">
             <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
@@ -1685,7 +1640,7 @@
         </div>
 
         <div class="footer-bottom">
-            <p>&copy; 2026 UstozHub. {% trans 'Все права защищены.' %}</p>
+            <p>&copy; {% now "Y" %} UstozHub. {% trans 'Все права защищены.' %}</p>
             <div class="footer-links-inline">
                 <a href="{% url 'privacy' %}">{% trans 'Политика конфиденциальности' %}</a>
                 <a href="{% url 'terms' %}">{% trans 'Условия использования' %}</a>
@@ -2202,9 +2157,41 @@
                 okText: form.dataset.confirmOk || undefined,
                 danger: form.dataset.confirmDanger !== undefined
             }).then(function(ok) {
-                if (ok) { form.dataset.confirmed = '1'; form.submit(); }
+                if (ok) { form.dataset.confirmed = '1'; window.lockSubmit(form); form.submit(); }
             });
         }, true);
+
+        /* ===== Защита от двойной отправки + спиннер на кнопке =====
+           Кнопку НЕ делаем disabled (иначе её name/value не уйдут в POST — критично
+           для форм с несколькими submit, напр. approve/complete/reject). Вместо этого:
+           guard-флаг на форме + pointer-events:none + спиннер на нажатой кнопке. */
+        window.lockSubmit = function(form, submitter) {
+            if (!form || form.dataset.submitting === '1') { return false; }
+            form.dataset.submitting = '1';
+            var btn = submitter || form.querySelector('[type="submit"]') || form.querySelector('button:not([type])');
+            if (btn) {
+                btn.setAttribute('aria-busy', 'true');
+                btn.style.opacity = '0.7';
+                btn.style.pointerEvents = 'none';
+                var loading = btn.getAttribute('data-loading-text') || '{% trans "Подождите…" %}';
+                if (btn.tagName !== 'INPUT') {
+                    btn.dataset.origHtml = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> ' + loading;
+                }
+            }
+            return true;
+        };
+        /* Bubble-фаза: блокировка только для форм с явным data-lock (opt-in) —
+           чтобы НЕ ломать AJAX-формы (чат, календарь), где навигации нет и спиннер
+           завис бы навсегда. Финансовые/файловые формы помечаются data-lock.
+           Формы с data-confirm блокируются в обработчике подтверждения выше. */
+        document.addEventListener('submit', function(e) {
+            if (e.defaultPrevented) { return; }
+            var form = e.target;
+            if (!form || !form.dataset || form.dataset.lock === undefined) { return; }
+            if (form.dataset.submitting === '1') { e.preventDefault(); return; }
+            window.lockSubmit(form, e.submitter);
+        }, false);
     </script>
 
     {% block extra_js %}{% endblock %}

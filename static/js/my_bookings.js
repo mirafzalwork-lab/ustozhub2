@@ -12,7 +12,9 @@
     const $filters = document.getElementById('bk-filters');
     const $stats = document.getElementById('bk-stats');
 
-    let currentTab = 'urgent';
+    // Стартовая вкладка берётся из активной кнопки в разметке (учитель → «Срочно»,
+    // ученик → «Предстоящие»), а не хардкодится — иначе ученик видел ложно-пустой экран.
+    let currentTab = ($filters && $filters.querySelector('.bk-filter.is-active')?.dataset.tab) || 'urgent';
     let allBookings = [];          // полная выгрузка с сервера (без status-фильтра)
 
     const URGENT_THRESHOLD_MS = 5 * 60 * 1000;       // <5 мин до expires_at — красный пульс
@@ -230,8 +232,15 @@
         }
         // Спор (ТЗ шаг 8): ученик может открыть спор по оплаченному уроку в grace-окне.
         if (cfg.role === 'student' && b.dispute_status) {
+            const disputeLabels = {
+                'open': i18n.disputeOpen || 'на рассмотрении',
+                'resolved_refund': i18n.disputeRefund || 'возврат сделан',
+                'resolved_rejected': i18n.disputeRejected || 'отклонён',
+                'cancelled': i18n.disputeCancelled || 'отозван',
+            };
+            const disputeLabel = disputeLabels[b.dispute_status] || b.dispute_status;
             buttons.push(`<span class="bk-btn secondary" style="cursor:default">
-                <i class="fa-solid fa-flag"></i> ${i18n.disputeStatus || 'Спор'}: ${escapeHtml(b.dispute_status)}
+                <i class="fa-solid fa-flag"></i> ${i18n.disputeStatus || 'Спор'}: ${escapeHtml(disputeLabel)}
             </span>`);
         } else if (cfg.role === 'student' && b.can_dispute && b.dispute_url) {
             buttons.push(`<a class="bk-btn danger" href="${b.dispute_url}">
@@ -509,7 +518,8 @@
 
     async function loadList() {
         if (!allBookings.length) {
-            $list.innerHTML = '<div class="bk-empty"><i class="fa-regular fa-clock"></i><div>Загрузка...</div></div>';
+            $list.innerHTML = '<div class="bk-empty"><i class="fas fa-spinner fa-spin"></i><div>' +
+                (i18n.loading || 'Загрузка…') + '</div></div>';
         }
         try {
             // Без status — грузим ВСЁ и фильтруем на клиенте
@@ -517,7 +527,16 @@
             allBookings = data.bookings || [];
             render();
         } catch (e) {
-            $list.innerHTML = `<div class="bk-empty">Ошибка: ${escapeHtml(e.message)}</div>`;
+            $list.innerHTML =
+                '<div class="bk-empty">' +
+                    '<i class="fas fa-triangle-exclamation" style="color:var(--danger-color,#EF4444)"></i>' +
+                    '<div>' + (i18n.loadError || 'Не удалось загрузить. Проверьте соединение.') + '</div>' +
+                    '<button type="button" id="bk-retry" class="bk-btn primary" style="margin-top:12px">' +
+                        (i18n.retry || 'Повторить') +
+                    '</button>' +
+                '</div>';
+            var rb = document.getElementById('bk-retry');
+            if (rb) rb.addEventListener('click', loadList);
         }
     }
 

@@ -35,12 +35,16 @@
         <div class="pref"><i class="far fa-clock"></i> {{ sub.preferred_schedule }}</div>
       {% endif %}
       <div class="lr-actions">
-        <form method="post" action="{% url 'learning_request_action' sub.id %}">
+        <form method="post" action="{% url 'learning_request_action' sub.id %}"
+              data-confirm="{% blocktrans with subject=sub.subject.name %}Подтвердить заявку на обучение по предмету «{{ subject }}»? Ученик получит уведомление об оплате, а вы — обязательство провести уроки.{% endblocktrans %}"
+              data-confirm-ok="{% trans 'Подтвердить' %}">
           {% csrf_token %}
           <input type="hidden" name="action" value="approve">
           <button type="submit" class="lr-btn lr-approve"><i class="fas fa-check"></i> {% trans 'Подтвердить' %}</button>
         </form>
-        <form method="post" action="{% url 'learning_request_action' sub.id %}">
+        <form method="post" action="{% url 'learning_request_action' sub.id %}"
+              data-confirm="{% trans 'Отклонить заявку этого ученика на обучение? Это действие нельзя отменить.' %}"
+              data-confirm-ok="{% trans 'Отклонить' %}" data-confirm-danger>
           {% csrf_token %}
           <input type="hidden" name="action" value="reject">
           <button type="submit" class="lr-btn lr-reject"><i class="fas fa-times"></i> {% trans 'Отклонить' %}</button>

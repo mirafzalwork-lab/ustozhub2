@@ -24,10 +24,7 @@ from .services import (
     AlreadySubscribed,
     CancellationError,
     InsufficientFunds,
-    NotEnoughCapacity,
-    SubscriptionPurchaseError,
     SubscriptionService,
-    TariffNotPurchasable,
     WithdrawalError,
     WithdrawalService,
 )
@@ -176,65 +173,23 @@ def wallet_topup_request(request):
 
 @login_required
 def subscription_buy(request, tariff_id):
-    """Страница покупки подписки: показывает summary + checkout-кнопку.
+    """LEGACY: мгновенная покупка подписки без одобрения учителя выведена из эксплуатации.
 
-    Доступна любому залогиненному. Ученик-учитель не может купить у самого себя.
+    Канонический сценарий — единственный: заявка → одобрение учителем → оплата →
+    выбор расписания (см. ``continue_learning`` и ТЗ-шаги 2–6 ниже). Мгновенное
+    списание в обход одобрения создавало второй, непредсказуемый платёжный путь.
+
+    Этот URL сохранён только ради старых ссылок/закладок: он перенаправляет на
+    оформление обучения у того же учителя по тому же предмету. Сам движок
+    ``SubscriptionService.purchase`` остаётся (используется в тестах и админке).
     """
     tariff = get_object_or_404(
-        Tariff.objects.select_related('teacher__user', 'subject'),
+        Tariff.objects.select_related('teacher', 'subject'),
         pk=tariff_id,
         is_active=True,
     )
-
-    # Нельзя купить у самого себя
-    if tariff.teacher.user_id == request.user.id:
-        messages.error(request, 'Нельзя купить подписку у самого себя.')
-        return redirect('teacher_detail', id=tariff.teacher.id)
-
-    student_wallet = request.user.wallet
-    has_enough = student_wallet.balance >= tariff.total_price
-
-    if request.method == 'POST':
-        if not has_enough:
-            messages.error(
-                request,
-                'Недостаточно средств на балансе. Пополните кошелёк перед покупкой.'
-            )
-        else:
-            # idempotency_key — стабильный hash от form-token + tariff.pk
-            idem_key = request.POST.get('idempotency_key') or str(uuid.uuid4())
-            try:
-                sub = SubscriptionService.purchase(
-                    student=request.user,
-                    tariff=tariff,
-                    idempotency_key=f'web:{request.user.id}:{tariff.id}:{idem_key}',
-                )
-                messages.success(
-                    request,
-                    f'Подписка куплена! Создано {sub.total_lessons} уроков.'
-                )
-                return redirect('my_subscriptions')
-            except AlreadySubscribed as e:
-                messages.warning(request, str(e))
-            except InsufficientFunds as e:
-                messages.error(request, str(e))
-            except NotEnoughCapacity as e:
-                messages.error(request, f'У учителя недостаточно свободного времени. {e}')
-            except TariffNotPurchasable as e:
-                messages.error(request, str(e))
-            except SubscriptionPurchaseError as e:
-                messages.error(request, str(e))
-
-    needed_amount = max(int(tariff.total_price - student_wallet.balance), 0)
-
-    return render(request, 'billing/subscription_buy.html', {
-        'tariff': tariff,
-        'wallet': student_wallet,
-        'has_enough': has_enough,
-        'needed_amount': needed_amount,
-        # одноразовый ключ на страницу — защищает от двойного submit'а
-        'idempotency_key': str(uuid.uuid4()),
-    })
+    url = reverse('continue_learning', kwargs={'teacher_id': tariff.teacher_id})
+    return redirect(f'{url}?subject={tariff.subject_id}')
 
 
 # ---------- ТЗ flow: заявка → одобрение → оплата → бронь -------------------
@@ -936,11 +891,10 @@ def _handle_teacher_grade(request, homework, submission):
         submission.save(update_fields=['feedback', 'grade', 'updated_at'])
         messages.success(request, 'Работа возвращена ученику на доработку.')
     else:
+        from django.utils import timezone
         submission.grade = form.cleaned_data['grade']
         submission.feedback = feedback
-        submission.graded_at = timezone.now() if False else None  # set below
-        from django.utils import timezone as tz
-        submission.graded_at = tz.now()
+        submission.graded_at = timezone.now()
         submission.save(update_fields=['grade', 'feedback', 'graded_at', 'updated_at'])
         homework.status = Homework.Status.GRADED
         homework.save(update_fields=['status', 'updated_at'])

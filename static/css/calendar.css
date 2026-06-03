@@ -11,7 +11,7 @@
     --cal-border: #E2E8F0;
     --cal-text: #0F172A;
     --cal-muted: #64748B;
-    --cal-primary: #4F46E5;
+    --cal-primary: #3B82F6;
     --cal-primary-50: #EEF2FF;
     --cal-success: #10B981;
     --cal-warning: #F59E0B;
@@ -111,7 +111,7 @@
     color: #fff;
     box-shadow: 0 1px 2px rgba(79, 70, 229, .25);
 }
-.cal-btn--primary:hover { background: #4338CA; }
+.cal-btn--primary:hover { background: #2563EB; }
 
 .cal-btn--ghost {
     background: var(--cal-primary-50);
@@ -686,7 +686,7 @@
 }
 
 .cal-modal .btn-primary:hover {
-    background: #4338CA;
+    background: #2563EB;
 }
 
 .cal-modal .btn-secondary {

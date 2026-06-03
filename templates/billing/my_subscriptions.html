@@ -63,7 +63,7 @@
 
   {% if active %}
     <div class="subs-section">
-      <h2>🟢 {% trans 'Активные' %} ({{ active|length }})</h2>
+      <h2><i class="fas fa-circle" style="color:var(--success-color); font-size:.7em; vertical-align:middle"></i> {% trans 'Активные' %} ({{ active|length }})</h2>
       <div class="subs-grid">
         {% for s in active %}
           <div class="sub-card {% if s.status == 'active' %}active{% endif %}">
@@ -180,8 +180,8 @@
     .sub-step-box.ok { background:#ECFDF5; border-color:#A7F3D0; color:#065F46; }
     .pay-timer { margin-top:10px; font-weight:600; color:#92400E; font-size:13px; }
     .pay-timer.urgent { color:#B91C1C; }
-    .pay-btn { display:block; text-align:center; background:#14B8A6; color:#fff; padding:11px 16px; border-radius:9px; text-decoration:none; font-weight:600; margin-top:14px; transition:background .15s; }
-    .pay-btn:hover { background:#0F766E; }
+    .pay-btn { display:block; text-align:center; background:var(--accent-color,#3B82F6); color:#fff; padding:11px 16px; border-radius:9px; text-decoration:none; font-weight:600; margin-top:14px; transition:background .15s; }
+    .pay-btn:hover { background:var(--accent-hover,#2563EB); }
     .sub-actions { display:flex; gap:8px; margin-top:14px; }
     .sub-actions > form { margin:0; }
     .act-btn { width:100%; padding:8px 14px; border-radius:8px; font-size:13px; cursor:pointer; font-weight:500; border:1px solid transparent; transition:background .15s; }

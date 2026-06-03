@@ -6,7 +6,7 @@
 
 {% block content %}
 <div class="ab-page">
-  <h1>💰 Финансы платформы</h1>
+  <h1><i class="fas fa-coins"></i> Финансы платформы</h1>
   <p class="subtitle">Обзор денежного состояния и быстрые действия</p>
 
   {% with active_tab='billing' %}{% include 'billing/admin/_base.html' %}{% endwith %}
@@ -23,7 +23,7 @@
       {% if pending_moderation_count %}
         <a href="/admin/teachers/teacherprofile/?moderation_status__exact=pending" target="_blank"
            style="display:block; padding:16px 18px; background:linear-gradient(135deg, #DC2626, #B91C1C); color:#fff; border-radius:12px; text-decoration:none; box-shadow:0 6px 18px rgba(220,38,38,.22);">
-          <div style="font-size:11px; opacity:.85; text-transform:uppercase; letter-spacing:.5px;">⚠ Требуют модерации</div>
+          <div style="font-size:11px; opacity:.85; text-transform:uppercase; letter-spacing:.5px;"><i class="fas fa-triangle-exclamation"></i> Требуют модерации</div>
           <div style="font-size:26px; font-weight:700; margin:6px 0 2px;">{{ pending_moderation_count }} {% if pending_moderation_count == 1 %}учитель{% else %}учителей{% endif %}</div>
           <div style="font-size:12px; opacity:.85;">Открыть в Django Admin →</div>
         </a>
@@ -31,14 +31,14 @@
       {% if pending_withdrawals %}
         <a href="{% url 'admin_billing_withdrawals' %}?status=pending"
            style="display:block; padding:16px 18px; background:linear-gradient(135deg, #B45309, #D97706); color:#fff; border-radius:12px; text-decoration:none; box-shadow:0 6px 18px rgba(180,83,9,.22);">
-          <div style="font-size:11px; opacity:.85; text-transform:uppercase; letter-spacing:.5px;">📥 Заявки на вывод</div>
+          <div style="font-size:11px; opacity:.85; text-transform:uppercase; letter-spacing:.5px;"><i class="fas fa-inbox"></i> Заявки на вывод</div>
           <div style="font-size:26px; font-weight:700; margin:6px 0 2px;">{{ pending_withdrawals }} {% if pending_withdrawals == 1 %}ждёт{% else %}ждут{% endif %}</div>
           <div style="font-size:12px; opacity:.85;">Открыть →</div>
         </a>
       {% endif %}
       {% if orphan_teacher_users_count %}
         <div style="padding:16px 18px; background:#F1F5F9; border:1px dashed #94A3B8; color:#475569; border-radius:12px;">
-          <div style="font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:#64748B;">🪪 Брошенные регистрации</div>
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:#64748B;"><i class="fas fa-id-card"></i> Брошенные регистрации</div>
           <div style="font-size:26px; font-weight:700; margin:6px 0 2px; color:#0A2540;">{{ orphan_teacher_users_count }}</div>
           <div style="font-size:12px;">User(type=teacher) без TeacherProfile</div>
         </div>
@@ -67,7 +67,7 @@
 
   <div class="ab-grid-2">
     <div class="ab-section">
-      <h2>📚 Подписки</h2>
+      <h2><i class="fas fa-graduation-cap"></i> Подписки</h2>
       <div class="ab-cards" style="margin-bottom:0;">
         <div class="ab-card">
           <div class="lbl">Активные</div>
@@ -86,7 +86,7 @@
     </div>
 
     <div class="ab-section">
-      <h2>💸 Заявки на вывод</h2>
+      <h2><i class="fas fa-money-bill-wave"></i> Заявки на вывод</h2>
       <div class="ab-cards" style="margin-bottom:0;">
         <div class="ab-card" style="{% if pending_withdrawals %}background:#FFFBEB; border-color:#FCD34D;{% endif %}">
           <div class="lbl">Ожидают</div>
@@ -106,17 +106,17 @@
   </div>
 
   <div class="ab-section">
-    <h2>🚀 Быстрые действия</h2>
+    <h2><i class="fas fa-rocket"></i> Быстрые действия</h2>
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <a href="{% url 'admin_billing_wallets' %}" class="ab-btn ab-btn-success">💰 Пополнить баланс пользователю</a>
-      <a href="{% url 'admin_billing_withdrawals' %}?status=pending" class="ab-btn ab-btn-warning">📥 Обработать выводы ({{ pending_withdrawals }})</a>
-      <a href="{% url 'admin_billing_disputes' %}?status=open" class="ab-btn ab-btn-warning">⚖️ Споры по урокам</a>
+      <a href="{% url 'admin_billing_wallets' %}" class="ab-btn ab-btn-success"><i class="fas fa-coins"></i> Пополнить баланс пользователю</a>
+      <a href="{% url 'admin_billing_withdrawals' %}?status=pending" class="ab-btn ab-btn-warning"><i class="fas fa-inbox"></i> Обработать выводы ({{ pending_withdrawals }})</a>
+      <a href="{% url 'admin_billing_disputes' %}?status=open" class="ab-btn ab-btn-warning"><i class="fas fa-scale-balanced"></i> Споры по урокам</a>
       <a href="/admin/billing/" class="ab-btn ab-btn-secondary">Django Admin (детально)</a>
     </div>
   </div>
 
   <div class="ab-section">
-    <h2>📊 Активность</h2>
+    <h2><i class="fas fa-chart-line"></i> Активность</h2>
     <div class="ab-cards" style="margin-bottom:0;">
       <div class="ab-card">
         <div class="lbl">Транзакций сегодня</div>
@@ -135,7 +135,7 @@
 
   <div class="ab-grid-2">
     <div class="ab-section">
-      <h2>💳 Последние транзакции</h2>
+      <h2><i class="fas fa-credit-card"></i> Последние транзакции</h2>
       {% if recent_transactions %}
       <table class="ab-table" style="font-size:13px;">
         <thead><tr><th>Дата</th><th>Кому</th><th>Тип</th><th style="text-align:right;">Сумма</th></tr></thead>
@@ -158,7 +158,7 @@
     </div>
 
     <div class="ab-section">
-      <h2>📥 Последние заявки на вывод</h2>
+      <h2><i class="fas fa-inbox"></i> Последние заявки на вывод</h2>
       {% if recent_withdrawals %}
       <table class="ab-table" style="font-size:13px;">
         <thead><tr><th>Дата</th><th>Учитель</th><th>Статус</th><th style="text-align:right;">Сумма</th></tr></thead>
@@ -182,7 +182,7 @@
 
   {% if recent_subs %}
   <div class="ab-section">
-    <h2>📚 Последние подписки</h2>
+    <h2><i class="fas fa-graduation-cap"></i> Последние подписки</h2>
     <table class="ab-table" style="font-size:13px;">
       <thead><tr><th>Дата</th><th>Ученик</th><th>Учитель</th><th>Предмет</th><th>Статус</th></tr></thead>
       <tbody>

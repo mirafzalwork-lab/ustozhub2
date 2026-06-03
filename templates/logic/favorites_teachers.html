@@ -2,6 +2,7 @@
 {% load i18n %}
 {% load static %}
 {% load humanize %}
+{% load custom_filters %}
 
 {% block title %}{% trans 'Мои избранные учителя' %} - UstozHub{% endblock %}
 
@@ -391,13 +392,7 @@
                                 {{ teacher.user.get_full_name|default:teacher.user.username }}
                             </div>
                             <div class="teacher-rating">
-                                {% for i in "12345" %}
-                                    {% if forloop.counter <= teacher.average_rating|floatformat:0|default:0 %}
-                                        <i class="fas fa-star"></i>
-                                    {% else %}
-                                        <i class="far fa-star"></i>
-                                    {% endif %}
-                                {% endfor %}
+                                {% star_rating teacher.average_rating %}
                                 <span class="teacher-rating-text">
                                     {{ teacher.average_rating|floatformat:1|default:"5.0" }} ({{ teacher.reviews_count|default:0 }})
                                 </span>

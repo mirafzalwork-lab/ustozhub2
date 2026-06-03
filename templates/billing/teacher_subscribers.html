@@ -70,7 +70,7 @@
 
   {% if active %}
     <div class="subs-section">
-      <h2>🟢 {% trans 'Активные ученики' %} ({{ active|length }})</h2>
+      <h2><i class="fas fa-circle" style="color:var(--success-color); font-size:.7em; vertical-align:middle"></i> {% trans 'Активные ученики' %} ({{ active|length }})</h2>
       <div class="subs-grid">
         {% for s in active %}
           <div class="sub-card active">
@@ -112,7 +112,7 @@
 
   <div id="t-cancel-modal" class="t-cancel-modal" hidden role="dialog" aria-modal="true">
     <div class="t-cancel-modal-content">
-      <h3>⚠ {% trans 'Отменить подписку ученика?' %}</h3>
+      <h3><i class="fas fa-triangle-exclamation"></i> {% trans 'Отменить подписку ученика?' %}</h3>
       <p style="color:#475569; line-height:1.6; margin:8px 0 18px;">
         {% trans 'Все будущие уроки этого ученика будут отменены, а остаток денег вернётся ему на баланс.' %}
         <br>{% trans 'За уже проведённые уроки выплата сохранится за вами.' %}

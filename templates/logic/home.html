@@ -1420,8 +1420,56 @@
 <!-- ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК - UPDATED v2.0 -->
 
 <div class="page-container home-page">
+    {% if not user.is_authenticated and not search_query %}
+    <!-- GUEST HERO / VALUE PROPOSITION -->
+    <style>
+        .home-hero { text-align: center; max-width: 760px; margin: 8px auto 4px; padding: 8px 16px 0; }
+        .home-hero h1 { font-size: 34px; line-height: 1.2; font-weight: 700; color: var(--primary-color, #0A2540); letter-spacing: -0.5px; margin: 0 0 12px; }
+        .home-hero h1 .accent { color: var(--accent-color, #3B82F6); }
+        .home-hero p.lead { font-size: 17px; color: var(--text-secondary, #4B5563); margin: 0 0 20px; }
+        .home-hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 22px; }
+        .home-hero-cta a { display: inline-flex; align-items: center; gap: 8px; padding: 13px 24px; border-radius: 12px; font-size: 15px; font-weight: 600; text-decoration: none; min-height: 48px; box-sizing: border-box; transition: transform .15s ease, box-shadow .15s ease; }
+        .home-hero-cta .cta-primary { background: var(--accent-color, #3B82F6); color: #fff; box-shadow: 0 4px 14px rgba(59,130,246,.3); }
+        .home-hero-cta .cta-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59,130,246,.4); }
+        .home-hero-cta .cta-secondary { background: #fff; color: var(--primary-color, #0A2540); border: 1px solid var(--border-color, #E5E7EB); }
+        .home-hero-cta .cta-secondary:hover { border-color: var(--accent-color, #3B82F6); color: var(--accent-color, #3B82F6); }
+        .home-trust { display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; margin: 4px 0 8px; }
+        .home-trust .stat { text-align: center; }
+        .home-trust .stat-num { font-size: 24px; font-weight: 700; color: var(--primary-color, #0A2540); line-height: 1; }
+        .home-trust .stat-lbl { font-size: 13px; color: var(--text-tertiary, #6B7280); margin-top: 4px; }
+        @media (max-width: 640px) {
+            .home-hero h1 { font-size: 25px; }
+            .home-hero p.lead { font-size: 15px; }
+            .home-trust { gap: 18px; }
+            .home-trust .stat-num { font-size: 20px; }
+        }
+    </style>
+    <section class="home-hero">
+        <h1>{% trans "Найдите" %} <span class="accent">{% trans "своего репетитора" %}</span> {% trans "за пару минут" %}</h1>
+        <p class="lead">{% trans "Проверенные преподаватели, онлайн-уроки и безопасная оплата — всё в одном месте." %}</p>
+        <div class="home-hero-cta">
+            <a href="#teachers" class="cta-primary"><i class="fas fa-magnifying-glass"></i> {% trans "Найти репетитора" %}</a>
+            <a href="{% url 'teacher_register' %}" class="cta-secondary"><i class="fas fa-chalkboard-user"></i> {% trans "Стать учителем" %}</a>
+        </div>
+        <div class="home-trust">
+            <div class="stat">
+                <div class="stat-num">{{ platform_stats.teachers }}+</div>
+                <div class="stat-lbl">{% trans "преподавателей" %}</div>
+            </div>
+            <div class="stat">
+                <div class="stat-num">{{ platform_stats.subjects }}+</div>
+                <div class="stat-lbl">{% trans "предметов" %}</div>
+            </div>
+            <div class="stat">
+                <div class="stat-num"><i class="fas fa-shield-halved" style="color:var(--success-color,#10B981)"></i></div>
+                <div class="stat-lbl">{% trans "оплата под защитой" %}</div>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
     <!-- GLOBAL SEARCH (TOP CENTER) -->
-    <div class="global-search" aria-label="Teacher search">
+    <div class="global-search" aria-label="{% trans 'Поиск преподавателей' %}">
         <form class="global-search-form" method="GET" action="">
             <div class="global-search-field">
                 <i class="fas fa-search global-search-icon" aria-hidden="true"></i>
@@ -1429,7 +1477,7 @@
                     class="global-search-input"
                     type="search"
                     name="search"
-                    placeholder="Search teachers, subjects, skills…"
+                    placeholder="{% trans 'Поиск преподавателей, предметов, навыков…' %}"
                     value="{{ search_query|default:'' }}"
                     autocomplete="off"
                 />
@@ -1449,7 +1497,7 @@
     </div>
 
     <!-- QUICK SEARCH BUTTONS -->
-    <div class="quick-search" aria-label="Quick searches">
+    <div class="quick-search" aria-label="{% trans 'Быстрый поиск' %}">
         <button type="button" class="quick-search-btn" data-quick-search="English">English</button>
         <button type="button" class="quick-search-btn" data-quick-search="Математика">Математика</button>
         <button type="button" class="quick-search-btn" data-quick-search="Arab tili">Arab tili</button>
@@ -1762,10 +1810,52 @@
             .hero-slider-header { padding: 16px 18px 0; }
             .hero-arrow { width: 36px; height: 36px; }
         }
+        /* ===== ТОЛЬКО ТЕЛЕФОН: тексты слева, аватар справа, компактная высота ===== */
+        @media (max-width: 640px) {
+            .hero-arrow { display: none; }              /* стрелки налезали на контент */
+            .hero-viewport { padding: 12px 12px 14px; }
+            .hero-card {
+                grid-template-columns: 1fr auto;        /* слева тексты, справа аватар */
+                grid-template-areas:
+                    "info   avatar"
+                    "side   avatar";
+                gap: 8px 16px;
+                align-items: center;
+                padding: 16px;
+                min-height: 0;                          /* высота по контенту, не огромная */
+                text-align: left;
+            }
+            .hero-avatar-wrap {
+                grid-area: avatar;
+                flex-direction: column;
+                justify-content: center;
+                align-self: center;
+            }
+            .hero-avatar { width: 84px; height: 84px; font-size: 30px; }
+            .hero-rating-pill { font-size: 12px; padding: 4px 10px; }
+            .hero-info { grid-area: info; align-items: flex-start; gap: 6px; }
+            .hero-badges { justify-content: flex-start; }
+            .hero-subjects { justify-content: flex-start; }
+            .hero-name { font-size: 17px; }
+            .hero-bio { display: none; }                /* на узком экране убираем ради компактности */
+            .hero-side {
+                grid-area: side;
+                flex-direction: row;
+                align-items: center;
+                justify-content: flex-start;
+                gap: 14px;
+                min-width: 0;
+                width: auto;
+                text-align: left;
+            }
+            .hero-price { text-align: left; }
+            .hero-price-value { font-size: 19px; }
+            .hero-cta { padding: 9px 14px; font-size: 13px; }
+        }
         @media (max-width: 480px) {
-            .hero-price-value { font-size: 20px; }
-            .hero-cta { padding: 10px 16px; font-size: 13px; }
-            .hero-avatar { width: 80px; height: 80px; font-size: 28px; }
+            .hero-avatar { width: 76px; height: 76px; font-size: 26px; }
+            .hero-side { flex-wrap: wrap; gap: 10px; }
+            .hero-cta { padding: 9px 13px; font-size: 12.5px; }
         }
         @media (prefers-reduced-motion: reduce) {
             .hero-track { transition: none; }
@@ -2073,7 +2163,7 @@
             </div>
 
             {% if teachers %}
-                <div class="teachers-grid">
+                <div class="teachers-grid" id="teachers">
                     {% for teacher in teachers %}
                         <div class="teacher-card{% if teacher.is_featured %} featured{% endif %}">
                             <a class="card-stretch-link" href="{% url 'teacher_detail' teacher.id %}"

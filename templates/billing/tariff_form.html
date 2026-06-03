@@ -28,7 +28,7 @@
 <div class="tariff-form-page">
   <h1>{% if is_create %}{% trans 'Новый тариф' %}{% else %}{% trans 'Редактировать тариф' %}{% endif %}</h1>
 
-  <form method="post" novalidate>
+  <form method="post" novalidate data-lock>
     {% csrf_token %}
 
     {% if form.non_field_errors %}<div class="errors">{{ form.non_field_errors }}</div>{% endif %}

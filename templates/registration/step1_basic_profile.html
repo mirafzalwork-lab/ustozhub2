@@ -1,5 +1,6 @@
 {% extends 'registration/base_wizard.html' %}
 {% load static %}
+{% load i18n %}
 
 {% block step_content %}
 <div class="form-section">
@@ -302,59 +303,45 @@
 </style>
 
 <script>
+// Селектор должен совпадать с классом виджета в forms.py (attrs={'class': 'language-checkbox'})
+const LANG_CHECKBOX_SELECTOR = 'input[type="checkbox"].language-checkbox';
+
 function addLanguageFromSelect() {
     const select = document.getElementById('languageSelect');
     const value = select.value;
-
     if (!value) {
         return;  // ничего не выбрано — просто выходим (без раздражающего alert)
     }
-    
-    // Находим соответствующий checkbox и проверяем его
     const checkbox = document.querySelector(`input[type="checkbox"][value="${value}"]`);
     if (checkbox) {
         checkbox.checked = true;
-        console.log(`Checked checkbox for value: ${value}`);
     }
-    
-    // Обновляем отображение
+    clearLanguageError();
     updateLanguageDisplay();
-    
-    // Очищаем select
     select.value = '';
 }
 
 function removeLanguage(value) {
-    // Находим соответствующий checkbox и разучитываем его
     const checkbox = document.querySelector(`input[type="checkbox"][value="${value}"]`);
     if (checkbox) {
         checkbox.checked = false;
-        console.log(`Unchecked checkbox for value: ${value}`);
     }
-    
-    // Обновляем отображение
     updateLanguageDisplay();
 }
 
 function updateLanguageDisplay() {
     const selectedLanguagesDiv = document.getElementById('selectedLanguages');
     const languagesTags = document.getElementById('languagesTags');
-    
-    // Получаем все отмеченные checkboxes
-    const checkedCheckboxes = document.querySelectorAll('input[type="checkbox"].teaching-language-checkbox:checked');
-    
-    console.log(`Found ${checkedCheckboxes.length} checked languages`);
-    
-    // Очищаем теги
+    const checkedCheckboxes = document.querySelectorAll(LANG_CHECKBOX_SELECTOR + ':checked');
+
     languagesTags.innerHTML = '';
-    
+
     if (checkedCheckboxes.length > 0) {
         selectedLanguagesDiv.classList.add('active');
         checkedCheckboxes.forEach(checkbox => {
-            // Находим label для этого checkbox'а
             const label = document.querySelector(`label[for="${checkbox.id}"]`);
             const labelText = label ? label.textContent.trim() : checkbox.value;
-            
+
             const tag = document.createElement('div');
             tag.className = 'language-tag';
             tag.innerHTML = `
@@ -368,35 +355,46 @@ function updateLanguageDisplay() {
     }
 }
 
-// Инициализация при загрузке страницы
+function clearLanguageError() {
+    const err = document.getElementById('languageInlineError');
+    if (err) err.remove();
+}
+
+function showLanguageError() {
+    clearLanguageError();
+    const container = document.getElementById('selectedLanguages');
+    if (!container) return;
+    const err = document.createElement('div');
+    err.id = 'languageInlineError';
+    err.className = 'field-error';
+    err.style.cssText = 'color: var(--danger-color, #EF4444); font-size: 13px; margin-top: 6px;';
+    err.textContent = '{% trans "Пожалуйста, выберите хотя бы один язык преподавания" %}';
+    container.parentNode.insertBefore(err, container.nextSibling);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Initializing language selection...');
-    
-    // Обновляем отображение при загрузке (если были выбраны языки)
     updateLanguageDisplay();
-    
-    // Добавляем слушатели для checkboxes (на случай если они будут кликнуты напрямую)
-    const checkboxes = document.querySelectorAll('input[type="checkbox"].teaching-language-checkbox');
-    checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', updateLanguageDisplay);
+
+    document.querySelectorAll(LANG_CHECKBOX_SELECTOR).forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            clearLanguageError();
+            updateLanguageDisplay();
+        });
     });
-    
-    // Находим форму и добавляем обработчик для валидации перед отправкой
+
     const form = document.querySelector('form');
     if (form) {
         form.addEventListener('submit', function(e) {
-            const checkedCheckboxes = document.querySelectorAll('input[type="checkbox"].teaching-language-checkbox:checked');
-            console.log(`Form submitted with ${checkedCheckboxes.length} languages selected`);
-            
-            if (checkedCheckboxes.length === 0) {
+            // пропускаем валидацию при навигации «Назад» по визарду
+            if (e.submitter && e.submitter.name === 'wizard_goto_step') return;
+            const checked = document.querySelectorAll(LANG_CHECKBOX_SELECTOR + ':checked');
+            if (checked.length === 0) {
                 e.preventDefault();
-                alert('Пожалуйста, выберите хотя бы один язык преподавания');
-                return false;
+                showLanguageError();
+                document.getElementById('selectedLanguages').scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         });
     }
-    
-    console.log('Language selection initialized');
 });
 </script>
 {% endblock %}

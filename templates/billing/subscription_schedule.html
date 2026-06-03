@@ -14,7 +14,27 @@
   .sch-opt.checked { border-color:#3B82F6; background:#EFF6FF; }
   .sch-submit { background:#3B82F6; color:#fff; border:none; border-radius:10px; padding:14px 22px; font-size:16px; font-weight:600; cursor:pointer; width:100%; }
   .sch-counter { font-weight:700; color:#3B82F6; }
-  .sch-empty { color:var(--text-tertiary,#6B7280); text-align:center; padding:40px 0; }
+  .sch-hint { font-size:13px; color:var(--text-tertiary,#6B7280); margin:0 0 14px; display:none; }
+  .sch-hint.show { display:block; }
+
+  /* Empty-state: ученик уже оплатил, но у учителя нет расписания — даём выходы */
+  .sch-empty { text-align:center; padding:24px 0 8px; }
+  .sch-empty-icon { font-size:46px; color:var(--accent-color,#3B82F6); margin-bottom:14px; }
+  .sch-empty h2 { font-size:20px; color:var(--text-primary,#0A2540); margin:0 0 10px; }
+  .sch-empty p { color:var(--text-secondary,#475569); max-width:520px; margin:0 auto 8px; line-height:1.6; }
+  .sch-safe { display:inline-flex; align-items:center; gap:8px; background:#ECFDF5; color:#047857;
+              border-radius:999px; padding:8px 16px; font-size:13px; font-weight:600; margin:8px 0 20px; }
+  .sch-empty-actions { display:flex; flex-direction:column; gap:12px; max-width:360px; margin:0 auto 18px; }
+  .sch-empty-actions form { margin:0; }
+  .sch-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%;
+             padding:13px 18px; border-radius:10px; font-size:15px; font-weight:600; cursor:pointer;
+             text-decoration:none; border:1px solid transparent; box-sizing:border-box; }
+  .sch-btn-primary { background:var(--accent-color,#3B82F6); color:#fff; }
+  .sch-btn-primary:hover { background:var(--accent-hover,#2563EB); }
+  .sch-btn-ghost { background:#fff; color:var(--danger-color,#EF4444); border-color:#FECACA; }
+  .sch-btn-ghost:hover { background:#FEF2F2; }
+  .sch-back { display:inline-block; color:var(--text-tertiary,#6B7280); text-decoration:none; font-size:14px; margin-top:6px; }
+  .sch-back:hover { color:var(--text-secondary,#475569); }
 </style>
 
 <div class="sch-page">
@@ -34,28 +54,58 @@
         </label>
       {% endfor %}
     </div>
-    <button type="submit" class="sch-submit">{% trans 'Забронировать уроки' %}</button>
+    <p class="sch-hint" id="schHint">
+      <i class="fas fa-circle-info" aria-hidden="true"></i>
+      {% blocktrans with n=sub.lessons_per_week %}Выбрано максимум — {{ n }} занятия. Снимите отметку, чтобы выбрать другой слот.{% endblocktrans %}
+    </p>
+    <button type="submit" class="sch-submit" id="schSubmit" disabled>{% trans 'Забронировать уроки' %}</button>
   </form>
   <script>
     (function(){
       var need = {{ sub.lessons_per_week }};
       var form = document.getElementById('schForm');
       var cnt = document.getElementById('cnt');
+      var hint = document.getElementById('schHint');
+      var submit = document.getElementById('schSubmit');
       function sync(){
         var boxes = form.querySelectorAll('input[name="slot"]');
         var checked = form.querySelectorAll('input[name="slot"]:checked');
+        var atLimit = checked.length >= need;
         cnt.textContent = checked.length;
         boxes.forEach(function(b){
           b.closest('[data-opt]').classList.toggle('checked', b.checked);
-          if(!b.checked) b.disabled = (checked.length >= need);
+          if(!b.checked) b.disabled = atLimit;
         });
+        if(hint) hint.classList.toggle('show', atLimit);
+        // кнопка активна только когда выбрано ровно нужное число — без серверной ошибки
+        if(submit) submit.disabled = (checked.length !== need);
       }
       form.addEventListener('change', sync); sync();
     })();
   </script>
   {% else %}
     <div class="sch-empty">
-      <p>{% trans 'У учителя пока не задано недельное расписание — попросите его открыть свободные часы.' %}</p>
+      <div class="sch-empty-icon"><i class="fas fa-calendar-xmark" aria-hidden="true"></i></div>
+      <h2>{% trans 'Учитель ещё не открыл свободные часы' %}</h2>
+      <p>{% blocktrans with name=sub.teacher.user.get_full_name|default:sub.teacher.user.username %}Чтобы забронировать уроки, у преподавателя {{ name }} должно быть задано недельное расписание. Сейчас свободных часов нет — напишите ему и попросите открыть слоты.{% endblocktrans %}</p>
+      <div class="sch-safe">
+        <i class="fas fa-shield-halved" aria-hidden="true"></i>
+        {% trans 'Ваша оплата зарезервирована на платформе и в безопасности' %}
+      </div>
+      <div class="sch-empty-actions">
+        <a href="{% url 'start_conversation' user_id=sub.teacher.user.id %}" class="sch-btn sch-btn-primary">
+          <i class="fas fa-comment-dots" aria-hidden="true"></i> {% trans 'Написать учителю' %}
+        </a>
+        <form method="post" action="{% url 'subscription_cancel' sub.id %}"
+              data-confirm="{% trans 'Отменить подписку и вернуть деньги на баланс? Резерв будет снят, а оплата возвращена полностью.' %}"
+              data-confirm-ok="{% trans 'Отменить и вернуть деньги' %}" data-confirm-danger data-lock>
+          {% csrf_token %}
+          <button type="submit" class="sch-btn sch-btn-ghost">
+            <i class="fas fa-rotate-left" aria-hidden="true"></i> {% trans 'Отменить и вернуть деньги' %}
+          </button>
+        </form>
+      </div>
+      <a href="{% url 'my_subscriptions' %}" class="sch-back">{% trans 'Вернуться к подпискам' %}</a>
     </div>
   {% endif %}
 </div>

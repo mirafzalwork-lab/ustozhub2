@@ -114,7 +114,7 @@
                         Отправить сообщение всем пользователям с включенными уведомлениями
                     </div>
                     
-                    <form method="POST" action="{% url 'send_broadcast_message' %}" class="message-form">
+                    <form method="POST" action="{% url 'send_broadcast_message' %}" class="message-form" onsubmit="return confirm('Отправить рассылку всем выбранным получателям в Telegram? Действие необратимо.');">
                         {% csrf_token %}
                         <div class="form-group">
                             <label class="form-label">Сообщение</label>
@@ -395,5 +395,6 @@
             });
         }
     </script>
+    {% include 'admin/_mobile_nav.html' %}
 </body>
 </html>

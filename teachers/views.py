@@ -469,10 +469,23 @@ def home(request):
     else:
         featured_teachers = []
 
+    # Метрики доверия для hero-блока гостя (кэш 10 мин — общие, не персональные)
+    platform_stats = cache.get('home_platform_stats')
+    if platform_stats is None:
+        platform_stats = {
+            'teachers': TeacherProfile.objects.filter(
+                is_active=True, moderation_status='approved', teachersubject__isnull=False
+            ).distinct().count(),
+            'students': StudentProfile.objects.filter(is_active=True).count(),
+            'subjects': len(all_subjects),
+        }
+        cache.set('home_platform_stats', platform_stats, 600)
+
     context = {
         'teachers': teachers_page,
         'featured_teachers': featured_teachers,
         'total_teachers': paginator.count,
+        'platform_stats': platform_stats,
         'subjects': all_subjects,
         'cities': all_cities,
         'teaching_formats': TeacherProfile.TEACHING_FORMATS,

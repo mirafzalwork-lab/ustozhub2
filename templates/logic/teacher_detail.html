@@ -2110,13 +2110,7 @@
 
                         <div class="teacher-rating-large">
                             <div class="rating-stars-large">
-                                {% for i in "12345" %}
-                                    {% if forloop.counter <= teacher.rating %}
-                                        <i class="fas fa-star rating-star-large"></i>
-                                    {% else %}
-                                        <i class="far fa-star rating-star-large"></i>
-                                    {% endif %}
-                                {% endfor %}
+                                {% star_rating teacher.rating "rating-star-large" %}
                             </div>
                             <span class="rating-number">{{ teacher.rating|floatformat:1 }}</span>
                             <span class="rating-details">({{ teacher.total_reviews }} {% trans 'отзывов' %})</span>
@@ -2302,12 +2296,12 @@
                                 {% if ts.is_free_trial %}
                                     <div class="price-trial-row">
                                         <span class="trial-old-price">{{ ts.hourly_rate|floatformat:0|intcomma }}</span>
-                                        <span class="trial-badge trial-badge--free">🎁 {% trans 'Пробный' %} — {% trans 'бесплатно' %}</span>
+                                        <span class="trial-badge trial-badge--free"><i class="fas fa-gift"></i> {% trans 'Пробный' %} — {% trans 'бесплатно' %}</span>
                                     </div>
                                 {% elif ts.trial_price %}
                                     <div class="price-trial-row">
                                         <span class="trial-old-price">{{ ts.hourly_rate|floatformat:0|intcomma }}</span>
-                                        <span class="trial-badge trial-badge--paid">💎 {% trans 'Пробный за' %} {{ ts.trial_price|floatformat:0|intcomma }} {% trans 'сум' %}</span>
+                                        <span class="trial-badge trial-badge--paid"><i class="fas fa-gem"></i> {% trans 'Пробный за' %} {{ ts.trial_price|floatformat:0|intcomma }} {% trans 'сум' %}</span>
                                     </div>
                                 {% endif %}
                             </div>
@@ -2337,14 +2331,14 @@
                         {% with after_trial=True %}
                         <div style="border: 2px solid #F59E0B; border-radius: 14px; padding: 18px; background: linear-gradient(180deg, #FEFCE8 0%, #fff 60%); position: relative;">
                             <span style="position:absolute; top:-10px; left:16px; background:#F59E0B; color:#fff; font-size:11px; padding:4px 10px; border-radius:999px; font-weight:600;">
-                                🎉 {% trans 'Рекомендуется после пробного' %}
+                                <i class="fas fa-circle-check"></i> {% trans 'Рекомендуется после пробного' %}
                             </span>
                         {% endwith %}
                     {% else %}
                     <div style="border: 2px solid {% if t.is_recommended %}#3B82F6{% else %}#E2E8F0{% endif %}; border-radius: 14px; padding: 18px; background: #fff; position: relative;">
                         {% if t.is_recommended %}
                             <span style="position:absolute; top:-10px; left:16px; background:#3B82F6; color:#fff; font-size:11px; padding:4px 10px; border-radius:999px; font-weight:600;">
-                                ⭐ {% trans 'Рекомендованный' %}
+                                <i class="fas fa-star"></i> {% trans 'Рекомендованный' %}
                             </span>
                         {% endif %}
                     {% endif %}
@@ -2354,10 +2348,10 @@
                             {{ t.total_price|floatformat:0|intcomma }} <span style="font-size:13px; color:#64748B; font-weight:400;">сум{% if t.duration_months != 1 %} / {{ t.duration_months }} мес.{% endif %}</span>
                         </div>
                         <div style="margin: 12px 0 14px; font-size: 13px; color: #475569; line-height: 1.7;">
-                            <div>📚 <b>{{ t.lessons_per_week }}</b> {% trans 'урок(а) в неделю' %}</div>
-                            <div>⏱️ {% trans 'по' %} <b>{{ t.lesson_duration_minutes }}</b> {% trans 'минут' %}</div>
-                            <div>🎯 {% trans 'всего' %} <b>{{ t.total_lessons }}</b> {% trans 'уроков' %}</div>
-                            <div>💵 <b>{{ t.price_per_lesson|floatformat:0|intcomma }}</b> {% trans 'сум за урок' %}</div>
+                            <div><i class="fas fa-graduation-cap"></i> <b>{{ t.lessons_per_week }}</b> {% trans 'урок(а) в неделю' %}</div>
+                            <div><i class="fas fa-clock"></i> {% trans 'по' %} <b>{{ t.lesson_duration_minutes }}</b> {% trans 'минут' %}</div>
+                            <div><i class="fas fa-bullseye"></i> {% trans 'всего' %} <b>{{ t.total_lessons }}</b> {% trans 'уроков' %}</div>
+                            <div><i class="fas fa-money-bill"></i> <b>{{ t.price_per_lesson|floatformat:0|intcomma }}</b> {% trans 'сум за урок' %}</div>
                         </div>
                         {% if t.description %}
                             <div style="font-size:13px; color:#64748B; margin-bottom: 14px;">{{ t.description|truncatechars:100 }}</div>
@@ -2509,14 +2503,8 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="review-rating">
-                                    {% for i in "12345" %}
-                                        {% if forloop.counter <= review.rating %}
-                                            <i class="fas fa-star" style="color: #FCD34D;"></i>
-                                        {% else %}
-                                            <i class="far fa-star" style="color: #FCD34D;"></i>
-                                        {% endif %}
-                                    {% endfor %}
+                                <div class="review-rating" style="color: #FCD34D;">
+                                    {% star_rating review.rating %}
                                 </div>
                             </div>
                             {% if review.comment %}
@@ -2681,7 +2669,7 @@
                         <div class="availability-item">
                             <i class="fas fa-calendar-day"></i>
                             <a href="#schedule" style="color: var(--accent-color, #3B82F6); text-decoration: none; font-weight: 500;">
-                                {% trans 'Смотреть расписание по дням' %} ↓
+                                {% trans 'Смотреть расписание по дням' %} <i class="fas fa-arrow-down" aria-hidden="true"></i>
                             </a>
                         </div>
                         {% endif %}

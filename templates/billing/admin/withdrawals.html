@@ -6,7 +6,7 @@
 
 {% block content %}
 <div class="ab-page">
-  <h1>💸 Заявки на вывод средств</h1>
+  <h1><i class="fas fa-money-bill-wave"></i> Заявки на вывод средств</h1>
   <p class="subtitle">Одобрить, отклонить или завершить заявку учителя</p>
 
   {% with active_tab='withdrawals' %}{% include 'billing/admin/_base.html' %}{% endwith %}
@@ -47,10 +47,10 @@
           <td>
             {{ r.get_payout_method_display }}<br>
             <code style="font-size:12px; color:#475569;">{{ r.payout_details }}</code>
-            {% if r.comment %}<br><small style="color:#64748B;">💬 {{ r.comment|truncatechars:60 }}</small>{% endif %}
+            {% if r.comment %}<br><small style="color:#64748B;"><i class="fas fa-comment-dots"></i> {{ r.comment|truncatechars:60 }}</small>{% endif %}
           </td>
           <td><span class="ab-status {{ r.status }}">{{ r.get_status_display }}</span>
-            {% if r.admin_note %}<div style="font-size:11px; color:#94A3B8; margin-top:4px;">📝 {{ r.admin_note|truncatechars:50 }}</div>{% endif %}
+            {% if r.admin_note %}<div style="font-size:11px; color:#94A3B8; margin-top:4px;"><i class="fas fa-pen-to-square"></i> {{ r.admin_note|truncatechars:50 }}</div>{% endif %}
           </td>
           <td>
             {% if r.status == 'pending' %}
@@ -60,9 +60,9 @@
                   {% csrf_token %}
                   <textarea name="note" rows="2" placeholder="Комментарий (для reject обязателен)" style="width:100%; padding:6px 10px; border:1px solid #E2E8F0; border-radius:6px; font-size:13px; margin-bottom:6px;"></textarea>
                   <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                    <button name="action" value="approve" class="ab-btn ab-btn-primary" style="padding:6px 12px; font-size:12px;">✓ Одобрить</button>
-                    <button name="action" value="complete" class="ab-btn ab-btn-success" style="padding:6px 12px; font-size:12px;">✓✓ Завершить</button>
-                    <button name="action" value="reject" class="ab-btn ab-btn-danger" style="padding:6px 12px; font-size:12px;" onclick="return confirm('Отклонить заявку? Деньги вернутся учителю.')">✗ Отклонить</button>
+                    <button name="action" value="approve" class="ab-btn ab-btn-primary" style="padding:6px 12px; font-size:12px;" onclick="return confirm('Одобрить вывод {{ r.amount|floatformat:0|intcomma }} сум для {{ r.user.get_full_name|default:r.user.username|escapejs }}?')"><i class="fas fa-check"></i> Одобрить</button>
+                    <button name="action" value="complete" class="ab-btn ab-btn-success" style="padding:6px 12px; font-size:12px;" onclick="return confirm('Подтвердить, что перевод {{ r.amount|floatformat:0|intcomma }} сум для {{ r.user.get_full_name|default:r.user.username|escapejs }} ВЫПОЛНЕН? Действие необратимо.')"><i class="fas fa-check-double"></i> Завершить</button>
+                    <button name="action" value="reject" class="ab-btn ab-btn-danger" style="padding:6px 12px; font-size:12px;" onclick="return confirm('Отклонить заявку? Деньги вернутся учителю.')"><i class="fas fa-xmark"></i> Отклонить</button>
                   </div>
                 </form>
               </details>
@@ -72,7 +72,7 @@
                 <form method="post" action="{% url 'admin_withdrawal_action' r.id %}" style="margin-top:8px;">
                   {% csrf_token %}
                   <textarea name="note" rows="2" placeholder="Номер транзакции / комментарий" style="width:100%; padding:6px 10px; border:1px solid #E2E8F0; border-radius:6px; font-size:13px; margin-bottom:6px;"></textarea>
-                  <button name="action" value="complete" class="ab-btn ab-btn-success" style="padding:6px 12px; font-size:12px;">Перевод сделан →</button>
+                  <button name="action" value="complete" class="ab-btn ab-btn-success" style="padding:6px 12px; font-size:12px;" onclick="return confirm('Подтвердить, что перевод {{ r.amount|floatformat:0|intcomma }} сум для {{ r.user.get_full_name|default:r.user.username|escapejs }} ВЫПОЛНЕН? Действие необратимо.')">Перевод сделан →</button>
                 </form>
               </details>
             {% else %}

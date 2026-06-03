@@ -2,7 +2,7 @@
 {% load humanize %}
 {% block content %}
 <div style="max-width: 540px; margin: 30px auto; padding: 30px; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.05);">
-  <h2 style="margin-top: 0;">💰 Пополнить кошелёк</h2>
+  <h2 style="margin-top: 0;"><i class="fas fa-coins"></i> Пополнить кошелёк</h2>
   <p>Пользователь: <strong>{{ wallet.user.username }}</strong> ({{ wallet.user.email }})</p>
   <p>Текущий баланс: <strong>{{ wallet.balance|floatformat:0|intcomma }} {{ wallet.currency }}</strong></p>
 
@@ -23,7 +23,7 @@
 
   <hr style="margin: 30px 0;">
   <p style="color: #94A3B8; font-size: 13px; margin: 0;">
-    ⚠️ Это инструмент для тестов: до интеграции платёжного провайдера (Payme/Click) пополнение
+    <i class="fas fa-triangle-exclamation"></i> Это инструмент для тестов: до интеграции платёжного провайдера (Payme/Click) пополнение
     делается вручную через эту страницу. Любая операция пишется в Transaction ledger с пометкой
     «admin manual top-up».
   </p>

@@ -58,7 +58,7 @@
     .book-time-chip small { color: var(--cal-muted, #64748B); font-size: 11px; }
     .book-time-chip:hover { border-color: #C7D2FE; }
     .book-time-chip.is-active {
-        background: var(--cal-primary, #4F46E5); border-color: var(--cal-primary, #4F46E5); color: #fff;
+        background: var(--cal-primary, #3B82F6); border-color: var(--cal-primary, #3B82F6); color: #fff;
     }
     .book-time-chip.is-active small { color: rgba(255,255,255,.8); }
     .book-filter__hint { margin-left: auto; font-size: 13px; color: var(--cal-muted, #64748B); }
@@ -223,7 +223,7 @@
                                     data-trial-price="{{ ts.trial_price|default_if_none:''|floatformat:0 }}"
                                     data-trial-duration="{{ ts.trial_duration_minutes|default:60 }}">
                                 {{ ts.subject__name }} · {{ ts.hourly_rate|floatformat:0|intcomma }} {% trans "сум/час" %}
-                                {% if ts.is_free_trial %} · 🎁 {% trans "пробный бесплатно" %}{% elif ts.trial_price %} · 💎 {% trans "пробный" %} {{ ts.trial_price|floatformat:0|intcomma }} {% trans "сум" %}{% endif %}
+                                {% if ts.is_free_trial %} · {% trans "пробный бесплатно" %}{% elif ts.trial_price %} · {% trans "пробный" %} {{ ts.trial_price|floatformat:0|intcomma }} {% trans "сум" %}{% endif %}
                             </option>
                         {% endfor %}
                     </select>

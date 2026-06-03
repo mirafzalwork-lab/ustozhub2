@@ -97,7 +97,7 @@
             {% endif %}
 
             <!-- Form -->
-            <form method="post" enctype="multipart/form-data" class="registration-form" novalidate>
+            <form method="post" enctype="multipart/form-data" class="registration-form" novalidate data-lock>
                 {% csrf_token %}
                 {{ wizard.management_form }}
 

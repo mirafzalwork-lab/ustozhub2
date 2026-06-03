@@ -83,7 +83,7 @@
       </div>
     </div>
     <div class="tdb-card purple">
-      <div class="lbl">👥 {% trans 'Активных учеников' %}</div>
+      <div class="lbl"><i class="fas fa-users"></i> {% trans 'Активных учеников' %}</div>
       <div class="val">{{ active_students_count }}</div>
       <div class="sub">
         <a href="{% url 'teacher_subscribers' %}" style="color:#fff; text-decoration:underline;">{% trans 'Список' %}</a>
@@ -131,19 +131,19 @@
               </div>
               <span class="pill {{ b.status }}">{{ b.get_status_display }}</span>
               {% if b.meeting_url %}
-                <a href="{{ b.meeting_url }}" target="_blank" style="color:#6366F1; text-decoration:none; font-size:13px; margin-left:8px;">📹</a>
+                <a href="{{ b.meeting_url }}" target="_blank" style="color:#6366F1; text-decoration:none; font-size:13px; margin-left:8px;"><i class="fas fa-video"></i></a>
               {% endif %}
             </div>
           {% endfor %}
         {% else %}
-          <div class="empty">{% trans 'Сегодня уроков нет' %} 🌴</div>
+          <div class="empty">{% trans 'Сегодня уроков нет' %}</div>
         {% endif %}
       </div>
 
       {% if pending_bookings %}
       <div class="tdb-section">
         <h2>
-          🔔 {% trans 'Требуют подтверждения' %}
+          <i class="fas fa-bell"></i> {% trans 'Требуют подтверждения' %}
           <span style="background:#FEF3C7; color:#92400E; padding:2px 8px; border-radius:999px; font-size:11px; margin-left:6px;">{{ pending_bookings|length }}</span>
         </h2>
         {% for b in pending_bookings %}
@@ -153,7 +153,7 @@
               <small style="color:#94A3B8;"> · {{ b.subject.name|default:'' }}</small>
               <div style="font-size:12px; color:#64748B;">{{ b.slot.start_at|date:"d M, H:i" }}{% if b.is_trial %} · <i class="fas fa-gift"></i> пробный{% endif %}</div>
             </div>
-            <a href="/booking/calendar/">{% trans 'Открыть' %} →</a>
+            <a href="{% url 'teacher_calendar' %}">{% trans 'Открыть' %} →</a>
           </div>
         {% endfor %}
       </div>
@@ -176,22 +176,22 @@
             </div>
           {% endfor %}
         {% else %}
-          <div class="empty">{% trans 'Все ДЗ проверены' %} 🎉</div>
+          <div class="empty">{% trans 'Все ДЗ проверены' %}</div>
         {% endif %}
       </div>
     </div>
 
     <div>
       <div class="tdb-section">
-        <h2>⚡ {% trans 'Быстро' %}</h2>
-        <a href="/booking/calendar/" style="display:block; background:#EEF2FF; color:#4338CA; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500; margin-bottom:8px;">
+        <h2><i class="fas fa-bolt"></i> {% trans 'Быстро' %}</h2>
+        <a href="{% url 'teacher_calendar' %}" style="display:block; background:#EEF2FF; color:#4338CA; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500; margin-bottom:8px;">
           <i class="fas fa-calendar-days"></i> {% trans 'Календарь' %}
         </a>
         <a href="{% url 'teacher_homework_create' %}" style="display:block; background:#F5F3FF; color:#7C3AED; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500; margin-bottom:8px;">
-          ✍ {% trans 'Создать ДЗ' %}
+          <i class="fas fa-pen"></i> {% trans 'Создать ДЗ' %}
         </a>
         <a href="{% url 'tariffs_list' %}" style="display:block; background:#FEF3C7; color:#92400E; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500; margin-bottom:8px;">
-          💼 {% trans 'Мои тарифы' %}
+          <i class="fas fa-briefcase"></i> {% trans 'Мои тарифы' %}
         </a>
         <a href="{% url 'withdrawals_list' %}" style="display:block; background:#ECFDF5; color:#065F46; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500;">
           <i class="fas fa-money-bill-transfer"></i> {% trans 'Вывод средств' %}

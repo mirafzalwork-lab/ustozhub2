@@ -67,10 +67,10 @@
 
 <style>.ab-tabs .ab-badge{background:#DC2626;color:#fff;border-radius:10px;padding:0 7px;font-size:11px;font-weight:700;margin-left:5px;}</style>
 <div class="ab-tabs">
-  <a href="{% url 'admin_dashboard' %}" {% if active_tab == 'overview' %}class="active"{% endif %}>📊 Главная</a>
-  <a href="{% url 'admin_billing_hub' %}" {% if active_tab == 'billing' %}class="active"{% endif %}>💰 Финансы</a>
-  <a href="{% url 'admin_billing_wallets' %}" {% if active_tab == 'wallets' %}class="active"{% endif %}>👛 Кошельки</a>
-  <a href="{% url 'admin_billing_withdrawals' %}" {% if active_tab == 'withdrawals' %}class="active"{% endif %}>💸 Выводы{% if admin_badges.withdrawals %}<span class="ab-badge">{{ admin_badges.withdrawals }}</span>{% endif %}</a>
-  <a href="{% url 'admin_billing_subscriptions' %}" {% if active_tab == 'subscriptions' %}class="active"{% endif %}>📚 Подписки{% if admin_badges.requests %}<span class="ab-badge">{{ admin_badges.requests }}</span>{% endif %}</a>
-  <a href="{% url 'admin_billing_disputes' %}" {% if active_tab == 'disputes' %}class="active"{% endif %}>⚖️ Споры{% if admin_badges.disputes %}<span class="ab-badge">{{ admin_badges.disputes }}</span>{% endif %}</a>
+  <a href="{% url 'admin_dashboard' %}" {% if active_tab == 'overview' %}class="active"{% endif %}><i class="fas fa-chart-line"></i> Главная</a>
+  <a href="{% url 'admin_billing_hub' %}" {% if active_tab == 'billing' %}class="active"{% endif %}><i class="fas fa-coins"></i> Финансы</a>
+  <a href="{% url 'admin_billing_wallets' %}" {% if active_tab == 'wallets' %}class="active"{% endif %}><i class="fas fa-wallet"></i> Кошельки</a>
+  <a href="{% url 'admin_billing_withdrawals' %}" {% if active_tab == 'withdrawals' %}class="active"{% endif %}><i class="fas fa-money-bill-wave"></i> Выводы{% if admin_badges.withdrawals %}<span class="ab-badge">{{ admin_badges.withdrawals }}</span>{% endif %}</a>
+  <a href="{% url 'admin_billing_subscriptions' %}" {% if active_tab == 'subscriptions' %}class="active"{% endif %}><i class="fas fa-graduation-cap"></i> Подписки{% if admin_badges.requests %}<span class="ab-badge">{{ admin_badges.requests }}</span>{% endif %}</a>
+  <a href="{% url 'admin_billing_disputes' %}" {% if active_tab == 'disputes' %}class="active"{% endif %}><i class="fas fa-scale-balanced"></i> Споры{% if admin_badges.disputes %}<span class="ab-badge">{{ admin_badges.disputes }}</span>{% endif %}</a>
 </div>

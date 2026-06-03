@@ -196,7 +196,7 @@
 <template id="pe-progress-tmpl">
   <div class="pe-progress" id="pe-progress">
     <div class="pe-progress-head">
-      <span class="pe-progress-title">📊 {% trans 'Заполненность профиля' %}</span>
+      <span class="pe-progress-title"><i class="fas fa-chart-line"></i> {% trans 'Заполненность профиля' %}</span>
       <span class="pe-progress-percent" id="pe-progress-percent">0%</span>
     </div>
     <div class="pe-progress-bar"><div class="pe-progress-fill" id="pe-progress-fill" style="width: 0%;"></div></div>
@@ -213,7 +213,7 @@
     </div>
     <div class="pe-actions">
       <button type="button" class="pe-cancel" id="pe-cancel-btn">{% trans 'Отменить' %}</button>
-      <button type="button" class="pe-save" id="pe-save-btn">💾 {% trans 'Сохранить' %}</button>
+      <button type="button" class="pe-save" id="pe-save-btn"><i class="fas fa-floppy-disk"></i> {% trans 'Сохранить' %}</button>
     </div>
   </div>
 </template>
@@ -323,10 +323,10 @@
     if (percentEl) percentEl.textContent = p + '%';
     if (fillEl) fillEl.style.width = p + '%';
     if (hintEl) {
-      if (p >= 90) hintEl.textContent = '🎉 {% trans "Отличный профиль! Ученики будут видеть полную информацию о вас." %}';
-      else if (p >= 70) hintEl.textContent = '👍 {% trans "Профиль почти готов. Допишите оставшиеся поля для лучшей видимости." %}';
-      else if (p >= 40) hintEl.textContent = '📝 {% trans "Хорошее начало. Заполните больше полей, чтобы повысить шансы быть найденным." %}';
-      else hintEl.textContent = '✨ {% trans "Начните с базовой информации — это поможет ученикам понять, кто вы." %}';
+      if (p >= 90) hintEl.textContent = '{% trans "Отличный профиль! Ученики будут видеть полную информацию о вас." %}';
+      else if (p >= 70) hintEl.textContent = '{% trans "Профиль почти готов. Допишите оставшиеся поля для лучшей видимости." %}';
+      else if (p >= 40) hintEl.textContent = '{% trans "Хорошее начало. Заполните больше полей, чтобы повысить шансы быть найденным." %}';
+      else hintEl.textContent = '{% trans "Начните с базовой информации — это поможет ученикам понять, кто вы." %}';
     }
   }
   refreshProgress();
@@ -376,7 +376,7 @@
   // Submit
   saveBtn.addEventListener('click', function() {
     saveBtn.disabled = true;
-    saveBtn.innerHTML = '⏳ {% trans "Сохраняем..." %}';
+    saveBtn.innerHTML = '<i class="fas fa-hourglass-half"></i> {% trans "Сохраняем..." %}';
     form.submit();
   });
 
@@ -414,7 +414,7 @@
   function showToast(title, msg, type, autoCloseMs) {
     const t = document.createElement('div');
     t.className = 'pe-toast ' + (type === 'success' ? '' : type);
-    const icon = type === 'success' ? '✅' : type === 'error' ? '⚠️' : 'ℹ️';
+    const icon = type === 'success' ? '<i class="fas fa-circle-check"></i>' : type === 'error' ? '<i class="fas fa-triangle-exclamation"></i>' : '<i class="fas fa-circle-info"></i>';
     t.innerHTML = `
       <div class="pe-toast-icon">${icon}</div>
       <div>

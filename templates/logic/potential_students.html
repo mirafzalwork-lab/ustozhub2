@@ -22,12 +22,12 @@
     <a href="?status={{ LEAD_HOT }}"
        style="padding:8px 14px;border-radius:20px;text-decoration:none;font-size:14px;font-weight:600;
               {% if status_filter == LEAD_HOT %}background:#E8590C;color:#fff;{% else %}background:#fff4e6;color:#E8590C;{% endif %}">
-      🔥 {% trans 'Забронировали пробный' %} ({{ counts.hot }})
+      <i class="fas fa-fire"></i> {% trans 'Забронировали пробный' %} ({{ counts.hot }})
     </a>
     <a href="?status={{ LEAD_WARM }}"
        style="padding:8px 14px;border-radius:20px;text-decoration:none;font-size:14px;font-weight:600;
               {% if status_filter == LEAD_WARM %}background:#F08C00;color:#fff;{% else %}background:#fff9db;color:#B8860B;{% endif %}">
-      ⭐ {% trans 'Добавили в избранное' %} ({{ counts.warm }})
+      <i class="fas fa-star"></i> {% trans 'Добавили в избранное' %} ({{ counts.warm }})
     </a>
   </div>
 

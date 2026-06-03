@@ -1093,7 +1093,7 @@
                 <div class="checkbox-group" style="margin-top: 16px;">
                     {{ form.terms_accepted }}
                     <label class="checkbox-label" for="id_terms_accepted">
-                        {% trans "Я принимаю" %} <a href="#" target="_blank">{% trans "условия использования" %}</a> {% trans "и" %} <a href="#" target="_blank">{% trans "политику конфиденциальности" %}</a>
+                        {% trans "Я принимаю" %} <a href="{% url 'terms' %}" target="_blank" rel="noopener">{% trans "условия использования" %}</a> {% trans "и" %} <a href="{% url 'privacy' %}" target="_blank" rel="noopener">{% trans "политику конфиденциальности" %}</a>
                     </label>
                 </div>
                 {% if form.terms_accepted.errors %}
@@ -1150,7 +1150,7 @@
 
                     <div style="font-size: 12px; color: #666; margin-top: 8px; display: flex; align-items: center; gap: 6px;">
                         <i class="fas fa-lightbulb" style="color: #fbbf24;"></i>
-                        <span>{% trans "💡 Начните вводить название или используйте быстрые кнопки ниже" %}</span>
+                        <span>{% trans "Начните вводить название или используйте быстрые кнопки ниже" %}</span>
                     </div>
 
                     <div id="subjectCheckboxes">

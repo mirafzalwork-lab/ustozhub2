@@ -169,11 +169,11 @@
             <div class="lbl">Активных</div>
         </div>
         <div class="summary-card" style="border-left-color:#f59e0b">
-            <div class="num">🌅 2×3</div>
+            <div class="num"><i class="fas fa-sun"></i> 2×3</div>
             <div class="lbl">Слотов (утро × ru/uz/en)</div>
         </div>
         <div class="summary-card" style="border-left-color:#6366f1">
-            <div class="num">🌙 2×3</div>
+            <div class="num"><i class="fas fa-moon"></i> 2×3</div>
             <div class="lbl">Слотов (вечер × ru/uz/en)</div>
         </div>
     </div>
@@ -195,9 +195,9 @@
             <div class="group-head">
                 <div class="group-title">
                     {% if grp.period == 'morning' %}
-                        <span class="chip morning">☀️ {{ grp.period_label }}</span>
+                        <span class="chip morning"><i class="fas fa-sun"></i> {{ grp.period_label }}</span>
                     {% else %}
-                        <span class="chip evening">🌙 {{ grp.period_label }}</span>
+                        <span class="chip evening"><i class="fas fa-moon"></i> {{ grp.period_label }}</span>
                     {% endif %}
                     <span class="chip lang">{{ grp.language_label }}</span>
                 </div>

@@ -1968,8 +1968,6 @@
 <script>
     // Performance optimization
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('{% trans "Страница профиля ученика загружена" %}');
-        
         // Lazy loading images fallback
         if (!('loading' in HTMLImageElement.prototype)) {
             const images = document.querySelectorAll('img[loading="lazy"]');

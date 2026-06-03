@@ -64,17 +64,17 @@
 
 {% block content %}
 <div class="broadcast-form">
-    <h1>📬 Отправить сообщение пользователям</h1>
+    <h1><i class="fas fa-envelope"></i> Отправить сообщение пользователям</h1>
     
     <div class="warning-box">
-        <strong>💡 Важно:</strong> Сообщения будут отправлены только пользователям, которые:
+        <strong><i class="fas fa-lightbulb"></i> Важно:</strong> Сообщения будут отправлены только пользователям, которые:
         <ul style="margin: 8px 0 0 20px;">
-            <li>✅ Включили уведомления</li>
-            <li>✅ Запустили бота командой /start</li>
+            <li><i class="fas fa-circle-check"></i> Включили уведомления</li>
+            <li><i class="fas fa-circle-check"></i> Запустили бота командой /start</li>
         </ul>
         {% if stats %}
         <div style="margin-top: 15px; padding: 10px; background: #e7f3ff; border-radius: 4px;">
-            <strong>📊 Статистика получателей:</strong><br>
+            <strong><i class="fas fa-chart-line"></i> Статистика получателей:</strong><br>
             Всего пользователей: {{ stats.total }}<br>
             Запустили бота: {{ stats.started_bot }}<br>
             Включили уведомления: {{ stats.notifications_enabled }}<br>
@@ -85,7 +85,7 @@
     
     <div class="users-list">
         {% if django_mode %}
-        <h3>📋 Django пользователи ({{ users|length }} чел.):</h3>
+        <h3><i class="fas fa-clipboard-list"></i> Django пользователи ({{ users|length }} чел.):</h3>
         <ul>
             {% for user in users %}
             <li>
@@ -104,18 +104,18 @@
                     {% endif %}
                     - ID: {{ user.telegram_id }}
                     {% if not user.notifications_enabled %}
-                        <span style="color: #ff6b6b;">⚠️ Уведомления отключены</span>
+                        <span style="color: #ff6b6b;"><i class="fas fa-triangle-exclamation"></i> Уведомления отключены</span>
                     {% elif not user.started_bot %}
-                        <span style="color: #ffa726;">⚠️ Не запустил бота (/start)</span>
+                        <span style="color: #ffa726;"><i class="fas fa-triangle-exclamation"></i> Не запустил бота (/start)</span>
                     {% else %}
-                        <span style="color: #4caf50;">✅ Готов к получению</span>
+                        <span style="color: #4caf50;"><i class="fas fa-circle-check"></i> Готов к получению</span>
                     {% endif %}
                 </small>
             </li>
             {% endfor %}
         </ul>
         {% else %}
-        <h3>📋 Получатели ({{ users|length }} польз.):</h3>
+        <h3><i class="fas fa-clipboard-list"></i> Получатели ({{ users|length }} польз.):</h3>
         <ul>
             {% for user in users %}
             <li>
@@ -125,11 +125,11 @@
                 {% endif %}
                 - ID: {{ user.telegram_id }}
                 {% if not user.notifications_enabled %}
-                    <span style="color: #ff6b6b;">⚠️ Уведомления отключены</span>
+                    <span style="color: #ff6b6b;"><i class="fas fa-triangle-exclamation"></i> Уведомления отключены</span>
                 {% elif not user.started_bot %}
-                    <span style="color: #ffa726;">⚠️ Не запустил бота (/start)</span>
+                    <span style="color: #ffa726;"><i class="fas fa-triangle-exclamation"></i> Не запустил бота (/start)</span>
                 {% else %}
-                    <span style="color: #4caf50;">✅ Готов к получению</span>
+                    <span style="color: #4caf50;"><i class="fas fa-circle-check"></i> Готов к получению</span>
                 {% endif %}
             </li>
             {% endfor %}
@@ -137,12 +137,12 @@
         {% endif %}
     </div>
 
-    <form method="post">
+    <form method="post" onsubmit="return confirm('Отправить сообщение {{ stats.ready|default:0 }} получателям? Действие необратимо.');">
         {% csrf_token %}
         
         <div style="margin-bottom: 20px;">
             <label for="message" style="display: block; font-weight: bold; margin-bottom: 8px;">
-                💬 Текст сообщения:
+                <i class="fas fa-comment-dots"></i> Текст сообщения:
             </label>
             <textarea 
                 name="message" 
@@ -151,7 +151,7 @@
                 placeholder="Введите текст сообщения...&#10;&#10;Поддерживается Markdown форматирование:&#10;*жирный текст*&#10;_курсив_&#10;`код`&#10;[ссылка](http://example.com)"
             ></textarea>
             <p class="help-text">
-                💡 Поддерживается Markdown форматирование
+                <i class="fas fa-lightbulb"></i> Поддерживается Markdown форматирование
             </p>
         </div>
 
@@ -159,7 +159,7 @@
             <div class="button-group">
                 <input 
                     type="submit" 
-                    value="📤 Отправить сообщение" 
+                    value="Отправить сообщение"
                     class="default" 
                     name="apply"
                 />

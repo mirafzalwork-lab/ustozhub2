@@ -1215,9 +1215,7 @@
         })
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                console.log('Status updated:', data.message);
-            }
+            // статус обновлён успешно — UI уже отражает переключатель
         })
         .catch(error => {
             console.error('Error:', error);

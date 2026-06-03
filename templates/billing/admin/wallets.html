@@ -6,7 +6,7 @@
 
 {% block content %}
 <div class="ab-page">
-  <h1>👛 Управление кошельками</h1>
+  <h1><i class="fas fa-wallet"></i> Управление кошельками</h1>
   <p class="subtitle">Поиск пользователя → просмотр баланса → пополнение / списание</p>
 
   {% with active_tab='wallets' %}{% include 'billing/admin/_base.html' %}{% endwith %}
@@ -46,7 +46,7 @@
   {% if user and wallet %}
     <div class="ab-grid-2">
       <div class="ab-section">
-        <h2>👤 {{ user.get_full_name|default:user.username }}</h2>
+        <h2><i class="fas fa-user"></i> {{ user.get_full_name|default:user.username }}</h2>
         <table class="ab-table" style="font-size:14px;">
           <tr><th style="width:140px;">User ID</th><td>{{ user.id }}</td></tr>
           <tr><th>Username</th><td>{{ user.username }}</td></tr>
@@ -59,7 +59,7 @@
       </div>
 
       <div class="ab-section">
-        <h2>💰 Пополнить / Списать</h2>
+        <h2><i class="fas fa-coins"></i> Пополнить / Списать</h2>
         <form method="post" action="{% url 'admin_wallet_topup_action' user.id %}" id="topup-form">
           {% csrf_token %}
           {# Одноразовый токен: повторный submit той же формы (двойной клик / refresh) → no-op #}
@@ -67,8 +67,8 @@
           <div class="ab-form-row">
             <label>Операция</label>
             <select name="operation" required id="topup-op">
-              <option value="credit">➕ Пополнить (credit)</option>
-              <option value="debit">➖ Списать (debit)</option>
+              <option value="credit">Пополнить (credit)</option>
+              <option value="debit">Списать (debit)</option>
             </select>
           </div>
           <div class="ab-form-row">
@@ -91,7 +91,7 @@
           <button type="submit" class="ab-btn ab-btn-success">Выполнить</button>
         </form>
         <div style="margin-top:14px; font-size:13px; color:#94A3B8;">
-          ⚠ Любая операция пишется в Transaction-ledger с пометкой «admin {{ request.user.username }}».
+          <i class="fas fa-triangle-exclamation"></i> Любая операция пишется в Transaction-ledger с пометкой «admin {{ request.user.username }}».
         </div>
         <style>
           .quick-amt {
@@ -113,13 +113,32 @@
                 amt.focus();
               });
             });
+
+            // Подтверждение финансовой операции с реальной суммой (необратимо, пишется в ledger)
+            var form = document.getElementById('topup-form');
+            var op = document.getElementById('topup-op');
+            if (form && window.confirmDialog) {
+              form.addEventListener('submit', function(e) {
+                if (form.dataset.confirmed === '1') { return; }
+                e.preventDefault();
+                var val = parseInt(amt.value, 10) || 0;
+                var opTxt = op.value === 'debit' ? 'СПИСАТЬ' : 'ПОПОЛНИТЬ';
+                var sum = val.toLocaleString('ru-RU');
+                window.confirmDialog(
+                  opTxt + ' ' + sum + ' сум на кошелёк пользователя «{{ user.username|escapejs }}»? Операция необратима и записывается в ledger.',
+                  { title: 'Подтвердите операцию', okText: 'Да, выполнить', danger: op.value === 'debit' }
+                ).then(function(ok) {
+                  if (ok) { form.dataset.confirmed = '1'; form.submit(); }
+                });
+              });
+            }
           })();
         </script>
       </div>
     </div>
 
     <div class="ab-section">
-      <h2>📜 История транзакций ({{ transactions|length }} последних)</h2>
+      <h2><i class="fas fa-scroll"></i> История транзакций ({{ transactions|length }} последних)</h2>
       {% if transactions %}
       <table class="ab-table">
         <thead><tr><th>Дата</th><th>Тип</th><th>Сумма</th><th>Баланс после</th><th>Описание</th></tr></thead>

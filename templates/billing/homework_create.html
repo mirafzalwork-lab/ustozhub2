@@ -16,7 +16,7 @@
       <p>{% trans 'Задание можно назначить только ученику с активной подпиской.' %}</p>
     </div>
   {% else %}
-  <form method="post" enctype="multipart/form-data" novalidate>
+  <form method="post" enctype="multipart/form-data" novalidate data-lock>
     {% csrf_token %}
 
     <div class="form-row">

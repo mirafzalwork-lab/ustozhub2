@@ -3,7 +3,7 @@
   {% if original.pk %}
     <li>
       <a href="{% url 'admin:billing_wallet_topup' original.pk %}" class="addlink" style="background:#10B981 !important;">
-        💰 Пополнить кошелёк
+        <i class="fas fa-coins"></i> Пополнить кошелёк
       </a>
     </li>
   {% endif %}

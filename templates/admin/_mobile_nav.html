@@ -1,0 +1,32 @@
+{% load i18n %}
+{# Мобильная навигация админки: гамбургер в topbar + выезжающий сайдбар.
+   Подключать перед </body> на каждой автономной admin-странице с .sidebar/.topbar.
+   Стили — в static/teachers/admin.css (.sidebar-toggle, .sidebar.open, .admin-backdrop). #}
+<div class="admin-backdrop" id="adminBackdrop"></div>
+<script>
+(function () {
+    var sidebar = document.querySelector('.sidebar');
+    var topbarLeft = document.querySelector('.topbar-left');
+    var backdrop = document.getElementById('adminBackdrop');
+    if (!sidebar || !topbarLeft) return;
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'sidebar-toggle';
+    btn.setAttribute('aria-label', '{% trans "Меню" %}');
+    btn.innerHTML = '<i class="fas fa-bars" aria-hidden="true"></i>';
+    topbarLeft.insertBefore(btn, topbarLeft.firstChild);
+
+    function open() { sidebar.classList.add('open'); if (backdrop) backdrop.classList.add('show'); }
+    function close() { sidebar.classList.remove('open'); if (backdrop) backdrop.classList.remove('show'); }
+
+    btn.addEventListener('click', function () {
+        sidebar.classList.contains('open') ? close() : open();
+    });
+    if (backdrop) backdrop.addEventListener('click', close);
+    // тап по пункту меню закрывает сайдбар
+    sidebar.addEventListener('click', function (e) { if (e.target.closest('a')) close(); });
+    // возврат на десктоп — сбрасываем состояние
+    window.addEventListener('resize', function () { if (window.innerWidth > 768) close(); });
+})();
+</script>

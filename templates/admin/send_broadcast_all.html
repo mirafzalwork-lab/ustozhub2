@@ -65,17 +65,17 @@
 
 {% block content %}
 <div class="broadcast-form">
-    <h1>📢 Массовая рассылка</h1>
+    <h1><i class="fas fa-bullhorn"></i> Массовая рассылка</h1>
     
     <div class="warning-box">
-        ⚠️ <strong>Внимание!</strong> Сообщение будет отправлено всем пользователям, которые:
+        <i class="fas fa-triangle-exclamation"></i> <strong>Внимание!</strong> Сообщение будет отправлено всем пользователям, которые:
         <ul style="margin: 8px 0 0 20px;">
-            <li>✅ Запустили бота командой /start</li>
-            <li>✅ Включили уведомления</li>
+            <li><i class="fas fa-circle-check"></i> Запустили бота командой /start</li>
+            <li><i class="fas fa-circle-check"></i> Включили уведомления</li>
         </ul>
         {% if stats %}
         <div style="margin-top: 15px; padding: 10px; background: #e7f3ff; border-radius: 4px;">
-            <strong>📊 Статистика получателей:</strong><br>
+            <strong><i class="fas fa-chart-line"></i> Статистика получателей:</strong><br>
             Всего пользователей: {{ stats.total }}<br>
             Запустили бота: {{ stats.started_bot }}<br>
             Включили уведомления: {{ stats.notifications_enabled }}<br>
@@ -88,7 +88,7 @@
         {% csrf_token %}
         
         <div class="filter-section">
-            <label for="user_type">👥 Кому отправить:</label>
+            <label for="user_type"><i class="fas fa-users"></i> Кому отправить:</label>
             <select name="user_type" id="user_type">
                 <option value="all">Всем пользователям</option>
                 <option value="teacher">Только учителям</option>
@@ -101,16 +101,16 @@
 
         <div style="margin-bottom: 20px;">
             <label for="message" style="display: block; font-weight: bold; margin-bottom: 8px;">
-                💬 Текст сообщения:
+                <i class="fas fa-comment-dots"></i> Текст сообщения:
             </label>
             <textarea 
                 name="message" 
                 id="message" 
                 required
-                placeholder="Введите текст сообщения...&#10;&#10;Поддерживается Markdown форматирование:&#10;*жирный текст*&#10;_курсив_&#10;`код`&#10;[ссылка](http://example.com)&#10;&#10;Пример:&#10;🎉 **Важное объявление!**&#10;&#10;Уважаемые пользователи!&#10;&#10;Мы рады сообщить вам о новых возможностях платформы..."
+                placeholder="Введите текст сообщения...&#10;&#10;Поддерживается Markdown форматирование:&#10;*жирный текст*&#10;_курсив_&#10;`код`&#10;[ссылка](http://example.com)&#10;&#10;Пример:&#10;**Важное объявление!**&#10;&#10;Уважаемые пользователи!&#10;&#10;Мы рады сообщить вам о новых возможностях платформы..."
             ></textarea>
             <p class="help-text">
-                💡 Поддерживается Markdown форматирование: *жирный*, _курсив_, `код`, [ссылка](url)
+                <i class="fas fa-lightbulb"></i> Поддерживается Markdown форматирование: *жирный*, _курсив_, `код`, [ссылка](url)
             </p>
         </div>
 
@@ -118,7 +118,7 @@
             <div class="button-group">
                 <input 
                     type="submit" 
-                    value="📤 Отправить рассылку" 
+                    value="Отправить рассылку"
                     class="default" 
                     name="apply"
                     onclick="return confirm('Вы уверены, что хотите отправить это сообщение всем пользователям?');"
@@ -131,18 +131,8 @@
     </form>
     
     <div style="margin-top: 30px; padding: 15px; background: #e7f3ff; border-radius: 4px;">
-        <h3>📊 Текущая статистика получателей:</h3>
-        {% load static %}
-        <script>
-            // Загружаем статистику при загрузке страницы
-            fetch('{% url "admin:teachers_telegramuser_changelist" %}')
-                .then(() => {
-                    // Показываем статистику из Django контекста
-                    console.log('Статистика загружена');
-                });
-        </script>
-        <p><strong>💡 Совет:</strong> Отправка будет осуществлена только пользователям с включенными уведомлениями.</p>
-        <p>Перед отправкой убедитесь, что Telegram бот запущен: <code>./start_bot.sh</code></p>
+        <h3><i class="fas fa-chart-line"></i> Текущая статистика получателей:</h3>
+        <p><strong><i class="fas fa-lightbulb"></i> Совет:</strong> Отправка будет осуществлена только пользователям с включенными уведомлениями.</p>
     </div>
 </div>
 {% endblock %}

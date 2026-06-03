@@ -356,7 +356,7 @@
     /* Empty Messages */
     .empty-messages {
         text-align: center;
-        padding: var(--spacing-lg) * 3;
+        padding: calc(var(--spacing-lg) * 3);
         color: #9CA3AF;
     }
 
@@ -957,6 +957,26 @@
             }
         }
     }
+
+    /* ===== FIX мобильного чата =====
+       1) Глобальная нижняя таб-навигация перекрывала фиксированное поле ввода
+          (оба на bottom:0) — на экране переписки прячем её, как в мессенджерах.
+       2) Поле ввода поднимаем над всем; 100dvh вместо 100vh — чтобы адресная
+          строка браузера не «съедала» composer. */
+    @media (max-width: 768px) {
+        body .bottom-nav { display: none !important; }
+        main#main-content { padding-bottom: 0 !important; }
+
+        .message-form-container { z-index: 200; }
+
+        .conversation-detail-container { height: calc(100dvh - 56px); }
+        .messages-wrapper { height: calc(100dvh - 56px - 60px - 64px); }
+        .messages-list { padding-bottom: 16px; }
+    }
+    @media (max-width: 480px) {
+        .conversation-detail-container { height: calc(100dvh - 52px); }
+        .messages-wrapper { height: calc(100dvh - 52px - 55px - 64px); }
+    }
 </style>
 {% endblock %}
 
@@ -1050,7 +1070,7 @@
                 {% endfor %}
             {% else %}
                 <div class="empty-messages" id="emptyMessagesState">
-                    <div class="empty-messages-icon">💬</div>
+                    <div class="empty-messages-icon"><i class="fas fa-comment-dots"></i></div>
                     <div class="empty-messages-title">{% trans "Начните беседу" %}</div>
                     <div class="empty-messages-hint">
                         {% if user_type == 'student' %}
@@ -1061,15 +1081,15 @@
                     </div>
                     <div class="quick-start-chips" id="quickStartChips">
                         {% if user_type == 'student' %}
-                            <button type="button" class="quick-start-chip" data-text="{% trans 'Здравствуйте! Интересует ваш курс.' %}">👋 {% trans "Поприветствовать" %}</button>
-                            <button type="button" class="quick-start-chip" data-text="{% trans 'Можно ли начать с пробного урока?' %}">🎁 {% trans "Спросить о пробном" %}</button>
-                            <button type="button" class="quick-start-chip" data-text="{% trans 'Какие у вас свободные слоты на этой неделе?' %}">📅 {% trans "Узнать расписание" %}</button>
-                            <button type="button" class="quick-start-chip" data-text="{% trans 'Сколько стоит занятие?' %}">💰 {% trans "Цена" %}</button>
+                            <button type="button" class="quick-start-chip" data-text="{% trans 'Здравствуйте! Интересует ваш курс.' %}"><i class="fas fa-hand"></i> {% trans "Поприветствовать" %}</button>
+                            <button type="button" class="quick-start-chip" data-text="{% trans 'Можно ли начать с пробного урока?' %}"><i class="fas fa-gift"></i> {% trans "Спросить о пробном" %}</button>
+                            <button type="button" class="quick-start-chip" data-text="{% trans 'Какие у вас свободные слоты на этой неделе?' %}"><i class="fas fa-calendar"></i> {% trans "Узнать расписание" %}</button>
+                            <button type="button" class="quick-start-chip" data-text="{% trans 'Сколько стоит занятие?' %}"><i class="fas fa-coins"></i> {% trans "Цена" %}</button>
                         {% else %}
-                            <button type="button" class="quick-start-chip" data-text="{% trans 'Здравствуйте! Чем могу помочь?' %}">👋 {% trans "Поприветствовать" %}</button>
-                            <button type="button" class="quick-start-chip" data-text="{% trans 'Расскажите немного о вашем уровне и целях.' %}">🎯 {% trans "Узнать цели" %}</button>
-                            <button type="button" class="quick-start-chip" data-text="{% trans 'Готов предложить бесплатное пробное занятие.' %}">🎁 {% trans "Предложить пробное" %}</button>
-                            <button type="button" class="quick-start-chip" data-text="{% trans 'Когда вам удобно начать?' %}">📅 {% trans "Уточнить время" %}</button>
+                            <button type="button" class="quick-start-chip" data-text="{% trans 'Здравствуйте! Чем могу помочь?' %}"><i class="fas fa-hand"></i> {% trans "Поприветствовать" %}</button>
+                            <button type="button" class="quick-start-chip" data-text="{% trans 'Расскажите немного о вашем уровне и целях.' %}"><i class="fas fa-bullseye"></i> {% trans "Узнать цели" %}</button>
+                            <button type="button" class="quick-start-chip" data-text="{% trans 'Готов предложить бесплатное пробное занятие.' %}"><i class="fas fa-gift"></i> {% trans "Предложить пробное" %}</button>
+                            <button type="button" class="quick-start-chip" data-text="{% trans 'Когда вам удобно начать?' %}"><i class="fas fa-calendar"></i> {% trans "Уточнить время" %}</button>
                         {% endif %}
                     </div>
                 </div>
@@ -1566,7 +1586,7 @@
         if (el) {
             var r = el.querySelector('.message-receipt');
             if (r) {
-                r.textContent = '⚠';
+                r.innerHTML = '<i class="fas fa-triangle-exclamation" aria-hidden="true"></i>';
                 r.removeAttribute('data-state');
                 r.style.color = '#DC2626';
                 r.setAttribute('title', I18N.send_err);
