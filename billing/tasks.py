@@ -40,9 +40,11 @@ def release_pending_payouts():
     total = 0
 
     # === Поток 1: подписочные уроки ===
+    # Доставленные = completed ИЛИ no_show_student (ученик не пришёл, урок засчитан).
     sub_candidates = (
         Booking.objects
-        .filter(status='completed', subscription__isnull=False, slot__end_at__lt=threshold)
+        .filter(status__in=('completed', 'no_show_student'),
+                subscription__isnull=False, slot__end_at__lt=threshold)
         .exclude(dispute__status='open')  # заморозка выплаты на время спора
         .select_related('subscription', 'slot')
         .order_by('slot__end_at')[:500]
@@ -68,7 +70,7 @@ def release_pending_payouts():
     trial_candidates = (
         Booking.objects
         .filter(
-            status='completed', is_trial=True,
+            status__in=('completed', 'no_show_student'), is_trial=True,
             trial_price_paid__isnull=False,
             slot__end_at__lt=threshold,
         )
@@ -104,3 +106,44 @@ def expire_unpaid_approvals():
     if n:
         logger.info(f'expire_unpaid_approvals: expired {n} unpaid approvals')
     return n
+
+
+@shared_task(name='billing.settle_expired_subscriptions')
+def settle_expired_subscriptions():
+    """Раз в час: закрываем истёкшие ACTIVE/PAUSED подписки и сливаем escrow.
+
+    Без этого деньги за непроведённые уроки (бесконечные переносы/неявки)
+    зависали бы в escrow навсегда.
+    """
+    from .models import Subscription
+    from .services import SubscriptionService
+
+    threshold = timezone.now() - timedelta(hours=settings.PAYOUT_GRACE_HOURS)
+    candidates = (
+        Subscription.objects
+        .filter(
+            status__in=(Subscription.Status.ACTIVE, Subscription.Status.PAUSED),
+            expires_at__lt=threshold,
+        )
+        .order_by('expires_at')[:200]
+    )
+
+    settled = 0
+    refunded_total = 0
+    errors = 0
+    for sub in candidates:
+        try:
+            result = SubscriptionService.settle_expired(sub)
+            if result is not None:
+                settled += 1
+                refunded_total += float(result.get('refunded') or 0)
+        except Exception as e:
+            errors += 1
+            logger.exception(f'settle_expired failed sub={sub.id}: {e}')
+
+    if settled or errors:
+        logger.info(
+            f'settle_expired_subscriptions: settled {settled}, '
+            f'refunded {refunded_total}, errors {errors}'
+        )
+    return {'settled': settled, 'refunded': refunded_total, 'errors': errors}

@@ -15,10 +15,13 @@ def create_wallet_for_user(sender, instance, created, **kwargs):
 
 # ---- Booking → Subscription counter sync ---------------------------------
 #
-# Когда Booking переходит в status='completed' и привязан к подписке,
-# инкрементируем Subscription.completed_lessons (для UI прогресса).
+# Когда Booking переходит в «доставленный» статус (completed или no_show_student
+# — ученик не пришёл, но урок засчитан) и привязан к подписке, инкрементируем
+# Subscription.completed_lessons (для UI прогресса / остатка пакета).
 # Финансовая выплата (lessons_paid_out) делается отдельно — в Celery task
 # release_pending_payouts по истечении PAYOUT_GRACE_HOURS.
+
+DELIVERED_STATUSES = ('completed', 'no_show_student')
 
 def _connect_booking_signals():
     """Регистрируем сигналы Booking лениво, чтобы избежать circular import."""
@@ -40,7 +43,10 @@ def _connect_booking_signals():
         if created:
             return
         prev = getattr(instance, '_prev_status', None)
-        if prev == 'completed' or instance.status != 'completed':
+        # Считаем урок потреблённым при переходе в любой доставленный статус
+        # (completed / no_show_student), но один раз — не пере-инкрементим при
+        # переходе completed → no_show_student и наоборот.
+        if prev in DELIVERED_STATUSES or instance.status not in DELIVERED_STATUSES:
             return
         if not instance.subscription_id:
             return

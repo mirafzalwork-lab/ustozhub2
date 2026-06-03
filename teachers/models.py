@@ -2990,9 +2990,11 @@ class Booking(models.Model):
     def settle_after_end(self) -> str:
         """Решает судьбу confirmed-урока после end_at на основе присутствия.
 
-        Если урок ведётся в нашем Jitsi и учитель так и не подключился —
-        статус no_show_teacher (без выплаты; возврат ученику делает Celery-задача).
-        Иначе — completed (учитель был на месте; неявка ученика выплату не отменяет).
+        Для урока в нашем Jitsi (присутствие отслеживается):
+          * учитель не подключился            → no_show_teacher (возврат ученику);
+          * учитель был, ученик не подключился → no_show_student (урок доставлен,
+            выплата учителю — ученик потерял урок из пакета);
+          * оба подключились                   → completed.
 
         Для внешних ссылок (Zoom и т.п.) сигнала о присутствии нет → completed
         по времени (прежнее поведение, чтобы не штрафовать учителя ложно).
@@ -3004,13 +3006,22 @@ class Booking(models.Model):
             locked = type(self).objects.select_for_update().get(pk=self.pk)
             if locked.status != 'confirmed':
                 return locked.status
-            teacher_no_show = locked.is_jitsi_meeting() and locked.teacher_joined_at is None
-            if teacher_no_show:
-                locked.status = 'no_show_teacher'
-                locked.ended_at = timezone.now()
-                locked.save(update_fields=['status', 'ended_at', 'updated_at'])
-                self.refresh_from_db()
-                return 'no_show_teacher'
+            if locked.is_jitsi_meeting():
+                teacher_absent = locked.teacher_joined_at is None
+                student_absent = locked.student_joined_at is None
+                if teacher_absent:
+                    locked.status = 'no_show_teacher'
+                    locked.ended_at = timezone.now()
+                    locked.save(update_fields=['status', 'ended_at', 'updated_at'])
+                    self.refresh_from_db()
+                    return 'no_show_teacher'
+                if student_absent:
+                    # Учитель пришёл, ученик — нет: урок засчитан учителю.
+                    locked.status = 'no_show_student'
+                    locked.ended_at = timezone.now()
+                    locked.save(update_fields=['status', 'ended_at', 'updated_at'])
+                    self.refresh_from_db()
+                    return 'no_show_student'
         # Учитель присутствовал (или присутствие не отслеживается) — завершаем штатно.
         self.mark_completed()
         return self.status

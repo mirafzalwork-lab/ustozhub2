@@ -1518,10 +1518,19 @@ class TeacherNoShowSettleTests(TestCase):
     def test_teacher_present_completes(self):
         b = self._jitsi_booking()
         b.record_join(is_teacher=True)
+        b.record_join(is_teacher=False)  # ученик тоже подключился
         result = b.settle_after_end()
         self.assertEqual(result, 'completed')
         b.refresh_from_db()
         self.assertEqual(b.status, 'completed')
+
+    def test_teacher_present_student_absent_is_no_show_student(self):
+        b = self._jitsi_booking()
+        b.record_join(is_teacher=True)  # только учитель
+        result = b.settle_after_end()
+        self.assertEqual(result, 'no_show_student')
+        b.refresh_from_db()
+        self.assertEqual(b.status, 'no_show_student')
 
     def test_record_join_idempotent(self):
         b = self._jitsi_booking()
@@ -2230,8 +2239,11 @@ class LessonAttendanceTests(TestCase):
     def test_settle_uses_real_join_not_page_open(self):
         from datetime import timedelta
         from django.utils import timezone
-        # Учитель реально подключился (через endpoint) → урок завершается оплатой.
+        # Оба реально подключились (через endpoint) → урок завершается completed.
         self.client.login(username='at_t', password='x' * 12)
+        self.client.post(self._url(), {'event': 'join'})
+        self.client.logout()
+        self.client.login(username='at_s', password='x' * 12)
         self.client.post(self._url(), {'event': 'join'})
         # Сдвигаем слот в прошлое и завершаем.
         self.slot.start_at = timezone.now() - timedelta(minutes=70)
@@ -2239,6 +2251,18 @@ class LessonAttendanceTests(TestCase):
         self.slot.save(update_fields=['start_at', 'end_at'])
         self.booking.refresh_from_db()
         self.assertEqual(self.booking.settle_after_end(), 'completed')
+
+    def test_settle_teacher_present_student_absent_is_no_show_student(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        # Учитель подключился, ученик — нет → no_show_student (урок засчитан учителю).
+        self.client.login(username='at_t', password='x' * 12)
+        self.client.post(self._url(), {'event': 'join'})
+        self.slot.start_at = timezone.now() - timedelta(minutes=70)
+        self.slot.end_at = timezone.now() - timedelta(minutes=10)
+        self.slot.save(update_fields=['start_at', 'end_at'])
+        self.booking.refresh_from_db()
+        self.assertEqual(self.booking.settle_after_end(), 'no_show_student')
 
     def test_settle_no_join_is_no_show(self):
         from datetime import timedelta

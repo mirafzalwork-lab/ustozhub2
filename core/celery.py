@@ -65,6 +65,11 @@ app.conf.beat_schedule = {
         'task': 'billing.expire_unpaid_approvals',
         'schedule': 900.0,
     },
+    # v2 Шаг 1: истёкшие активные подписки → слить зависший escrow ученику
+    'settle-expired-subscriptions-hourly': {
+        'task': 'billing.settle_expired_subscriptions',
+        'schedule': 3600.0,
+    },
     # --- Обслуживание очереди Telegram-уведомлений ---
     # Саму очередь обрабатывает демон telegram-bot.service (process_notifications
     # --daemon). Здесь — только сервисные задачи, которых демон не делает.

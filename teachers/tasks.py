@@ -347,12 +347,17 @@ def mark_completed_lessons() -> int:
 
     count = 0
     no_show = 0
+    no_show_student = 0
     for booking in to_settle:
         try:
             result = booking.settle_after_end()
             if result == 'no_show_teacher':
                 no_show += 1
                 _refund_teacher_no_show(booking)
+            elif result == 'no_show_student':
+                # Урок засчитан учителю — возврата нет; выплата уйдёт через
+                # release_pending_payouts после grace-окна (как у completed).
+                no_show_student += 1
             elif result == 'completed':
                 count += 1
         except Exception as e:
@@ -361,9 +366,10 @@ def mark_completed_lessons() -> int:
                 exc_info=True,
             )
 
-    if count or no_show:
+    if count or no_show or no_show_student:
         logger.info(
-            f'mark_completed_lessons: completed {count}, teacher no-show {no_show}'
+            f'mark_completed_lessons: completed {count}, '
+            f'teacher no-show {no_show}, student no-show {no_show_student}'
         )
     return count
 

@@ -813,10 +813,11 @@ class SubscriptionService:
                     f'Нельзя отменить подписку в статусе «{sub.get_status_display()}».'
                 )
 
-            # 1) Доплатить учителю за completed-но-не-paid уроки.
+            # 1) Доплатить учителю за доставленные-но-не-paid уроки
+            #    (completed ИЛИ no_show_student — учитель отработал).
             unpaid_completed = list(
                 Booking.objects
-                .filter(subscription=sub, status='completed')
+                .filter(subscription=sub, status__in=('completed', 'no_show_student'))
                 .exclude(
                     id__in=Transaction.objects.filter(
                         related_subscription=sub,
@@ -847,7 +848,7 @@ class SubscriptionService:
             )
             for b in past_unsettled:
                 try:
-                    if b.settle_after_end() == 'completed':
+                    if b.settle_after_end() in ('completed', 'no_show_student'):
                         cls.release_lesson_payout(b)
                 except PayoutError:
                     pass
@@ -906,6 +907,142 @@ class SubscriptionService:
                 'cancelled_bookings': cancelled_count,
             }
 
+    @classmethod
+    def settle_expired(cls, subscription: Subscription) -> Optional[dict]:
+        """Закрыть истёкшую активную подписку и слить зависший escrow.
+
+        Срабатывает для ACTIVE/PAUSED подписок, у которых вышел срок
+        (`expires_at < now − PAYOUT_GRACE_HOURS`), но уроки так и не были
+        проведены (бесконечные переносы/неявки). Без этого escrow висел бы
+        вечно — деньги «ничьи».
+
+        Шаги (атомарно):
+          1. Доурегулировать прошедшие confirmed-уроки (settle_after_end + payout).
+          2. Отменить будущие confirmed/pending брони, освободить слоты.
+          3. Вернуть остаток escrow ученику (ключ `sub-expire:{id}`).
+          4. Финальный статус: COMPLETED если все уроки доставлены, иначе EXPIRED.
+
+        Идемпотентно: повторный вызов на завершённой подписке вернёт None.
+        Возвращает {'refunded', 'paid_out', 'cancelled_bookings'} либо None.
+        """
+        from teachers.models import Booking
+
+        grace = timedelta(hours=settings.PAYOUT_GRACE_HOURS)
+        eligible = (Subscription.Status.ACTIVE, Subscription.Status.PAUSED)
+
+        with transaction.atomic():
+            sub = (
+                Subscription.objects
+                .select_for_update()
+                .select_related('teacher', 'student')
+                .get(pk=subscription.pk)
+            )
+
+            now = timezone.now()
+            if sub.status not in eligible:
+                return None
+            if not sub.expires_at or sub.expires_at > now - grace:
+                return None  # ещё не истекла (с учётом grace)
+
+            paid_now = 0
+
+            # 1) Доплатить учителю за completed-но-не-paid уроки (он отработал).
+            unpaid_completed = list(
+                Booking.objects
+                .filter(subscription=sub, status__in=('completed', 'no_show_student'))
+                .exclude(
+                    id__in=Transaction.objects.filter(
+                        related_subscription=sub,
+                        type=Transaction.Type.LESSON_PAYOUT,
+                    ).values_list('related_booking_id', flat=True)
+                )
+                .select_related('slot')
+            )
+            for b in unpaid_completed:
+                try:
+                    if cls.release_lesson_payout(b):
+                        paid_now += 1
+                except PayoutError:
+                    pass
+            if unpaid_completed:
+                sub.refresh_from_db()
+
+            # 2) Доурегулировать прошедшие, но незакрытые (confirmed) уроки.
+            past_unsettled = list(
+                Booking.objects
+                .filter(subscription=sub, status='confirmed', slot__end_at__lte=now)
+                .select_related('slot')
+            )
+            for b in past_unsettled:
+                try:
+                    result = b.settle_after_end()
+                    if result in ('completed', 'no_show_student'):
+                        if cls.release_lesson_payout(b):
+                            paid_now += 1
+                except PayoutError:
+                    pass
+                except Exception:
+                    logger.warning('settle_expired: settle %s failed', b.pk, exc_info=True)
+            if past_unsettled:
+                sub.refresh_from_db()
+
+            # 3) Отменить будущие брони, освободить слоты.
+            future = list(
+                Booking.objects
+                .filter(subscription=sub, status__in=('confirmed', 'pending'),
+                        slot__end_at__gt=now)
+                .select_related('slot')
+            )
+            cancelled_count = 0
+            for b in future:
+                b.status = 'expired'
+                b.expires_at = None
+                b.save(update_fields=['status', 'expires_at', 'updated_at'])
+                if b.slot and b.slot.status in ('booked', 'held'):
+                    b.slot.status = 'free'
+                    b.slot.hold_expires_at = None
+                    b.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+                cancelled_count += 1
+
+            # 4) Вернуть остаток escrow ученику.
+            refunded = Decimal('0.00')
+            if sub.escrow_balance > 0:
+                WalletService.credit(
+                    user=sub.student,
+                    amount=sub.escrow_balance,
+                    tx_type=Transaction.Type.REFUND,
+                    idempotency_key=f'sub-expire:{sub.id}',
+                    description='Возврат за недоставленные уроки истёкшей подписки.',
+                )
+                Transaction.objects.filter(
+                    idempotency_key=f'sub-expire:{sub.id}'
+                ).update(related_subscription=sub)
+                refunded = sub.escrow_balance
+                sub.escrow_balance = Decimal('0.00')
+
+            # 5) Финальный статус.
+            if sub.lessons_paid_out >= sub.total_lessons:
+                sub.status = Subscription.Status.COMPLETED
+            else:
+                sub.status = Subscription.Status.EXPIRED
+            sub.save(update_fields=['status', 'escrow_balance', 'updated_at'])
+
+        try:
+            cls._notify(
+                sub.student,
+                'Подписка завершена',
+                f'Срок подписки с {sub.teacher} истёк. '
+                + (f'Возвращено {refunded} на баланс.' if refunded else 'Все уроки проведены.'),
+            )
+        except Exception:
+            logger.warning('settle_expired: notify failed for sub %s', sub.pk, exc_info=True)
+
+        return {
+            'refunded': refunded,
+            'paid_out': paid_now,
+            'cancelled_bookings': cancelled_count,
+        }
+
     # ---- payout / completion --------------------------------------------
 
     @classmethod
@@ -927,8 +1064,12 @@ class SubscriptionService:
 
         if booking.subscription_id is None:
             raise PayoutError('booking без subscription — нечего выплачивать')
-        if booking.status != 'completed':
-            raise PayoutError(f'booking.status={booking.status}, ожидался completed')
+        # Доставленный урок = учитель отработал: completed ИЛИ ученик не пришёл
+        # (no_show_student) — в обоих случаях деньги принадлежат учителю.
+        if booking.status not in ('completed', 'no_show_student'):
+            raise PayoutError(
+                f'booking.status={booking.status}, ожидался completed/no_show_student'
+            )
         # Заморозка выплаты на время открытого спора (ТЗ шаг 8).
         if LessonDispute.objects.filter(
             booking_id=booking.id, status=LessonDispute.Status.OPEN,
@@ -1452,8 +1593,11 @@ class TrialService:
 
         if not booking.is_trial or not booking.trial_price_paid:
             raise PayoutError('booking не является платным пробным')
-        if booking.status != 'completed':
-            raise PayoutError(f'booking.status={booking.status}, ожидался completed')
+        # Доставленный пробный = учитель отработал: completed ИЛИ ученик не пришёл.
+        if booking.status not in ('completed', 'no_show_student'):
+            raise PayoutError(
+                f'booking.status={booking.status}, ожидался completed/no_show_student'
+            )
         # Заморозка выплаты на время открытого спора (ТЗ шаг 8).
         if LessonDispute.objects.filter(
             booking_id=booking.id, status=LessonDispute.Status.OPEN,
