@@ -123,6 +123,18 @@
         const counterpartyLabel = cfg.role === 'student' ? 'с' : 'для';
 
         const subjectMeta = b.subject ? `<span>${escapeHtml(b.subject.name)}</span>` : '';
+
+        // «Деньги под проверкой» (escrow/grace): урок прошёл, выплата учителю
+        // ещё не ушла — ученик может открыть спор, учитель ждёт выплату.
+        let escrowBadge = '';
+        if (b.escrow_hold && b.payout_at) {
+            const pa = new Date(b.payout_at);
+            const paStr = pa.toLocaleString(cfg.locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+            const txt = cfg.role === 'student'
+                ? `Деньги под проверкой до ${paStr}`
+                : `Выплата после проверки · ${paStr}`;
+            escrowBadge = `<span class="bk-escrow" title="Средства удерживаются платформой до окончания периода проверки"><i class="fas fa-shield-halved"></i> ${escapeHtml(txt)}</span>`;
+        }
         const messageBlock = b.student_message
             ? `<div class="msg"><i class="fas fa-envelope"></i> ${escapeHtml(b.student_message)}</div>` : '';
         const teacherReplyBlock = b.teacher_reply
@@ -157,6 +169,7 @@
                     <div class="meta">
                         <span class="bk-status ${statusBadgeClass(b.status)}">${escapeHtml(b.status_display)}</span>
                         ${b.status === 'pending' ? renderCountdown(b.expires_at) : ''}
+                        ${escrowBadge}
                         ${subjectMeta}
                         ${b.is_trial ? '<span><i class="fas fa-gift"></i> пробный</span>' : ''}
                         <span>${b.slot.duration_minutes} мин</span>

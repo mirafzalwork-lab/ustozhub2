@@ -27,6 +27,8 @@ urlpatterns = [
     # Покупка подписки + история
     path('subscriptions/buy/<int:tariff_id>/', views.subscription_buy, name='subscription_buy'),
     path('subscriptions/<uuid:sub_id>/cancel/', views.subscription_cancel, name='subscription_cancel'),
+    path('subscriptions/<uuid:sub_id>/pause/', views.subscription_pause, name='subscription_pause'),
+    path('subscriptions/<uuid:sub_id>/resume/', views.subscription_resume, name='subscription_resume'),
     path('my/subscriptions/', views.my_subscriptions, name='my_subscriptions'),
     path('profile/subscribers/', views.teacher_subscribers, name='teacher_subscribers'),
 

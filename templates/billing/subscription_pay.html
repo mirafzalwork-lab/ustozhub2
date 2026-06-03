@@ -14,6 +14,8 @@
   .pay-btn { background:#10B981; color:#fff; border:none; border-radius:10px; padding:14px 22px; font-size:16px; font-weight:600; cursor:pointer; width:100%; }
   .pay-warn { background:#FEF3C7; border:1px solid #F59E0B; border-radius:10px; padding:14px; color:#92400E; margin:16px 0; }
   .pay-topup { display:inline-block; margin-top:10px; color:#B45309; font-weight:600; }
+  .pay-deadline { background:#FFFBEB; border:1px solid #FDE68A; border-radius:10px; padding:12px 16px; color:#92400E; font-weight:600; margin:16px 0; font-size:14px; }
+  .pay-deadline.urgent { background:#FEF2F2; border-color:#FECACA; color:#B91C1C; }
 </style>
 
 <div class="pay-page">
@@ -30,6 +32,12 @@
 
   <div class="pay-row"><span>{% trans 'Баланс кошелька' %}</span><b>{{ wallet.balance|floatformat:0|intcomma }} {% trans 'сум' %}</b></div>
 
+  {% if sub.approval_expires_at %}
+    <div class="pay-deadline" id="pay-deadline" data-deadline="{{ sub.approval_expires_at|date:'c' }}">
+      <i class="fas fa-clock"></i> <span id="pay-deadline-val">…</span>
+    </div>
+  {% endif %}
+
   {% if has_enough %}
     <form method="post" style="margin-top:16px;">
       {% csrf_token %}
@@ -43,4 +51,22 @@
     </div>
   {% endif %}
 </div>
+
+<script>
+  (function() {
+    var box = document.getElementById('pay-deadline');
+    if (!box) return;
+    var val = document.getElementById('pay-deadline-val');
+    var dl = new Date(box.dataset.deadline).getTime();
+    function tick() {
+      var diff = dl - Date.now();
+      if (isNaN(dl)) { box.style.display = 'none'; return; }
+      if (diff <= 0) { val.textContent = '{% trans "Срок оплаты этой заявки истёк" %}'; box.classList.add('urgent'); return; }
+      var h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000);
+      val.textContent = '{% trans "Оплатите в течение" %} ' + h + ' ч ' + m + ' мин, иначе заявку придётся оформить заново.';
+      if (diff < 6 * 3600000) box.classList.add('urgent');
+    }
+    tick(); setInterval(tick, 30000);
+  })();
+</script>
 {% endblock %}

@@ -66,35 +66,85 @@
       <h2>🟢 {% trans 'Активные' %} ({{ active|length }})</h2>
       <div class="subs-grid">
         {% for s in active %}
-          <div class="sub-card active">
+          <div class="sub-card {% if s.status == 'active' %}active{% endif %}">
             <div class="head">
               <h3>{{ s.subject.name }}</h3>
-              <span class="status active">{{ s.get_status_display }}</span>
+              <span class="status {% if s.status == 'active' %}active{% elif s.status == 'paused' %}paused{% else %}pending{% endif %}">{{ s.get_status_display }}</span>
             </div>
             <div class="meta">
               <i class="fas fa-user"></i> <b>{{ s.teacher.user.get_full_name|default:s.teacher.user.username }}</b><br>
-              <i class="fas fa-book"></i> {{ s.lessons_per_week }} {% trans 'в неделю' %} · {{ s.lesson_duration_minutes }} {% trans 'мин/урок' %}<br>
-              <i class="fas fa-calendar-days"></i> {% trans 'до' %} {{ s.expires_at|date:"d M Y" }}
-            </div>
-            <div>
-              <div style="display: flex; justify-content: space-between; font-size: 13px; color: #64748B;">
-                <span>{% trans 'Прогресс' %}</span>
-                <b style="color: #0A2540;">{{ s.completed_lessons }} / {{ s.total_lessons }}</b>
-              </div>
-              <div class="progress-bar"><div class="fill" style="width: {{ s.progress_percent }}%;"></div></div>
-            </div>
-            <div class="meta" style="margin-top: 12px;">
-              <i class="fas fa-wallet"></i> {% trans 'В эскроу' %}: <b>{{ s.escrow_balance|floatformat:0|intcomma }} {% trans 'сум' %}</b><br>
-              <i class="fas fa-money-bill"></i> {% trans 'Выплачено учителю' %}: <b>{{ s.teacher_earned_so_far|floatformat:0|intcomma }} {% trans 'сум' %}</b>
-              <small style="color:#94A3B8;">({{ s.lessons_paid_out }} {% trans 'уроков' %})</small>
+              <i class="fas fa-book"></i> {{ s.lessons_per_week }} {% trans 'в неделю' %} · {{ s.lesson_duration_minutes }} {% trans 'мин/урок' %}
+              {% if s.expires_at %}<br><i class="fas fa-calendar-days"></i> {% trans 'до' %} {{ s.expires_at|date:"d M Y" }}{% endif %}
             </div>
 
-            <button type="button" class="cancel-btn" data-sub-id="{{ s.id }}"
-                    data-cancel-url="{% url 'subscription_cancel' s.id %}"
-                    data-escrow="{{ s.escrow_balance|floatformat:0|intcomma }}"
-                    data-remaining="{{ s.remaining_lessons }}">
-              <i class="fas fa-xmark"></i> {% trans 'Отменить подписку' %}
-            </button>
+            {% if s.status == 'pending_approval' %}
+              {# --- Заявка на рассмотрении у учителя --- #}
+              <div class="sub-step-box">
+                <i class="fas fa-hourglass-half"></i>
+                {% trans 'Заявка отправлена. Учитель рассмотрит её и подтвердит — мы пришлём уведомление. Оплата только после подтверждения.' %}
+              </div>
+
+            {% elif s.status == 'pending_payment' %}
+              {# --- Одобрена, нужно оплатить (с таймером) --- #}
+              <div class="sub-step-box ok">
+                <i class="fas fa-circle-check"></i>
+                {% trans 'Учитель подтвердил заявку! Осталось оплатить, чтобы активировать подписку.' %}
+                {% if s.approval_expires_at %}
+                  <div class="pay-timer" data-deadline="{{ s.approval_expires_at|date:'c' }}">
+                    <i class="fas fa-clock"></i> <span class="pay-timer-val">…</span>
+                  </div>
+                {% endif %}
+              </div>
+              <a href="{% url 'subscription_pay' s.id %}" class="pay-btn">
+                <i class="fas fa-wallet"></i> {% trans 'Оплатить' %} {{ s.price_total|floatformat:0|intcomma }} {% trans 'сум' %}
+              </a>
+
+            {% else %}
+              {# --- ACTIVE / PAUSED: прогресс + финансы --- #}
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 13px; color: #64748B;">
+                  <span>{% trans 'Прогресс' %}</span>
+                  <b style="color: #0A2540;">{{ s.completed_lessons }} / {{ s.total_lessons }}</b>
+                </div>
+                <div class="progress-bar"><div class="fill" style="width: {{ s.progress_percent }}%;"></div></div>
+              </div>
+              <div class="meta" style="margin-top: 12px;">
+                <i class="fas fa-wallet"></i> {% trans 'В эскроу' %}: <b>{{ s.escrow_balance|floatformat:0|intcomma }} {% trans 'сум' %}</b><br>
+                <i class="fas fa-money-bill"></i> {% trans 'Выплачено учителю' %}: <b>{{ s.teacher_earned_so_far|floatformat:0|intcomma }} {% trans 'сум' %}</b>
+                <small style="color:#94A3B8;">({{ s.lessons_paid_out }} {% trans 'уроков' %})</small>
+              </div>
+              {% if s.status == 'paused' %}
+                <div class="sub-step-box" style="margin-top:12px;">
+                  <i class="fas fa-pause"></i>
+                  {% trans 'Подписка на паузе. Будущие уроки сняты, деньги сохранены. Возобновите — расписание восстановится, срок продлится на время паузы.' %}
+                </div>
+              {% endif %}
+            {% endif %}
+
+            {# --- Кнопки действий по статусу --- #}
+            <div class="sub-actions">
+              {% if s.status == 'active' %}
+                <form method="post" action="{% url 'subscription_pause' s.id %}"
+                      data-confirm="{% trans 'Приостановить подписку? Будущие уроки снимутся, деньги сохранятся. Возобновите в любой момент — срок продлится на время паузы.' %}"
+                      data-confirm-ok="{% trans 'Приостановить' %}" style="flex:1;">
+                  {% csrf_token %}
+                  <button type="submit" class="act-btn pause"><i class="fas fa-pause"></i> {% trans 'Пауза' %}</button>
+                </form>
+              {% elif s.status == 'paused' %}
+                <form method="post" action="{% url 'subscription_resume' s.id %}"
+                      data-confirm="{% trans 'Возобновить подписку? Расписание уроков будет восстановлено.' %}"
+                      data-confirm-ok="{% trans 'Возобновить' %}" style="flex:1;">
+                  {% csrf_token %}
+                  <button type="submit" class="act-btn resume"><i class="fas fa-play"></i> {% trans 'Возобновить' %}</button>
+                </form>
+              {% endif %}
+              <button type="button" class="cancel-btn" data-sub-id="{{ s.id }}"
+                      data-cancel-url="{% url 'subscription_cancel' s.id %}"
+                      data-escrow="{{ s.escrow_balance|floatformat:0|intcomma }}"
+                      data-remaining="{{ s.remaining_lessons }}">
+                <i class="fas fa-xmark"></i> {% trans 'Отменить' %}
+              </button>
+            </div>
           </div>
         {% endfor %}
       </div>
@@ -125,7 +175,21 @@
   </div>
 
   <style>
-    .cancel-btn { background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA; padding:8px 14px; border-radius:8px; font-size:13px; cursor:pointer; margin-top:14px; width:100%; font-weight:500; transition: background .15s; }
+    .sub-card .status.pending { background:#EFF6FF; color:#1D4ED8; }
+    .sub-step-box { background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:12px 14px; font-size:13px; color:#475569; line-height:1.5; margin:12px 0; }
+    .sub-step-box.ok { background:#ECFDF5; border-color:#A7F3D0; color:#065F46; }
+    .pay-timer { margin-top:10px; font-weight:600; color:#92400E; font-size:13px; }
+    .pay-timer.urgent { color:#B91C1C; }
+    .pay-btn { display:block; text-align:center; background:#14B8A6; color:#fff; padding:11px 16px; border-radius:9px; text-decoration:none; font-weight:600; margin-top:14px; transition:background .15s; }
+    .pay-btn:hover { background:#0F766E; }
+    .sub-actions { display:flex; gap:8px; margin-top:14px; }
+    .sub-actions > form { margin:0; }
+    .act-btn { width:100%; padding:8px 14px; border-radius:8px; font-size:13px; cursor:pointer; font-weight:500; border:1px solid transparent; transition:background .15s; }
+    .act-btn.pause { background:#FFFBEB; color:#92400E; border-color:#FDE68A; }
+    .act-btn.pause:hover { background:#FEF3C7; }
+    .act-btn.resume { background:#ECFDF5; color:#065F46; border-color:#A7F3D0; }
+    .act-btn.resume:hover { background:#D1FAE5; }
+    .cancel-btn { background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA; padding:8px 14px; border-radius:8px; font-size:13px; cursor:pointer; flex:1; font-weight:500; transition: background .15s; }
     .cancel-btn:hover { background:#FEE2E2; }
     .cancel-modal { position:fixed; inset:0; background:rgba(15,23,42,.5); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
     .cancel-modal[hidden] { display:none; }
@@ -153,6 +217,28 @@
       });
       if (closeBtn) closeBtn.addEventListener('click', function(){ modal.hidden = true; });
       modal.addEventListener('click', function(e){ if (e.target === modal) modal.hidden = true; });
+    })();
+
+    // Таймер обратного отсчёта до дедлайна оплаты одобренной заявки.
+    (function() {
+      var timers = document.querySelectorAll('.pay-timer');
+      if (!timers.length) return;
+      function tick() {
+        var now = Date.now();
+        timers.forEach(function(t) {
+          var dl = new Date(t.dataset.deadline).getTime();
+          var val = t.querySelector('.pay-timer-val');
+          var diff = dl - now;
+          if (isNaN(dl)) { t.style.display = 'none'; return; }
+          if (diff <= 0) { val.textContent = '{% trans "срок оплаты истёк" %}'; t.classList.add('urgent'); return; }
+          var h = Math.floor(diff / 3600000);
+          var m = Math.floor((diff % 3600000) / 60000);
+          val.textContent = '{% trans "оплатите в течение" %} ' + h + ' ч ' + m + ' мин';
+          if (diff < 6 * 3600000) t.classList.add('urgent');
+        });
+      }
+      tick();
+      setInterval(tick, 30000);
     })();
   </script>
 

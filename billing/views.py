@@ -591,6 +591,50 @@ def subscription_cancel(request, sub_id):
     return redirect('my_subscriptions' if cancelled_by == 'student' else 'teacher_subscribers')
 
 
+@login_required
+@require_POST
+def subscription_pause(request, sub_id):
+    """Ученик приостанавливает активную подписку (v2 Шаг 6 → UI)."""
+    sub = get_object_or_404(
+        Subscription.objects.select_related('student', 'teacher__user'), pk=sub_id,
+    )
+    if sub.student_id != request.user.id:
+        messages.error(request, 'У вас нет прав приостановить эту подписку.')
+        return redirect('my_subscriptions')
+    reason = (request.POST.get('reason') or '').strip()
+    try:
+        freed = SubscriptionService.pause(sub, reason=reason)
+        messages.success(
+            request,
+            f'Подписка приостановлена. Снято будущих уроков: {freed}. '
+            f'Возобновите в любой момент — срок продлится на время паузы.'
+        )
+    except CancellationError as e:
+        messages.error(request, str(e))
+    return redirect('my_subscriptions')
+
+
+@login_required
+@require_POST
+def subscription_resume(request, sub_id):
+    """Ученик возобновляет приостановленную подписку (v2 Шаг 6 → UI)."""
+    sub = get_object_or_404(
+        Subscription.objects.select_related('student', 'teacher__user'), pk=sub_id,
+    )
+    if sub.student_id != request.user.id:
+        messages.error(request, 'У вас нет прав возобновить эту подписку.')
+        return redirect('my_subscriptions')
+    try:
+        created = SubscriptionService.resume(sub)
+        messages.success(
+            request,
+            f'Подписка возобновлена. Запланировано уроков: {created}.'
+        )
+    except CancellationError as e:
+        messages.error(request, str(e))
+    return redirect('my_subscriptions')
+
+
 # ---------- Withdrawal ----------------------------------------------------
 
 

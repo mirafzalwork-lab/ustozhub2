@@ -581,9 +581,16 @@ def _booking_to_dict(b: Booking, has_review: bool | None = None) -> dict:
         _disp = None
     _grace = getattr(_st, 'PAYOUT_GRACE_HOURS', 24)
     _has_money = bool(b.subscription_id) or bool(b.is_trial and b.trial_price_paid)
-    _within_grace = (b.slot.end_at + _td(hours=_grace)) > timezone.now()
+    _payout_at = b.slot.end_at + _td(hours=_grace)
+    _within_grace = _payout_at > timezone.now()
     _can_dispute = bool(
         b.status == 'completed' and _has_money and _disp is None and _within_grace
+    )
+    # «Деньги под проверкой»: доставленный оплаченный урок, выплата учителю ещё
+    # не ушла (идёт grace-окно), спор не открыт. Показываем ученику бейдж.
+    _escrow_hold = bool(
+        b.status in ('completed', 'no_show_student') and _has_money
+        and _disp is None and _within_grace
     )
     return {
         'id': str(b.id),
@@ -606,6 +613,9 @@ def _booking_to_dict(b: Booking, has_review: bool | None = None) -> dict:
         'dispute_url': reverse('dispute_open', args=[b.id]),
         'dispute_status': _disp.status if _disp else None,
         'can_dispute': _can_dispute,
+        # «Деньги под проверкой» (escrow/grace) — для бейджа в UI.
+        'escrow_hold': _escrow_hold,
+        'payout_at': _payout_at.isoformat() if _escrow_hold else None,
         'subject': {
             'id': b.subject.pk,
             'name': b.subject.name,
