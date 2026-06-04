@@ -20,44 +20,44 @@ class Step1BasicProfileForm(forms.Form):
     Fields: Profile photo, First name, Last name, Gender, Teaching languages, Phone
     """
     GENDER_CHOICES = [
-        ('', 'Не указывать'),
-        ('male', 'Мужской'),
-        ('female', 'Женский'),
+        ('', _('Не указывать')),
+        ('male', _('Мужской')),
+        ('female', _('Женский')),
     ]
-    
+
     avatar = forms.ImageField(
         required=False,
-        label='Фото профиля',
+        label=_('Фото профиля'),
         widget=forms.FileInput(attrs={
             'class': 'form-file-input',
             'accept': 'image/jpeg,image/jpg,image/png',
             'id': 'id_avatar'
         }),
-        help_text='JPG, PNG. Максимум 5 МБ. Рекомендуемый размер: 300×300 px'
+        help_text=_('JPG, PNG. Максимум 5 МБ. Рекомендуемый размер: 300×300 px')
     )
-    
+
     first_name = forms.CharField(
         max_length=150,
         required=True,
-        label='Имя',
+        label=_('Имя'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': 'Введите ваше имя',
+            'placeholder': _('Введите ваше имя'),
             'autocomplete': 'given-name'
         }),
-        help_text='Имя, которое увидят ученики'
+        help_text=_('Имя, которое увидят ученики')
     )
-    
+
     last_name = forms.CharField(
         max_length=150,
         required=True,
-        label='Фамилия',
+        label=_('Фамилия'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': 'Введите вашу фамилию',
+            'placeholder': _('Введите вашу фамилию'),
             'autocomplete': 'family-name'
         }),
-        help_text='Фамилия для профиля'
+        help_text=_('Фамилия для профиля')
     )
     
     def clean_first_name(self):
@@ -67,10 +67,10 @@ class Step1BasicProfileForm(forms.Form):
             first_name = first_name.strip()
             # ✅ Проверяем на пустое значение после очистки
             if not first_name:
-                raise ValidationError('Имя не может быть пустым')
+                raise ValidationError(_('Имя не может быть пустым'))
             # ✅ Проверяем на спецсимволы (разрешены буквы, пробелы, дефисы, апострофы)
             if not re.match(r"^[\w\s\-'а-яё]+$", first_name, re.IGNORECASE | re.UNICODE):
-                raise ValidationError('Имя содержит недопустимые символы')
+                raise ValidationError(_('Имя содержит недопустимые символы'))
         return first_name
     
     def clean_last_name(self):
@@ -79,42 +79,42 @@ class Step1BasicProfileForm(forms.Form):
         if last_name:
             last_name = last_name.strip()
             if not last_name:
-                raise ValidationError('Фамилия не может быть пустой')
+                raise ValidationError(_('Фамилия не может быть пустой'))
             if not re.match(r"^[\w\s\-'а-яё]+$", last_name, re.IGNORECASE | re.UNICODE):
-                raise ValidationError('Фамилия содержит недопустимые символы')
+                raise ValidationError(_('Фамилия содержит недопустимые символы'))
         return last_name
     
     gender = forms.ChoiceField(
         choices=GENDER_CHOICES,
         required=False,
-        label='Пол',
+        label=_('Пол'),
         widget=forms.Select(attrs={
             'class': 'form-select'
         }),
-        help_text='Необязательно. Помогает ученикам найти подходящего учителя.',
+        help_text=_('Необязательно. Помогает ученикам найти подходящего учителя.'),
     )
-    
+
     teaching_languages = forms.MultipleChoiceField(
         choices=TeacherProfile.TEACHING_LANGUAGES,
         required=True,
-        label='Языки преподавания',
+        label=_('Языки преподавания'),
         widget=forms.CheckboxSelectMultiple(attrs={
             'class': 'teaching-language-checkbox'
         }),
-        help_text='Выберите языки, на которых вы проводите занятия'
+        help_text=_('Выберите языки, на которых вы проводите занятия')
     )
-    
+
     phone = forms.CharField(
         max_length=20,
         required=True,
-        label='Номер телефона',
+        label=_('Номер телефона'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
             'placeholder': '+998 90 123 45 67',
             'autocomplete': 'tel',
             'inputmode': 'tel',
         }),
-        help_text='Международный формат с кодом страны. Например: +998 90 123 45 67 или +1 202 555 0143.'
+        help_text=_('Международный формат с кодом страны. Например: +998 90 123 45 67 или +1 202 555 0143.')
     )
     
     def clean_avatar(self):
@@ -124,25 +124,25 @@ class Step1BasicProfileForm(forms.Form):
             try:
                 # ✅ Проверка размера файла (5 МБ максимум)
                 if avatar.size > 5 * 1024 * 1024:
-                    raise ValidationError('Размер файла не должен превышать 5 МБ')
-                
+                    raise ValidationError(_('Размер файла не должен превышать 5 МБ'))
+
                 # ✅ Проверка расширения файла
                 valid_extensions = ['.jpg', '.jpeg', '.png']
                 ext = avatar.name.lower().split('.')[-1]
                 if f'.{ext}' not in valid_extensions:
-                    raise ValidationError('Разрешены только JPG, JPEG и PNG форматы')
-                
+                    raise ValidationError(_('Разрешены только JPG, JPEG и PNG форматы'))
+
                 # ✅ Проверка MIME type для безопасности
-                mime_type, _ = mimetypes.guess_type(avatar.name)
+                mime_type, _mime_ext = mimetypes.guess_type(avatar.name)
                 if mime_type not in ['image/jpeg', 'image/png']:
                     logger.warning(f"Avatar upload: недопустимый MIME type - {mime_type}")
-                    raise ValidationError('Недопустимый тип изображения')
-            
+                    raise ValidationError(_('Недопустимый тип изображения'))
+
             except ValidationError:
                 raise
             except Exception as e:
                 logger.error(f"Avatar validation error: {e}", exc_info=True)
-                raise ValidationError('Ошибка при проверке файла')
+                raise ValidationError(_('Ошибка при проверке файла'))
         
         return avatar
     
@@ -161,24 +161,24 @@ class Step1BasicProfileForm(forms.Form):
             phone_digits = re.sub(r'[\s\-()]', '', phone)
             if not re.match(r'^\+\d{8,15}$', phone_digits):
                 logger.warning(f"Invalid phone format: {phone}")
-                raise ValidationError(
+                raise ValidationError(_(
                     'Введите корректный номер в международном формате с кодом страны: '
                     '«+» и 8–15 цифр (например, +998 90 123 45 67).'
-                )
+                ))
             # Сохраняем в нормализованном виде (без пробелов/дефисов).
             return phone_digits
         except ValidationError:
             raise
         except Exception as e:
             logger.error(f"Phone validation error: {e}")
-            raise ValidationError('Ошибка при проверке номера телефона')
+            raise ValidationError(_('Ошибка при проверке номера телефона'))
     
     def clean_teaching_languages(self):
         # Получаем значение (должно быть список от CheckboxSelectMultiple)
         languages = self.cleaned_data.get('teaching_languages')
         
         if not languages or len(languages) == 0:
-            raise ValidationError('Выберите хотя бы один язык преподавания')
+            raise ValidationError(_('Выберите хотя бы один язык преподавания'))
         
         return languages
 
@@ -191,44 +191,44 @@ class Step2AccountSecurityForm(UserCreationForm):
     username = forms.CharField(
         max_length=150,
         required=True,
-        label='Имя пользователя',
+        label=_('Имя пользователя'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
             'placeholder': 'john_teacher',
             'autocomplete': 'username'
         }),
-        help_text='Используйте буквы, цифры и символы _ . -'
+        help_text=_('Используйте буквы, цифры и символы _ . -')
     )
-    
+
     password1 = forms.CharField(
-        label='Пароль',
+        label=_('Пароль'),
         widget=forms.PasswordInput(attrs={
             'class': 'form-input',
-            'placeholder': 'Введите надежный пароль',
+            'placeholder': _('Введите надежный пароль'),
             'autocomplete': 'new-password'
         }),
-        help_text='Минимум 8 символов. Используйте буквы и цифры.'
+        help_text=_('Минимум 8 символов. Используйте буквы и цифры.')
     )
-    
+
     password2 = forms.CharField(
-        label='Подтвердите пароль',
+        label=_('Подтвердите пароль'),
         widget=forms.PasswordInput(attrs={
             'class': 'form-input',
-            'placeholder': 'Повторите пароль',
+            'placeholder': _('Повторите пароль'),
             'autocomplete': 'new-password'
         }),
-        help_text='Введите тот же пароль для подтверждения'
+        help_text=_('Введите тот же пароль для подтверждения')
     )
-    
+
     email = forms.EmailField(
         required=True,
-        label='Email',
+        label=_('Email'),
         widget=forms.EmailInput(attrs={
             'class': 'form-input',
             'placeholder': 'your.email@example.com',
             'autocomplete': 'email'
         }),
-        help_text='Используется для входа и восстановления доступа к аккаунту'
+        help_text=_('Используется для входа и восстановления доступа к аккаунту')
     )
     
     class Meta:
@@ -243,17 +243,17 @@ class Step2AccountSecurityForm(UserCreationForm):
                 username = username.strip()
                 # ✅ Проверяем, что username содержит только разрешенные символы
                 if not re.match(r'^[\w.-]+$', username):
-                    raise ValidationError('Используйте только буквы, цифры и символы _ . -')
-                
+                    raise ValidationError(_('Используйте только буквы, цифры и символы _ . -'))
+
                 # ✅ Проверяем уникальность
                 if User.objects.filter(username__iexact=username).exists():
                     logger.warning(f"Registration: username уже используется - {username}")
-                    raise ValidationError('Это имя пользователя уже занято')
+                    raise ValidationError(_('Это имя пользователя уже занято'))
             except ValidationError:
                 raise
             except Exception as e:
                 logger.error(f"Username validation error: {e}", exc_info=True)
-                raise ValidationError('Ошибка при проверке имени пользователя')
+                raise ValidationError(_('Ошибка при проверке имени пользователя'))
         
         return username
     
@@ -266,12 +266,12 @@ class Step2AccountSecurityForm(UserCreationForm):
                 # ✅ Проверяем уникальность
                 if User.objects.filter(email__iexact=email).exists():
                     logger.warning(f"Registration: email уже используется - {email}")
-                    raise ValidationError('Этот email уже используется')
+                    raise ValidationError(_('Этот email уже используется'))
             except ValidationError:
                 raise
             except Exception as e:
                 logger.error(f"Email validation error: {e}", exc_info=True)
-                raise ValidationError('Ошибка при проверке email')
+                raise ValidationError(_('Ошибка при проверке email'))
         return email
 
     def clean_password1(self):
@@ -289,7 +289,7 @@ class Step2AccountSecurityForm(UserCreationForm):
         if not self.fields['password1'].required and not password1 and not password2:
             return password2
         if password1 and password2 and password1 != password2:
-            raise forms.ValidationError('Пароли не совпадают.')
+            raise forms.ValidationError(_('Пароли не совпадают.'))
         return password2
 
 
@@ -299,61 +299,61 @@ class Step3EducationExperienceForm(forms.Form):
     Fields: Education level, Institution, Work experience, About me
     """
     education_level = forms.ChoiceField(
-        choices=[('', 'Выберите уровень образования')] + list(TeacherProfile.EDUCATION_LEVELS),
+        choices=[('', _('Выберите уровень образования'))] + list(TeacherProfile.EDUCATION_LEVELS),
         required=False,
-        label='Уровень образования',
+        label=_('Уровень образования'),
         widget=forms.Select(attrs={
             'class': 'form-select'
         }),
-        help_text='Выберите ваш наивысший уровень образования (желательно)'
+        help_text=_('Выберите ваш наивысший уровень образования (желательно)')
     )
-    
+
     university = forms.CharField(
         max_length=200,
         required=False,
-        label='Учебное заведение',
+        label=_('Учебное заведение'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': 'Например: НУУз, ТГЭУ, Вестминстер...'
+            'placeholder': _('Например: НУУз, ТГЭУ, Вестминстер...')
         }),
-        help_text='Полное или краткое название вашего университета/института (желательно)'
+        help_text=_('Полное или краткое название вашего университета/института (желательно)')
     )
-    
+
     specialization = forms.CharField(
         max_length=200,
         required=False,
-        label='Специализация',
+        label=_('Специализация'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': 'Например: Математическая физика, Филология...'
+            'placeholder': _('Например: Математическая физика, Филология...')
         }),
-        help_text='Ваша академическая специализация (желательно)'
+        help_text=_('Ваша академическая специализация (желательно)')
     )
-    
+
     experience_years = forms.IntegerField(
         min_value=0,
         max_value=50,
         required=True,
-        label='Опыт преподавания (лет)',
+        label=_('Опыт преподавания (лет)'),
         widget=forms.NumberInput(attrs={
             'class': 'form-input',
             'placeholder': '0',
             'min': '0',
             'max': '50'
         }),
-        help_text='Сколько лет вы преподаете? Укажите 0, если только начинаете'
+        help_text=_('Сколько лет вы преподаете? Укажите 0, если только начинаете')
     )
-    
+
     bio = forms.CharField(
         required=True,
-        label='О себе',
+        label=_('О себе'),
         widget=forms.Textarea(attrs={
             'class': 'form-textarea',
-            'placeholder': 'Расскажите о себе как о преподавателе:\n• Ваш подход к обучению\n• Что вам нравится в преподавании\n• Чего достигли ваши ученики\n• Ваши профессиональные интересы',
+            'placeholder': _('Расскажите о себе как о преподавателе:\n• Ваш подход к обучению\n• Что вам нравится в преподавании\n• Чего достигли ваши ученики\n• Ваши профессиональные интересы'),
             'rows': 6,
             'maxlength': '1000'
         }),
-        help_text='От 40 до 1000 символов. Это первое, что увидят ученики.',
+        help_text=_('От 40 до 1000 символов. Это первое, что увидят ученики.'),
         min_length=40,
         max_length=1000
     )
@@ -368,17 +368,19 @@ class Step3EducationExperienceForm(forms.Form):
 
                 if bio_len < 40:
                     raise ValidationError(
-                        f'Описание слишком короткое. Минимум 40 символов (сейчас: {bio_len})'
+                        _('Описание слишком короткое. Минимум 40 символов (сейчас: %(len)s)')
+                        % {'len': bio_len}
                     )
                 if bio_len > 1000:
                     raise ValidationError(
-                        f'Описание слишком длинное. Максимум 1000 символов (сейчас: {bio_len})'
+                        _('Описание слишком длинное. Максимум 1000 символов (сейчас: %(len)s)')
+                        % {'len': bio_len}
                     )
             except ValidationError:
                 raise
             except Exception as e:
                 logger.error(f"Bio validation error: {e}")
-                raise ValidationError('Ошибка при проверке описания')
+                raise ValidationError(_('Ошибка при проверке описания'))
         return bio
 
 
@@ -389,57 +391,57 @@ class Step4AvailabilityFormatForm(forms.Form):
     """
     # ✅ Словарь дней недели для избежания дублирования
     DAYS_OF_WEEK = {
-        'monday': 'Понедельник',
-        'tuesday': 'Вторник',
-        'wednesday': 'Среда',
-        'thursday': 'Четверг',
-        'friday': 'Пятница',
-        'saturday': 'Суббота',
-        'sunday': 'Воскресенье'
+        'monday': _('Понедельник'),
+        'tuesday': _('Вторник'),
+        'wednesday': _('Среда'),
+        'thursday': _('Четверг'),
+        'friday': _('Пятница'),
+        'saturday': _('Суббота'),
+        'sunday': _('Воскресенье')
     }
-    
+
     telegram = forms.CharField(
         max_length=200,
         required=True,
-        label='Telegram или номер телефона с Telegram',
+        label=_('Telegram или номер телефона с Telegram'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': '@username или +998 90 123 45 67',
+            'placeholder': _('@username или +998 90 123 45 67'),
         }),
-        help_text='Укажите @username, ссылку t.me/username или номер телефона с Telegram '
-                  'в формате +998… — ученики свяжутся с вами через Telegram.',
+        help_text=_('Укажите @username, ссылку t.me/username или номер телефона с Telegram '
+                    'в формате +998… — ученики свяжутся с вами через Telegram.'),
     )
-    
+
     city = forms.ModelChoiceField(
         queryset=City.objects.filter(is_active=True),
         required=False,
-        label='Город',
+        label=_('Город'),
         widget=forms.Select(attrs={
             'class': 'form-select'
         }),
-        empty_label='Не указан / Онлайн',
-        help_text='Выберите город, если преподаете офлайн'
+        empty_label=_('Не указан / Онлайн'),
+        help_text=_('Выберите город, если преподаете офлайн')
     )
-    
+
     teaching_format = forms.ChoiceField(
         choices=TeacherProfile.TEACHING_FORMATS,
         required=True,
-        label='Формат обучения',
+        label=_('Формат обучения'),
         widget=forms.RadioSelect(attrs={
             'class': 'format-radio'
         }),
-        help_text='Как вы проводите занятия?'
+        help_text=_('Как вы проводите занятия?')
     )
-    
+
     whatsapp = forms.CharField(
         max_length=20,
         required=False,
-        label='WhatsApp (желательно)',
+        label=_('WhatsApp (желательно)'),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
             'placeholder': '+998 90 123 45 67'
         }),
-        help_text='Дополнительный способ связи'
+        help_text=_('Дополнительный способ связи')
     )
     
     # Расписание хранится в одном скрытом JSON-поле, которым управляет JS на шаге.
@@ -488,9 +490,9 @@ class Step4AvailabilityFormatForm(forms.Form):
         if raw.startswith('+'):
             phone = re.sub(r'[\s\-()]', '', raw)
             if not re.match(r'^\+\d{8,15}$', phone):
-                raise ValidationError(
+                raise ValidationError(_(
                     'Некорректный номер телефона в Telegram. Формат: +<код страны><номер>.'
-                )
+                ))
             return phone
 
         # 3) Это username (с @ или без)
@@ -499,10 +501,10 @@ class Step4AvailabilityFormatForm(forms.Form):
         username = username.split('?')[0].split('#')[0].split('/')[0]
 
         if not self.TG_USERNAME_RE.match(username):
-            raise ValidationError(
+            raise ValidationError(_(
                 'Некорректный Telegram username. Используйте 5–32 латинских букв, '
                 'цифр или «_», начиная с буквы (например, @ivan_teacher).'
-            )
+            ))
         return '@' + username
     
     DAY_NUMBER = {
@@ -530,10 +532,10 @@ class Step4AvailabilityFormatForm(forms.Form):
             try:
                 parsed = json.loads(raw) if raw else {}
             except (ValueError, TypeError):
-                raise ValidationError('Не удалось прочитать расписание. Попробуйте ещё раз.')
+                raise ValidationError(_('Не удалось прочитать расписание. Попробуйте ещё раз.'))
 
             if not isinstance(parsed, dict):
-                raise ValidationError('Некорректный формат расписания.')
+                raise ValidationError(_('Некорректный формат расписания.'))
 
             weekly_schedule = {}
             enabled_days = []
@@ -551,15 +553,20 @@ class Step4AvailabilityFormatForm(forms.Form):
                     elif isinstance(itv, (list, tuple)) and len(itv) == 2:
                         f_str, t_str = itv[0], itv[1]
                     else:
-                        raise ValidationError(f'{day_name_ru}: некорректный интервал.')
+                        raise ValidationError(
+                            _('%(day)s: некорректный интервал.') % {'day': day_name_ru}
+                        )
 
                     f_min = self._parse_hhmm(f_str)
                     t_min = self._parse_hhmm(t_str)
                     if f_min is None or t_min is None:
-                        raise ValidationError(f'{day_name_ru}: укажите корректное время (ЧЧ:ММ).')
+                        raise ValidationError(
+                            _('%(day)s: укажите корректное время (ЧЧ:ММ).') % {'day': day_name_ru}
+                        )
                     if f_min >= t_min:
                         raise ValidationError(
-                            f'{day_name_ru}: время начала должно быть раньше окончания ({f_str}–{t_str}).'
+                            _('%(day)s: время начала должно быть раньше окончания (%(from)s–%(to)s).')
+                            % {'day': day_name_ru, 'from': f_str, 'to': t_str}
                         )
                     normalized.append((f_min, t_min, f_str.strip(), t_str.strip()))
 
@@ -568,7 +575,12 @@ class Step4AvailabilityFormatForm(forms.Form):
                 for prev, curr in zip(normalized, normalized[1:]):
                     if curr[0] < prev[1]:
                         raise ValidationError(
-                            f'{day_name_ru}: интервалы пересекаются ({prev[2]}–{prev[3]} и {curr[2]}–{curr[3]}).'
+                            _('%(day)s: интервалы пересекаются (%(p_from)s–%(p_to)s и %(c_from)s–%(c_to)s).')
+                            % {
+                                'day': day_name_ru,
+                                'p_from': prev[2], 'p_to': prev[3],
+                                'c_from': curr[2], 'c_to': curr[3],
+                            }
                         )
 
                 weekly_schedule[day] = [{'from': f, 'to': t} for _s, _e, f, t in normalized]
@@ -584,7 +596,7 @@ class Step4AvailabilityFormatForm(forms.Form):
             raise
         except Exception as e:
             logger.error(f"Schedule validation error: {e}", exc_info=True)
-            raise ValidationError('Ошибка при проверке расписания')
+            raise ValidationError(_('Ошибка при проверке расписания'))
 
 
 class Step5SubjectsPricingForm(forms.Form):
@@ -593,8 +605,8 @@ class Step5SubjectsPricingForm(forms.Form):
     Dynamic form for up to 4 subjects with pricing
     """
     TRIAL_DURATION_CHOICES = [
-        ('30', '30 минут'),
-        ('60', '60 минут'),
+        ('30', _('30 минут')),
+        ('60', _('60 минут')),
     ]
 
     def __init__(self, *args, **kwargs):
@@ -605,19 +617,19 @@ class Step5SubjectsPricingForm(forms.Form):
             self.fields[f'subject_{i}'] = forms.ModelChoiceField(
                 queryset=Subject.objects.filter(is_active=True).order_by('name'),
                 required=False,
-                label=f'Предмет {i}',
+                label=_('Предмет %(num)s') % {'num': i},
                 widget=forms.Select(attrs={
                     'class': 'form-select subject-select',
                     'data-subject-num': i
                 }),
-                empty_label='Выберите предмет'
+                empty_label=_('Выберите предмет')
             )
 
             self.fields[f'hourly_rate_{i}'] = forms.DecimalField(
                 max_digits=10,
                 decimal_places=2,
                 required=False,
-                label='Цена за час (сум)',
+                label=_('Цена за час (сум)'),
                 widget=forms.NumberInput(attrs={
                     'class': 'form-input',
                     'placeholder': '100000',
@@ -632,7 +644,7 @@ class Step5SubjectsPricingForm(forms.Form):
                 choices=self.TRIAL_DURATION_CHOICES,
                 initial='60',
                 required=False,
-                label='Длительность пробного урока',
+                label=_('Длительность пробного урока'),
                 widget=forms.RadioSelect(attrs={
                     'class': 'trial-duration-radio',
                     'data-subject-num': i,
@@ -643,7 +655,7 @@ class Step5SubjectsPricingForm(forms.Form):
             self.fields[f'is_free_trial_{i}'] = forms.BooleanField(
                 required=False,
                 initial=True,
-                label='Пробный урок бесплатно',
+                label=_('Пробный урок бесплатно'),
                 widget=forms.CheckboxInput(attrs={
                     'class': 'form-checkbox free-trial-checkbox',
                     'data-subject-num': i,
@@ -655,7 +667,7 @@ class Step5SubjectsPricingForm(forms.Form):
                 max_digits=10,
                 decimal_places=2,
                 required=False,
-                label='Цена пробного урока (сум)',
+                label=_('Цена пробного урока (сум)'),
                 widget=forms.NumberInput(attrs={
                     'class': 'form-input trial-price-input',
                     'placeholder': '50000',
@@ -667,10 +679,10 @@ class Step5SubjectsPricingForm(forms.Form):
 
             self.fields[f'description_{i}'] = forms.CharField(
                 required=False,
-                label='Описание (желательно)',
+                label=_('Описание (желательно)'),
                 widget=forms.Textarea(attrs={
                     'class': 'form-textarea',
-                    'placeholder': 'Особенности преподавания этого предмета...',
+                    'placeholder': _('Особенности преподавания этого предмета...'),
                     'rows': 2,
                     'maxlength': '200',
                     'data-subject-num': i
@@ -697,25 +709,31 @@ class Step5SubjectsPricingForm(forms.Form):
                         # ✅ Проверяем, что не выбран дубликат
                         if subject in selected_subjects:
                             raise ValidationError(
-                                f'Предмет "{subject}" выбран несколько раз. Выберите разные предметы.'
+                                _('Предмет "%(subject)s" выбран несколько раз. Выберите разные предметы.')
+                                % {'subject': subject}
                             )
 
                         # ✅ Проверяем, что указана цена за час
                         if not hourly_rate or hourly_rate <= 0:
-                            raise ValidationError(f'Укажите цену за час для предмета "{subject}"')
+                            raise ValidationError(
+                                _('Укажите цену за час для предмета "%(subject)s"')
+                                % {'subject': subject}
+                            )
 
                         # ✅ Проверяем длительность пробного
                         if trial_duration not in ('30', '60'):
                             raise ValidationError(
-                                f'Для предмета "{subject}" выберите длительность пробного урока (30 или 60 минут).'
+                                _('Для предмета "%(subject)s" выберите длительность пробного урока (30 или 60 минут).')
+                                % {'subject': subject}
                             )
 
                         # ✅ Если пробный платный — нужна цена
                         if not is_free_trial:
                             if not trial_price or trial_price <= 0:
                                 raise ValidationError(
-                                    f'Укажите цену пробного урока для предмета "{subject}" '
-                                    f'или отметьте «Пробный урок бесплатно».'
+                                    _('Укажите цену пробного урока для предмета "%(subject)s" '
+                                      'или отметьте «Пробный урок бесплатно».')
+                                    % {'subject': subject}
                                 )
                         else:
                             # Если бесплатный — затираем введённую цену пробного, чтобы не сохранять
@@ -725,16 +743,20 @@ class Step5SubjectsPricingForm(forms.Form):
                         subjects_added += 1
                     elif hourly_rate and hourly_rate > 0:
                         # ✅ Указана цена, но не выбран предмет
-                        raise ValidationError(f'Выберите предмет для строки {i}')
+                        raise ValidationError(
+                            _('Выберите предмет для строки %(row)s') % {'row': i}
+                        )
                 except ValidationError:
                     raise
                 except Exception as e:
                     logger.error(f"Subject {i} validation error: {e}")
-                    raise ValidationError(f'Ошибка при проверке предмета {i}')
+                    raise ValidationError(
+                        _('Ошибка при проверке предмета %(row)s') % {'row': i}
+                    )
 
             # ✅ Проверяем, что добавлен хотя бы один предмет
             if subjects_added == 0:
-                raise ValidationError('Добавьте хотя бы один предмет с ценой')
+                raise ValidationError(_('Добавьте хотя бы один предмет с ценой'))
 
             cleaned_data['subjects_count'] = subjects_added
             return cleaned_data
@@ -743,7 +765,7 @@ class Step5SubjectsPricingForm(forms.Form):
             raise
         except Exception as e:
             logger.error(f"Subjects validation error: {e}", exc_info=True)
-            raise ValidationError('Ошибка при проверке предметов')
+            raise ValidationError(_('Ошибка при проверке предметов'))
 
 
 class Step6CertificatesForm(forms.Form):
@@ -770,26 +792,26 @@ class Step6CertificatesForm(forms.Form):
             self.fields[f'cert_name_{i}'] = forms.CharField(
                 max_length=200,
                 required=False,
-                label='Название сертификата',
+                label=_('Название сертификата'),
                 widget=forms.TextInput(attrs={
                     'class': 'form-input',
-                    'placeholder': 'Например: Сертификат IELTS, Диплом о высшем образовании',
+                    'placeholder': _('Например: Сертификат IELTS, Диплом о высшем образовании'),
                     'data-cert-num': i,
                 }),
             )
             self.fields[f'cert_issuer_{i}'] = forms.CharField(
                 max_length=200,
                 required=False,
-                label='Кто выдал',
+                label=_('Кто выдал'),
                 widget=forms.TextInput(attrs={
                     'class': 'form-input',
-                    'placeholder': 'Например: British Council, НУУз',
+                    'placeholder': _('Например: British Council, НУУз'),
                     'data-cert-num': i,
                 }),
             )
             self.fields[f'cert_file_{i}'] = forms.FileField(
                 required=False,
-                label='Файл сертификата',
+                label=_('Файл сертификата'),
                 widget=forms.FileInput(attrs={
                     'class': 'form-file-input',
                     'accept': 'image/*,application/pdf',
@@ -801,17 +823,21 @@ class Step6CertificatesForm(forms.Form):
         """Размер ≤10MB, расширение и MIME из белого списка."""
         if file.size > self.MAX_FILE_SIZE:
             raise ValidationError(
-                f'Сертификат {idx}: размер файла не должен превышать 10 МБ.'
+                _('Сертификат %(idx)s: размер файла не должен превышать 10 МБ.')
+                % {'idx': idx}
             )
         ext = '.' + file.name.lower().rsplit('.', 1)[-1] if '.' in file.name else ''
         if ext not in self.VALID_EXTS:
             raise ValidationError(
-                f'Сертификат {idx}: разрешены только JPG, PNG и PDF.'
+                _('Сертификат %(idx)s: разрешены только JPG, PNG и PDF.')
+                % {'idx': idx}
             )
-        mime, _ = mimetypes.guess_type(file.name)
+        mime, _mime_ext = mimetypes.guess_type(file.name)
         if mime not in self.ALLOWED_MIMES:
             logger.warning(f"Certificate upload: недопустимый MIME type - {mime}")
-            raise ValidationError(f'Сертификат {idx}: недопустимый тип файла.')
+            raise ValidationError(
+                _('Сертификат %(idx)s: недопустимый тип файла.') % {'idx': idx}
+            )
 
     def clean(self):
         try:
@@ -828,8 +854,9 @@ class Step6CertificatesForm(forms.Form):
                 # Если есть хотя бы один — нужны все три.
                 if not (name and issuer and file):
                     raise ValidationError(
-                        f'Сертификат {i}: заполните название, организацию и приложите файл '
-                        f'(или очистите все три поля, чтобы пропустить).'
+                        _('Сертификат %(idx)s: заполните название, организацию и приложите файл '
+                          '(или очистите все три поля, чтобы пропустить).')
+                        % {'idx': i}
                     )
                 self._validate_one_file(file, i)
                 cleaned[f'cert_name_{i}'] = name
@@ -839,4 +866,4 @@ class Step6CertificatesForm(forms.Form):
             raise
         except Exception as e:
             logger.error(f"Certificate validation error: {e}", exc_info=True)
-            raise ValidationError('Ошибка при проверке сертификатов')
+            raise ValidationError(_('Ошибка при проверке сертификатов'))

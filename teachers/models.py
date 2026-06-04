@@ -6,6 +6,7 @@ from django.db.models.functions import Lower
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from django.core.cache import cache
 from PIL import Image
 import math
@@ -42,13 +43,13 @@ def _filter_views_by_period(views_qs, period):
 class User(AbstractUser):
     """Расширенная модель пользователя"""
     USER_TYPES = [
-        ('student', 'Ученик'),
-        ('teacher', 'Учитель'),
+        ('student', _('Ученик')),
+        ('teacher', _('Учитель')),
     ]
-    
+
     GENDER_CHOICES = [
-        ('male', 'Мужской'),
-        ('female', 'Женский'),
+        ('male', _('Мужской')),
+        ('female', _('Женский')),
     ]
     
     user_type = models.CharField(max_length=10, choices=USER_TYPES, default='student')
@@ -117,18 +118,18 @@ def normalize_search_text(*parts) -> str:
 
 class SubjectCategory(models.Model):
     """Категории предметов для удобной группировки"""
-    name = models.CharField(max_length=100, unique=True, verbose_name='Название категории')
-    description = models.TextField(blank=True, verbose_name='Описание')
-    icon = models.CharField(max_length=50, blank=True, help_text="CSS класс иконки (например, fas fa-calculator)")
-    color = models.CharField(max_length=7, default='#3B82F6', help_text="Цвет в формате HEX (#3B82F6)")
-    order = models.PositiveIntegerField(default=0, help_text="Порядок сортировки")
+    name = models.CharField(max_length=100, unique=True, verbose_name=_('Название категории'))
+    description = models.TextField(blank=True, verbose_name=_('Описание'))
+    icon = models.CharField(max_length=50, blank=True, help_text=_("CSS класс иконки (например, fas fa-calculator)"))
+    color = models.CharField(max_length=7, default='#3B82F6', help_text=_("Цвет в формате HEX (#3B82F6)"))
+    order = models.PositiveIntegerField(default=0, help_text=_("Порядок сортировки"))
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['order', 'name']
-        verbose_name = 'Категория предметов'
-        verbose_name_plural = 'Категории предметов'
+        verbose_name = _('Категория предметов')
+        verbose_name_plural = _('Категории предметов')
 
     def __str__(self):
         return self.name
@@ -151,24 +152,24 @@ class Subject(models.Model):
         null=True, 
         blank=True,
         related_name='subjects',
-        verbose_name='Категория'
+        verbose_name=_('Категория')
     )
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
-    icon = models.CharField(max_length=50, blank=True, help_text="CSS класс иконки")
+    icon = models.CharField(max_length=50, blank=True, help_text=_("CSS класс иконки"))
     is_active = models.BooleanField(default=True)
-    is_popular = models.BooleanField(default=False, help_text="Популярный предмет (показывать в топе)")
+    is_popular = models.BooleanField(default=False, help_text=_("Популярный предмет (показывать в топе)"))
     search_text = models.TextField(
         blank=True,
         default='',
-        help_text='Нормализованный текст для быстрого поиска (lowercase: name + description)'
+        help_text=_('Нормализованный текст для быстрого поиска (lowercase: name + description)')
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['name']
-        verbose_name = 'Предмет'
-        verbose_name_plural = 'Предметы'
+        verbose_name = _('Предмет')
+        verbose_name_plural = _('Предметы')
         indexes = [
             models.Index(fields=['category', 'is_active']),
             models.Index(fields=['is_popular', 'is_active']),
@@ -199,8 +200,8 @@ class City(models.Model):
 
     class Meta:
         ordering = ['name']
-        verbose_name = 'Город'
-        verbose_name_plural = 'Города'
+        verbose_name = _('Город')
+        verbose_name_plural = _('Города')
 
     def __str__(self):
         return f"{self.name}, {self.country}"
@@ -208,13 +209,13 @@ class City(models.Model):
 class Certificate(models.Model):
     """Модель сертификатов учителей"""
     name = models.CharField(max_length=200)
-    issuer = models.CharField(max_length=200, help_text="Кто выдал сертификат")
+    issuer = models.CharField(max_length=200, help_text=_("Кто выдал сертификат"))
     file = models.FileField(upload_to='certificates/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = 'Сертификат'
-        verbose_name_plural = 'Сертификаты'
+        verbose_name = _('Сертификат')
+        verbose_name_plural = _('Сертификаты')
 
     def __str__(self):
         return f"{self.name} - {self.issuer}"
@@ -222,31 +223,31 @@ class Certificate(models.Model):
 class TeacherProfile(models.Model):
     """Профиль учителя"""
     EDUCATION_LEVELS = [
-        ('bachelor', 'Бакалавр'),
-        ('master', 'Магистр'),
+        ('bachelor', _('Бакалавр')),
+        ('master', _('Магистр')),
         ('phd', 'PhD'),
-        ('other', 'Другое'),
+        ('other', _('Другое')),
     ]
-    
+
     TEACHING_FORMATS = [
-        ('online', 'Онлайн'),
-        ('offline', 'Офлайн'),
-        ('both', 'Онлайн и офлайн'),
+        ('online', _('Онлайн')),
+        ('offline', _('Офлайн')),
+        ('both', _('Онлайн и офлайн')),
     ]
     TEACHING_LANGUAGES = [
-        ('uz', 'Узбекский'),
-        ('ru', 'Русский'),
-        ('en', 'Английский'),
-        ('tr', 'Турецкий'),
-        ('de', 'Немецкий'),
-        ('fr', 'Французский'),
-        ('other', 'Другой'),
+        ('uz', _('Узбекский')),
+        ('ru', _('Русский')),
+        ('en', _('Английский')),
+        ('tr', _('Турецкий')),
+        ('de', _('Немецкий')),
+        ('fr', _('Французский')),
+        ('other', _('Другой')),
     ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='teacher_profile')
     
     # Основная информация
-    bio = models.TextField(max_length=1000, blank=True, null=True, help_text="Краткое описание о себе")
+    bio = models.TextField(max_length=1000, blank=True, null=True, help_text=_("Краткое описание о себе"))
     education_level = models.CharField(max_length=20, blank=True, null=True, choices=EDUCATION_LEVELS)
     university = models.CharField(max_length=200, blank=True, null=True)
     specialization = models.CharField(max_length=200, blank=True, null=True)
@@ -254,7 +255,7 @@ class TeacherProfile(models.Model):
     # Опыт работы
     experience_years = models.PositiveIntegerField(
         validators=[MinValueValidator(0), MaxValueValidator(50)],
-        help_text="Лет опыта преподавания"
+        help_text=_("Лет опыта преподавания")
     )
     
     # Предметы и локация
@@ -270,13 +271,13 @@ class TeacherProfile(models.Model):
         max_length=100,
         blank=True,
         default='ru',
-        help_text="Коды языков через запятую (uz,ru,en)"
+        help_text=_("Коды языков через запятую (uz,ru,en)")
     )
     # Время работы
     available_from = models.TimeField(default=dt_time(9, 0))
     available_to = models.TimeField(default=dt_time(21, 0))
-    available_weekdays = models.CharField(max_length=20, default='1,2,3,4,5,6,7', 
-                                        help_text="Дни недели через запятую (1-7)")
+    available_weekdays = models.CharField(max_length=20, default='1,2,3,4,5,6,7',
+                                        help_text=_("Дни недели через запятую (1-7)"))
     
     # Индивидуальное расписание для каждого дня (JSON)
     # Новый формат (мультиинтервалы): {"monday": [{"from": "09:00", "to": "12:00"}, {"from": "15:00", "to": "18:00"}], ...}
@@ -285,20 +286,20 @@ class TeacherProfile(models.Model):
         null=True,
         blank=True,
         default=dict,
-        help_text="Индивидуальное расписание для каждого дня недели"
+        help_text=_("Индивидуальное расписание для каждого дня недели")
     )
     
     # Рейтинг и статус
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
     total_reviews = models.PositiveIntegerField(default=0)
     total_students = models.PositiveIntegerField(default=0)
-    is_featured = models.BooleanField(default=False, help_text="Рекомендуемый учитель")
+    is_featured = models.BooleanField(default=False, help_text=_("Рекомендуемый учитель"))
     is_active = models.BooleanField(default=True)
 
     # Ранжирование: приоритет в выдаче (0-100, больше = выше)
     ranking_score = models.PositiveIntegerField(
         default=0,
-        help_text="Приоритет в выдаче (0-100). Рассчитывается автоматически."
+        help_text=_("Приоритет в выдаче (0-100). Рассчитывается автоматически.")
     )
     
     # Видео-визитка (хранится в облачном хранилище, только URL)
@@ -306,7 +307,7 @@ class TeacherProfile(models.Model):
         max_length=500,
         null=True,
         blank=True,
-        help_text="URL видео-визитки в облачном хранилище"
+        help_text=_("URL видео-визитки в облачном хранилище")
     )
 
     # Денормализованный текст для быстрого поиска.
@@ -315,7 +316,7 @@ class TeacherProfile(models.Model):
     search_text = models.TextField(
         blank=True,
         default='',
-        help_text='Нормализованный текст для быстрого поиска (заполняется автоматически)'
+        help_text=_('Нормализованный текст для быстрого поиска (заполняется автоматически)')
     )
 
     # Сертификаты
@@ -325,42 +326,42 @@ class TeacherProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     MODERATION_STATUS = [
-        ('pending', 'На модерации'),
-        ('approved', 'Одобрено'),
-        ('rejected', 'Отклонено'),
+        ('pending', _('На модерации')),
+        ('approved', _('Одобрено')),
+        ('rejected', _('Отклонено')),
     ]
-    
+
     moderation_status = models.CharField(
         max_length=20,
         choices=MODERATION_STATUS,
         default='pending',
-        verbose_name='Статус модерации'
+        verbose_name=_('Статус модерации')
     )
-    
+
     moderation_comment = models.TextField(
         blank=True,
-        verbose_name='Комментарий модератора',
-        help_text='Причина отклонения или рекомендации'
+        verbose_name=_('Комментарий модератора'),
+        help_text=_('Причина отклонения или рекомендации')
     )
-    
+
     moderation_date = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name='Дата модерации'
+        verbose_name=_('Дата модерации')
     )
-    
+
     moderated_by = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='moderated_teachers',
-        verbose_name='Проверил'
+        verbose_name=_('Проверил')
     )
-    
+
     class Meta:
-        verbose_name = 'Профиль учителя'
-        verbose_name_plural = 'Профили учителей'
+        verbose_name = _('Профиль учителя')
+        verbose_name_plural = _('Профили учителей')
         ordering = ['-is_featured', '-ranking_score', '-rating', '-created_at']
         indexes = [
             models.Index(fields=['-is_featured', '-ranking_score', '-rating']),  # Основная сортировка
@@ -456,13 +457,14 @@ class TeacherProfile(models.Model):
                 full_text += f"\n\nКомментарий модератора: {comment}"
 
             Notification.objects.create(
-                title="✅ Ваш профиль одобрен!",
+                title="Ваш профиль одобрен!",
                 short_text=short_text,
                 full_text=full_text,
                 target='specific_user',
                 target_user=self.user,
                 is_active=True,
                 priority=10,
+                category=Notification.Category.SUCCESS,
                 created_by=moderator
             )
 
@@ -501,13 +503,14 @@ class TeacherProfile(models.Model):
 Команда UstozHub"""
 
             Notification.objects.create(
-                title="❌ Профиль не одобрен",
+                title="Профиль не одобрен",
                 short_text=short_text,
                 full_text=full_text,
                 target='specific_user',
                 target_user=self.user,
                 is_active=True,
                 priority=10,
+                category=Notification.Category.WARNING,
                 created_by=moderator
             )
 
@@ -929,10 +932,10 @@ class TeacherProfile(models.Model):
             return round(100 * num / den, 1)
 
         steps = [
-            {'key': 'views',         'label': 'Просмотры',      'icon': '👁️', 'count': s['views'],         'rate': None},
-            {'key': 'conversations', 'label': 'Беседы',         'icon': '💬', 'count': s['conversations'], 'rate': _rate(s['conversations'], s['views'])},
-            {'key': 'bookings',      'label': 'Бронирования',   'icon': '📅', 'count': s['bookings'],      'rate': _rate(s['bookings'], s['conversations'] or s['views'])},
-            {'key': 'completed',     'label': 'Проведено',      'icon': '✅', 'count': s['completed'],     'rate': _rate(s['completed'], s['bookings'])},
+            {'key': 'views',         'label': 'Просмотры',      'icon_class': 'fa-solid fa-eye',            'count': s['views'],         'rate': None},
+            {'key': 'conversations', 'label': 'Беседы',         'icon_class': 'fa-solid fa-comment-dots',   'count': s['conversations'], 'rate': _rate(s['conversations'], s['views'])},
+            {'key': 'bookings',      'label': 'Бронирования',   'icon_class': 'fa-solid fa-calendar-check', 'count': s['bookings'],      'rate': _rate(s['bookings'], s['conversations'] or s['views'])},
+            {'key': 'completed',     'label': 'Проведено',      'icon_class': 'fa-solid fa-circle-check',   'count': s['completed'],     'rate': _rate(s['completed'], s['bookings'])},
         ]
         return {
             'steps': steps,
@@ -1065,9 +1068,9 @@ class TeacherProfile(models.Model):
 
     # Порядок дней недели для отображения и нормализации расписания
     WEEKDAYS_ORDERED = [
-        ('monday', 'Понедельник'), ('tuesday', 'Вторник'), ('wednesday', 'Среда'),
-        ('thursday', 'Четверг'), ('friday', 'Пятница'), ('saturday', 'Суббота'),
-        ('sunday', 'Воскресенье'),
+        ('monday', _('Понедельник')), ('tuesday', _('Вторник')), ('wednesday', _('Среда')),
+        ('thursday', _('Четверг')), ('friday', _('Пятница')), ('saturday', _('Суббота')),
+        ('sunday', _('Воскресенье')),
     ]
 
     def get_schedule_intervals(self):
@@ -1243,8 +1246,8 @@ class TeacherSubject(models.Model):
     """Промежуточная модель для связи учитель-предмет с ценой"""
 
     TRIAL_DURATION_CHOICES = [
-        (30, '30 минут'),
-        (60, '60 минут'),
+        (30, _('30 минут')),
+        (60, _('60 минут')),
     ]
 
     teacher = models.ForeignKey(TeacherProfile, on_delete=models.CASCADE)
@@ -1253,13 +1256,13 @@ class TeacherSubject(models.Model):
         max_digits=10,
         decimal_places=2,
         validators=[MinValueValidator(0)],
-        help_text="Цена за час в сумах"
+        help_text=_("Цена за час в сумах")
     )
-    is_free_trial = models.BooleanField(default=True, help_text="Бесплатное пробное занятие")
+    is_free_trial = models.BooleanField(default=True, help_text=_("Бесплатное пробное занятие"))
     trial_duration_minutes = models.PositiveSmallIntegerField(
         choices=TRIAL_DURATION_CHOICES,
         default=60,
-        help_text="Длительность пробного урока (30 или 60 минут)",
+        help_text=_("Длительность пробного урока (30 или 60 минут)"),
     )
     trial_price = models.DecimalField(
         max_digits=10,
@@ -1267,15 +1270,15 @@ class TeacherSubject(models.Model):
         null=True,
         blank=True,
         validators=[MinValueValidator(0)],
-        help_text="Цена платного пробного урока в сумах (не указывается, если пробный бесплатный)",
+        help_text=_("Цена платного пробного урока в сумах (не указывается, если пробный бесплатный)"),
     )
-    description = models.TextField(blank=True, help_text="Дополнительная информация по предмету")
+    description = models.TextField(blank=True, help_text=_("Дополнительная информация по предмету"))
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ['teacher', 'subject']
-        verbose_name = 'Предмет учителя'
-        verbose_name_plural = 'Предметы учителей'
+        verbose_name = _('Предмет учителя')
+        verbose_name_plural = _('Предметы учителей')
         # ⚡ ОПТИМИЗАЦИЯ: Индексы для фильтрации по цене
         indexes = [
             models.Index(fields=['teacher', 'hourly_rate']),  # Для фильтра по цене
@@ -1306,17 +1309,17 @@ class TeacherSubject(models.Model):
 class StudentProfile(models.Model):
     """Профиль ученика"""
     EDUCATION_LEVELS = [
-        ('elementary', 'Начальная школа (1-4 класс)'),
-        ('middle', 'Средняя школа (5-9 класс)'),
-        ('high', 'Старшая школа (10-11 класс)'),
-        ('university', 'Университет'),
-        ('adult', 'Взрослый'),
+        ('elementary', _('Начальная школа (1-4 класс)')),
+        ('middle', _('Средняя школа (5-9 класс)')),
+        ('high', _('Старшая школа (10-11 класс)')),
+        ('university', _('Университет')),
+        ('adult', _('Взрослый')),
     ]
-    
+
     LEARNING_FORMATS = [
-        ('online', 'Онлайн'),
-        ('offline', 'Офлайн'),
-        ('both', 'Онлайн и офлайн'),
+        ('online', _('Онлайн')),
+        ('offline', _('Офлайн')),
+        ('both', _('Онлайн и офлайн')),
     ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile')
@@ -1338,13 +1341,13 @@ class StudentProfile(models.Model):
         help_text="Предметы для изучения"
     )
     
-    bio = models.TextField(max_length=500, blank=True, verbose_name="Краткое описание")
-    
+    bio = models.TextField(max_length=500, blank=True, verbose_name=_("Краткое описание"))
+
     description = models.TextField(
-        max_length=1000, 
+        max_length=1000,
         blank=True,
-        verbose_name="Описание целей и пожеланий",
-        help_text="Расскажите о своих целях обучения, уровне подготовки и ожиданиях"
+        verbose_name=_("Описание целей и пожеланий"),
+        help_text=_("Расскажите о своих целях обучения, уровне подготовки и ожиданиях")
     )
     
     budget_min = models.DecimalField(
@@ -1353,8 +1356,8 @@ class StudentProfile(models.Model):
         null=True,
         blank=True,
         validators=[MinValueValidator(0)],
-        verbose_name="Минимальный бюджет (сум/час)",
-        help_text="Минимальная цена, которую готов платить"
+        verbose_name=_("Минимальный бюджет (сум/час)"),
+        help_text=_("Минимальная цена, которую готов платить")
     )
     
     budget_max = models.DecimalField(
@@ -1363,52 +1366,52 @@ class StudentProfile(models.Model):
         null=True,
         blank=True,
         validators=[MinValueValidator(0)],
-        verbose_name="Максимальный бюджет (сум/час)",
-        help_text="Максимальная цена, которую готов платить"
+        verbose_name=_("Максимальный бюджет (сум/час)"),
+        help_text=_("Максимальная цена, которую готов платить")
     )
     
     learning_format = models.CharField(
         max_length=10,
         choices=LEARNING_FORMATS,
         default='both',
-        verbose_name="Предпочитаемый формат обучения"
+        verbose_name=_("Предпочитаемый формат обучения")
     )
-    
+
     # ✅ НОВЫЕ ПОЛЯ: Контакты для связи
     telegram = models.CharField(
         max_length=100,
         blank=True,
         verbose_name="Telegram",
-        help_text="Ваш Telegram username (@username) или номер телефона"
+        help_text=_("Ваш Telegram username (@username) или номер телефона")
     )
-    
+
     whatsapp = models.CharField(
         max_length=20,
         blank=True,
         verbose_name="WhatsApp",
-        help_text="Номер WhatsApp для связи (+998 90 123 45 67)"
+        help_text=_("Номер WhatsApp для связи (+998 90 123 45 67)")
     )
-    
+
     is_active = models.BooleanField(
         default=True,
-        verbose_name="Активный профиль",
-        help_text="Ищет ли ученик учителя в данный момент"
+        verbose_name=_("Активный профиль"),
+        help_text=_("Ищет ли ученик учителя в данный момент")
     )
-    
+
     available_weekdays = models.CharField(
         max_length=20,
         default='1,2,3,4,5,6,7',
         blank=True,
-        verbose_name="Доступные дни недели",
-        help_text="Дни недели через запятую (1-7)"
+        verbose_name=_("Доступные дни недели"),
+        help_text=_("Дни недели через запятую (1-7)")
     )
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = 'Профиль ученика'
-        verbose_name_plural = 'Профили учеников'
+        verbose_name = _('Профиль ученика')
+        verbose_name_plural = _('Профили учеников')
         ordering = ['-created_at']
         # ⚡ ОПТИМИЗАЦИЯ: Индексы для ускорения поиска и фильтрации
         indexes = [
@@ -1495,8 +1498,8 @@ class Conversation(models.Model):
     class Meta:
         unique_together = ['teacher', 'student']
         ordering = ['-updated_at']
-        verbose_name = 'Переписка'
-        verbose_name_plural = 'Переписки'
+        verbose_name = _('Переписка')
+        verbose_name_plural = _('Переписки')
 
     def __str__(self):
         return f"Переписка: {self.student.get_full_name()} - {self.teacher.user.get_full_name()}"
@@ -1521,8 +1524,8 @@ class Message(models.Model):
 
     class Meta:
         ordering = ['-created_at']
-        verbose_name = 'Сообщение'
-        verbose_name_plural = 'Сообщения'
+        verbose_name = _('Сообщение')
+        verbose_name_plural = _('Сообщения')
         indexes = [
             models.Index(fields=['conversation', '-created_at']),
             models.Index(fields=['sender', '-created_at']),
@@ -1550,12 +1553,12 @@ class Review(models.Model):
     booking = models.OneToOneField(
         'Booking', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='review',
-        help_text="Урок, после которого оставлен отзыв",
+        help_text=_("Урок, после которого оставлен отзыв"),
     )
 
     rating = models.PositiveIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(5)],
-        help_text="Оценка от 1 до 5"
+        help_text=_("Оценка от 1 до 5")
     )
     comment = models.TextField(max_length=1000, blank=True)
 
@@ -1564,7 +1567,7 @@ class Review(models.Model):
     communication_rating = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     punctuality_rating = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
 
-    is_verified = models.BooleanField(default=False, help_text="Проверенный отзыв (был реальный урок)")
+    is_verified = models.BooleanField(default=False, help_text=_("Проверенный отзыв (был реальный урок)"))
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -1573,8 +1576,8 @@ class Review(models.Model):
         # Старый unique_together(teacher,student,subject) убран: для подписки
         # с 8 уроками ученик может оставить 8 отдельных отзывов (по одному на урок).
         ordering = ['-created_at']
-        verbose_name = 'Отзыв'
-        verbose_name_plural = 'Отзывы'
+        verbose_name = _('Отзыв')
+        verbose_name_plural = _('Отзывы')
         indexes = [
             models.Index(fields=['teacher', '-created_at']),
             models.Index(fields=['student', '-created_at']),
@@ -1591,8 +1594,8 @@ class Favorite(models.Model):
 
     class Meta:
         unique_together = ['student', 'teacher']
-        verbose_name = 'Избранный учитель'
-        verbose_name_plural = 'Избранные учителя'
+        verbose_name = _('Избранный учитель')
+        verbose_name_plural = _('Избранные учителя')
 
     def __str__(self):
         return f"{self.student.get_full_name()} -> {self.teacher.user.get_full_name()}"
@@ -1606,8 +1609,8 @@ class FavoriteStudent(models.Model):
 
     class Meta:
         unique_together = ['teacher', 'student']
-        verbose_name = 'Избранный ученик'
-        verbose_name_plural = 'Избранные ученики'
+        verbose_name = _('Избранный ученик')
+        verbose_name_plural = _('Избранные ученики')
 
     def __str__(self):
         return f"{self.teacher.user.get_full_name()} -> {self.student.user.get_full_name()}"
@@ -1623,18 +1626,18 @@ class LeadOptOut(models.Model):
     """
     student = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='lead_opt_outs',
-        verbose_name='Ученик',
+        verbose_name=_('Ученик'),
     )
     teacher = models.ForeignKey(
         TeacherProfile, on_delete=models.CASCADE, related_name='lead_opt_outs',
-        verbose_name='Учитель',
+        verbose_name=_('Учитель'),
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ['student', 'teacher']
-        verbose_name = 'Отказ ученика от лида'
-        verbose_name_plural = 'Отказы учеников от лидов'
+        verbose_name = _('Отказ ученика от лида')
+        verbose_name_plural = _('Отказы учеников от лидов')
         indexes = [
             models.Index(fields=['teacher', 'student']),
         ]
@@ -1650,59 +1653,59 @@ class TelegramUser(models.Model):
         related_name='telegram_user',
         null=True,
         blank=True,
-        verbose_name='Связанный пользователь'
+        verbose_name=_('Связанный пользователь')
     )
     telegram_id = models.BigIntegerField(
         unique=True,
-        verbose_name='Telegram ID',
-        help_text='Уникальный ID пользователя в Telegram'
+        verbose_name=_('Telegram ID'),
+        help_text=_('Уникальный ID пользователя в Telegram')
     )
     telegram_username = models.CharField(
         max_length=100,
         blank=True,
         null=True,
-        verbose_name='Username в Telegram'
+        verbose_name=_('Username в Telegram')
     )
     first_name = models.CharField(
         max_length=200,
         blank=True,
-        verbose_name='Имя в Telegram'
+        verbose_name=_('Имя в Telegram')
     )
     last_name = models.CharField(
         max_length=200,
         blank=True,
-        verbose_name='Фамилия в Telegram'
+        verbose_name=_('Фамилия в Telegram')
     )
     language_code = models.CharField(
         max_length=10,
         blank=True,
         null=True,
-        verbose_name='Язык интерфейса'
+        verbose_name=_('Язык интерфейса')
     )
-    
+
     # Настройки уведомлений
     notifications_enabled = models.BooleanField(
         default=True,
-        verbose_name='Уведомления включены'
+        verbose_name=_('Уведомления включены')
     )
-    
+
     # Статистика
     started_bot = models.BooleanField(
         default=False,
-        verbose_name='Нажал Start в боте'
+        verbose_name=_('Нажал Start в боте')
     )
     last_interaction = models.DateTimeField(
         auto_now=True,
-        verbose_name='Последнее взаимодействие'
+        verbose_name=_('Последнее взаимодействие')
     )
     created_at = models.DateTimeField(
         auto_now_add=True,
-        verbose_name='Дата регистрации в боте'
+        verbose_name=_('Дата регистрации в боте')
     )
-    
+
     class Meta:
-        verbose_name = 'Telegram пользователь'
-        verbose_name_plural = 'Telegram пользователи'
+        verbose_name = _('Telegram пользователь')
+        verbose_name_plural = _('Telegram пользователи')
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['telegram_id']),
@@ -1721,23 +1724,23 @@ class ProfileView(models.Model):
     Записывает каждый просмотр профиля учителя или ученика
     """
     PROFILE_TYPES = [
-        ('teacher', 'Профиль учителя'),
-        ('student', 'Профиль ученика'),
+        ('teacher', _('Профиль учителя')),
+        ('student', _('Профиль ученика')),
     ]
-    
+
     # Общие поля
-    profile_type = models.CharField(max_length=10, choices=PROFILE_TYPES, verbose_name='Тип профиля')
-    viewer_ip = models.GenericIPAddressField(verbose_name='IP адрес просмотревшего', null=True, blank=True)
+    profile_type = models.CharField(max_length=10, choices=PROFILE_TYPES, verbose_name=_('Тип профиля'))
+    viewer_ip = models.GenericIPAddressField(verbose_name=_('IP адрес просмотревшего'), null=True, blank=True)
     viewer_user = models.ForeignKey(
-        User, 
-        on_delete=models.SET_NULL, 
-        null=True, 
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
         blank=True,
         related_name='profile_views_made',
-        verbose_name='Пользователь (если авторизован)'
+        verbose_name=_('Пользователь (если авторизован)')
     )
-    viewed_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата и время просмотра')
-    
+    viewed_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Дата и время просмотра'))
+
     # Связи с профилями
     teacher_profile = models.ForeignKey(
         TeacherProfile,
@@ -1745,7 +1748,7 @@ class ProfileView(models.Model):
         null=True,
         blank=True,
         related_name='profile_views',
-        verbose_name='Профиль учителя'
+        verbose_name=_('Профиль учителя')
     )
     student_profile = models.ForeignKey(
         StudentProfile,
@@ -1753,7 +1756,7 @@ class ProfileView(models.Model):
         null=True,
         blank=True,
         related_name='profile_views',
-        verbose_name='Профиль ученика'
+        verbose_name=_('Профиль ученика')
     )
 
     # Дата просмотра (без времени) — для дедупликации.
@@ -1762,23 +1765,23 @@ class ProfileView(models.Model):
     viewed_date = models.DateField(
         default=timezone.now,
         db_index=True,
-        verbose_name='Дата просмотра'
+        verbose_name=_('Дата просмотра')
     )
     views_count = models.PositiveIntegerField(
         default=1,
-        verbose_name='Количество просмотров в этот день'
+        verbose_name=_('Количество просмотров в этот день')
     )
     last_viewed_at = models.DateTimeField(
         default=timezone.now,
-        verbose_name='Время последнего просмотра в этот день'
+        verbose_name=_('Время последнего просмотра в этот день')
     )
 
     # Дополнительная информация
-    user_agent = models.TextField(blank=True, verbose_name='User Agent браузера')
+    user_agent = models.TextField(blank=True, verbose_name=_('User Agent браузера'))
 
     class Meta:
-        verbose_name = 'Просмотр профиля'
-        verbose_name_plural = 'Просмотры профилей'
+        verbose_name = _('Просмотр профиля')
+        verbose_name_plural = _('Просмотры профилей')
         ordering = ['-viewed_at']
         indexes = [
             models.Index(fields=['-viewed_at']),
@@ -1821,19 +1824,19 @@ class NotificationQueue(models.Model):
     Обеспечивает надёжную доставку с повторными попытками
     """
     STATUS_CHOICES = [
-        ('pending', 'Ожидает отправки'),
-        ('processing', 'В обработке'),
-        ('sent', 'Отправлено'),
-        ('failed', 'Ошибка'),
-        ('cancelled', 'Отменено'),
+        ('pending', _('Ожидает отправки')),
+        ('processing', _('В обработке')),
+        ('sent', _('Отправлено')),
+        ('failed', _('Ошибка')),
+        ('cancelled', _('Отменено')),
     ]
-    
+
     NOTIFICATION_TYPES = [
-        ('new_message', 'Новое сообщение'),
-        ('new_review', 'Новый отзыв'),
-        ('profile_view', 'Просмотр профиля'),
-        ('system', 'Системное уведомление'),
-        ('broadcast', 'Массовая рассылка'),
+        ('new_message', _('Новое сообщение')),
+        ('new_review', _('Новый отзыв')),
+        ('profile_view', _('Просмотр профиля')),
+        ('system', _('Системное уведомление')),
+        ('broadcast', _('Массовая рассылка')),
     ]
     
     # Основные поля
@@ -1842,81 +1845,81 @@ class NotificationQueue(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name='telegram_notifications',
-        verbose_name='Получатель'
+        verbose_name=_('Получатель')
     )
     notification_type = models.CharField(
         max_length=20,
         choices=NOTIFICATION_TYPES,
         default='new_message',
-        verbose_name='Тип уведомления'
+        verbose_name=_('Тип уведомления')
     )
-    
+
     # Содержимое
-    title = models.CharField(max_length=200, verbose_name='Заголовок')
-    message = models.TextField(verbose_name='Текст сообщения')
+    title = models.CharField(max_length=200, verbose_name=_('Заголовок'))
+    message = models.TextField(verbose_name=_('Текст сообщения'))
     data = models.JSONField(
         default=dict,
         blank=True,
-        verbose_name='Дополнительные данные',
-        help_text='JSON с доп. информацией (sender_id, conversation_id, url и т.д.)'
+        verbose_name=_('Дополнительные данные'),
+        help_text=_('JSON с доп. информацией (sender_id, conversation_id, url и т.д.)')
     )
-    
+
     # Статус обработки
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
         default='pending',
         db_index=True,
-        verbose_name='Статус'
+        verbose_name=_('Статус')
     )
     retry_count = models.PositiveIntegerField(
         default=0,
-        verbose_name='Количество попыток'
+        verbose_name=_('Количество попыток')
     )
     max_retries = models.PositiveIntegerField(
         default=5,
-        verbose_name='Максимум попыток'
+        verbose_name=_('Максимум попыток')
     )
     last_error = models.TextField(
         blank=True,
-        verbose_name='Последняя ошибка'
+        verbose_name=_('Последняя ошибка')
     )
-    
+
     # Временные метки
     created_at = models.DateTimeField(
         auto_now_add=True,
         db_index=True,
-        verbose_name='Создано'
+        verbose_name=_('Создано')
     )
     scheduled_at = models.DateTimeField(
         default=timezone.now,
         db_index=True,
-        verbose_name='Запланировано на',
-        help_text='Время когда уведомление должно быть отправлено'
+        verbose_name=_('Запланировано на'),
+        help_text=_('Время когда уведомление должно быть отправлено')
     )
     processing_started_at = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name='Начало обработки'
+        verbose_name=_('Начало обработки')
     )
     sent_at = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name='Отправлено'
+        verbose_name=_('Отправлено')
     )
-    
+
     # Идемпотентность
     idempotency_key = models.CharField(
         max_length=255,
         unique=True,
         db_index=True,
-        verbose_name='Ключ идемпотентности',
-        help_text='Уникальный ключ для предотвращения дублирования'
+        verbose_name=_('Ключ идемпотентности'),
+        help_text=_('Уникальный ключ для предотвращения дублирования')
     )
-    
+
     class Meta:
-        verbose_name = 'Уведомление в очереди'
-        verbose_name_plural = 'Очередь уведомлений'
+        verbose_name = _('Уведомление в очереди')
+        verbose_name_plural = _('Очередь уведомлений')
         ordering = ['scheduled_at', 'created_at']
         indexes = [
             models.Index(fields=['status', 'scheduled_at']),
@@ -1967,51 +1970,51 @@ class NotificationLog(models.Model):
     Для аудита и отладки
     """
     STATUS_CHOICES = [
-        ('success', 'Успешно'),
-        ('error', 'Ошибка'),
-        ('skipped', 'Пропущено'),
+        ('success', _('Успешно')),
+        ('error', _('Ошибка')),
+        ('skipped', _('Пропущено')),
     ]
-    
+
     notification = models.ForeignKey(
         NotificationQueue,
         on_delete=models.CASCADE,
         related_name='logs',
-        verbose_name='Уведомление'
+        verbose_name=_('Уведомление')
     )
-    attempt_number = models.PositiveIntegerField(verbose_name='Номер попытки')
+    attempt_number = models.PositiveIntegerField(verbose_name=_('Номер попытки'))
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
-        verbose_name='Статус'
+        verbose_name=_('Статус')
     )
     error_message = models.TextField(
         blank=True,
-        verbose_name='Сообщение об ошибке'
+        verbose_name=_('Сообщение об ошибке')
     )
     telegram_message_id = models.BigIntegerField(
         null=True,
         blank=True,
-        verbose_name='ID сообщения в Telegram'
+        verbose_name=_('ID сообщения в Telegram')
     )
     response_data = models.JSONField(
         default=dict,
         blank=True,
-        verbose_name='Данные ответа'
+        verbose_name=_('Данные ответа')
     )
     processing_time_ms = models.PositiveIntegerField(
         null=True,
         blank=True,
-        verbose_name='Время обработки (мс)'
+        verbose_name=_('Время обработки (мс)')
     )
     timestamp = models.DateTimeField(
         auto_now_add=True,
         db_index=True,
-        verbose_name='Время попытки'
+        verbose_name=_('Время попытки')
     )
-    
+
     class Meta:
-        verbose_name = 'Лог уведомления'
-        verbose_name_plural = 'Логи уведомлений'
+        verbose_name = _('Лог уведомления')
+        verbose_name_plural = _('Логи уведомлений')
         ordering = ['-timestamp']
         indexes = [
             models.Index(fields=['notification', '-timestamp']),
@@ -2025,7 +2028,7 @@ class SubjectSearchLog(models.Model):
     """Логирование поисков предметов для аналитики"""
     query = models.CharField(
         max_length=200,
-        verbose_name='Поисковый запрос',
+        verbose_name=_('Поисковый запрос'),
         db_index=True,
         blank=True,
         null=True
@@ -2036,22 +2039,22 @@ class SubjectSearchLog(models.Model):
         null=True,
         blank=True,
         related_name='subject_searches',
-        verbose_name='Пользователь'
+        verbose_name=_('Пользователь')
     )
-    ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name='IP адрес')
-    found_results_count = models.PositiveIntegerField(default=0, verbose_name='Найдено результатов')
+    ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name=_('IP адрес'))
+    found_results_count = models.PositiveIntegerField(default=0, verbose_name=_('Найдено результатов'))
     selected_subject = models.ForeignKey(
         Subject,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        verbose_name='Выбранный предмет'
+        verbose_name=_('Выбранный предмет')
     )
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name='Дата поиска')
-    
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name=_('Дата поиска'))
+
     class Meta:
-        verbose_name = 'Лог поиска предметов'
-        verbose_name_plural = 'Логи поиска предметов'
+        verbose_name = _('Лог поиска предметов')
+        verbose_name_plural = _('Логи поиска предметов')
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['query', '-created_at']),
@@ -2102,83 +2105,83 @@ class Notification(models.Model):
     Управляется через Django Admin
     """
     TARGET_CHOICES = [
-        ('all', 'Все пользователи'),
-        ('students', 'Только ученики'),
-        ('teachers', 'Только учителя'),
-        ('admins', 'Только администраторы'),
-        ('specific_user', 'Конкретный пользователь'),
+        ('all', _('Все пользователи')),
+        ('students', _('Только ученики')),
+        ('teachers', _('Только учителя')),
+        ('admins', _('Только администраторы')),
+        ('specific_user', _('Конкретный пользователь')),
     ]
-    
+
     title = models.CharField(
         max_length=200,
-        verbose_name='Заголовок',
-        help_text='Краткий заголовок уведомления'
+        verbose_name=_('Заголовок'),
+        help_text=_('Краткий заголовок уведомления')
     )
-    
+
     short_text = models.CharField(
         max_length=300,
-        verbose_name='Краткий текст',
-        help_text='Текст для отображения в списке уведомлений'
+        verbose_name=_('Краткий текст'),
+        help_text=_('Текст для отображения в списке уведомлений')
     )
-    
+
     full_text = models.TextField(
-        verbose_name='Полный текст',
-        help_text='Подробное описание уведомления'
+        verbose_name=_('Полный текст'),
+        help_text=_('Подробное описание уведомления')
     )
-    
+
     image = models.ImageField(
         upload_to='notifications/',
         blank=True,
         null=True,
-        verbose_name='Изображение',
-        help_text='Опциональное изображение к уведомлению'
+        verbose_name=_('Изображение'),
+        help_text=_('Опциональное изображение к уведомлению')
     )
-    
+
     action_url = models.URLField(
         blank=True,
         null=True,
-        verbose_name='Ссылка действия',
-        help_text='URL для перехода при клике (опционально)'
+        verbose_name=_('Ссылка действия'),
+        help_text=_('URL для перехода при клике (опционально)')
     )
-    
+
     target = models.CharField(
         max_length=20,
         choices=TARGET_CHOICES,
         default='all',
-        verbose_name='Целевая аудитория'
+        verbose_name=_('Целевая аудитория')
     )
-    
+
     is_active = models.BooleanField(
         default=True,
-        verbose_name='Активно',
-        help_text='Только активные уведомления видны пользователям'
+        verbose_name=_('Активно'),
+        help_text=_('Только активные уведомления видны пользователям')
     )
-    
+
     priority = models.IntegerField(
         default=0,
-        verbose_name='Приоритет',
-        help_text='Чем выше число, тем выше в списке. 0 = обычный приоритет'
+        verbose_name=_('Приоритет'),
+        help_text=_('Чем выше число, тем выше в списке. 0 = обычный приоритет')
     )
-    
+
     created_at = models.DateTimeField(
         auto_now_add=True,
-        verbose_name='Создано'
+        verbose_name=_('Создано')
     )
-    
+
     updated_at = models.DateTimeField(
         auto_now=True,
-        verbose_name='Обновлено'
+        verbose_name=_('Обновлено')
     )
-    
+
     created_by = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='created_notifications',
-        verbose_name='Создал'
+        verbose_name=_('Создал')
     )
-    
+
     # Поле для персонализированных уведомлений
     target_user = models.ForeignKey(
         User,
@@ -2186,8 +2189,8 @@ class Notification(models.Model):
         null=True,
         blank=True,
         related_name='personal_notifications',
-        verbose_name='Конкретный пользователь',
-        help_text='Если указан, уведомление будет видно только этому пользователю'
+        verbose_name=_('Конкретный пользователь'),
+        help_text=_('Если указан, уведомление будет видно только этому пользователю')
     )
 
     # Связанное бронирование — позволяет действовать (подтвердить/отклонить)
@@ -2198,13 +2201,60 @@ class Notification(models.Model):
         null=True,
         blank=True,
         related_name='notifications',
-        verbose_name='Связанное бронирование',
-        help_text='Если уведомление о брони — позволяет подтвердить/отклонить прямо из уведомления'
+        verbose_name=_('Связанное бронирование'),
+        help_text=_('Если уведомление о брони — позволяет подтвердить/отклонить прямо из уведомления')
     )
 
+    class Category(models.TextChoices):
+        GENERAL = 'general', _('Общее')
+        BOOKING = 'booking', _('Бронирование')
+        LESSON = 'lesson', _('Урок')
+        PAYMENT_IN = 'payment_in', _('Пополнение')
+        PAYMENT_OUT = 'payment_out', _('Списание')
+        REVIEW = 'review', _('Отзыв')
+        MODERATION = 'moderation', _('Модерация')
+        REMINDER = 'reminder', _('Напоминание')
+        SUBSCRIPTION = 'subscription', _('Подписка')
+        SUCCESS = 'success', _('Успех')
+        WARNING = 'warning', _('Предупреждение')
+
+    # Категория определяет UI-иконку в списке уведомлений (вместо эмодзи в тексте).
+    category = models.CharField(
+        max_length=20,
+        choices=Category.choices,
+        default=Category.GENERAL,
+        verbose_name=_('Категория'),
+        help_text=_('Определяет иконку уведомления в интерфейсе'),
+    )
+
+    # Категория → Font Awesome иконка + тон оформления (info/success/danger/warning).
+    _ICON_MAP = {
+        'general': ('fa-bell', 'info'),
+        'booking': ('fa-calendar-check', 'info'),
+        'lesson': ('fa-chalkboard-user', 'info'),
+        'payment_in': ('fa-wallet', 'success'),
+        'payment_out': ('fa-money-bill-transfer', 'warning'),
+        'review': ('fa-star', 'warning'),
+        'moderation': ('fa-user-clock', 'info'),
+        'reminder': ('fa-clock', 'info'),
+        'subscription': ('fa-box', 'info'),
+        'success': ('fa-circle-check', 'success'),
+        'warning': ('fa-triangle-exclamation', 'warning'),
+    }
+
+    @property
+    def icon(self):
+        """Font Awesome класс иконки для категории уведомления."""
+        return self._ICON_MAP.get(self.category, self._ICON_MAP['general'])[0]
+
+    @property
+    def icon_tone(self):
+        """Цветовой тон иконки: info / success / warning / danger."""
+        return self._ICON_MAP.get(self.category, self._ICON_MAP['general'])[1]
+
     class Meta:
-        verbose_name = 'Уведомление'
-        verbose_name_plural = 'Уведомления'
+        verbose_name = _('Уведомление')
+        verbose_name_plural = _('Уведомления')
         ordering = ['-priority', '-created_at']
         indexes = [
             models.Index(fields=['is_active', 'target']),
@@ -2349,11 +2399,11 @@ class DailyReminderTemplate(models.Model):
     соответствующего периода и языка.
     """
     PERIOD_CHOICES = [
-        ('morning', 'Утро'),
-        ('evening', 'Вечер'),
+        ('morning', _('Утро')),
+        ('evening', _('Вечер')),
     ]
     LANGUAGE_CHOICES = [
-        ('ru', 'Русский'),
+        ('ru', _('Русский')),
         ('uz', "O‘zbek"),
         ('en', 'English'),
     ]
@@ -2361,38 +2411,38 @@ class DailyReminderTemplate(models.Model):
     period = models.CharField(
         max_length=10,
         choices=PERIOD_CHOICES,
-        verbose_name='Период',
+        verbose_name=_('Период'),
     )
     language = models.CharField(
         max_length=2,
         choices=LANGUAGE_CHOICES,
-        verbose_name='Язык',
+        verbose_name=_('Язык'),
     )
     text = models.TextField(
-        verbose_name='Текст сообщения',
-        help_text=(
+        verbose_name=_('Текст сообщения'),
+        help_text=_(
             'Поддерживается Markdown: *жирный*, _курсив_. '
             'Можно использовать эмодзи и переводы строк.'
         ),
     )
     is_active = models.BooleanField(
         default=True,
-        verbose_name='Активен',
-        help_text='Если выключено — шаблон не попадает в рассылку.',
+        verbose_name=_('Активен'),
+        help_text=_('Если выключено — шаблон не попадает в рассылку.'),
     )
     note = models.CharField(
         max_length=200,
         blank=True,
         default='',
-        verbose_name='Заметка для админа',
-        help_text='Необязательное описание — только для вас.',
+        verbose_name=_('Заметка для админа'),
+        help_text=_('Необязательное описание — только для вас.'),
     )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создан')
-    updated_at = models.DateTimeField(auto_now=True, verbose_name='Обновлён')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Создан'))
+    updated_at = models.DateTimeField(auto_now=True, verbose_name=_('Обновлён'))
 
     class Meta:
-        verbose_name = 'Шаблон ежедневного напоминания'
-        verbose_name_plural = 'Шаблоны ежедневных напоминаний'
+        verbose_name = _('Шаблон ежедневного напоминания')
+        verbose_name_plural = _('Шаблоны ежедневных напоминаний')
         ordering = ['period', 'language', '-is_active', '-updated_at']
         indexes = [
             models.Index(fields=['period', 'language', 'is_active']),
@@ -2410,24 +2460,24 @@ class NotificationRead(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name='read_notifications',
-        verbose_name='Пользователь'
+        verbose_name=_('Пользователь')
     )
-    
+
     notification = models.ForeignKey(
         Notification,
         on_delete=models.CASCADE,
         related_name='read_by_users',
-        verbose_name='Уведомление'
+        verbose_name=_('Уведомление')
     )
-    
+
     read_at = models.DateTimeField(
         auto_now_add=True,
-        verbose_name='Прочитано'
+        verbose_name=_('Прочитано')
     )
 
     class Meta:
-        verbose_name = 'Прочитанное уведомление'
-        verbose_name_plural = 'Прочитанные уведомления'
+        verbose_name = _('Прочитанное уведомление')
+        verbose_name_plural = _('Прочитанные уведомления')
         unique_together = ['user', 'notification']
         indexes = [
             models.Index(fields=['user', 'notification']),
@@ -2450,29 +2500,29 @@ class WizardDraft(models.Model):
     session_key = models.CharField(
         max_length=64,
         primary_key=True,
-        verbose_name='Ключ сессии Django'
+        verbose_name=_('Ключ сессии Django')
     )
     wizard_name = models.CharField(
         max_length=50,
         default='teacher_registration',
-        help_text='Идентификатор wizard (на случай если их будет несколько)'
+        help_text=_('Идентификатор wizard (на случай если их будет несколько)')
     )
     current_step = models.CharField(
         max_length=50,
         blank=True,
-        help_text='На каком шаге был пользователь'
+        help_text=_('На каком шаге был пользователь')
     )
     data = models.JSONField(
         default=dict,
         blank=True,
-        help_text='Сериализованные данные wizard (storage.data)'
+        help_text=_('Сериализованные данные wizard (storage.data)')
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = 'Черновик регистрации'
-        verbose_name_plural = 'Черновики регистрации'
+        verbose_name = _('Черновик регистрации')
+        verbose_name_plural = _('Черновики регистрации')
         ordering = ['-updated_at']
         indexes = [
             models.Index(fields=['-updated_at']),
@@ -2510,26 +2560,26 @@ class TimeSlot(models.Model):
     Не пересекается с другими слотами того же учителя.
     """
     STATUS_CHOICES = [
-        ('free', 'Свободен'),
-        ('held', 'Зарезервирован (ожидает подтверждения)'),
-        ('booked', 'Забронирован'),
-        ('blocked', 'Заблокирован учителем'),
+        ('free', _('Свободен')),
+        ('held', _('Зарезервирован (ожидает подтверждения)')),
+        ('booked', _('Забронирован')),
+        ('blocked', _('Заблокирован учителем')),
     ]
 
     teacher = models.ForeignKey(
         TeacherProfile,
         on_delete=models.CASCADE,
         related_name='time_slots',
-        verbose_name='Учитель',
+        verbose_name=_('Учитель'),
     )
-    start_at = models.DateTimeField(verbose_name='Начало')
-    end_at = models.DateTimeField(verbose_name='Конец')
+    start_at = models.DateTimeField(verbose_name=_('Начало'))
+    end_at = models.DateTimeField(verbose_name=_('Конец'))
     status = models.CharField(
         max_length=10,
         choices=STATUS_CHOICES,
         default='free',
         db_index=True,
-        verbose_name='Статус',
+        verbose_name=_('Статус'),
     )
     # Дедлайн удержания слота (до 1ч до урока). Заполнено когда status='held'.
     hold_expires_at = models.DateTimeField(null=True, blank=True, db_index=True)
@@ -2538,8 +2588,8 @@ class TimeSlot(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = 'Временной слот'
-        verbose_name_plural = 'Временные слоты'
+        verbose_name = _('Временной слот')
+        verbose_name_plural = _('Временные слоты')
         ordering = ['start_at']
         indexes = [
             models.Index(fields=['teacher', 'start_at']),
@@ -2584,15 +2634,16 @@ class Booking(models.Model):
     OneToOneField на slot — гарантирует что один слот = одна заявка.
     """
     STATUS_CHOICES = [
-        ('pending', 'Ожидает подтверждения учителя'),
-        ('confirmed', 'Подтверждено'),
-        ('completed', 'Завершён'),
-        ('cancelled_by_student', 'Отменено учеником'),
-        ('cancelled_by_teacher', 'Отменено учителем'),
-        ('rescheduled', 'Перенесено'),
-        ('expired', 'Заявка истекла (не подтверждена до начала урока)'),
-        ('no_show_student', 'Ученик не пришёл'),
-        ('no_show_teacher', 'Учитель не пришёл'),
+        ('pending', _('Ожидает подтверждения учителя')),
+        ('confirmed', _('Подтверждено')),
+        ('completed', _('Завершён')),
+        ('cancelled_by_student', _('Отменено учеником')),
+        ('cancelled_by_teacher', _('Отменено учителем')),
+        ('rescheduled', _('Перенесено')),
+        ('expired', _('Заявка истекла (не подтверждена до начала урока)')),
+        ('no_show_student', _('Ученик не пришёл')),
+        ('no_show_teacher', _('Учитель не пришёл')),
+        ('not_held', _('Не состоялся (никто не пришёл)')),
     ]
 
     # Активные статусы — slot может иметь только один Booking в этих статусах.
@@ -2605,20 +2656,20 @@ class Booking(models.Model):
         TimeSlot,
         on_delete=models.CASCADE,
         related_name='bookings',
-        verbose_name='Слот',
+        verbose_name=_('Слот'),
     )
     student = models.ForeignKey(
         'User',
         on_delete=models.CASCADE,
         related_name='bookings',
-        verbose_name='Ученик',
+        verbose_name=_('Ученик'),
     )
     subject = models.ForeignKey(
         Subject,
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='bookings',
-        verbose_name='Предмет',
+        verbose_name=_('Предмет'),
     )
 
     status = models.CharField(
@@ -2633,16 +2684,16 @@ class Booking(models.Model):
 
     student_message = models.TextField(
         blank=True, max_length=1000,
-        help_text='Сообщение от ученика при бронировании',
+        help_text=_('Сообщение от ученика при бронировании'),
     )
     teacher_reply = models.TextField(
         blank=True, max_length=1000,
-        help_text='Комментарий учителя при подтверждении/отказе',
+        help_text=_('Комментарий учителя при подтверждении/отказе'),
     )
 
     is_trial = models.BooleanField(
         default=False,
-        verbose_name='Пробный урок',
+        verbose_name=_('Пробный урок'),
     )
 
     # Phase 9.5: цена платного пробного, снэпшот на момент бронирования.
@@ -2650,8 +2701,8 @@ class Booking(models.Model):
     trial_price_paid = models.DecimalField(
         max_digits=12, decimal_places=2,
         null=True, blank=True,
-        verbose_name='Оплачено за пробный',
-        help_text='Снэпшот цены платного пробного на момент бронирования. NULL = бесплатный или не пробный.',
+        verbose_name=_('Оплачено за пробный'),
+        help_text=_('Снэпшот цены платного пробного на момент бронирования. NULL = бесплатный или не пробный.'),
     )
 
     # Phase 3: связь с подпиской. Null = разовая бронь (trial или старая логика).
@@ -2660,7 +2711,7 @@ class Booking(models.Model):
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='bookings',
-        verbose_name='Подписка',
+        verbose_name=_('Подписка'),
     )
 
     # Phase 5: ссылка на видеоконференцию (Google Meet/Zoom)
@@ -2680,6 +2731,12 @@ class Booking(models.Model):
     # Для прозрачности и разбора споров; жёстко выплату не блокируют.
     teacher_present_seconds = models.PositiveIntegerField(default=0)
     student_present_seconds = models.PositiveIntegerField(default=0)
+
+    # Неявка ученика «прощена» (ТЗ §6): одна из первых N неявок за окно.
+    # True → урок возвращается ученику: НЕ списывается из пакета, учителю НЕ
+    # платится, не учитывается в квоте брони (ученик выбирает новую дату).
+    # False у обычной no_show_student (4-я+) → урок засчитан, оплата учителю.
+    no_show_forgiven = models.BooleanField(default=False, db_index=True)
 
     # Аудит переносов: сколько раз эту бронь переносил ученик и когда последний раз.
     reschedule_count = models.PositiveSmallIntegerField(default=0)
@@ -3056,6 +3113,7 @@ class Booking(models.Model):
             locked.ended_at = timezone.now()
             locked.save(update_fields=['status', 'ended_at', 'updated_at'])
             self.refresh_from_db()
+        LessonEvent.log(self, 'settle_completed')
         try:
             self.request_review()
         except Exception:
@@ -3081,6 +3139,10 @@ class Booking(models.Model):
         type(self).objects.filter(pk=self.pk).update(**updates)
         for field, value in updates.items():
             setattr(self, field, value)
+        LessonEvent.log(
+            self, 'join_teacher' if is_teacher else 'join_student',
+            actor='teacher' if is_teacher else 'student',
+        )
 
     def add_presence_seconds(self, *, is_teacher: bool, seconds: int):
         """Накопить фактические секунды присутствия (по событию выхода из звонка).
@@ -3104,9 +3166,13 @@ class Booking(models.Model):
         """Решает судьбу confirmed-урока после end_at на основе присутствия.
 
         Для урока в нашем Jitsi (присутствие отслеживается):
-          * учитель не подключился            → no_show_teacher (возврат ученику);
-          * учитель был, ученик не подключился → no_show_student (урок доставлен,
-            выплата учителю — ученик потерял урок из пакета);
+          * никто не подключился               → not_held (ТЗ §8: возврат ученику,
+            никому не начисляется);
+          * учитель не подключился             → no_show_teacher (ТЗ §7: возврат);
+          * учитель был, ученик не подключился → no_show_student (ТЗ §6). Первые
+            STUDENT_NO_SHOW_FORGIVE_LIMIT неявок за окно «прощаются»
+            (no_show_forgiven=True: урок возвращается ученику, оплаты нет);
+            начиная с (N+1)-й — урок засчитан учителю, ученик теряет урок;
           * оба подключились                   → completed.
 
         Для внешних ссылок (Zoom и т.п.) сигнала о присутствии нет → completed
@@ -3122,22 +3188,74 @@ class Booking(models.Model):
             if locked.is_jitsi_meeting():
                 teacher_absent = locked.teacher_joined_at is None
                 student_absent = locked.student_joined_at is None
+                now = timezone.now()
+                if teacher_absent and student_absent:
+                    # ТЗ §8 — не состоялся: деньги остаются в эскроу (вернутся
+                    # ученику), урок не списывается и не учитывается в квоте.
+                    locked.status = 'not_held'
+                    locked.ended_at = now
+                    locked.save(update_fields=['status', 'ended_at', 'updated_at'])
+                    self.refresh_from_db()
+                    LessonEvent.log(self, 'settle_not_held')
+                    return 'not_held'
                 if teacher_absent:
                     locked.status = 'no_show_teacher'
-                    locked.ended_at = timezone.now()
+                    locked.ended_at = now
                     locked.save(update_fields=['status', 'ended_at', 'updated_at'])
                     self.refresh_from_db()
+                    LessonEvent.log(self, 'settle_no_show_teacher')
                     return 'no_show_teacher'
                 if student_absent:
-                    # Учитель пришёл, ученик — нет: урок засчитан учителю.
+                    # ТЗ §6: «прощаем» неявку, только если это урок пакета —
+                    # у пакета есть что «вернуть». Пробные/разовые не прощаем.
+                    forgiven = bool(locked.subscription_id) and \
+                        type(self).should_forgive_student_no_show(locked.student_id, now)
                     locked.status = 'no_show_student'
-                    locked.ended_at = timezone.now()
-                    locked.save(update_fields=['status', 'ended_at', 'updated_at'])
+                    locked.no_show_forgiven = forgiven
+                    locked.ended_at = now
+                    locked.save(update_fields=[
+                        'status', 'no_show_forgiven', 'ended_at', 'updated_at',
+                    ])
                     self.refresh_from_db()
+                    LessonEvent.log(
+                        self,
+                        'no_show_forgiven' if forgiven else 'no_show_consumed',
+                    )
                     return 'no_show_student'
         # Учитель присутствовал (или присутствие не отслеживается) — завершаем штатно.
         self.mark_completed()
         return self.status
+
+    @staticmethod
+    def count_student_no_shows(student_id, *, now=None, days=None) -> int:
+        """Сколько неявок (no_show_student) у ученика за окно последних `days` дней.
+
+        Считаем по времени НАЧАЛА урока (slot.start_at). Учитываются обе
+        разновидности неявки — и прощённые, и засчитанные (ТЗ: «подсчёт неявок
+        ведётся за последние 90 дней»).
+        """
+        from django.conf import settings as dj_settings
+        now = now or timezone.now()
+        if days is None:
+            days = getattr(dj_settings, 'STUDENT_NO_SHOW_WINDOW_DAYS', 90)
+        since = now - timedelta(days=days)
+        return Booking.objects.filter(
+            student_id=student_id,
+            status='no_show_student',
+            slot__start_at__gte=since,
+        ).count()
+
+    @classmethod
+    def should_forgive_student_no_show(cls, student_id, now=None) -> bool:
+        """True, если ТЕКУЩУЮ (ещё не сохранённую) неявку нужно простить.
+
+        Прощаем, пока число прежних неявок за окно меньше лимита, т.е. эта по
+        счёту ≤ STUDENT_NO_SHOW_FORGIVE_LIMIT.
+        """
+        from django.conf import settings as dj_settings
+        limit = getattr(dj_settings, 'STUDENT_NO_SHOW_FORGIVE_LIMIT', 3)
+        prior = cls.count_student_no_shows(student_id, now=now)
+        return (prior + 1) <= limit
 
     def request_review(self):
         """Создаёт уведомление ученику с просьбой оценить прошедший урок.
@@ -3169,6 +3287,7 @@ class Booking(models.Model):
             action_url=action_url,
             priority=5,
             is_active=True,
+            category=Notification.Category.REVIEW,
             booking=self,
         )
 
@@ -3185,9 +3304,9 @@ class LessonReminderSent(models.Model):
         '10min' — за 10 минут
     """
     KIND_CHOICES = [
-        ('24h', 'За 24 часа'),
-        ('3h', 'За 3 часа'),
-        ('10min', 'За 10 минут'),
+        ('24h', _('За 24 часа')),
+        ('3h', _('За 3 часа')),
+        ('10min', _('За 10 минут')),
     ]
 
     booking = models.ForeignKey(
@@ -3200,7 +3319,7 @@ class LessonReminderSent(models.Model):
     # Что было отправлено (для аудита)
     channels = models.CharField(
         max_length=100, blank=True, default='',
-        help_text='Каналы через запятую: email,in_app,telegram',
+        help_text=_('Каналы через запятую: email,in_app,telegram'),
     )
 
     class Meta:
@@ -3219,5 +3338,58 @@ class LessonReminderSent(models.Model):
 
     def __str__(self):
         return f'{self.booking_id} • {self.kind} • {self.sent_at:%Y-%m-%d %H:%M}'
+
+
+class LessonEvent(models.Model):
+    """Журнал событий урока (ТЗ §11: «все действия фиксируются в журнале»).
+
+    Append-only лента по каждой брони: вход сторон, исход урока (settle),
+    прощённая/засчитанная неявка, выплата/возврат, отправленное предупреждение.
+    Нужна для разбора споров и прозрачности перед обеими сторонами.
+    """
+    KIND_CHOICES = [
+        ('join_teacher', _('Учитель подключился')),
+        ('join_student', _('Ученик подключился')),
+        ('settle_completed', _('Урок проведён')),
+        ('settle_no_show_teacher', _('Неявка учителя')),
+        ('no_show_forgiven', _('Неявка ученика прощена')),
+        ('no_show_consumed', _('Неявка ученика — урок списан')),
+        ('settle_not_held', _('Урок не состоялся')),
+        ('warning_sent', _('Отправлено предупреждение')),
+        ('payout', _('Выплата учителю')),
+        ('refund', _('Возврат ученику')),
+    ]
+
+    booking = models.ForeignKey(
+        Booking, on_delete=models.CASCADE, related_name='events',
+    )
+    kind = models.CharField(max_length=32, choices=KIND_CHOICES, db_index=True)
+    # Кто инициатор: 'teacher' / 'student' / 'system'.
+    actor = models.CharField(max_length=16, blank=True, default='system')
+    # Произвольные детали (порядковый номер неявки, суммы и т.п.).
+    meta = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = _('Событие урока')
+        verbose_name_plural = _('События уроков')
+        ordering = ['created_at']
+        indexes = [
+            models.Index(fields=['booking', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.booking_id} • {self.kind} • {self.created_at:%Y-%m-%d %H:%M}'
+
+    @classmethod
+    def log(cls, booking, kind, *, actor='system', **meta):
+        """Безопасно записать событие. Никогда не роняет основной поток."""
+        try:
+            cls.objects.create(
+                booking=booking, kind=kind, actor=actor, meta=meta or {},
+            )
+        except Exception:
+            logger.warning('LessonEvent.log failed: %s %s', kind, getattr(booking, 'pk', None),
+                           exc_info=True)
 
 

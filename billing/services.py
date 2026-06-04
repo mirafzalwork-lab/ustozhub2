@@ -592,9 +592,11 @@ class SubscriptionService:
             # Дозапись: бронируем недостающие уроки (total − активные брони),
             # чтобы при нехватке слотов ученик мог вернуться и добрать позже.
             # Отменённые брони не считаем — иначе оплаченные уроки «потерялись» бы.
+            # Возвращённые ученику уроки (прощённая неявка / не состоялся) не
+            # занимают квоту — даём перебронировать на новую дату (ТЗ §6/§8).
             already = Booking.objects.filter(subscription=sub).exclude(
-                status__in=['cancelled_by_student', 'cancelled_by_teacher']
-            ).count()
+                status__in=['cancelled_by_student', 'cancelled_by_teacher', 'not_held']
+            ).exclude(no_show_forgiven=True).count()
             remaining = sub.total_lessons - already
             if remaining <= 0:
                 raise ValueError('Все уроки уже забронированы.')
@@ -743,7 +745,7 @@ class SubscriptionService:
         return created
 
     @staticmethod
-    def _notify(user, title: str, text: str, url: str = '') -> None:
+    def _notify(user, title: str, text: str, url: str = '', category: str = '') -> None:
         """Лёгкое in-app уведомление (не критично — заворачиваем в try)."""
         try:
             from teachers.models import Notification
@@ -751,6 +753,7 @@ class SubscriptionService:
                 title=title[:200], short_text=text[:300], full_text=text,
                 target='specific_user', target_user=user,
                 action_url=url or '', priority=5, is_active=True,
+                category=category or Notification.Category.SUBSCRIPTION,
             )
         except Exception:
             logger.warning('SubscriptionService._notify failed', exc_info=True)
@@ -1175,6 +1178,10 @@ class SubscriptionService:
             raise PayoutError(
                 f'booking.status={booking.status}, ожидался {"/".join(allowed_statuses)}'
             )
+        # Прощённая неявка ученика (ТЗ §6): урок возвращается ученику, учителю
+        # НЕ платим, эскроу не трогаем — деньги останутся на пакете.
+        if booking.status == 'no_show_student' and getattr(booking, 'no_show_forgiven', False):
+            return False
         # Заморозка выплаты на время открытого спора (ТЗ шаг 8).
         if LessonDispute.objects.filter(
             booking_id=booking.id, status=LessonDispute.Status.OPEN,

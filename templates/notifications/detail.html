@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load i18n %}
+{% load custom_filters %}
 
-{% block title %}{{ notification.title }} - {% trans 'Уведомления' %} - UstozHub{% endblock %}
+{% block title %}{{ notification.title|strip_emoji }} - {% trans 'Уведомления' %} - UstozHub{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -132,7 +133,26 @@
         letter-spacing: -0.015em;
         margin: 0;
         word-wrap: break-word;
+        display: flex;
+        align-items: center;
+        gap: 14px;
     }
+
+    .notif-detail-icon {
+        width: 48px;
+        height: 48px;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 14px;
+        font-size: 20px;
+        background: rgba(59, 130, 246, 0.10);
+        color: var(--accent-color);
+    }
+    .notif-detail-icon.tone-success { background: rgba(16, 185, 129, 0.12); color: var(--success-color); }
+    .notif-detail-icon.tone-warning { background: rgba(245, 158, 11, 0.14); color: #B45309; }
+    .notif-detail-icon.tone-danger  { background: rgba(239, 68, 68, 0.12); color: var(--danger-color); }
 
     /* ---------- Контент ---------- */
     .notification-content {
@@ -444,7 +464,7 @@
         <i class="fas fa-chevron-right"></i>
         <a href="{% url 'notifications_list' %}">{% trans 'Уведомления' %}</a>
         <i class="fas fa-chevron-right"></i>
-        <span>{{ notification.title }}</span>
+        <span>{{ notification.title|strip_emoji }}</span>
     </div>
     
     <!-- Notification Detail Card -->
@@ -468,7 +488,10 @@
                 </span>
             </div>
             
-            <h1 class="notification-title">{{ notification.title }}</h1>
+            <h1 class="notification-title">
+                <span class="notif-detail-icon tone-{{ notification.icon_tone }}"><i class="fas {{ notification.icon }}"></i></span>
+                {{ notification.title|strip_emoji }}
+            </h1>
         </div>
         
         <!-- Content -->
@@ -478,7 +501,7 @@
             {% endif %}
             
             <div class="notification-text">
-                {{ notification.full_text|linebreaks }}
+                {{ notification.full_text|strip_emoji|linebreaks }}
             </div>
         </div>
 

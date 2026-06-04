@@ -1,13 +1,14 @@
 {% extends 'registration/base_wizard.html' %}
 {% load static %}
+{% load i18n %}
 
 {% block step_content %}
 <div class="form-section">
     <h3 class="section-title">
-        Сертификаты и дипломы
-        <span class="optional-badge">необязательно</span>
+        {% trans "Сертификаты и дипломы" %}
+        <span class="optional-badge">{% trans "необязательно" %}</span>
     </h3>
-    <p class="section-description">Вы можете добавить до 4 сертификатов сейчас или позже в профиле.</p>
+    <p class="section-description">{% trans "Вы можете добавить до 4 сертификатов сейчас или позже в профиле." %}</p>
 
     <div class="optional-notice">
         <svg class="notice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -15,7 +16,7 @@
             <line x1="12" y1="16" x2="12" y2="12"></line>
             <line x1="12" y1="8" x2="12.01" y2="8"></line>
         </svg>
-        <p>Профили с сертификатами выглядят более профессионально и получают больше доверия от учеников.</p>
+        <p>{% trans "Профили с сертификатами выглядят более профессионально и получают больше доверия от учеников." %}</p>
     </div>
 </div>
 
@@ -23,9 +24,9 @@
     {% for i in "1234" %}
     <div class="cert-card" data-cert-num="{{ i }}" {% if not forloop.first %}style="display: none;"{% endif %}>
         <div class="cert-header">
-            <h4>Сертификат {{ i }}</h4>
+            <h4>{% trans "Сертификат" %} {{ i }}</h4>
             {% if not forloop.first %}
-            <button type="button" class="remove-cert-btn" data-num="{{ i }}" aria-label="Удалить сертификат {{ i }}">
+            <button type="button" class="remove-cert-btn" data-num="{{ i }}" aria-label="{% trans 'Удалить сертификат' %} {{ i }}">
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
@@ -34,7 +35,7 @@
         </div>
 
         <div class="form-group">
-            <label class="form-label">Название сертификата</label>
+            <label class="form-label">{% trans "Название сертификата" %}</label>
             {% if forloop.counter == 1 %}{{ wizard.form.cert_name_1 }}
             {% elif forloop.counter == 2 %}{{ wizard.form.cert_name_2 }}
             {% elif forloop.counter == 3 %}{{ wizard.form.cert_name_3 }}
@@ -42,7 +43,7 @@
         </div>
 
         <div class="form-group">
-            <label class="form-label">Кто выдал</label>
+            <label class="form-label">{% trans "Кто выдал" %}</label>
             {% if forloop.counter == 1 %}{{ wizard.form.cert_issuer_1 }}
             {% elif forloop.counter == 2 %}{{ wizard.form.cert_issuer_2 }}
             {% elif forloop.counter == 3 %}{{ wizard.form.cert_issuer_3 }}
@@ -50,12 +51,12 @@
         </div>
 
         <div class="form-group">
-            <label class="form-label">Файл сертификата</label>
+            <label class="form-label">{% trans "Файл сертификата" %}</label>
             {% if forloop.counter == 1 %}{{ wizard.form.cert_file_1 }}
             {% elif forloop.counter == 2 %}{{ wizard.form.cert_file_2 }}
             {% elif forloop.counter == 3 %}{{ wizard.form.cert_file_3 }}
             {% elif forloop.counter == 4 %}{{ wizard.form.cert_file_4 }}{% endif %}
-            <div class="field-help">PDF, JPG или PNG до 10 МБ.</div>
+            <div class="field-help">{% trans "PDF, JPG или PNG до 10 МБ." %}</div>
         </div>
     </div>
     {% endfor %}
@@ -75,30 +76,30 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
-        <span>Добавить ещё сертификат</span>
+        <span>{% trans "Добавить ещё сертификат" %}</span>
     </button>
-    <p class="add-cert-hint">Вы можете добавить до 4 сертификатов</p>
+    <p class="add-cert-hint">{% trans "Вы можете добавить до 4 сертификатов" %}</p>
 </div>
 
 <div class="certificate-examples">
-    <h4><i class="fas fa-scroll"></i> Примеры сертификатов:</h4>
+    <h4><i class="fas fa-scroll"></i> {% trans "Примеры сертификатов:" %}</h4>
     <ul>
-        <li>Дипломы о высшем образовании</li>
-        <li>Языковые сертификаты (IELTS, TOEFL, CEFR)</li>
-        <li>Сертификаты о повышении квалификации</li>
-        <li>Профессиональные сертификаты</li>
-        <li>Дипломы магистратуры или PhD</li>
+        <li>{% trans "Дипломы о высшем образовании" %}</li>
+        <li>{% trans "Языковые сертификаты (IELTS, TOEFL, CEFR)" %}</li>
+        <li>{% trans "Сертификаты о повышении квалификации" %}</li>
+        <li>{% trans "Профессиональные сертификаты" %}</li>
+        <li>{% trans "Дипломы магистратуры или PhD" %}</li>
     </ul>
 </div>
 
 <!-- ───────────────────────── Видео-визитка ───────────────────────── -->
 <div class="form-section" style="margin-top: 32px; border-top: 1px solid #e5e7eb; padding-top: 28px;">
     <h3 class="section-title">
-        Видео-визитка
-        <span class="optional-badge">необязательно</span>
+        {% trans "Видео-визитка" %}
+        <span class="optional-badge">{% trans "необязательно" %}</span>
     </h3>
     <p class="section-description">
-        Короткое видео поможет ученикам познакомиться с вами. Учителя с видео получают на 40% больше откликов.
+        {% trans "Короткое видео поможет ученикам познакомиться с вами. Учителя с видео получают на 40% больше откликов." %}
     </p>
 
     <!-- Скрытое поле для URL (заполняется JS после загрузки) -->
@@ -111,8 +112,8 @@
                 <polyline points="17 8 12 3 7 8"></polyline>
                 <line x1="12" y1="3" x2="12" y2="15"></line>
             </svg>
-            <p class="upload-text" style="font-size: 16px; font-weight: 600; margin: 0 0 4px;">Нажмите или перетащите видео</p>
-            <p class="upload-hint" style="font-size: 13px; color: #9ca3af; margin: 0;">MP4 (H.264), до 50 МБ, до 90 секунд</p>
+            <p class="upload-text" style="font-size: 16px; font-weight: 600; margin: 0 0 4px;">{% trans "Нажмите или перетащите видео" %}</p>
+            <p class="upload-hint" style="font-size: 13px; color: #9ca3af; margin: 0;">{% trans "MP4 (H.264), до 50 МБ, до 90 секунд" %}</p>
             <input type="file" id="video-file-input" accept="video/mp4" style="display: none;">
         </div>
 
@@ -125,7 +126,7 @@
 
         <div id="video-progress" style="display: none; margin-top: 16px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                <span id="video-progress-label" style="font-size: 13px; font-weight: 600;">Загрузка...</span>
+                <span id="video-progress-label" style="font-size: 13px; font-weight: 600;">{% trans "Загрузка..." %}</span>
                 <span id="video-progress-pct" style="font-size: 13px; font-weight: 600; color: #3B82F6;">0%</span>
             </div>
             <div style="width:100%; background:#e5e7eb; border-radius:8px; height:8px; overflow:hidden;">
@@ -140,25 +141,25 @@
                     <polyline points="17 8 12 3 7 8"></polyline>
                     <line x1="12" y1="3" x2="12" y2="15"></line>
                 </svg>
-                Загрузить
+                {% trans "Загрузить" %}
             </button>
             <button type="button" id="video-cancel-btn" style="display:none;" class="btn btn-secondary" onclick="videoClearSelect()">
-                Отмена
+                {% trans "Отмена" %}
             </button>
             <button type="button" id="video-remove-btn" style="display:none;" class="btn btn-secondary" onclick="videoRemove()">
-                Удалить видео
+                {% trans "Удалить видео" %}
             </button>
         </div>
 
         <div id="video-error" style="display:none; margin-top:12px; padding:12px; background:#fee2e2; color:#991b1b; border-radius:8px; font-size:14px;"></div>
         <div id="video-success" style="display:none; margin-top:12px; padding:12px; background:#d1fae5; color:#065f46; border-radius:8px; font-size:14px;">
-            Видео успешно загружено!
+            {% trans "Видео успешно загружено!" %}
         </div>
     </div>
 </div>
 
 <div class="skip-notice">
-    <p>Оба блока необязательны — сертификаты и видео можно добавить позже в настройках профиля.</p>
+    <p>{% trans "Оба блока необязательны — сертификаты и видео можно добавить позже в настройках профиля." %}</p>
 </div>
 
 <style>

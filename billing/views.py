@@ -10,12 +10,14 @@ from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
 from teachers.models import TeacherProfile
 
 from .forms import HomeworkForm, HomeworkGradeForm, HomeworkSubmissionForm, TariffForm, WithdrawalRequestForm
 from .models import (
+    DismissedTrialSuggestion,
     Homework, HomeworkAttachment, HomeworkSubmission, HomeworkSubmissionFile,
     Subscription, Tariff, Transaction, WithdrawalRequest,
 )
@@ -35,7 +37,7 @@ def _get_teacher_or_403(request):
     try:
         return request.user.teacher_profile
     except TeacherProfile.DoesNotExist:
-        messages.error(request, 'Эта страница доступна только учителям.')
+        messages.error(request, _('Эта страница доступна только учителям.'))
         return None
 
 
@@ -62,7 +64,7 @@ def tariff_create(request):
         form = TariffForm(request.POST, teacher=teacher)
         if form.is_valid():
             tariff = form.save()
-            messages.success(request, f'Тариф «{tariff.name or tariff.subject}» создан.')
+            messages.success(request, _('Тариф «%(name)s» создан.') % {'name': tariff.name or tariff.subject})
             return redirect('tariffs_list')
     else:
         form = TariffForm(teacher=teacher)
@@ -86,7 +88,7 @@ def tariff_edit(request, pk):
         form = TariffForm(request.POST, instance=tariff, teacher=teacher)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Тариф обновлён.')
+            messages.success(request, _('Тариф обновлён.'))
             return redirect('tariffs_list')
     else:
         form = TariffForm(instance=tariff, teacher=teacher)
@@ -108,7 +110,7 @@ def tariff_delete(request, pk):
 
     tariff = get_object_or_404(Tariff, pk=pk, teacher=teacher)
     tariff.delete()
-    messages.success(request, 'Тариф удалён.')
+    messages.success(request, _('Тариф удалён.'))
     return redirect('tariffs_list')
 
 
@@ -122,8 +124,8 @@ def tariff_toggle_active(request, pk):
     tariff = get_object_or_404(Tariff, pk=pk, teacher=teacher)
     tariff.is_active = not tariff.is_active
     tariff.save(update_fields=['is_active', 'updated_at'])
-    state = 'включён' if tariff.is_active else 'выключен'
-    messages.success(request, f'Тариф {state}.')
+    state = _('включён') if tariff.is_active else _('выключен')
+    messages.success(request, _('Тариф %(state)s.') % {'state': state})
     return redirect('tariffs_list')
 
 
@@ -210,10 +212,10 @@ def continue_learning(request, teacher_id):
         pk=teacher_id, is_active=True, moderation_status='approved',
     )
     if request.user.user_type != 'student':
-        messages.error(request, 'Только ученик может оформить обучение.')
+        messages.error(request, _('Только ученик может оформить обучение.'))
         return redirect('teacher_detail', id=teacher.id)
     if teacher.user_id == request.user.id:
-        messages.error(request, 'Нельзя оформить обучение у самого себя.')
+        messages.error(request, _('Нельзя оформить обучение у самого себя.'))
         return redirect('teacher_detail', id=teacher.id)
 
     from teachers.models import Booking, Subject, TeacherSubject
@@ -234,7 +236,7 @@ def continue_learning(request, teacher_id):
         ts = TeacherSubject.objects.filter(teacher=teacher).select_related('subject').first()
         subject = ts.subject if ts else None
     if subject is None:
-        messages.error(request, 'У учителя не указаны предметы.')
+        messages.error(request, _('У учителя не указаны предметы.'))
         return redirect('teacher_detail', id=teacher.id)
 
     real_tariffs = list(
@@ -262,7 +264,7 @@ def continue_learning(request, teacher_id):
                 lpw = int(request.POST.get('lessons_per_week') or 0)
                 opt = next((o for o in standard if o['lessons_per_week'] == lpw), None)
                 if not opt:
-                    raise ValueError('Выберите тариф.')
+                    raise ValueError(_('Выберите тариф.'))
                 params = dict(
                     lessons_per_week=opt['lessons_per_week'],
                     lesson_duration_minutes=opt['lesson_duration_minutes'],
@@ -277,7 +279,7 @@ def continue_learning(request, teacher_id):
             )
             messages.success(
                 request,
-                'Заявка отправлена учителю. Мы уведомим вас, когда её подтвердят.',
+                _('Заявка отправлена учителю. Мы уведомим вас, когда её подтвердят.'),
             )
             return redirect('my_subscriptions')
         except AlreadySubscribed as e:
@@ -318,12 +320,12 @@ def learning_request_action(request, sub_id):
     try:
         if action == 'approve':
             SubscriptionService.approve_request(sub)
-            messages.success(request, 'Заявка подтверждена. Ученик получит уведомление об оплате.')
+            messages.success(request, _('Заявка подтверждена. Ученик получит уведомление об оплате.'))
         elif action == 'reject':
             SubscriptionService.reject_request(sub, reason=(request.POST.get('reason') or '').strip())
-            messages.success(request, 'Заявка отклонена.')
+            messages.success(request, _('Заявка отклонена.'))
         else:
-            messages.error(request, 'Неизвестное действие.')
+            messages.error(request, _('Неизвестное действие.'))
     except ValueError as e:
         messages.error(request, str(e))
     return redirect('teacher_learning_requests')
@@ -337,7 +339,7 @@ def subscription_pay(request, sub_id):
         pk=sub_id, student=request.user,
     )
     if sub.status != Subscription.Status.PENDING_PAYMENT:
-        messages.info(request, f'Оплата недоступна: статус «{sub.get_status_display()}».')
+        messages.info(request, _('Оплата недоступна: статус «%(status)s».') % {'status': sub.get_status_display()})
         return redirect('my_subscriptions')
 
     wallet = request.user.wallet
@@ -347,7 +349,7 @@ def subscription_pay(request, sub_id):
     if request.method == 'POST':
         try:
             SubscriptionService.pay(sub, idempotency_key=request.POST.get('idempotency_key') or '')
-            messages.success(request, 'Оплата прошла! Теперь выберите удобное расписание.')
+            messages.success(request, _('Оплата прошла! Теперь выберите удобное расписание.'))
             return redirect('subscription_schedule', sub_id=sub.id)
         except InsufficientFunds as e:
             messages.error(request, str(e))
@@ -368,14 +370,16 @@ def subscription_schedule(request, sub_id):
         pk=sub_id, student=request.user,
     )
     if sub.status != Subscription.Status.ACTIVE:
-        messages.info(request, 'Расписание доступно только для оплаченной подписки.')
+        messages.info(request, _('Расписание доступно только для оплаченной подписки.'))
         return redirect('my_subscriptions')
+    # Возвращённые ученику уроки (ТЗ §6/§8) не занимают квоту: прощённая
+    # неявка и «не состоялся» дают право выбрать новую дату.
     _active_bk = sub.bookings.exclude(
-        status__in=['cancelled_by_student', 'cancelled_by_teacher']
-    )
+        status__in=['cancelled_by_student', 'cancelled_by_teacher', 'not_held']
+    ).exclude(no_show_forgiven=True)
     booked_count = _active_bk.count()
     if booked_count >= sub.total_lessons:
-        messages.info(request, 'Все уроки уже забронированы.')
+        messages.info(request, _('Все уроки уже забронированы.'))
         return redirect('my_bookings_page')
 
     # Кандидаты — ТОЛЬКО реальные свободные слоты из календаря учителя
@@ -419,30 +423,32 @@ def subscription_schedule(request, sub_id):
         if len(pattern) != sub.lessons_per_week:
             messages.error(
                 request,
-                f'Выберите ровно {sub.lessons_per_week} занятия в неделю (выбрано {len(pattern)}).',
+                _('Выберите ровно %(required)s занятия в неделю (выбрано %(selected)s).') % {
+                    'required': sub.lessons_per_week, 'selected': len(pattern)},
             )
         else:
             try:
                 created = SubscriptionService.book_schedule(sub, pattern)
                 total_booked = sub.bookings.exclude(
-                    status__in=['cancelled_by_student', 'cancelled_by_teacher']
-                ).count()
+                    status__in=['cancelled_by_student', 'cancelled_by_teacher', 'not_held']
+                ).exclude(no_show_forgiven=True).count()
                 if total_booked >= sub.total_lessons:
                     messages.success(
                         request,
-                        f'Расписание сформировано: забронировано {len(created)} уроков.',
+                        _('Расписание сформировано: забронировано %(count)s уроков.') % {'count': len(created)},
                     )
                     return redirect('my_bookings_page')
                 # Частично: свободных слотов учителя не хватило на весь объём.
                 messages.success(
                     request,
-                    f'Забронировано ещё {len(created)} уроков по свободным слотам учителя '
-                    f'({total_booked} из {sub.total_lessons}).',
+                    _('Забронировано ещё %(count)s уроков по свободным слотам учителя '
+                      '(%(booked)s из %(total)s).') % {
+                        'count': len(created), 'booked': total_booked, 'total': sub.total_lessons},
                 )
                 messages.info(
                     request,
-                    'Остальные уроки можно добрать здесь же, когда учитель откроет новые '
-                    'слоты в календаре — напишите ему с просьбой добавить время.',
+                    _('Остальные уроки можно добрать здесь же, когда учитель откроет новые '
+                      'слоты в календаре — напишите ему с просьбой добавить время.'),
                 )
                 return redirect('subscription_schedule', sub_id=sub.id)
             except ValueError as e:
@@ -471,13 +477,13 @@ def dispute_open(request, booking_id):
     if request.method == 'POST':
         reason = (request.POST.get('reason') or '').strip()
         if len(reason) < 10:
-            messages.error(request, 'Опишите проблему подробнее (минимум 10 символов).')
+            messages.error(request, _('Опишите проблему подробнее (минимум 10 символов).'))
         else:
             try:
                 DisputeService.open(booking, student=request.user, reason=reason)
                 messages.success(
                     request,
-                    'Спор открыт. Администрация рассмотрит его; выплата учителю заморожена.',
+                    _('Спор открыт. Администрация рассмотрит его; выплата учителю заморожена.'),
                 )
                 return redirect('my_bookings_page')
             except DisputeError as e:
@@ -496,7 +502,7 @@ def dispute_cancel(request, dispute_id):
     d = get_object_or_404(LessonDispute, pk=dispute_id, student=request.user)
     try:
         DisputeService.cancel(d, student=request.user)
-        messages.success(request, 'Спор отозван.')
+        messages.success(request, _('Спор отозван.'))
     except DisputeError as e:
         messages.error(request, str(e))
     return redirect('my_bookings_page')
@@ -559,7 +565,7 @@ def subscription_cancel(request, sub_id):
     elif sub.teacher.user_id == request.user.id:
         cancelled_by = 'teacher'
     else:
-        messages.error(request, 'У вас нет прав отменить эту подписку.')
+        messages.error(request, _('У вас нет прав отменить эту подписку.'))
         return redirect('my_subscriptions')
 
     reason = (request.POST.get('reason') or '').strip()
@@ -574,8 +580,9 @@ def subscription_cancel(request, sub_id):
     refunded = result['refunded']
     messages.success(
         request,
-        f'Подписка отменена. Возвращено на баланс: {int(refunded)} сум. '
-        f'Отменено уроков: {result["cancelled_bookings"]}.'
+        _('Подписка отменена. Возвращено на баланс: %(refunded)s сум. '
+          'Отменено уроков: %(cancelled)s.') % {
+            'refunded': int(refunded), 'cancelled': result['cancelled_bookings']}
     )
     return redirect('my_subscriptions' if cancelled_by == 'student' else 'teacher_subscribers')
 
@@ -588,15 +595,15 @@ def subscription_pause(request, sub_id):
         Subscription.objects.select_related('student', 'teacher__user'), pk=sub_id,
     )
     if sub.student_id != request.user.id:
-        messages.error(request, 'У вас нет прав приостановить эту подписку.')
+        messages.error(request, _('У вас нет прав приостановить эту подписку.'))
         return redirect('my_subscriptions')
     reason = (request.POST.get('reason') or '').strip()
     try:
         freed = SubscriptionService.pause(sub, reason=reason)
         messages.success(
             request,
-            f'Подписка приостановлена. Снято будущих уроков: {freed}. '
-            f'Возобновите в любой момент — срок продлится на время паузы.'
+            _('Подписка приостановлена. Снято будущих уроков: %(freed)s. '
+              'Возобновите в любой момент — срок продлится на время паузы.') % {'freed': freed}
         )
     except CancellationError as e:
         messages.error(request, str(e))
@@ -611,13 +618,13 @@ def subscription_resume(request, sub_id):
         Subscription.objects.select_related('student', 'teacher__user'), pk=sub_id,
     )
     if sub.student_id != request.user.id:
-        messages.error(request, 'У вас нет прав возобновить эту подписку.')
+        messages.error(request, _('У вас нет прав возобновить эту подписку.'))
         return redirect('my_subscriptions')
     try:
         created = SubscriptionService.resume(sub)
         messages.success(
             request,
-            f'Подписка возобновлена. Запланировано уроков: {created}.'
+            _('Подписка возобновлена. Запланировано уроков: %(created)s.') % {'created': created}
         )
     except CancellationError as e:
         messages.error(request, str(e))
@@ -654,7 +661,7 @@ def withdrawals_list(request):
                 )
                 messages.success(
                     request,
-                    f'Заявка на вывод {int(wr.amount)} сум создана. Ожидайте подтверждения.'
+                    _('Заявка на вывод %(amount)s сум создана. Ожидайте подтверждения.') % {'amount': int(wr.amount)}
                 )
                 return redirect('withdrawals_list')
             except InsufficientFunds as e:
@@ -678,7 +685,7 @@ def withdrawal_cancel(request, wr_id):
     wr = get_object_or_404(WithdrawalRequest, pk=wr_id, user=request.user)
     try:
         WithdrawalService.cancel_by_user(wr)
-        messages.success(request, f'Заявка отменена, {int(wr.amount)} сум возвращены на баланс.')
+        messages.success(request, _('Заявка отменена, %(amount)s сум возвращены на баланс.') % {'amount': int(wr.amount)})
     except WithdrawalError as e:
         messages.error(request, str(e))
     return redirect('withdrawals_list')
@@ -786,7 +793,7 @@ def teacher_homework_create(request):
         sub = active_subs.filter(pk=sub_id).first() if sub_id else None
         form = HomeworkForm(request.POST)
         if sub is None:
-            messages.error(request, 'Выберите активную подписку из списка.')
+            messages.error(request, _('Выберите активную подписку из списка.'))
         elif form.is_valid():
             # Файлы — валидация перед сохранением.
             files = request.FILES.getlist('attachments')
@@ -810,14 +817,18 @@ def teacher_homework_create(request):
                         homework=hw, file=f, filename=f.name,
                         file_size=f.size, mime_type=getattr(f, 'content_type', '') or '',
                     )
-                messages.success(request, f'Задание «{hw.title}» назначено ученику.')
+                messages.success(request, _('Задание «%(title)s» назначено ученику.') % {'title': hw.title})
                 return redirect('teacher_homework_list')
     else:
         form = HomeworkForm()
 
+    # Предвыбор ученика: при переходе со страницы прогресса передаётся ?subscription=<uuid>.
+    preselected_sub_id = request.GET.get('subscription') or request.POST.get('subscription') or ''
+
     return render(request, 'billing/homework_create.html', {
         'form': form,
         'active_subs': active_subs,
+        'preselected_sub_id': str(preselected_sub_id),
     })
 
 
@@ -832,7 +843,7 @@ def homework_detail(request, hw_id):
     )
     role = _user_role_for_homework(request, homework)
     if role is None:
-        messages.error(request, 'Доступ к этому заданию только у участников подписки.')
+        messages.error(request, _('Доступ к этому заданию только у участников подписки.'))
         return redirect('home')
 
     submission = getattr(homework, 'submission', None)
@@ -859,7 +870,7 @@ def homework_detail(request, hw_id):
 def _handle_student_submit(request, homework, submission):
     """Ученик сдаёт работу (или пересдаёт, если status=returned)."""
     if homework.status not in (Homework.Status.ASSIGNED, Homework.Status.RETURNED):
-        messages.warning(request, 'Это задание уже сдано и не может быть изменено.')
+        messages.warning(request, _('Это задание уже сдано и не может быть изменено.'))
         return redirect('homework_detail', hw_id=homework.id)
 
     form = HomeworkSubmissionForm(request.POST, instance=submission)
@@ -867,7 +878,7 @@ def _handle_student_submit(request, homework, submission):
 
     # Должно быть хоть что-то (текст или файл)
     if not (form.data.get('text_response', '').strip() or files):
-        messages.error(request, 'Напишите ответ или прикрепите хотя бы один файл.')
+        messages.error(request, _('Напишите ответ или прикрепите хотя бы один файл.'))
         return redirect('homework_detail', hw_id=homework.id)
 
     # Валидация файлов
@@ -894,17 +905,17 @@ def _handle_student_submit(request, homework, submission):
             )
         homework.status = Homework.Status.SUBMITTED
         homework.save(update_fields=['status', 'updated_at'])
-        messages.success(request, 'Работа отправлена учителю.')
+        messages.success(request, _('Работа отправлена учителю.'))
     return redirect('homework_detail', hw_id=homework.id)
 
 
 def _handle_teacher_grade(request, homework, submission):
     """Учитель ставит оценку или возвращает на доработку."""
     if submission is None:
-        messages.error(request, 'Ученик ещё не сдал работу.')
+        messages.error(request, _('Ученик ещё не сдал работу.'))
         return redirect('homework_detail', hw_id=homework.id)
     if homework.status not in (Homework.Status.SUBMITTED, Homework.Status.GRADED):
-        messages.error(request, 'Это задание нельзя оценить.')
+        messages.error(request, _('Это задание нельзя оценить.'))
         return redirect('homework_detail', hw_id=homework.id)
 
     form = HomeworkGradeForm(request.POST)
@@ -923,7 +934,7 @@ def _handle_teacher_grade(request, homework, submission):
         submission.feedback = feedback
         submission.grade = None
         submission.save(update_fields=['feedback', 'grade', 'updated_at'])
-        messages.success(request, 'Работа возвращена ученику на доработку.')
+        messages.success(request, _('Работа возвращена ученику на доработку.'))
     else:
         from django.utils import timezone
         submission.grade = form.cleaned_data['grade']
@@ -932,7 +943,7 @@ def _handle_teacher_grade(request, homework, submission):
         submission.save(update_fields=['grade', 'feedback', 'graded_at', 'updated_at'])
         homework.status = Homework.Status.GRADED
         homework.save(update_fields=['status', 'updated_at'])
-        messages.success(request, f'Оценка {submission.grade} проставлена.')
+        messages.success(request, _('Оценка %(grade)s проставлена.') % {'grade': submission.grade})
     return redirect('homework_detail', hw_id=homework.id)
 
 
@@ -1112,6 +1123,12 @@ def student_dashboard(request):
             student=request.user, status__in=Subscription.ACTIVE_STATUSES,
         ).values_list('teacher_id', 'subject_id')
     )
+    # (teacher, subject), которые ученик скрыл вручную («Убрать» на карточке).
+    dismissed_pairs = set(
+        DismissedTrialSuggestion.objects.filter(
+            student=request.user,
+        ).values_list('teacher_id', 'subject_id')
+    )
     # Тарифы для всех нужных учителей/предметов — одним запросом.
     tariffs_by_pair = defaultdict(list)
     if pairs:
@@ -1125,7 +1142,8 @@ def student_dashboard(request):
     seen = set()
     for b in trials:
         key = (b.slot.teacher_id, b.subject_id)
-        if not key[0] or not key[1] or key in subscribed_pairs or key in seen:
+        if (not key[0] or not key[1] or key in subscribed_pairs
+                or key in dismissed_pairs or key in seen):
             continue
         seen.add(key)
         delta_h = int((now - b.slot.end_at).total_seconds() / 3600)
@@ -1154,6 +1172,29 @@ def student_dashboard(request):
         'recent_tx': recent_tx,
         'recent_trials_to_convert': recent_trials_to_convert,
     })
+
+
+@login_required
+@require_POST
+def dismiss_trial_suggestion(request, teacher_id):
+    """Ученик скрывает карточку «Продолжить обучение» (учитель не понравился).
+
+    Создаёт DismissedTrialSuggestion(student, teacher, subject) — после этого
+    предложение по данной паре учитель/предмет больше не показывается в дашборде.
+    """
+    from django.http import JsonResponse
+    try:
+        subject_id = int(request.POST.get('subject') or 0)
+    except (TypeError, ValueError):
+        subject_id = 0
+    if not subject_id:
+        return JsonResponse({'success': False, 'error': 'subject required'}, status=400)
+
+    teacher = get_object_or_404(TeacherProfile, pk=teacher_id)
+    DismissedTrialSuggestion.objects.get_or_create(
+        student=request.user, teacher=teacher, subject_id=subject_id,
+    )
+    return JsonResponse({'success': True})
 
 
 def teacher_dashboard(request):

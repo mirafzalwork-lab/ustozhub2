@@ -29,6 +29,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
 
 from .models import TeacherProfile, TimeSlot, Booking, SlotUnavailable, Subject, Review
@@ -74,7 +75,7 @@ def teacher_required(view):
         try:
             request.teacher_profile = request.user.teacher_profile
         except TeacherProfile.DoesNotExist:
-            messages.warning(request, 'Сначала завершите профиль учителя.')
+            messages.warning(request, _('Сначала завершите профиль учителя.'))
             return redirect('teacher_register')
         return view(request, *args, **kwargs)
     return wrapper
@@ -1203,7 +1204,7 @@ def book_teacher_page(request, teacher_id: int):
             pk=teacher_id, moderation_status='approved', is_active=True,
         )
     except TeacherProfile.DoesNotExist:
-        messages.error(request, 'Учитель не найден')
+        messages.error(request, _('Учитель не найден'))
         return redirect('home')
 
     # Подгружаем предметы учителя для select (включая trial_price и trial_duration)
@@ -1235,8 +1236,9 @@ def lesson_room(request, booking_id):
     """
     Встроенная видео-комната урока (Jitsi через iframe), внутри платформы.
 
-    Доступ только у учителя и ученика этой брони. Открывается с -15 минут до
-    начала и до +30 минут после конца. Кастомные внешние ссылки (Zoom и т.п.)
+    Доступ только у учителя и ученика этой брони. Открывается за
+    LESSON_JOIN_LEAD_MINUTES до начала и до +30 минут после конца. Кастомные
+    внешние ссылки (Zoom и т.п.)
     встроить нельзя — для них просто редиректим на ссылку.
     """
     from datetime import timedelta
@@ -1257,7 +1259,8 @@ def lesson_room(request, booking_id):
         return redirect(booking.meeting_url)
 
     now = timezone.now()
-    open_from = booking.slot.start_at - timedelta(minutes=15)
+    lead = getattr(settings, 'LESSON_JOIN_LEAD_MINUTES', 10)
+    open_from = booking.slot.start_at - timedelta(minutes=lead)
     open_until = booking.slot.end_at + timedelta(minutes=30)
 
     state = 'ok'
@@ -1288,6 +1291,7 @@ def lesson_room(request, booking_id):
         'display_name': user.get_full_name() or user.username,
         'other_name': other_name,
         'open_from': open_from,
+        'join_lead': lead,
     })
 
 
@@ -1355,7 +1359,7 @@ def leave_review(request, booking_id):
     if booking.student_id != request.user.pk:
         return HttpResponseForbidden('Отзыв может оставить только ученик этого урока.')
     if booking.status != 'completed':
-        messages.warning(request, 'Оставить отзыв можно только после завершения урока.')
+        messages.warning(request, _('Оставить отзыв можно только после завершения урока.'))
         return redirect('my_bookings_page')
 
     teacher = booking.slot.teacher
@@ -1385,7 +1389,7 @@ def leave_review(request, booking_id):
         review.is_verified = True
         review.save()
 
-        messages.success(request, 'Спасибо! Ваш отзыв сохранён.')
+        messages.success(request, _('Спасибо! Ваш отзыв сохранён.'))
         # Если пришли из подписки — возвращаем на /my/subscriptions/
         next_url = request.POST.get('next') or request.GET.get('next')
         if next_url and next_url.startswith('/'):
@@ -1422,6 +1426,7 @@ def _notify_teacher_about_booking(booking: Booking):
             target_user=teacher_user,
             priority=10,
             is_active=True,
+            category=Notification.Category.BOOKING,
             booking=booking,
         )
         # Notification post_save сигнал сам пушит WS — у нас уже есть push_notification_realtime
@@ -1436,25 +1441,28 @@ def _notify_student_about_decision(booking: Booking, decision: str):
         slot_str = booking.slot.start_at.strftime('%d.%m %H:%M')
         teacher_name = booking.slot.teacher.user.get_full_name() or booking.slot.teacher.user.username
         if decision == 'confirmed':
-            title = '✅ Урок подтверждён'
+            title = 'Урок подтверждён'
             short = f'Учитель {teacher_name} подтвердил урок на {slot_str}'
             text = f'Ваш урок с {teacher_name} на {slot_str} подтверждён.'
+            category = Notification.Category.SUCCESS
             if booking.teacher_reply:
                 text += f'\n\nСообщение учителя: {booking.teacher_reply}'
         elif decision == 'rejected':
-            title = '❌ Бронирование отклонено'
+            title = 'Бронирование отклонено'
             short = f'Учитель {teacher_name} отклонил вашу заявку на {slot_str}'
             text = f'Учитель {teacher_name} не может провести урок на {slot_str}.'
+            category = Notification.Category.WARNING
             if booking.teacher_reply:
                 text += f'\n\nСообщение: {booking.teacher_reply}'
         else:  # cancelled
             title = 'Урок отменён учителем'
             short = f'Учитель отменил урок на {slot_str}'
             text = f'Учитель {teacher_name} отменил подтверждённый ранее урок на {slot_str}.'
+            category = Notification.Category.WARNING
         Notification.objects.create(
             title=title, short_text=short, full_text=text,
             target='specific_user', target_user=booking.student,
-            priority=10, is_active=True,
+            priority=10, is_active=True, category=category,
         )
     except Exception as e:
         logger.warning(f'_notify_student_about_decision failed: {e}')
@@ -1486,7 +1494,7 @@ def _notify_teacher_about_cancellation(booking: Booking, by: str):
             short_text=f'{student_name} отменил слот {slot_str}',
             full_text=f'Ученик {student_name} отменил бронирование на {slot_str}. Слот снова свободен.',
             target='specific_user', target_user=booking.slot.teacher.user,
-            priority=5, is_active=True,
+            priority=5, is_active=True, category=Notification.Category.BOOKING,
         )
     except Exception as e:
         logger.warning(f'_notify_teacher_about_cancellation failed: {e}')

@@ -104,7 +104,13 @@
   </div>
 
   <div class="tsp-section">
-    <h2><i class="fas fa-book"></i> {% trans 'Домашние задания' %}</h2>
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <h2 style="margin:0;"><i class="fas fa-book"></i> {% trans 'Домашние задания' %}</h2>
+      <a href="{% url 'teacher_homework_create' %}?subscription={{ sub.id }}"
+         style="display:inline-flex; align-items:center; gap:8px; background:#7C3AED; color:#fff; padding:10px 16px; border-radius:10px; text-decoration:none; font-weight:600; font-size:14px;">
+        <i class="fas fa-plus"></i> {% trans 'Задать домашнее задание' %}
+      </a>
+    </div>
     {% if homeworks %}
       <table class="lessons">
         <thead>
@@ -122,7 +128,7 @@
         </tbody>
       </table>
     {% else %}
-      <div class="empty">Заданий пока нет. <a href="{% url 'teacher_homework_create' %}" style="color:#7C3AED;">Создать?</a></div>
+      <div class="empty">{% trans 'Заданий пока нет.' %} <a href="{% url 'teacher_homework_create' %}?subscription={{ sub.id }}" style="color:#7C3AED;">{% trans 'Создать?' %}</a></div>
     {% endif %}
   </div>
 </div>

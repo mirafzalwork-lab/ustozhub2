@@ -1,7 +1,29 @@
 # logic/templatetags/custom_filters.py
+import re
+
 from django import template
 
 register = template.Library()
+
+# Диапазоны эмодзи/пиктограмм Unicode. Используется для очистки текстов
+# уведомлений от стикеров — вместо них в UI рисуются Font Awesome иконки.
+_EMOJI_RE = re.compile(
+    "[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U00002B00-\U00002BFF"
+    "\U0001F1E6-\U0001F1FF\U0000FE00-\U0000FE0F\U00002190-\U000021FF\U00002700-\U000027BF]+",
+    flags=re.UNICODE,
+)
+
+
+@register.filter
+def strip_emoji(value):
+    """Убирает эмодзи/стикеры из строки и схлопывает лишние пробелы.
+
+    Нужно для legacy-уведомлений, у которых эмодзи зашит прямо в заголовок.
+    """
+    if not value:
+        return value
+    cleaned = _EMOJI_RE.sub('', str(value))
+    return re.sub(r'\s{2,}', ' ', cleaned).strip()
 
 @register.filter
 def split(value, delimiter=','):

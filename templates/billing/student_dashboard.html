@@ -31,6 +31,8 @@
     text-decoration: none; font-size: 13px; font-weight: 500;
   }
   .sdb-actions a:hover { background: rgba(255,255,255,.28); }
+  .sdb-actions a.primary { background: #fff; color: #1E40AF; font-weight: 600; }
+  .sdb-actions a.primary:hover { background: #EEF2FF; }
 
   .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .stat-row .cell { text-align: center; }
@@ -96,7 +98,11 @@
   {% if recent_trials_to_convert %}
   <div class="conv-banner">
     {% for item in recent_trials_to_convert %}
-      <div class="conv-card">
+      <div class="conv-card" data-subject="{{ item.subject.id }}"
+           data-dismiss-url="{% url 'dismiss_trial_suggestion' teacher_id=item.teacher.id %}">
+        <button type="button" class="conv-dismiss js-dismiss-trial" title="{% trans 'Убрать' %}" aria-label="{% trans 'Убрать' %}">
+          <i class="fas fa-xmark"></i>
+        </button>
         <div class="conv-head">
           <span class="conv-emoji"><i class="fas fa-circle-check"></i></span>
           <div class="conv-text">
@@ -127,9 +133,15 @@
               </a>
             {% endfor %}
           </div>
-          <a href="{% url 'home' %}#teachers" class="conv-alt">{% trans 'Попробовать другого учителя' %} →</a>
+          <div class="conv-foot">
+            <a href="{% url 'home' %}#teachers" class="conv-alt">{% trans 'Попробовать другого учителя' %} →</a>
+            <button type="button" class="conv-remove js-dismiss-trial">{% trans 'Убрать' %}</button>
+          </div>
         {% else %}
-          <a href="{% url 'continue_learning' teacher_id=item.teacher.id %}?subject={{ item.subject.id }}" class="conv-btn">{% trans 'Продолжить обучение' %} →</a>
+          <div class="conv-foot">
+            <a href="{% url 'continue_learning' teacher_id=item.teacher.id %}?subject={{ item.subject.id }}" class="conv-btn">{% trans 'Продолжить обучение' %} →</a>
+            <button type="button" class="conv-remove js-dismiss-trial">{% trans 'Убрать' %}</button>
+          </div>
         {% endif %}
       </div>
     {% endfor %}
@@ -173,6 +185,27 @@
       border-bottom: 1px dashed #B45309; padding-bottom: 1px;
     }
     .conv-alt:hover { color: #78350F; }
+    .conv-card { position: relative; }
+    .conv-dismiss {
+      position: absolute; top: 12px; right: 12px;
+      width: 28px; height: 28px; border-radius: 50%;
+      border: none; cursor: pointer; background: rgba(120, 53, 15, .08);
+      color: #92400E; font-size: 14px; line-height: 1;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: background .15s, color .15s;
+    }
+    .conv-dismiss:hover { background: rgba(120, 53, 15, .18); color: #78350F; }
+    .conv-foot {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; flex-wrap: wrap; margin-top: 12px;
+    }
+    .conv-foot .conv-alt, .conv-foot .conv-btn { margin-top: 0; }
+    .conv-remove {
+      background: transparent; border: 1px solid #D6A85B; color: #92400E;
+      padding: 8px 14px; border-radius: 8px; cursor: pointer;
+      font-weight: 600; font-size: 13px; transition: background .15s, color .15s;
+    }
+    .conv-remove:hover { background: #FDE68A; color: #78350F; }
   </style>
   {% endif %}
 
@@ -181,6 +214,7 @@
       <div class="lbl"><i class="fas fa-wallet"></i> {% trans 'Баланс кошелька' %}</div>
       <div class="amt">{{ wallet.balance|floatformat:0|intcomma }}<small> сум</small></div>
       <div class="sdb-actions">
+        <a href="{% url 'wallet_topup_request' %}" class="primary"><i class="fas fa-plus"></i> {% trans 'Пополнить баланс' %}</a>
         <a href="{% url 'home' %}#teachers"><i class="fas fa-magnifying-glass"></i> {% trans 'Найти учителя' %}</a>
         <a href="{% url 'my_subscriptions' %}"><i class="fas fa-box"></i> {% trans 'Подписки' %}</a>
       </div>
@@ -322,4 +356,44 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Скрытие карточки «Продолжить обучение» (учитель не понравился после пробного).
+  document.querySelectorAll('.js-dismiss-trial').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      const card = btn.closest('.conv-card');
+      if (!card) return;
+      const url = card.dataset.dismissUrl;
+      const subject = card.dataset.subject;
+      btn.disabled = true;
+      try {
+        const body = new URLSearchParams({ subject: subject });
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+          body: body,
+        });
+        const data = await resp.json();
+        if (data.success) {
+          card.style.transition = 'opacity .2s, transform .2s';
+          card.style.opacity = '0';
+          card.style.transform = 'translateY(-6px)';
+          setTimeout(function () {
+            const banner = card.closest('.conv-banner');
+            card.remove();
+            if (banner && !banner.querySelector('.conv-card')) banner.remove();
+          }, 200);
+        } else {
+          btn.disabled = false;
+          if (window.flashToast) window.flashToast('error', '{% trans "Не удалось убрать предложение" %}');
+        }
+      } catch (e) {
+        btn.disabled = false;
+        if (window.flashToast) window.flashToast('error', '{% trans "Произошла ошибка" %}');
+      }
+    });
+  });
+</script>
 {% endblock %}

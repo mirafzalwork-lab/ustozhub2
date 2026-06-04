@@ -34,6 +34,7 @@ urlpatterns = [
 
     # ТЗ flow: заявка → одобрение → оплата → бронь
     path('learn/<int:teacher_id>/continue/', views.continue_learning, name='continue_learning'),
+    path('learn/<int:teacher_id>/dismiss/', views.dismiss_trial_suggestion, name='dismiss_trial_suggestion'),
     path('profile/learning-requests/', views.teacher_learning_requests, name='teacher_learning_requests'),
     path('learning-requests/<uuid:sub_id>/action/', views.learning_request_action, name='learning_request_action'),
     path('subscriptions/<uuid:sub_id>/pay/', views.subscription_pay, name='subscription_pay'),

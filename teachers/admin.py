@@ -14,7 +14,7 @@ from .models import (
     Conversation, Message, Review, Favorite, SubjectSearchLog,
     ProfileView, TelegramUser, NotificationQueue, NotificationLog,
     Notification, NotificationRead, DailyReminderTemplate,
-    TimeSlot, Booking, LessonReminderSent,
+    TimeSlot, Booking, LessonReminderSent, LessonEvent,
 )
 from .admin_telegram_service import admin_telegram_service
 
@@ -894,6 +894,7 @@ class NotificationAdmin(admin.ModelAdmin):
     list_filter = (
         'is_active',
         'target',
+        'category',
         'priority',
         'created_at',
     )
@@ -905,8 +906,8 @@ class NotificationAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Основная информация', {
-            'fields': ('title', 'short_text', 'full_text'),
-            'description': 'Заголовок и текст уведомления'
+            'fields': ('title', 'short_text', 'full_text', 'category'),
+            'description': 'Заголовок, текст и категория уведомления (категория определяет иконку в интерфейсе)'
         }),
         ('Медиа и действие', {
             'fields': ('image', 'action_url'),
@@ -1214,3 +1215,12 @@ class LessonReminderSentAdmin(admin.ModelAdmin):
     date_hierarchy = 'sent_at'
     readonly_fields = ('booking', 'kind', 'channels', 'sent_at')
     ordering = ('-sent_at',)
+
+@admin.register(LessonEvent)
+class LessonEventAdmin(admin.ModelAdmin):
+    list_display = ('id', 'booking_id', 'kind', 'actor', 'created_at')
+    list_filter = ('kind', 'actor', 'created_at')
+    search_fields = ('booking__id',)
+    date_hierarchy = 'created_at'
+    readonly_fields = ('booking', 'kind', 'actor', 'meta', 'created_at')
+    ordering = ('-created_at',)

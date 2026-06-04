@@ -16,6 +16,7 @@ from botocore.exceptions import ClientError
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST, require_http_methods
 
 from .models import TeacherProfile
@@ -54,18 +55,18 @@ def video_presigned_url(request):
 
     # Only teachers can upload videos
     if request.user.user_type != 'teacher':
-        return JsonResponse({'error': 'Только учителя могут загружать видео'}, status=403)
+        return JsonResponse({'error': _('Только учителя могут загружать видео')}, status=403)
 
     try:
         teacher_profile = request.user.teacher_profile
     except TeacherProfile.DoesNotExist:
-        return JsonResponse({'error': 'Профиль учителя не найден'}, status=404)
+        return JsonResponse({'error': _('Профиль учителя не найден')}, status=404)
 
     # Parse request
     try:
         data = json.loads(request.body)
     except (json.JSONDecodeError, ValueError):
-        return JsonResponse({'error': 'Некорректный JSON'}, status=400)
+        return JsonResponse({'error': _('Некорректный JSON')}, status=400)
 
     content_type = data.get('content_type', '')
     file_size = data.get('file_size', 0)
@@ -73,17 +74,17 @@ def video_presigned_url(request):
     # Validate content type
     if content_type not in settings.VIDEO_ALLOWED_CONTENT_TYPES:
         return JsonResponse(
-            {'error': 'Допустимый формат: MP4 (video/mp4)'},
+            {'error': _('Допустимый формат: MP4 (video/mp4)')},
             status=400,
         )
 
     # Validate file size
     max_bytes = settings.VIDEO_MAX_SIZE_MB * 1024 * 1024
     if not file_size or file_size <= 0:
-        return JsonResponse({'error': 'Размер файла не указан'}, status=400)
+        return JsonResponse({'error': _('Размер файла не указан')}, status=400)
     if file_size > max_bytes:
         return JsonResponse(
-            {'error': f'Максимальный размер файла: {settings.VIDEO_MAX_SIZE_MB}MB'},
+            {'error': _('Максимальный размер файла: %(mb)sMB') % {'mb': settings.VIDEO_MAX_SIZE_MB}},
             status=400,
         )
 
@@ -105,7 +106,7 @@ def video_presigned_url(request):
         )
     except ClientError as e:
         logger.error(f"Failed to generate presigned URL: {e}", exc_info=True)
-        return JsonResponse({'error': 'Не удалось создать ссылку для загрузки'}, status=500)
+        return JsonResponse({'error': _('Не удалось создать ссылку для загрузки')}, status=500)
 
     # Build public file URL
     public_url = settings.S3_PUBLIC_URL.rstrip('/')
@@ -130,27 +131,27 @@ def video_save(request):
     import json
 
     if request.user.user_type != 'teacher':
-        return JsonResponse({'error': 'Только учителя могут загружать видео'}, status=403)
+        return JsonResponse({'error': _('Только учителя могут загружать видео')}, status=403)
 
     try:
         teacher_profile = request.user.teacher_profile
     except TeacherProfile.DoesNotExist:
-        return JsonResponse({'error': 'Профиль учителя не найден'}, status=404)
+        return JsonResponse({'error': _('Профиль учителя не найден')}, status=404)
 
     try:
         data = json.loads(request.body)
     except (json.JSONDecodeError, ValueError):
-        return JsonResponse({'error': 'Некорректный JSON'}, status=400)
+        return JsonResponse({'error': _('Некорректный JSON')}, status=400)
 
     file_url = data.get('file_url', '').strip()
 
     if not file_url:
-        return JsonResponse({'error': 'URL видео не указан'}, status=400)
+        return JsonResponse({'error': _('URL видео не указан')}, status=400)
 
     # Validate that the URL points to our storage
     expected_prefix = settings.S3_PUBLIC_URL.rstrip('/')
     if not file_url.startswith(expected_prefix):
-        return JsonResponse({'error': 'Недопустимый URL видео'}, status=400)
+        return JsonResponse({'error': _('Недопустимый URL видео')}, status=400)
 
     # IDOR-защита: разрешаем ТОЛЬКО собственный путь учителя или загрузку
     # текущей сессии (видео, залитое в этой же сессии регистрации).
@@ -160,7 +161,7 @@ def video_save(request):
     if session_key:
         allowed_prefixes.append(f"{expected_prefix}/videos/teachers/new/{session_key}/")
     if not any(file_url.startswith(p) for p in allowed_prefixes):
-        return JsonResponse({'error': 'Нет доступа к этому файлу'}, status=403)
+        return JsonResponse({'error': _('Нет доступа к этому файлу')}, status=403)
 
     # Delete old video from storage if replacing
     if teacher_profile.video_url:
@@ -179,15 +180,15 @@ def video_delete(request):
     Delete video from teacher profile and from S3 storage.
     """
     if request.user.user_type != 'teacher':
-        return JsonResponse({'error': 'Только учителя могут управлять видео'}, status=403)
+        return JsonResponse({'error': _('Только учителя могут управлять видео')}, status=403)
 
     try:
         teacher_profile = request.user.teacher_profile
     except TeacherProfile.DoesNotExist:
-        return JsonResponse({'error': 'Профиль учителя не найден'}, status=404)
+        return JsonResponse({'error': _('Профиль учителя не найден')}, status=404)
 
     if not teacher_profile.video_url:
-        return JsonResponse({'error': 'Видео не найдено'}, status=404)
+        return JsonResponse({'error': _('Видео не найдено')}, status=404)
 
     # Delete from storage
     _delete_video_from_storage(teacher_profile.video_url)
@@ -210,20 +211,20 @@ def video_presigned_url_register(request):
     try:
         data = json.loads(request.body)
     except (json.JSONDecodeError, ValueError):
-        return JsonResponse({'error': 'Некорректный JSON'}, status=400)
+        return JsonResponse({'error': _('Некорректный JSON')}, status=400)
 
     content_type = data.get('content_type', '')
     file_size = data.get('file_size', 0)
 
     if content_type not in settings.VIDEO_ALLOWED_CONTENT_TYPES:
-        return JsonResponse({'error': 'Допустимый формат: MP4 (video/mp4)'}, status=400)
+        return JsonResponse({'error': _('Допустимый формат: MP4 (video/mp4)')}, status=400)
 
     max_bytes = settings.VIDEO_MAX_SIZE_MB * 1024 * 1024
     if not file_size or file_size <= 0:
-        return JsonResponse({'error': 'Размер файла не указан'}, status=400)
+        return JsonResponse({'error': _('Размер файла не указан')}, status=400)
     if file_size > max_bytes:
         return JsonResponse(
-            {'error': f'Максимальный размер файла: {settings.VIDEO_MAX_SIZE_MB}MB'},
+            {'error': _('Максимальный размер файла: %(mb)sMB') % {'mb': settings.VIDEO_MAX_SIZE_MB}},
             status=400,
         )
 
@@ -249,7 +250,7 @@ def video_presigned_url_register(request):
         )
     except ClientError as e:
         logger.error(f"Failed to generate presigned URL (register): {e}", exc_info=True)
-        return JsonResponse({'error': 'Не удалось создать ссылку для загрузки'}, status=500)
+        return JsonResponse({'error': _('Не удалось создать ссылку для загрузки')}, status=500)
 
     public_url = settings.S3_PUBLIC_URL.rstrip('/')
     file_url = f"{public_url}/{file_key}"

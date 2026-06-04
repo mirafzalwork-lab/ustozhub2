@@ -45,6 +45,7 @@ def release_pending_payouts():
         Booking.objects
         .filter(status__in=('completed', 'no_show_student'),
                 subscription__isnull=False, slot__end_at__lt=threshold)
+        .exclude(no_show_forgiven=True)   # прощённая неявка — выплаты нет (ТЗ §6)
         .exclude(dispute__status='open')  # заморозка выплаты на время спора
         .select_related('subscription', 'slot')
         .order_by('slot__end_at')[:500]

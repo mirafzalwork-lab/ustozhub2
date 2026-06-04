@@ -1,10 +1,11 @@
 {% extends 'registration/base_wizard.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block step_content %}
 <div class="form-section">
-    <h3 class="section-title">Связь с учениками</h3>
-    <p class="section-description">Укажите, как ученики смогут с вами связаться.</p>
+    <h3 class="section-title">{% trans "Связь с учениками" %}</h3>
+    <p class="section-description">{% trans "Укажите, как ученики смогут с вами связаться." %}</p>
     
     <div class="form-group">
         <label class="form-label" for="{{ wizard.form.telegram.id_for_label }}">
@@ -39,7 +40,7 @@
 </div>
 
 <div class="form-section">
-    <h3 class="section-title">Формат обучения</h3>
+    <h3 class="section-title">{% trans "Формат обучения" %}</h3>
     
     <div class="form-group">
         <label class="form-label">
@@ -84,14 +85,14 @@
 
 <div class="form-section">
     <h3 class="section-title">
-        Ваше расписание
-        <span class="optional-badge">необязательно</span>
+        {% trans "Ваше расписание" %}
+        <span class="optional-badge">{% trans "необязательно" %}</span>
     </h3>
     <p class="section-description">
-        Включите рабочие дни и добавьте интервалы времени. В один день можно задать
-        несколько интервалов — например, 09:00–10:00 и 15:00–16:00.
+        {% blocktrans %}Включите рабочие дни и добавьте интервалы времени. В один день можно задать
+        несколько интервалов — например, 09:00–10:00 и 15:00–16:00.{% endblocktrans %}
         <br>
-        <strong>Можно пропустить</strong> и заполнить позже в календаре после регистрации.
+        {% blocktrans %}<strong>Можно пропустить</strong> и заполнить позже в календаре после регистрации.{% endblocktrans %}
     </p>
 
     <!-- Скрытые поля -->

@@ -9,6 +9,7 @@ from django.conf import settings
 from django.db import transaction
 from django.urls import reverse
 from django.core.files.storage import FileSystemStorage
+from django.utils.translation import gettext as _
 from django import forms as dj_forms
 from formtools.wizard.views import SessionWizardView
 import logging
@@ -406,7 +407,7 @@ class TeacherRegistrationWizard(SessionWizardView):
             # Success message
             messages.success(
                 self.request,
-                'Регистрация завершена! Ваш профиль отправлен на модерацию.'
+                _('Регистрация завершена! Ваш профиль отправлен на модерацию.')
             )
             
             # Redirect to completion page
@@ -415,7 +416,7 @@ class TeacherRegistrationWizard(SessionWizardView):
         except Exception as e:
             messages.error(
                 self.request,
-                f'Произошла ошибка при сохранении данных: {str(e)}'
+                _('Произошла ошибка при сохранении данных: %(err)s') % {'err': str(e)}
             )
             return redirect('teacher_register')
     
@@ -581,7 +582,7 @@ class TeacherRegistrationWizard(SessionWizardView):
             except Exception:
                 action_url = ''
             Notification.objects.create(
-                title="🆕 Новая заявка учителя на модерацию",
+                title="Новая заявка учителя на модерацию",
                 short_text=f"{teacher_name} зарегистрировался и ожидает проверки профиля.",
                 full_text=(
                     f"Новый преподаватель {teacher_name} (@{user.username}) "
@@ -591,6 +592,7 @@ class TeacherRegistrationWizard(SessionWizardView):
                 target='admins',
                 is_active=True,
                 priority=5,
+                category=Notification.Category.MODERATION,
                 action_url=action_url or None,
             )
             logger.info(f"Moderator notification created for new teacher: {user.username}")
@@ -605,11 +607,11 @@ def teacher_register_complete(request):
     """
     # Check if user just completed registration
     if not request.user.is_authenticated:
-        messages.warning(request, 'Пожалуйста, завершите регистрацию')
+        messages.warning(request, _('Пожалуйста, завершите регистрацию'))
         return redirect('teacher_register')
     
     if not hasattr(request.user, 'teacher_profile'):
-        messages.warning(request, 'Профиль учителя не найден')
+        messages.warning(request, _('Профиль учителя не найден'))
         return redirect('home')
     
     teacher_profile = request.user.teacher_profile

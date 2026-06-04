@@ -193,8 +193,14 @@
         <a href="{% url 'tariffs_list' %}" style="display:block; background:#FEF3C7; color:#92400E; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500; margin-bottom:8px;">
           <i class="fas fa-briefcase"></i> {% trans 'Мои тарифы' %}
         </a>
-        <a href="{% url 'withdrawals_list' %}" style="display:block; background:#ECFDF5; color:#065F46; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500;">
+        <a href="{% url 'withdrawals_list' %}" style="display:block; background:#ECFDF5; color:#065F46; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500; margin-bottom:8px;">
           <i class="fas fa-money-bill-transfer"></i> {% trans 'Вывод средств' %}
+        </a>
+        <a href="{% url 'potential_students' %}" style="display:block; background:#FFF7ED; color:#C2410C; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500; margin-bottom:8px;">
+          <i class="fas fa-user-check"></i> {% trans 'Потенциальные ученики' %}
+        </a>
+        <a href="{% url 'home' %}" style="display:block; background:#EFF6FF; color:#1D4ED8; padding:10px 14px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500;">
+          <i class="fas fa-chalkboard-user"></i> {% trans 'Посмотреть других преподавателей' %}
         </a>
       </div>
 

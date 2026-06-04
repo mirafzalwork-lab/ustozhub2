@@ -319,20 +319,22 @@ def _notify_topup(user, amount, credited: bool) -> None:
         balance_str = f'{int(user.wallet.balance):,}'.replace(',', ' ')
 
         if credited:
-            title = '💳 Кошелёк пополнен'
+            title = 'Кошелёк пополнен'
             short = f'+{amount_str} сум. Баланс: {balance_str} сум.'
             full = (
                 f'Ваш кошелёк пополнен на {amount_str} сум. '
                 f'Текущий баланс: {balance_str} сум. '
                 f'Теперь вы можете оформить подписку или забронировать уроки.'
             )
+            category = Notification.Category.PAYMENT_IN
         else:
-            title = '💸 Списание с кошелька'
+            title = 'Списание с кошелька'
             short = f'−{amount_str} сум. Баланс: {balance_str} сум.'
             full = (
                 f'С вашего кошелька списано {amount_str} сум. '
                 f'Текущий баланс: {balance_str} сум.'
             )
+            category = Notification.Category.PAYMENT_OUT
 
         Notification.objects.create(
             target='specific_user',
@@ -341,6 +343,7 @@ def _notify_topup(user, amount, credited: bool) -> None:
             short_text=short,
             full_text=full,
             priority=10,
+            category=category,
             action_url='/billing/my/wallet/topup/' if credited else '/billing/my/subscriptions/',
         )
     except Exception:

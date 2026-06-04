@@ -24,7 +24,7 @@
       <select id="sub-select" name="subscription" required class="form-select">
         <option value="">— {% trans 'выберите' %} —</option>
         {% for s in active_subs %}
-          <option value="{{ s.id }}">
+          <option value="{{ s.id }}"{% if s.id|stringformat:'s' == preselected_sub_id %} selected{% endif %}>
             {{ s.student.get_full_name|default:s.student.username }} · {{ s.subject.name }}
             ({{ s.completed_lessons }}/{{ s.total_lessons }})
           </option>

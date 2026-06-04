@@ -48,6 +48,9 @@ def _connect_booking_signals():
         # переходе completed → no_show_student и наоборот.
         if prev in DELIVERED_STATUSES or instance.status not in DELIVERED_STATUSES:
             return
+        # Прощённая неявка (ТЗ §6) — урок возвращается ученику, НЕ потреблён.
+        if instance.status == 'no_show_student' and getattr(instance, 'no_show_forgiven', False):
+            return
         if not instance.subscription_id:
             return
         # Атомарно инкрементим счётчик подписки.

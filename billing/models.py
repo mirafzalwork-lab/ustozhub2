@@ -13,6 +13,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 
 # ---------- Wallet ----------------------------------------------------------
@@ -30,31 +31,31 @@ class Wallet(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name='wallet',
-        verbose_name='Пользователь',
+        verbose_name=_('Пользователь'),
     )
     balance = models.DecimalField(
         max_digits=14,
         decimal_places=2,
         default=Decimal('0.00'),
-        verbose_name='Баланс',
-        help_text='Денормализованный баланс. Источник правды — Transaction ledger.',
+        verbose_name=_('Баланс'),
+        help_text=_('Денормализованный баланс. Источник правды — Transaction ledger.'),
     )
     currency = models.CharField(
         max_length=3,
         default='UZS',
-        verbose_name='Валюта',
+        verbose_name=_('Валюта'),
     )
     last_transaction_at = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name='Последняя транзакция',
+        verbose_name=_('Последняя транзакция'),
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = 'Кошелёк'
-        verbose_name_plural = 'Кошельки'
+        verbose_name = _('Кошелёк')
+        verbose_name_plural = _('Кошельки')
         constraints = [
             models.CheckConstraint(
                 check=models.Q(balance__gte=Decimal('0')),
@@ -78,22 +79,22 @@ class Transaction(models.Model):
 
     class Type(models.TextChoices):
         # Пополнения (amount > 0)
-        DEPOSIT = 'deposit', 'Пополнение баланса'
-        REFUND = 'refund', 'Возврат за неиспользованные уроки'
-        LESSON_PAYOUT = 'lesson_payout', 'Выплата учителю за урок'
-        COMMISSION = 'commission', 'Комиссия платформы (доход)'
-        ADJUSTMENT_IN = 'adjustment_in', 'Корректировка (зачисление)'
+        DEPOSIT = 'deposit', _('Пополнение баланса')
+        REFUND = 'refund', _('Возврат за неиспользованные уроки')
+        LESSON_PAYOUT = 'lesson_payout', _('Выплата учителю за урок')
+        COMMISSION = 'commission', _('Комиссия платформы (доход)')
+        ADJUSTMENT_IN = 'adjustment_in', _('Корректировка (зачисление)')
 
         # Списания (amount < 0)
-        PURCHASE = 'purchase', 'Покупка подписки'
-        WITHDRAWAL = 'withdrawal', 'Вывод средств'
-        COMMISSION_DEDUCT = 'commission_deduct', 'Удержание комиссии'
-        ADJUSTMENT_OUT = 'adjustment_out', 'Корректировка (списание)'
+        PURCHASE = 'purchase', _('Покупка подписки')
+        WITHDRAWAL = 'withdrawal', _('Вывод средств')
+        COMMISSION_DEDUCT = 'commission_deduct', _('Удержание комиссии')
+        ADJUSTMENT_OUT = 'adjustment_out', _('Корректировка (списание)')
 
     class Status(models.TextChoices):
-        PENDING = 'pending', 'В обработке'
-        COMPLETED = 'completed', 'Завершена'
-        REVERSED = 'reversed', 'Отменена'
+        PENDING = 'pending', _('В обработке')
+        COMPLETED = 'completed', _('Завершена')
+        REVERSED = 'reversed', _('Отменена')
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     wallet = models.ForeignKey(
@@ -104,12 +105,12 @@ class Transaction(models.Model):
     amount = models.DecimalField(
         max_digits=14,
         decimal_places=2,
-        help_text='Знаковая сумма: > 0 — зачисление, < 0 — списание.',
+        help_text=_('Знаковая сумма: > 0 — зачисление, < 0 — списание.'),
     )
     balance_after = models.DecimalField(
         max_digits=14,
         decimal_places=2,
-        help_text='Снимок баланса кошелька после применения транзакции.',
+        help_text=_('Снимок баланса кошелька после применения транзакции.'),
     )
     type = models.CharField(max_length=32, choices=Type.choices)
     status = models.CharField(
@@ -120,7 +121,7 @@ class Transaction(models.Model):
     idempotency_key = models.CharField(
         max_length=128,
         unique=True,
-        help_text='Уникальный ключ операции. Повторный вызов с тем же ключом — no-op.',
+        help_text=_('Уникальный ключ операции. Повторный вызов с тем же ключом — no-op.'),
     )
     related_booking = models.ForeignKey(
         'teachers.Booking',
@@ -140,14 +141,14 @@ class Transaction(models.Model):
         max_length=128,
         blank=True,
         default='',
-        help_text='Внешний ID операции (например, payment_id от Payme/Click).',
+        help_text=_('Внешний ID операции (например, payment_id от Payme/Click).'),
     )
     description = models.TextField(blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = 'Финансовая транзакция'
-        verbose_name_plural = 'Финансовые транзакции'
+        verbose_name = _('Финансовая транзакция')
+        verbose_name_plural = _('Финансовые транзакции')
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['wallet', '-created_at']),
@@ -183,42 +184,42 @@ class Tariff(models.Model):
 
     LESSONS_PER_WEEK_CHOICES = [(i, f'{i} в неделю') for i in (1, 2, 3, 4, 5)]
     DURATION_MINUTES_CHOICES = [
-        (30, '30 минут'),
-        (45, '45 минут'),
-        (60, '60 минут'),
-        (90, '90 минут'),
+        (30, _('30 минут')),
+        (45, _('45 минут')),
+        (60, _('60 минут')),
+        (90, _('90 минут')),
     ]
     DURATION_MONTHS_CHOICES = [
-        (1, '1 месяц'),
-        (2, '2 месяца'),
-        (3, '3 месяца'),
-        (6, '6 месяцев'),
-        (12, '12 месяцев'),
+        (1, _('1 месяц')),
+        (2, _('2 месяца')),
+        (3, _('3 месяца')),
+        (6, _('6 месяцев')),
+        (12, _('12 месяцев')),
     ]
 
     teacher = models.ForeignKey(
         'teachers.TeacherProfile',
         on_delete=models.CASCADE,
         related_name='tariffs',
-        verbose_name='Учитель',
+        verbose_name=_('Учитель'),
     )
     subject = models.ForeignKey(
         'teachers.Subject',
         on_delete=models.PROTECT,
         related_name='tariffs',
-        verbose_name='Предмет',
+        verbose_name=_('Предмет'),
     )
 
     name = models.CharField(
         max_length=80,
         blank=True,
         default='',
-        help_text='Опционально: «Базовый», «Стандарт», «Премиум».',
+        help_text=_('Опционально: «Базовый», «Стандарт», «Премиум».'),
     )
     description = models.TextField(
         blank=True,
         default='',
-        help_text='Чему ученик научится за этот тариф (опционально).',
+        help_text=_('Чему ученик научится за этот тариф (опционально).'),
     )
 
     lessons_per_week = models.PositiveSmallIntegerField(
@@ -232,33 +233,33 @@ class Tariff(models.Model):
     duration_months = models.PositiveSmallIntegerField(
         choices=DURATION_MONTHS_CHOICES,
         default=1,
-        help_text='Срок подписки в месяцах (минимум 1).',
+        help_text=_('Срок подписки в месяцах (минимум 1).'),
     )
     price_per_month = models.DecimalField(
         max_digits=14,
         decimal_places=2,
-        help_text='Цена за 1 месяц этого тарифа в сумах.',
+        help_text=_('Цена за 1 месяц этого тарифа в сумах.'),
     )
 
     is_active = models.BooleanField(
         default=True,
-        help_text='Если выключен — нельзя купить, но активные подписки продолжают работать.',
+        help_text=_('Если выключен — нельзя купить, но активные подписки продолжают работать.'),
     )
     is_recommended = models.BooleanField(
         default=False,
-        help_text='Учитель помечает один тариф как рекомендованный — выделяется в UI.',
+        help_text=_('Учитель помечает один тариф как рекомендованный — выделяется в UI.'),
     )
     sort_order = models.PositiveSmallIntegerField(
         default=0,
-        help_text='Порядок отображения (меньше = выше).',
+        help_text=_('Порядок отображения (меньше = выше).'),
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = 'Тариф'
-        verbose_name_plural = 'Тарифы'
+        verbose_name = _('Тариф')
+        verbose_name_plural = _('Тарифы')
         ordering = ['sort_order', '-is_recommended', 'price_per_month']
         indexes = [
             models.Index(fields=['teacher', 'is_active']),
@@ -318,15 +319,15 @@ class Subscription(models.Model):
     """
 
     class Status(models.TextChoices):
-        PENDING_APPROVAL = 'pending_approval', 'Ожидает подтверждения учителя'
-        PENDING_PAYMENT = 'pending_payment', 'Одобрена, ожидает оплаты'
-        ACTIVE = 'active', 'Активна'
-        PAUSED = 'paused', 'Приостановлена'
-        COMPLETED = 'completed', 'Завершена (все уроки)'
-        EXPIRED = 'expired', 'Истёкла (срок вышел)'
-        CANCELLED_BY_STUDENT = 'cancelled_by_student', 'Отменена учеником'
-        CANCELLED_BY_TEACHER = 'cancelled_by_teacher', 'Отклонена/отменена учителем'
-        CANCELLED_BY_ADMIN = 'cancelled_by_admin', 'Отменена администрацией'
+        PENDING_APPROVAL = 'pending_approval', _('Ожидает подтверждения учителя')
+        PENDING_PAYMENT = 'pending_payment', _('Одобрена, ожидает оплаты')
+        ACTIVE = 'active', _('Активна')
+        PAUSED = 'paused', _('Приостановлена')
+        COMPLETED = 'completed', _('Завершена (все уроки)')
+        EXPIRED = 'expired', _('Истёкла (срок вышел)')
+        CANCELLED_BY_STUDENT = 'cancelled_by_student', _('Отменена учеником')
+        CANCELLED_BY_TEACHER = 'cancelled_by_teacher', _('Отклонена/отменена учителем')
+        CANCELLED_BY_ADMIN = 'cancelled_by_admin', _('Отменена администрацией')
 
     # Активные статусы — нельзя создать вторую заявку/подписку с тем же
     # учителем и предметом, пока есть незавершённая в одном из этих статусов.
@@ -360,7 +361,7 @@ class Subscription(models.Model):
         null=True,
         blank=True,
         related_name='subscriptions',
-        help_text='Из какого тарифа куплено. Может быть NULL, если тариф удалён.',
+        help_text=_('Из какого тарифа куплено. Может быть NULL, если тариф удалён.'),
     )
 
     status = models.CharField(
@@ -375,38 +376,38 @@ class Subscription(models.Model):
     lesson_duration_minutes = models.PositiveSmallIntegerField()
     duration_months = models.PositiveSmallIntegerField()
     total_lessons = models.PositiveIntegerField(
-        help_text='Сколько уроков всего по этой подписке.',
+        help_text=_('Сколько уроков всего по этой подписке.'),
     )
     price_total = models.DecimalField(
         max_digits=14, decimal_places=2,
-        help_text='Полная стоимость подписки в момент покупки.',
+        help_text=_('Полная стоимость подписки в момент покупки.'),
     )
     price_per_lesson = models.DecimalField(
         max_digits=14, decimal_places=2,
-        help_text='Стоимость одного урока = price_total / total_lessons.',
+        help_text=_('Стоимость одного урока = price_total / total_lessons.'),
     )
     commission_rate = models.DecimalField(
         max_digits=5, decimal_places=4,
-        help_text='Доля платформы в payout (0..1). Snapshot на момент покупки.',
+        help_text=_('Доля платформы в payout (0..1). Snapshot на момент покупки.'),
     )
 
     # ---- Счётчики (меняются по ходу подписки) ----
     escrow_balance = models.DecimalField(
         max_digits=14, decimal_places=2,
         default=Decimal('0.00'),
-        help_text='Сколько денег ещё лежит в эскроу платформы по этой подписке.',
+        help_text=_('Сколько денег ещё лежит в эскроу платформы по этой подписке.'),
     )
     completed_lessons = models.PositiveIntegerField(default=0)
     lessons_paid_out = models.PositiveIntegerField(
         default=0,
-        help_text='Сколько уроков уже выплачено учителю (после grace window).',
+        help_text=_('Сколько уроков уже выплачено учителю (после grace window).'),
     )
 
     # ---- Лимит переносов (на подписку, окно — календарный месяц) ----
     reschedules_used = models.PositiveSmallIntegerField(default=0)
     reschedules_period = models.CharField(
         max_length=7, blank=True, default='',
-        help_text='Месяц действия счётчика переносов в формате YYYY-MM.',
+        help_text=_('Месяц действия счётчика переносов в формате YYYY-MM.'),
     )
 
     # ---- Даты ----
@@ -419,19 +420,19 @@ class Subscription(models.Model):
     # ---- Flow «заявка → одобрение → оплата → бронь» (ТЗ) ----
     approved_at = models.DateTimeField(
         null=True, blank=True,
-        help_text='Когда учитель подтвердил заявку на обучение.',
+        help_text=_('Когда учитель подтвердил заявку на обучение.'),
     )
     approval_expires_at = models.DateTimeField(
         null=True, blank=True,
-        help_text='Дедлайн оплаты одобренной заявки (после — EXPIRED).',
+        help_text=_('Дедлайн оплаты одобренной заявки (после — EXPIRED).'),
     )
     preferred_schedule = models.TextField(
         blank=True, default='',
-        help_text='Предпочтительное расписание/пожелания ученика из заявки.',
+        help_text=_('Предпочтительное расписание/пожелания ученика из заявки.'),
     )
     weekly_pattern = models.JSONField(
         null=True, blank=True, default=None,
-        help_text='Подтверждённый недельный шаблон броней: [{"day":"monday","time":"18:00"}, ...].',
+        help_text=_('Подтверждённый недельный шаблон броней: [{"day":"monday","time":"18:00"}, ...].'),
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -441,12 +442,12 @@ class Subscription(models.Model):
     purchase_idempotency_key = models.CharField(
         max_length=128,
         unique=True,
-        help_text='Гарантирует один Subscription при повторных submit.',
+        help_text=_('Гарантирует один Subscription при повторных submit.'),
     )
 
     class Meta:
-        verbose_name = 'Подписка'
-        verbose_name_plural = 'Подписки'
+        verbose_name = _('Подписка')
+        verbose_name_plural = _('Подписки')
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['student', 'status']),
@@ -637,16 +638,16 @@ class WithdrawalRequest(models.Model):
     """
 
     class Status(models.TextChoices):
-        PENDING = 'pending', 'Ожидает подтверждения'
-        APPROVED = 'approved', 'Одобрена (перевод в процессе)'
-        COMPLETED = 'completed', 'Выполнена'
-        REJECTED = 'rejected', 'Отклонена'
-        CANCELLED = 'cancelled', 'Отменена пользователем'
+        PENDING = 'pending', _('Ожидает подтверждения')
+        APPROVED = 'approved', _('Одобрена (перевод в процессе)')
+        COMPLETED = 'completed', _('Выполнена')
+        REJECTED = 'rejected', _('Отклонена')
+        CANCELLED = 'cancelled', _('Отменена пользователем')
 
     class PayoutMethod(models.TextChoices):
-        CARD = 'card', 'Карта (UzCard / Humo / Visa)'
-        PHONE = 'phone', 'На номер телефона'
-        OTHER = 'other', 'Другое'
+        CARD = 'card', _('Карта (UzCard / Humo / Visa)')
+        PHONE = 'phone', _('На номер телефона')
+        OTHER = 'other', _('Другое')
 
     OPEN_STATUSES = (Status.PENDING, Status.APPROVED)
 
@@ -670,7 +671,7 @@ class WithdrawalRequest(models.Model):
     )
     payout_details = models.CharField(
         max_length=200,
-        help_text='Номер карты / номер телефона / другие реквизиты.',
+        help_text=_('Номер карты / номер телефона / другие реквизиты.'),
     )
     comment = models.TextField(blank=True, default='', max_length=500)
 
@@ -679,7 +680,7 @@ class WithdrawalRequest(models.Model):
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='+',
-        help_text='Админ, который последним менял статус.',
+        help_text=_('Админ, который последним менял статус.'),
     )
     admin_note = models.TextField(blank=True, default='', max_length=1000)
 
@@ -690,14 +691,14 @@ class WithdrawalRequest(models.Model):
     idempotency_key = models.CharField(
         max_length=128,
         unique=True,
-        help_text='Защита от двойного submit формы.',
+        help_text=_('Защита от двойного submit формы.'),
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = 'Заявка на вывод средств'
-        verbose_name_plural = 'Заявки на вывод средств'
+        verbose_name = _('Заявка на вывод средств')
+        verbose_name_plural = _('Заявки на вывод средств')
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['user', 'status']),
@@ -739,10 +740,10 @@ class Homework(models.Model):
     """
 
     class Status(models.TextChoices):
-        ASSIGNED = 'assigned', 'Задано'
-        SUBMITTED = 'submitted', 'Сдано на проверку'
-        GRADED = 'graded', 'Проверено'
-        RETURNED = 'returned', 'Возвращено на доработку'
+        ASSIGNED = 'assigned', _('Задано')
+        SUBMITTED = 'submitted', _('Сдано на проверку')
+        GRADED = 'graded', _('Проверено')
+        RETURNED = 'returned', _('Возвращено на доработку')
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -766,7 +767,7 @@ class Homework(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(max_length=5000)
     due_at = models.DateTimeField(null=True, blank=True,
-                                   help_text='Опциональный дедлайн.')
+                                   help_text=_('Опциональный дедлайн.'))
     status = models.CharField(
         max_length=16,
         choices=Status.choices,
@@ -778,8 +779,8 @@ class Homework(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = 'Домашнее задание'
-        verbose_name_plural = 'Домашние задания'
+        verbose_name = _('Домашнее задание')
+        verbose_name_plural = _('Домашние задания')
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['subscription', '-created_at']),
@@ -806,13 +807,13 @@ class HomeworkAttachment(models.Model):
     )
     file = models.FileField(upload_to=_homework_upload_path)
     filename = models.CharField(max_length=255)
-    file_size = models.PositiveIntegerField(help_text='Размер в байтах')
+    file_size = models.PositiveIntegerField(help_text=_('Размер в байтах'))
     mime_type = models.CharField(max_length=80, blank=True, default='')
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = 'Файл задания'
-        verbose_name_plural = 'Файлы заданий'
+        verbose_name = _('Файл задания')
+        verbose_name_plural = _('Файлы заданий')
 
     def __str__(self) -> str:
         return f'{self.filename} ({self.file_size}B)'
@@ -833,7 +834,7 @@ class HomeworkSubmission(models.Model):
     grade = models.PositiveSmallIntegerField(
         null=True, blank=True,
         validators=[],  # 0..100, проверим на уровне формы
-        help_text='Оценка от 0 до 100.',
+        help_text=_('Оценка от 0 до 100.'),
     )
     feedback = models.TextField(max_length=2000, blank=True, default='')
 
@@ -842,8 +843,8 @@ class HomeworkSubmission(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = 'Сдача ДЗ'
-        verbose_name_plural = 'Сдачи ДЗ'
+        verbose_name = _('Сдача ДЗ')
+        verbose_name_plural = _('Сдачи ДЗ')
         constraints = [
             models.CheckConstraint(
                 check=models.Q(grade__isnull=True) | (models.Q(grade__gte=0) & models.Q(grade__lte=100)),
@@ -868,8 +869,8 @@ class HomeworkSubmissionFile(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = 'Файл сдачи'
-        verbose_name_plural = 'Файлы сдач'
+        verbose_name = _('Файл сдачи')
+        verbose_name_plural = _('Файлы сдач')
 
     def __str__(self) -> str:
         return f'{self.filename} ({self.file_size}B)'
@@ -888,10 +889,10 @@ class LessonDispute(models.Model):
     """
 
     class Status(models.TextChoices):
-        OPEN = 'open', 'Открыт'
-        RESOLVED_REFUND = 'resolved_refund', 'Решён в пользу ученика (возврат)'
-        RESOLVED_REJECTED = 'resolved_rejected', 'Отклонён (выплата учителю)'
-        CANCELLED = 'cancelled', 'Отозван учеником'
+        OPEN = 'open', _('Открыт')
+        RESOLVED_REFUND = 'resolved_refund', _('Решён в пользу ученика (возврат)')
+        RESOLVED_REJECTED = 'resolved_rejected', _('Отклонён (выплата учителю)')
+        CANCELLED = 'cancelled', _('Отозван учеником')
 
     OPEN_STATUSES = (Status.OPEN,)
 
@@ -915,8 +916,8 @@ class LessonDispute(models.Model):
     resolved_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        verbose_name = 'Спор по уроку'
-        verbose_name_plural = 'Споры по урокам'
+        verbose_name = _('Спор по уроку')
+        verbose_name_plural = _('Споры по урокам')
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['status', '-created_at']),
@@ -924,3 +925,48 @@ class LessonDispute(models.Model):
 
     def __str__(self) -> str:
         return f'Dispute#{str(self.id)[:8]} booking={self.booking_id} {self.status}'
+
+
+# ---------- DismissedTrialSuggestion ----------------------------------------
+
+
+class DismissedTrialSuggestion(models.Model):
+    """Ученик скрыл предложение «Продолжить обучение» после пробного урока.
+
+    Если после пробного урока учитель не понравился, ученик нажимает «Убрать»
+    на карточке конверсии в дашборде. Запись (student, teacher, subject) гасит
+    эту рекомендацию навсегда — она больше не показывается.
+    """
+
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='dismissed_trial_suggestions',
+    )
+    teacher = models.ForeignKey(
+        'teachers.TeacherProfile',
+        on_delete=models.CASCADE,
+        related_name='+',
+    )
+    subject = models.ForeignKey(
+        'teachers.Subject',
+        on_delete=models.CASCADE,
+        related_name='+',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('Скрытое предложение пробного')
+        verbose_name_plural = _('Скрытые предложения пробного')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['student', 'teacher', 'subject'],
+                name='uniq_dismissed_trial_per_student_teacher_subject',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['student']),
+        ]
+
+    def __str__(self) -> str:
+        return f'Dismissed trial: student={self.student_id} teacher={self.teacher_id} subject={self.subject_id}'

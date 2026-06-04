@@ -103,7 +103,7 @@
             {% if state == 'too_early' %}
                 <i class="fa-regular fa-clock"></i>
                 <h2>{% trans "Комната ещё закрыта" %}</h2>
-                <p>{% trans "Вы сможете войти за 15 минут до начала урока" %} — {{ open_from|date:"d.m.Y H:i" }}.</p>
+                <p>{% blocktrans %}Вы сможете войти за {{ join_lead }} минут до начала урока{% endblocktrans %} — {{ open_from|date:"d.m.Y H:i" }}.</p>
             {% elif state == 'too_late' %}
                 <i class="fa-regular fa-circle-check"></i>
                 <h2>{% trans "Урок завершён" %}</h2>

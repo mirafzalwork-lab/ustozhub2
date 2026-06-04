@@ -14,6 +14,7 @@ from django.utils import timezone
 from django.http import JsonResponse, HttpResponse, Http404
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.translation import gettext as _
 import csv
 import logging
 import random
@@ -510,7 +511,7 @@ def admin_dashboard(request):
     """Dashboard для администратора с полной статистикой платформы"""
     # Проверка прав доступа
     if not request.user.is_staff:
-        messages.error(request, 'У вас нет доступа к админ панели')
+        messages.error(request, _('У вас нет доступа к админ панели'))
         return redirect('home')
 
     # ~50 агрегатов на загрузку → кэшируем платформенную сводку на 45с
@@ -1036,7 +1037,7 @@ def login_view(request):
     """Вход в систему. Rate-limited: 10 POST/10мин по IP — защита от brute force."""
     from django_ratelimit.core import is_ratelimited
     if request.user.is_authenticated:
-        return redirect('home')
+        return redirect('dashboard')
 
     if request.method == 'POST':
         # Считаем только POST'ы (увеличиваем счётчик), GET-открытие страницы свободно
@@ -1045,7 +1046,7 @@ def login_view(request):
             rate='10/10m', method='POST', increment=True,
         )
         if limited:
-            messages.error(request, 'Слишком много попыток входа. Подождите 10 минут и попробуйте снова.')
+            messages.error(request, _('Слишком много попыток входа. Подождите 10 минут и попробуйте снова.'))
             return render(request, 'logic/login.html', {'form': LoginForm(), 'next': request.GET.get('next', '')}, status=429)
 
         form = LoginForm(request, data=request.POST)
@@ -1071,7 +1072,7 @@ def login_view(request):
                 if not remember_me:
                     request.session.set_expiry(0)
 
-                messages.success(request, f'Добро пожаловать, {user.get_full_name()}!')
+                messages.success(request, _('Добро пожаловать, %(name)s!') % {'name': user.get_full_name()})
 
                 next_url = request.GET.get('next')
                 if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
@@ -1081,7 +1082,7 @@ def login_view(request):
                 # user_type). Дашборд сам редиректит на онбординг, если профиля нет.
                 return redirect('dashboard')
             else:
-                messages.error(request, 'Неверный email или пароль')
+                messages.error(request, _('Неверный email или пароль'))
     else:
         form = LoginForm()
     
@@ -1097,7 +1098,7 @@ def logout_view(request):
     """Выход из системы"""
     if request.method == 'POST':
         logout(request)
-        messages.success(request, 'Вы успешно вышли из системы')
+        messages.success(request, _('Вы успешно вышли из системы'))
         return redirect('home')
     
     return render(request, 'logic/logout_confirm.html')
@@ -1186,7 +1187,7 @@ def register_choose(request):
             pass
 
         if has_profile:
-            return redirect('home')
+            return redirect('dashboard')
 
     return render(request, 'logic/register_choose.html')
 
@@ -1202,8 +1203,8 @@ def register_student(request):
         except Exception:
             pass
         if has_student:
-            return redirect('home')
-    
+            return redirect('dashboard')
+
     if request.method == 'POST':
         from django_ratelimit.core import is_ratelimited
         limited = is_ratelimited(
@@ -1211,7 +1212,7 @@ def register_student(request):
             rate='5/h', method='POST', increment=True,
         )
         if limited:
-            messages.error(request, 'Слишком много регистраций с этого IP. Попробуйте позже.')
+            messages.error(request, _('Слишком много регистраций с этого IP. Попробуйте позже.'))
             return render(request, 'logic/register_student.html', {'form': StudentRegistrationForm()}, status=429)
 
         form = StudentRegistrationForm(request.POST)
@@ -1221,7 +1222,7 @@ def register_student(request):
 
             messages.success(
                 request,
-                'Регистрация прошла успешно! Мы подобрали учителей, которые точно вам подойдут.'
+                _('Регистрация прошла успешно! Мы подобрали учителей, которые точно вам подойдут.')
             )
 
             # 🎯 Phase 8 — Magic moment: сразу показываем smart-matched учителей
@@ -1294,7 +1295,7 @@ def profile_view(request):
                 'first_booking_done_count': first_booking_done_count,
             })
         except TeacherProfile.DoesNotExist:
-            messages.warning(request, 'Завершите регистрацию учителя')
+            messages.warning(request, _('Завершите регистрацию учителя'))
             return redirect('teacher_register')
     else:
         try:
@@ -1336,9 +1337,9 @@ def teacher_profile_edit(request):
     try:
         teacher_profile = request.user.teacher_profile
     except TeacherProfile.DoesNotExist:
-        messages.error(request, 'Профиль учителя не найден')
+        messages.error(request, _('Профиль учителя не найден'))
         return redirect('home')
-    
+
     # Получаем существующие предметы учителя
     teacher_subjects = TeacherSubject.objects.filter(teacher=teacher_profile)
     
@@ -1388,18 +1389,18 @@ def teacher_profile_edit(request):
                     teacher_subject.teacher = teacher_profile
                     teacher_subject.save()
             
-            messages.success(request, 'Профиль успешно обновлен!')
+            messages.success(request, _('Профиль успешно обновлен!'))
             return redirect('profile')
         else:
             # Выводим конкретные ошибки для отладки
             if not user_form.is_valid():
                 for field, errors in user_form.errors.items():
-                    messages.error(request, f'Ошибка в поле {field}: {", ".join(errors)}')
+                    messages.error(request, _('Ошибка в поле %(field)s: %(errors)s') % {'field': field, 'errors': ", ".join(errors)})
             if not profile_form.is_valid():
                 for field, errors in profile_form.errors.items():
-                    messages.error(request, f'Ошибка в поле {field}: {", ".join(errors)}')
+                    messages.error(request, _('Ошибка в поле %(field)s: %(errors)s') % {'field': field, 'errors': ", ".join(errors)})
             if not subject_forms_valid:
-                messages.error(request, 'Проверьте правильность заполнения предметов')
+                messages.error(request, _('Проверьте правильность заполнения предметов'))
     else:
         user_form = UserProfileEditForm(instance=request.user)
         profile_form = TeacherProfileEditForm(instance=teacher_profile)
@@ -1434,9 +1435,9 @@ def delete_teacher_subject(request, subject_id):
         teacher_profile = request.user.teacher_profile
         teacher_subject = TeacherSubject.objects.get(id=subject_id, teacher=teacher_profile)
         teacher_subject.delete()
-        messages.success(request, 'Предмет успешно удален')
+        messages.success(request, _('Предмет успешно удален'))
     except (TeacherProfile.DoesNotExist, TeacherSubject.DoesNotExist):
-        messages.error(request, 'Предмет не найден')
+        messages.error(request, _('Предмет не найден'))
     
     return redirect('teacher_profile_edit')
 
@@ -1457,10 +1458,10 @@ def student_profile_edit(request):
             user_form.save()
             profile_form.save()
             
-            messages.success(request, 'Профиль успешно обновлен!')
+            messages.success(request, _('Профиль успешно обновлен!'))
             return redirect('profile')
         else:
-            messages.error(request, 'Пожалуйста, исправьте ошибки в форме')
+            messages.error(request, _('Пожалуйста, исправьте ошибки в форме'))
     else:
         user_form = UserProfileEditForm(instance=request.user)
         profile_form = StudentProfileEditForm(instance=student_profile)
@@ -1479,7 +1480,7 @@ def student_profile_edit(request):
 def toggle_profile_status(request):
     """AJAX-функция для быстрого переключения статуса активности профиля"""
     if request.method != 'POST':
-        return JsonResponse({'success': False, 'error': 'Неверный запрос'})
+        return JsonResponse({'success': False, 'error': _('Неверный запрос')})
 
     try:
         if request.user.user_type == 'teacher':
@@ -1490,26 +1491,26 @@ def toggle_profile_status(request):
         profile.is_active = not profile.is_active
         profile.save()
 
-        status_text = 'активен' if profile.is_active else 'деактивирован'
-        messages.success(request, f'Ваш профиль {status_text} в поиске')
+        status_text = _('активен') if profile.is_active else _('деактивирован')
+        messages.success(request, _('Ваш профиль %(status)s в поиске') % {'status': status_text})
 
         return JsonResponse({
             'success': True,
             'is_active': profile.is_active,
-            'message': f'Профиль {status_text}'
+            'message': _('Профиль %(status)s') % {'status': status_text}
         })
     except (TeacherProfile.DoesNotExist, StudentProfile.DoesNotExist):
-        return JsonResponse({'success': False, 'error': 'Профиль не найден'})
+        return JsonResponse({'success': False, 'error': _('Профиль не найден')})
 
 
 @login_required
 def toggle_favorite_teacher(request, teacher_id):
     """Студент добавляет/удаляет учителя в избранное"""
     if request.method != 'POST':
-        return JsonResponse({'success': False, 'error': 'Неверный метод'})
+        return JsonResponse({'success': False, 'error': _('Неверный метод')})
 
     if request.user.user_type != 'student':
-        return JsonResponse({'success': False, 'error': 'Доступ запрещен'})
+        return JsonResponse({'success': False, 'error': _('Доступ запрещен')})
 
     teacher = get_object_or_404(TeacherProfile, id=teacher_id, is_active=True)
 
@@ -1524,15 +1525,15 @@ def toggle_favorite_teacher(request, teacher_id):
 def toggle_favorite_student(request, student_id):
     """Учитель добавляет/удаляет ученика в избранное"""
     if request.method != 'POST':
-        return JsonResponse({'success': False, 'error': 'Неверный метод'})
+        return JsonResponse({'success': False, 'error': _('Неверный метод')})
 
     if request.user.user_type != 'teacher' or not hasattr(request.user, 'teacher_profile'):
-        return JsonResponse({'success': False, 'error': 'Доступ запрещен'})
+        return JsonResponse({'success': False, 'error': _('Доступ запрещен')})
 
     try:
         teacher_profile = request.user.teacher_profile
     except TeacherProfile.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Профиль учителя не найден'})
+        return JsonResponse({'success': False, 'error': _('Профиль учителя не найден')})
     
     student = get_object_or_404(StudentProfile, id=student_id, is_active=True)
 
@@ -1551,10 +1552,10 @@ def lead_opt_out(request, teacher_id):
     раздела «Потенциальные ученики». Повторный вызов снимает отказ (toggle).
     """
     if request.method != 'POST':
-        return JsonResponse({'success': False, 'error': 'Неверный метод'})
+        return JsonResponse({'success': False, 'error': _('Неверный метод')})
 
     if request.user.user_type != 'student':
-        return JsonResponse({'success': False, 'error': 'Доступ запрещен'})
+        return JsonResponse({'success': False, 'error': _('Доступ запрещен')})
 
     teacher = get_object_or_404(TeacherProfile, id=teacher_id)
 
@@ -1571,7 +1572,7 @@ def lead_opt_out(request, teacher_id):
 def my_favorite_teachers(request):
     """Список избранных учителей для ученика"""
     if request.user.user_type != 'student':
-        messages.error(request, 'Доступ запрещен')
+        messages.error(request, _('Доступ запрещен'))
         return redirect('home')
 
     favorites = Favorite.objects.select_related('teacher__user', 'teacher__city').filter(student=request.user)
@@ -1583,7 +1584,7 @@ def my_favorite_teachers(request):
 def my_favorite_students(request):
     """Список избранных учеников для учителя"""
     if request.user.user_type != 'teacher' or not hasattr(request.user, 'teacher_profile'):
-        messages.error(request, 'Доступ запрещен')
+        messages.error(request, _('Доступ запрещен'))
         return redirect('home')
 
     favorites = FavoriteStudent.objects.select_related('student__user', 'student__city').filter(teacher=request.user.teacher_profile)
@@ -1606,7 +1607,7 @@ def potential_students(request):
     )
 
     if request.user.user_type != 'teacher' or not hasattr(request.user, 'teacher_profile'):
-        messages.error(request, 'Доступ запрещен')
+        messages.error(request, _('Доступ запрещен'))
         return redirect('home')
 
     teacher_profile = request.user.teacher_profile
@@ -1659,13 +1660,13 @@ def potential_students(request):
 def student_suggestions(request):
     """Smart-matching: подобранные учителя для студента (Phase 8 magic moment)."""
     if request.user.user_type != 'student':
-        messages.error(request, 'Доступ запрещен')
+        messages.error(request, _('Доступ запрещен'))
         return redirect('home')
 
     try:
         student = request.user.student_profile
     except StudentProfile.DoesNotExist:
-        messages.warning(request, 'Заполните профиль ученика')
+        messages.warning(request, _('Заполните профиль ученика'))
         return redirect('student_profile_edit')
 
     desired_subjects = list(student.desired_subjects.all())
@@ -1721,7 +1722,7 @@ def conversations_list(request):
         try:
             teacher_profile = user.teacher_profile
         except TeacherProfile.DoesNotExist:
-            messages.warning(request, 'Завершите регистрацию учителя')
+            messages.warning(request, _('Завершите регистрацию учителя'))
             return redirect('teacher_register')
 
         conversations = Conversation.objects.filter(
@@ -1737,7 +1738,7 @@ def conversations_list(request):
         try:
             user.student_profile
         except StudentProfile.DoesNotExist:
-            messages.warning(request, 'Заполните профиль ученика')
+            messages.warning(request, _('Заполните профиль ученика'))
             return redirect('student_profile_edit')
 
         conversations = Conversation.objects.filter(
@@ -1829,10 +1830,10 @@ def conversation_detail(request, conversation_id):
                 # Обновляем время последнего обновления переписки
                 conversation.save()  # updated_at обновится автоматически
                 
-                messages.success(request, 'Сообщение отправлено!')
+                messages.success(request, _('Сообщение отправлено!'))
                 return redirect('conversation_detail', conversation_id=conversation_id)
             else:
-                messages.error(request, 'Ошибка при отправке сообщения')
+                messages.error(request, _('Ошибка при отправке сообщения'))
         else:
             form = MessageForm()
         
@@ -1846,7 +1847,7 @@ def conversation_detail(request, conversation_id):
         
     except Exception as e:
         logger.error(f"Ошибка в conversation_detail: {e}", exc_info=True)
-        messages.error(request, 'Переписка не найдена или доступ запрещен')
+        messages.error(request, _('Переписка не найдена или доступ запрещен'))
         return redirect('conversations_list')
 
 
@@ -1862,7 +1863,7 @@ def start_conversation(request, user_id):
     
     # Проверяем, что пользователи не пытаются писать сами себе
     if current_user == target_user:
-        messages.error(request, 'Вы не можете писать себе')
+        messages.error(request, _('Вы не можете писать себе'))
         return redirect('home')
     
     # Определяем, кто учитель, а кто ученик
@@ -1871,13 +1872,13 @@ def start_conversation(request, user_id):
             teacher_profile = current_user.teacher_profile
         except TeacherProfile.DoesNotExist:
             # «Сирота»-учитель без профиля (брошенная регистрация) — не 500.
-            messages.error(request, 'Завершите регистрацию учителя, чтобы писать сообщения')
+            messages.error(request, _('Завершите регистрацию учителя, чтобы писать сообщения'))
             return redirect('home')
         student = target_user
 
         # Проверяем, что целевой пользователь - ученик
         if target_user.user_type != 'student':
-            messages.error(request, 'Вы можете писать только ученикам')
+            messages.error(request, _('Вы можете писать только ученикам'))
             return redirect('home')
 
         # ГЕЙТИНГ: учитель пишет первым только лидам (избранное / пробный урок).
@@ -1890,22 +1891,22 @@ def start_conversation(request, user_id):
         if not teacher_can_open_conversation(teacher_profile, student, existing):
             messages.error(
                 request,
-                'Написать можно только ученикам, которые добавили вас в избранное '
-                'или забронировали пробный урок.'
+                _('Написать можно только ученикам, которые добавили вас в избранное '
+                  'или забронировали пробный урок.')
             )
             return redirect('student_detail', id=student.id)
     else:
         # Текущий пользователь - ученик
         if target_user.user_type != 'teacher':
-            messages.error(request, 'Вы можете писать только учителям')
+            messages.error(request, _('Вы можете писать только учителям'))
             return redirect('home')
         
         try:
             teacher_profile = target_user.teacher_profile
         except TeacherProfile.DoesNotExist:
-            messages.error(request, 'Профиль учителя не найден')
+            messages.error(request, _('Профиль учителя не найден'))
             return redirect('home')
-        
+
         student = current_user
     
     # Проверяем, существует ли уже переписка
@@ -1930,7 +1931,7 @@ def send_message_ajax(request, conversation_id):
     AJAX endpoint для отправки сообщения
     """
     if request.method != 'POST':
-        return JsonResponse({'success': False, 'error': 'Только POST запросы'})
+        return JsonResponse({'success': False, 'error': _('Только POST запросы')})
     
     user = request.user
     
@@ -1945,8 +1946,8 @@ def send_message_ajax(request, conversation_id):
             if not allowed:
                 return JsonResponse({
                     'success': False,
-                    'error': 'Вы уже отправили первое сообщение. '
-                             'Дождитесь ответа ученика, чтобы продолжить переписку.'
+                    'error': _('Вы уже отправили первое сообщение. '
+                               'Дождитесь ответа ученика, чтобы продолжить переписку.')
                 }, status=403)
 
         # Проверяем форму
@@ -2006,7 +2007,7 @@ def send_message_ajax(request, conversation_id):
         logger.error(f"Ошибка в send_message_ajax: {e}", exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': 'Произошла ошибка при отправке сообщения'
+            'error': _('Произошла ошибка при отправке сообщения')
         })
 
 
@@ -2016,7 +2017,7 @@ def mark_messages_read(request, conversation_id):
     Отметить сообщения как прочитанные (AJAX)
     """
     if request.method != 'POST':
-        return JsonResponse({'success': False, 'error': 'Только POST запросы'})
+        return JsonResponse({'success': False, 'error': _('Только POST запросы')})
     
     user = request.user
     
@@ -2044,7 +2045,7 @@ def mark_messages_read(request, conversation_id):
         logger.error(f"Ошибка в mark_messages_read: {e}", exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': 'Произошла ошибка'
+            'error': _('Произошла ошибка')
         })
 
 
@@ -2054,7 +2055,7 @@ def delete_conversation(request, conversation_id):
     Удалить (деактивировать) переписку
     """
     if request.method != 'POST':
-        messages.error(request, 'Неверный метод запроса')
+        messages.error(request, _('Неверный метод запроса'))
         return redirect('conversations_list')
     
     user = request.user
@@ -2066,12 +2067,12 @@ def delete_conversation(request, conversation_id):
         conversation.is_active = False
         conversation.save()
         
-        messages.success(request, 'Переписка удалена')
+        messages.success(request, _('Переписка удалена'))
         return redirect('conversations_list')
         
     except Exception as e:
         logger.error(f"Ошибка в delete_conversation: {e}", exc_info=True)
-        messages.error(request, 'Ошибка при удалении переписки')
+        messages.error(request, _('Ошибка при удалении переписки'))
         return redirect('conversations_list')
 
 
@@ -2163,7 +2164,7 @@ def subjects_autocomplete(request):
 
     except Exception as e:
         logger.error(f"Error in subjects_autocomplete: {e}", exc_info=True)
-        return JsonResponse({'error': 'Ошибка поиска предметов'}, status=500)
+        return JsonResponse({'error': _('Ошибка поиска предметов')}, status=500)
 
 
 def subjects_popular(request):
@@ -2220,7 +2221,7 @@ def subjects_by_category(request, category_id):
     try:
         category = SubjectCategory.objects.get(id=category_id, is_active=True)
     except SubjectCategory.DoesNotExist:
-        return JsonResponse({'error': 'Категория не найдена'}, status=404)
+        return JsonResponse({'error': _('Категория не найдена')}, status=404)
 
     subjects = Subject.objects.filter(
         category=category,
@@ -2316,12 +2317,12 @@ def send_broadcast_message(request):
         recipients = request.POST.get('recipients', 'all')
         
         if not message_text:
-            messages.error(request, 'Сообщение не может быть пустым')
+            messages.error(request, _('Сообщение не может быть пустым'))
             return redirect('telegram_management')
-        
+
         # Ограничиваем длину сообщения
         if len(message_text) > 4000:
-            messages.error(request, 'Сообщение слишком длинное (максимум 4000 символов)')
+            messages.error(request, _('Сообщение слишком длинное (максимум 4000 символов)'))
             return redirect('telegram_management')
         
         # Определяем получателей
@@ -2339,7 +2340,7 @@ def send_broadcast_message(request):
         users_count = users.count()
         
         if users_count == 0:
-            messages.warning(request, 'Нет пользователей для отправки сообщения')
+            messages.warning(request, _('Нет пользователей для отправки сообщения'))
             return redirect('telegram_management')
         
         # Отправляем сообщения (используем AdminTelegramService)
@@ -2358,16 +2359,16 @@ def send_broadcast_message(request):
             error_count = stats['failed']
         except Exception as e:
             success_count, error_count = 0, users_count
-            messages.error(request, f'Ошибка сервиса отправки: {str(e)}')
-        
+            messages.error(request, _('Ошибка сервиса отправки: %(err)s') % {'err': str(e)})
+
         if success_count > 0:
-            messages.success(request, f'Сообщение успешно отправлено {success_count} пользователям')
-        
+            messages.success(request, _('Сообщение успешно отправлено %(count)s пользователям') % {'count': success_count})
+
         if error_count > 0:
-            messages.warning(request, f'Не удалось отправить {error_count} пользователям (возможно, заблокировали бота или удалили чат)')
-            
+            messages.warning(request, _('Не удалось отправить %(count)s пользователям (возможно, заблокировали бота или удалили чат)') % {'count': error_count})
+
     except Exception as e:
-        messages.error(request, f'Ошибка при отправке сообщений: {str(e)}')
+        messages.error(request, _('Ошибка при отправке сообщений: %(err)s') % {'err': str(e)})
     
     return redirect('telegram_management')
 
@@ -2383,13 +2384,13 @@ def send_individual_message(request):
         message_text = request.POST.get('message', '').strip()
         
         if not user_id or not message_text:
-            messages.error(request, 'Необходимо выбрать пользователя и ввести сообщение')
+            messages.error(request, _('Необходимо выбрать пользователя и ввести сообщение'))
             return redirect('telegram_management')
         
         telegram_user = get_object_or_404(TelegramUser, id=user_id)
         
         if not telegram_user.started_bot:
-            messages.error(request, 'Пользователь не активировал бота')
+            messages.error(request, _('Пользователь не активировал бота'))
             return redirect('telegram_management')
         
         # Отправляем сообщение
@@ -2404,12 +2405,12 @@ def send_individual_message(request):
         )
         
         if success:
-            messages.success(request, f'Сообщение отправлено пользователю {telegram_user.first_name}')
+            messages.success(request, _('Сообщение отправлено пользователю %(name)s') % {'name': telegram_user.first_name})
         else:
-            messages.error(request, f'Не удалось отправить сообщение пользователю {telegram_user.first_name} (возможно, заблокировал бота или удалил чат)')
-            
+            messages.error(request, _('Не удалось отправить сообщение пользователю %(name)s (возможно, заблокировал бота или удалил чат)') % {'name': telegram_user.first_name})
+
     except Exception as e:
-        messages.error(request, f'Ошибка: {str(e)}')
+        messages.error(request, _('Ошибка: %(err)s') % {'err': str(e)})
     
     return redirect('telegram_management')
 
@@ -2455,7 +2456,7 @@ def admin_conversation_detail(request, conversation_id):
             )
             conversation.save(update_fields=['updated_at'])
             from django.contrib import messages as django_messages
-            django_messages.success(request, f'Сообщение отправлено от имени {sender.get_full_name() or sender.username}')
+            django_messages.success(request, _('Сообщение отправлено от имени %(name)s') % {'name': sender.get_full_name() or sender.username})
             return redirect('admin_conversation_detail', conversation_id=conversation.id)
 
     context = {
@@ -2563,7 +2564,7 @@ def notification_detail(request, notification_id):
     
     # Проверяем, имеет ли пользователь доступ к уведомлению
     if not notification.is_visible_for_user(request.user):
-        messages.error(request, 'У вас нет доступа к этому уведомлению.')
+        messages.error(request, _('У вас нет доступа к этому уведомлению.'))
         return redirect('notifications_list')
     
     notification.mark_as_read(request.user)
@@ -2603,7 +2604,7 @@ def mark_notification_read(request, notification_id):
         if not notification.is_visible_for_user(request.user):
             return JsonResponse({
                 'success': False,
-                'error': 'Нет доступа'
+                'error': _('Нет доступа')
             }, status=403)
         
         # Помечаем как прочитанное
@@ -2760,7 +2761,7 @@ def google_student_onboarding(request):
     user = request.user
 
     if _has_any_profile(user):
-        return redirect('home')
+        return redirect('dashboard')
 
     if request.method == 'POST':
         form = GoogleStudentOnboardingForm(request.POST)
@@ -2784,14 +2785,14 @@ def google_student_onboarding(request):
 
             messages.success(
                 request,
-                'Добро пожаловать! Мы подберём для вас подходящих учителей.'
+                _('Добро пожаловать! Мы подберём для вас подходящих учителей.')
             )
 
             # Редирект на home с поиском по первому предмету
             first_subject = interests.first()
             if first_subject:
                 return redirect(f'{reverse("home")}?search={first_subject.name}')
-            return redirect('home')
+            return redirect('dashboard')
     else:
         form = GoogleStudentOnboardingForm(initial={
             'first_name': user.first_name,
@@ -2806,7 +2807,7 @@ def google_student_onboarding(request):
 def google_complete_student(request):
     """POST-shortcut: выбор роли student → редирект на onboarding форму."""
     if _has_any_profile(request.user):
-        return redirect('home')
+        return redirect('dashboard')
     return redirect('google_student_onboarding')
 
 
@@ -2820,8 +2821,8 @@ def google_complete_teacher(request):
     user = request.user
 
     if _has_any_profile(user):
-        messages.info(request, 'У вас уже есть профиль')
-        return redirect('home')
+        messages.info(request, _('У вас уже есть профиль'))
+        return redirect('dashboard')
 
     # Сохраняем данные Google-пользователя в сессию для предзаполнения wizard
     google_data = {
@@ -2914,13 +2915,13 @@ def daily_reminder_edit(request, template_id=None):
         valid_langs = {l for l, _ in DailyReminderTemplate.LANGUAGE_CHOICES}
 
         if period not in valid_periods:
-            messages.error(request, 'Выберите корректный период (утро/вечер).')
+            messages.error(request, _('Выберите корректный период (утро/вечер).'))
         elif language not in valid_langs:
-            messages.error(request, 'Выберите корректный язык.')
+            messages.error(request, _('Выберите корректный язык.'))
         elif not text:
-            messages.error(request, 'Текст сообщения не может быть пустым.')
+            messages.error(request, _('Текст сообщения не может быть пустым.'))
         elif len(text) > 4000:
-            messages.error(request, 'Текст слишком длинный (максимум 4000 символов).')
+            messages.error(request, _('Текст слишком длинный (максимум 4000 символов).'))
         else:
             if instance is None:
                 instance = DailyReminderTemplate()
@@ -2932,7 +2933,7 @@ def daily_reminder_edit(request, template_id=None):
             instance.save()
             messages.success(
                 request,
-                'Шаблон обновлён.' if template_id else 'Шаблон создан.',
+                _('Шаблон обновлён.') if template_id else _('Шаблон создан.'),
             )
             return redirect('daily_reminders_list')
 
@@ -2952,7 +2953,7 @@ def daily_reminder_delete(request, template_id):
     """Удалить шаблон."""
     tpl = get_object_or_404(DailyReminderTemplate, id=template_id)
     tpl.delete()
-    messages.success(request, 'Шаблон удалён.')
+    messages.success(request, _('Шаблон удалён.'))
     return redirect('daily_reminders_list')
 
 
@@ -2965,7 +2966,7 @@ def daily_reminder_toggle(request, template_id):
     tpl.save(update_fields=['is_active', 'updated_at'])
     messages.success(
         request,
-        f"Шаблон {'включён' if tpl.is_active else 'выключен'}.",
+        _('Шаблон %(state)s.') % {'state': _('включён') if tpl.is_active else _('выключен')},
     )
     return redirect('daily_reminders_list')
 
@@ -2985,8 +2986,8 @@ def daily_reminder_test(request, template_id):
     if not tg:
         messages.warning(
             request,
-            'Ваш аккаунт не привязан к Telegram-боту — привяжите его, '
-            'чтобы получать тестовые сообщения.',
+            _('Ваш аккаунт не привязан к Telegram-боту — привяжите его, '
+              'чтобы получать тестовые сообщения.'),
         )
         return redirect('daily_reminders_list')
 
@@ -2998,9 +2999,9 @@ def daily_reminder_test(request, template_id):
         parse_mode='Markdown',
     )
     if ok:
-        messages.success(request, 'Тестовое сообщение отправлено вам в Telegram.')
+        messages.success(request, _('Тестовое сообщение отправлено вам в Telegram.'))
     else:
-        messages.error(request, 'Не удалось отправить тестовое сообщение.')
+        messages.error(request, _('Не удалось отправить тестовое сообщение.'))
     return redirect('daily_reminders_list')
 
 

@@ -1226,7 +1226,8 @@ class BugfixHardeningTests(TestCase):
         b.slot.end_at = timezone.now() - timedelta(hours=1)
         b.slot.save(update_fields=['start_at', 'end_at'])
         b.meeting_url = b.build_meeting_url()
-        b.record_join(is_teacher=True)  # учитель был
+        b.record_join(is_teacher=True)   # учитель был
+        b.record_join(is_teacher=False)  # ученик был → урок проведён (completed)
         b.save()
         SubscriptionService.cancel(self.sub, cancelled_by='student', reason='тест')
         self.teacher.user.wallet.refresh_from_db()
@@ -1503,7 +1504,8 @@ class TeacherNoShowSettleTests(TestCase):
         balance_before = self.student.wallet.balance
         total_before = self.subscription.total_lessons
 
-        # Учитель не открывал комнату → teacher_joined_at is None.
+        # Ученик подключился, учитель — нет → no_show_teacher (ТЗ §7).
+        b.record_join(is_teacher=False)
         result = b.settle_after_end()
         self.assertEqual(result, 'no_show_teacher')
         b.refresh_from_db()
@@ -2284,15 +2286,15 @@ class LessonAttendanceTests(TestCase):
         self.booking.refresh_from_db()
         self.assertEqual(self.booking.settle_after_end(), 'no_show_student')
 
-    def test_settle_no_join_is_no_show(self):
+    def test_settle_no_join_is_not_held(self):
         from datetime import timedelta
         from django.utils import timezone
-        # Никто не подключался → no_show_teacher.
+        # Никто не подключался → not_held (ТЗ §8: урок не состоялся).
         self.slot.start_at = timezone.now() - timedelta(minutes=70)
         self.slot.end_at = timezone.now() - timedelta(minutes=10)
         self.slot.save(update_fields=['start_at', 'end_at'])
         self.booking.refresh_from_db()
-        self.assertEqual(self.booking.settle_after_end(), 'no_show_teacher')
+        self.assertEqual(self.booking.settle_after_end(), 'not_held')
 
 
 class EnrollmentConcurrencyTests(TransactionTestCase):
@@ -2343,3 +2345,82 @@ class EnrollmentConcurrencyTests(TransactionTestCase):
         # Если хоть один дебет прошёл — баланс обязан быть 200000.
         if debits == 1:
             self.assertEqual(student.wallet.balance, Decimal('200000.00'))
+
+
+@override_settings(STORAGES=SIMPLE_STATIC_STORAGES)
+class StudentNoShowForgivenessTests(TestCase):
+    """ТЗ §6/§8: прощение первых неявок ученика, списание с (N+1)-й, not_held."""
+
+    def setUp(self):
+        from billing.platform_account import get_or_create_platform_user
+        self.platform = get_or_create_platform_user()
+        self.teacher, self.subject = _make_teacher_with_subject('nsf_t')
+        self.tariff = _make_tariff(self.teacher, self.subject)
+        self.student = _make_student_with_balance('nsf_s', balance=Decimal('1000000'))
+        self.sub = SubscriptionService.purchase(
+            student=self.student, tariff=self.tariff, idempotency_key='nsf-purchase',
+        )
+
+    def _past_jitsi_booking(self, minutes_ago=120):
+        from datetime import timedelta
+        from django.utils import timezone
+        from teachers.models import TimeSlot, Booking
+        start = timezone.now() - timedelta(minutes=minutes_ago)
+        sl = TimeSlot.objects.create(
+            teacher=self.teacher, start_at=start,
+            end_at=start + timedelta(minutes=60), status='booked',
+        )
+        b = Booking.objects.create(
+            slot=sl, student=self.student, subject=self.subject,
+            subscription=self.sub, status='confirmed',
+        )
+        b.meeting_url = b.build_meeting_url()
+        b.save(update_fields=['meeting_url'])
+        return b
+
+    def test_first_three_forgiven_fourth_consumed(self):
+        # 3 неявки подряд — все прощены (урок возвращается, выплаты нет).
+        for i in range(3):
+            b = self._past_jitsi_booking()
+            b.record_join(is_teacher=True)  # учитель был, ученик — нет
+            self.assertEqual(b.settle_after_end(), 'no_show_student')
+            b.refresh_from_db()
+            self.assertTrue(b.no_show_forgiven, f'неявка #{i+1} должна быть прощена')
+            # Прощённая неявка не оплачивается учителю.
+            self.assertFalse(SubscriptionService.release_lesson_payout(b))
+
+        # Прощённые неявки не списывают уроки из пакета.
+        self.sub.refresh_from_db()
+        self.assertEqual(self.sub.completed_lessons, 0)
+        self.teacher.user.wallet.refresh_from_db()
+        self.assertEqual(self.teacher.user.wallet.balance, Decimal('0.00'))
+
+        # 4-я неявка — урок списывается и оплачивается учителю.
+        b4 = self._past_jitsi_booking()
+        b4.record_join(is_teacher=True)
+        self.assertEqual(b4.settle_after_end(), 'no_show_student')
+        b4.refresh_from_db()
+        self.assertFalse(b4.no_show_forgiven, '4-я неявка должна списываться')
+        self.assertTrue(SubscriptionService.release_lesson_payout(b4))
+        self.sub.refresh_from_db()
+        self.assertEqual(self.sub.completed_lessons, 1)
+        self.teacher.user.wallet.refresh_from_db()
+        self.assertEqual(self.teacher.user.wallet.balance, Decimal('85000.00'))
+
+    def test_nobody_joined_is_not_held(self):
+        b = self._past_jitsi_booking()
+        self.assertEqual(b.settle_after_end(), 'not_held')
+        b.refresh_from_db()
+        self.assertEqual(b.status, 'not_held')
+        # not_held не потребляет урок и не платит учителю.
+        self.sub.refresh_from_db()
+        self.assertEqual(self.sub.completed_lessons, 0)
+
+    def test_lesson_event_journal_written(self):
+        from teachers.models import LessonEvent
+        b = self._past_jitsi_booking()
+        b.record_join(is_teacher=True)
+        b.settle_after_end()
+        kinds = set(LessonEvent.objects.filter(booking=b).values_list('kind', flat=True))
+        self.assertIn('join_teacher', kinds)
+        self.assertIn('no_show_forgiven', kinds)

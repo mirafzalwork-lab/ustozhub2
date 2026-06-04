@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load i18n %}
+{% load custom_filters %}
 
 {% block title %}{% trans 'Уведомления' %} - UstozHub{% endblock %}
 
@@ -106,7 +107,9 @@
     }
 
     .notification-card {
-        display: block;
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
         text-decoration: none;
         color: inherit;
         background: var(--bg-primary);
@@ -117,6 +120,25 @@
         cursor: pointer;
         position: relative;
     }
+
+    .notification-body { flex: 1; min-width: 0; }
+
+    /* Иконка категории — заменяет эмодзи в тексте уведомления */
+    .notification-icon {
+        width: 44px;
+        height: 44px;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        font-size: 18px;
+        background: rgba(59, 130, 246, 0.10);
+        color: var(--accent-color);
+    }
+    .notification-icon.tone-success { background: rgba(16, 185, 129, 0.12); color: var(--success-color); }
+    .notification-icon.tone-warning { background: rgba(245, 158, 11, 0.14); color: #B45309; }
+    .notification-icon.tone-danger  { background: rgba(239, 68, 68, 0.12); color: var(--danger-color); }
 
     .notification-card:hover {
         border-color: var(--accent-color);
@@ -358,14 +380,18 @@
         {% for item in notifications %}
         <a class="notification-card {% if not item.is_read %}unread{% endif %}"
            href="{% url 'notification_detail' item.id %}">
+            <span class="notification-icon tone-{{ item.icon_tone }}">
+                <i class="fas {{ item.icon }}"></i>
+            </span>
+            <div class="notification-body">
             <div class="notification-header">
-                <h3 class="notification-title">{{ item.title }}</h3>
+                <h3 class="notification-title">{{ item.title|strip_emoji }}</h3>
                 <span class="notification-date">
                     {{ item.created_at|date:"d.m.Y H:i" }}
                 </span>
             </div>
 
-            <p class="notification-text">{{ item.short_text }}</p>
+            <p class="notification-text">{{ item.short_text|strip_emoji }}</p>
 
             <div class="notification-footer">
                 <span class="read-status {% if item.is_read %}read{% else %}unread{% endif %}">
@@ -381,6 +407,7 @@
                     <span>{% trans 'Подробнее' %}</span>
                     <i class="fas fa-arrow-right"></i>
                 </span>
+            </div>
             </div>
         </a>
         {% endfor %}

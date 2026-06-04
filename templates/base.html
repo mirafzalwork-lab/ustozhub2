@@ -1254,8 +1254,8 @@
     <!-- Navbar -->
     <nav class="navbar" id="navbar">
         <div class="nav-container">
-            <!-- Logo -->
-            <a href="{% url 'home' %}" class="logo">
+            <!-- Logo: авторизованного пользователя (ученика и учителя) ведёт в Dashboard, гостя — на главную -->
+            <a href="{% if user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'home' %}{% endif %}" class="logo">
                 <img src="{% static 'logo/new_logo.png' %}" alt="UstozHub">
             </a>
 

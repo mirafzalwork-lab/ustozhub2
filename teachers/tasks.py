@@ -279,6 +279,7 @@ def _send_reminder_for_booking(booking, kind):
                     target_user=recipient_user,
                     priority=8,
                     is_active=True,
+                    category=Notification.Category.REMINDER,
                 )
                 channels_used.append(f'in_app:{role}')
             except Exception as e:
@@ -348,16 +349,23 @@ def mark_completed_lessons() -> int:
     count = 0
     no_show = 0
     no_show_student = 0
+    not_held = 0
     for booking in to_settle:
         try:
             result = booking.settle_after_end()
             if result == 'no_show_teacher':
                 no_show += 1
                 _refund_teacher_no_show(booking)
+                _notify_teacher_no_show(booking)
             elif result == 'no_show_student':
-                # Урок засчитан учителю — возврата нет; выплата уйдёт через
-                # release_pending_payouts после grace-окна (как у completed).
+                # Прощённая неявка — урок возвращается ученику (без выплаты);
+                # засчитанная (4-я+) — выплата уйдёт через release_pending_payouts.
                 no_show_student += 1
+                _handle_student_no_show(booking)
+            elif result == 'not_held':
+                # ТЗ §8 — никто не пришёл: урок возвращается ученику.
+                not_held += 1
+                _handle_not_held(booking)
             elif result == 'completed':
                 count += 1
         except Exception as e:
@@ -366,12 +374,129 @@ def mark_completed_lessons() -> int:
                 exc_info=True,
             )
 
-    if count or no_show or no_show_student:
+    if count or no_show or no_show_student or not_held:
         logger.info(
-            f'mark_completed_lessons: completed {count}, '
-            f'teacher no-show {no_show}, student no-show {no_show_student}'
+            f'mark_completed_lessons: completed {count}, teacher no-show {no_show}, '
+            f'student no-show {no_show_student}, not held {not_held}'
         )
     return count
+
+
+def _notify(user, *, title, short_text, full_text, category, booking=None,
+            priority=5, action_url=''):
+    """Создать персональное in-app уведомление (никогда не роняет поток)."""
+    from .models import Notification
+    try:
+        Notification.objects.create(
+            title=title, short_text=short_text[:300], full_text=full_text,
+            target='specific_user', target_user=user, priority=priority,
+            is_active=True, category=category, booking=booking,
+            action_url=action_url or '',
+        )
+    except Exception:
+        logger.warning('notify failed for user=%s', getattr(user, 'pk', None), exc_info=True)
+
+
+def _safe_url(name, *args):
+    from django.urls import reverse
+    try:
+        return reverse(name, args=args)
+    except Exception:
+        return ''
+
+
+def _notify_teacher_no_show(booking) -> None:
+    """ТЗ §7: учитель не пришёл — уведомляем ученика, предлагаем новую дату."""
+    from .models import Notification
+    teacher = booking.slot.teacher.user.get_full_name() or booking.slot.teacher.user.username
+    _notify(
+        booking.student,
+        title='Преподаватель не подключился',
+        short_text=f'Урок с {teacher} не состоялся по вине преподавателя.',
+        full_text=(
+            f'Преподаватель {teacher} не подключился к уроку. '
+            f'Урок возвращён вам — выберите новую дату в расписании.'
+        ),
+        category=Notification.Category.LESSON,
+        booking=booking, priority=7,
+        action_url=_safe_url('my_bookings_page'),
+    )
+
+
+def _handle_not_held(booking) -> None:
+    """ТЗ §8: никто не пришёл. Платный пробный — возврат денег; урок подписки —
+    эскроу остаётся (вернётся ученику при закрытии подписки), новая дата."""
+    from .models import Notification
+    if booking.is_trial and booking.trial_price_paid:
+        try:
+            from billing.services import TrialService
+            TrialService.refund_trial(booking, reason='Урок не состоялся (никто не подключился)')
+            from .models import LessonEvent
+            LessonEvent.log(booking, 'refund', meta={'reason': 'not_held'})
+        except Exception:
+            logger.warning('not_held refund_trial failed booking=%s', booking.pk, exc_info=True)
+    for user in (booking.student, booking.slot.teacher.user):
+        _notify(
+            user,
+            title='Урок не состоялся',
+            short_text='К уроку никто не подключился.',
+            full_text=(
+                'Урок не состоялся — к видеокомнате никто не подключился. '
+                'Средства не списаны. Можно выбрать новую дату.'
+            ),
+            category=Notification.Category.LESSON,
+            booking=booking, priority=6,
+            action_url=_safe_url('my_bookings_page'),
+        )
+
+
+def _handle_student_no_show(booking) -> None:
+    """ТЗ §6: неявка ученика. Эскалация предупреждений; с (N+1)-й — урок списан."""
+    from django.conf import settings
+    from .models import Booking, LessonEvent, Notification
+    limit = getattr(settings, 'STUDENT_NO_SHOW_FORGIVE_LIMIT', 3)
+    # Порядковый номер этой неявки за окно (текущая уже сохранена settle_after_end).
+    ordinal = Booking.count_student_no_shows(booking.student_id)
+    teacher = booking.slot.teacher.user.get_full_name() or booking.slot.teacher.user.username
+
+    if booking.no_show_forgiven:
+        # 1-я: информируем; 2-я: предупреждение; 3-я (== limit): последнее.
+        if ordinal <= 1:
+            title = 'Вы пропустили урок'
+            warn = (
+                f'Вы не подключились к уроку с {teacher}. В этот раз урок возвращён вам — '
+                f'выберите новую дату. Пожалуйста, предупреждайте об отмене заранее.'
+            )
+        elif ordinal < limit:
+            title = 'Повторный пропуск урока'
+            warn = (
+                f'Вы снова пропустили урок с {teacher}. Урок возвращён, но при '
+                f'{limit + 1}-м пропуске за 90 дней урок будет списан без возврата.'
+            )
+        else:
+            title = 'Последнее предупреждение'
+            warn = (
+                f'Это {ordinal}-й пропуск за 90 дней. Урок возвращён в последний раз: '
+                f'следующая неявка приведёт к списанию урока и оплате преподавателю.'
+            )
+        priority = 7 if ordinal < limit else 9
+    else:
+        title = 'Урок списан из-за пропуска'
+        warn = (
+            f'Вы пропустили урок с {teacher} ({ordinal}-й раз за 90 дней). '
+            f'Урок списан из вашего пакета, оплата начислена преподавателю.'
+        )
+        priority = 9
+
+    _notify(
+        booking.student, title=title, short_text=warn[:120], full_text=warn,
+        category=Notification.Category.WARNING, booking=booking, priority=priority,
+        action_url=_safe_url('my_bookings_page'),
+    )
+    LessonEvent.log(
+        booking, 'warning_sent', actor='system',
+        ordinal=ordinal, forgiven=booking.no_show_forgiven,
+    )
 
 
 def _refund_teacher_no_show(booking) -> None:

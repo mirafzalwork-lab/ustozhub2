@@ -5,6 +5,7 @@ from decimal import Decimal
 from django import forms
 
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 
 from teachers.models import TeacherSubject
 
@@ -34,7 +35,7 @@ class TariffForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-input'}),
             'name': forms.TextInput(attrs={
                 'class': 'form-input',
-                'placeholder': 'Например: «Стандарт» или «Подготовка к IELTS»',
+                'placeholder': _('Например: «Стандарт» или «Подготовка к IELTS»'),
             }),
             'subject': forms.Select(attrs={'class': 'form-select'}),
             'lessons_per_week': forms.Select(attrs={'class': 'form-select'}),
@@ -73,7 +74,7 @@ class TariffForm(forms.ModelForm):
             return price
         if price < self.MIN_PRICE_PER_MONTH:
             raise forms.ValidationError(
-                f'Минимальная цена за месяц — {int(self.MIN_PRICE_PER_MONTH)} сум.'
+                _('Минимальная цена за месяц — %(min)s сум.') % {'min': int(self.MIN_PRICE_PER_MONTH)}
             )
         return price
 
@@ -98,7 +99,7 @@ class WithdrawalRequestForm(forms.ModelForm):
                 'min': str(int(Decimal(settings.MIN_WITHDRAWAL_AMOUNT))),
                 'step': '10000',
                 'inputmode': 'numeric',
-                'placeholder': 'Сумма в сумах',
+                'placeholder': _('Сумма в сумах'),
             }),
             'payout_method': forms.Select(attrs={'class': 'form-select'}),
             'payout_details': forms.TextInput(attrs={
@@ -107,7 +108,7 @@ class WithdrawalRequestForm(forms.ModelForm):
                 'autocomplete': 'off',
             }),
             'comment': forms.Textarea(attrs={'rows': 2, 'class': 'form-input',
-                                              'placeholder': 'Опционально'}),
+                                              'placeholder': _('Опционально')}),
         }
 
     def __init__(self, *args, user=None, max_amount=None, **kwargs):
@@ -122,11 +123,11 @@ class WithdrawalRequestForm(forms.ModelForm):
         min_amt = Decimal(settings.MIN_WITHDRAWAL_AMOUNT)
         if amount < min_amt:
             raise forms.ValidationError(
-                f'Минимальная сумма вывода — {int(min_amt)} сум.'
+                _('Минимальная сумма вывода — %(min)s сум.') % {'min': int(min_amt)}
             )
         if self.max_amount is not None and amount > self.max_amount:
             raise forms.ValidationError(
-                f'На балансе только {int(self.max_amount)} сум.'
+                _('На балансе только %(amount)s сум.') % {'amount': int(self.max_amount)}
             )
         return amount
 
@@ -143,12 +144,12 @@ class HomeworkForm(forms.ModelForm):
         widgets = {
             'title': forms.TextInput(attrs={
                 'class': 'form-input',
-                'placeholder': 'Например: Прочитать главу 3 и ответить на вопросы',
+                'placeholder': _('Например: Прочитать главу 3 и ответить на вопросы'),
                 'maxlength': 200,
             }),
             'description': forms.Textarea(attrs={
                 'class': 'form-input', 'rows': 6,
-                'placeholder': 'Подробное описание задания, что нужно сделать, на что обратить внимание...',
+                'placeholder': _('Подробное описание задания, что нужно сделать, на что обратить внимание...'),
             }),
             'due_at': forms.DateTimeInput(attrs={
                 'class': 'form-input',
@@ -171,7 +172,7 @@ class HomeworkSubmissionForm(forms.ModelForm):
         widgets = {
             'text_response': forms.Textarea(attrs={
                 'class': 'form-input', 'rows': 6,
-                'placeholder': 'Ваш ответ. Можете также прикрепить файлы внизу.',
+                'placeholder': _('Ваш ответ. Можете также прикрепить файлы внизу.'),
             }),
         }
 
@@ -181,24 +182,24 @@ class HomeworkGradeForm(forms.Form):
     DECISION_GRADE = 'grade'
     DECISION_RETURN = 'return'
     DECISIONS = (
-        (DECISION_GRADE, 'Поставить оценку'),
-        (DECISION_RETURN, 'Вернуть на доработку'),
+        (DECISION_GRADE, _('Поставить оценку')),
+        (DECISION_RETURN, _('Вернуть на доработку')),
     )
 
     decision = forms.ChoiceField(choices=DECISIONS, widget=forms.RadioSelect,
-                                  initial=DECISION_GRADE, label='Действие')
+                                  initial=DECISION_GRADE, label=_('Действие'))
     grade = forms.IntegerField(
         min_value=0, max_value=100, required=False,
         widget=forms.NumberInput(attrs={'class': 'form-input',
                                          'min': 0, 'max': 100,
-                                         'placeholder': '0–100'}),
-        label='Оценка (0–100)',
+                                         'placeholder': _('0–100')}),
+        label=_('Оценка (0–100)'),
     )
     feedback = forms.CharField(
         max_length=2000, required=False,
         widget=forms.Textarea(attrs={'class': 'form-input', 'rows': 4,
-                                      'placeholder': 'Комментарий к работе'}),
-        label='Комментарий',
+                                      'placeholder': _('Комментарий к работе')}),
+        label=_('Комментарий'),
     )
 
     def clean(self):
@@ -207,8 +208,8 @@ class HomeworkGradeForm(forms.Form):
         grade = cleaned.get('grade')
         feedback = cleaned.get('feedback') or ''
         if decision == self.DECISION_GRADE and grade is None:
-            self.add_error('grade', 'Укажите оценку или выберите «Вернуть на доработку».')
+            self.add_error('grade', _('Укажите оценку или выберите «Вернуть на доработку».'))
         if decision == self.DECISION_RETURN and not feedback.strip():
-            self.add_error('feedback', 'При возврате на доработку нужен комментарий.')
+            self.add_error('feedback', _('При возврате на доработку нужен комментарий.'))
         return cleaned
 

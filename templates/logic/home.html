@@ -1872,7 +1872,7 @@
         </div>
 
         <div class="hero-viewport">
-            <button class="hero-arrow hero-arrow-prev" id="heroPrev" aria-label="prev"><i class="fas fa-chevron-left"></i></button>
+            <button class="hero-arrow hero-arrow-prev" id="heroPrev" aria-label="{% trans 'Назад' %}"><i class="fas fa-chevron-left"></i></button>
             <div class="hero-track" id="heroTrack">
                 {% for teacher in featured_teachers %}
                     {% with ts_list=teacher.teachersubject_set.all %}
@@ -1932,7 +1932,7 @@
                     {% endwith %}
                 {% endfor %}
             </div>
-            <button class="hero-arrow hero-arrow-next" id="heroNext" aria-label="next"><i class="fas fa-chevron-right"></i></button>
+            <button class="hero-arrow hero-arrow-next" id="heroNext" aria-label="{% trans 'Вперёд' %}"><i class="fas fa-chevron-right"></i></button>
         </div>
 
         <div class="hero-dots" id="heroDots">

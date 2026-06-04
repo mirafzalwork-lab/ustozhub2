@@ -254,7 +254,8 @@
         const start = new Date(b.slot.start);
         const end = new Date(b.slot.end);
         const now = new Date();
-        return (start - now <= 15 * 60 * 1000) && (now <= end);
+        // ТЗ §1: кнопка активна за 10 минут до начала и до конца урока.
+        return (start - now <= 10 * 60 * 1000) && (now <= end);
     }
 
     // ---- stats strip ----
