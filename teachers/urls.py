@@ -42,8 +42,12 @@ from .booking_views import (
     booking_create_api, booking_cancel_api,
     booking_confirm_api, booking_reject_api,
     booking_set_meeting_url_api, booking_reschedule_api,
+    booking_report_teacher_noshow_api,
     my_bookings_api, my_bookings_page, book_teacher_page,
     lesson_room, lesson_attendance_api, leave_review, booking_ical,
+)
+from .lesson_files_views import (
+    lesson_file_list, lesson_file_presigned_url, lesson_file_save, lesson_file_delete,
 )
 
 urlpatterns = [
@@ -156,11 +160,17 @@ urlpatterns = [
     path('api/bookings/<uuid:booking_id>/cancel/', booking_cancel_api, name='booking_cancel_api'),
     path('api/bookings/<uuid:booking_id>/meeting-url/', booking_set_meeting_url_api, name='booking_set_meeting_url_api'),
     path('api/bookings/<uuid:booking_id>/reschedule/', booking_reschedule_api, name='booking_reschedule_api'),
+    path('api/bookings/<uuid:booking_id>/report-teacher-noshow/', booking_report_teacher_noshow_api, name='booking_report_teacher_noshow_api'),
     path('api/bookings/my/', my_bookings_api, name='my_bookings_api'),
     path('my/bookings/', my_bookings_page, name='my_bookings_page'),
     path('bookings/<uuid:booking_id>/calendar.ics', booking_ical, name='booking_ical'),
     path('lesson/<uuid:booking_id>/', lesson_room, name='lesson_room'),
     path('lesson/<uuid:booking_id>/attendance/', lesson_attendance_api, name='lesson_attendance_api'),
+    # Материалы урока (LessonFile)
+    path('lesson/<uuid:booking_id>/files/', lesson_file_list, name='lesson_file_list'),
+    path('lesson/<uuid:booking_id>/files/presign/', lesson_file_presigned_url, name='lesson_file_presign'),
+    path('lesson/<uuid:booking_id>/files/save/', lesson_file_save, name='lesson_file_save'),
+    path('lesson/<uuid:booking_id>/files/<int:file_id>/delete/', lesson_file_delete, name='lesson_file_delete'),
     path('review/<uuid:booking_id>/', leave_review, name='leave_review'),
 
     # Legal pages (footer links)

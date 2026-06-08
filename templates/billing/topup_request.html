@@ -148,7 +148,42 @@
     </div>
   {% endif %}
 
-  {% if not topup_configured %}
+  {% if multicard_enabled %}
+  <div class="step-card" style="border-color:#BFDBFE;">
+    <div class="step-head">
+      <div class="step-num" style="background:linear-gradient(135deg,#059669,#10B981);"><i class="fas fa-bolt" style="font-size:14px;"></i></div>
+      <h2>{% trans 'Оплатить картой онлайн' %}</h2>
+    </div>
+    <p style="margin:0 0 14px; color:#475569; font-size:14px; line-height:1.55;">
+      {% trans 'Мгновенное зачисление. Оплата картой Uzcard / Humo / Visa через защищённую страницу Multicard.' %}
+    </p>
+    <form method="post" action="{% url 'wallet_topup_multicard' %}">
+      {% csrf_token %}
+      {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+      <div class="req-row" style="background:#fff;">
+        <div class="req-info">
+          <div class="req-label">{% trans 'Сумма пополнения, сум' %}</div>
+          <input type="number" name="amount" min="{{ min_topup }}" step="1000" required
+                 value="{% if needed > 0 %}{{ needed }}{% elif amount > 0 %}{{ amount }}{% endif %}"
+                 placeholder="{{ min_topup }}"
+                 style="width:100%; border:none; outline:none; background:transparent; font-size:18px; font-weight:600; color:#0A2540; font-variant-numeric:tabular-nums;">
+        </div>
+      </div>
+      <button type="submit" class="tg-btn" style="background:linear-gradient(135deg,#059669,#10B981); box-shadow:0 4px 14px rgba(5,150,105,.28);">
+        <i class="fas fa-credit-card"></i>
+        {% trans 'Перейти к оплате' %}
+      </button>
+    </form>
+  </div>
+
+  {% if topup_configured %}
+  <div style="text-align:center; color:#94A3B8; font-size:13px; margin:18px 0; position:relative;">
+    <span style="background:var(--page-bg,#fff); padding:0 12px;">{% trans 'или переводом на карту вручную' %}</span>
+  </div>
+  {% endif %}
+  {% endif %}
+
+  {% if not topup_configured and not multicard_enabled %}
   <div class="needed-card" style="background:#FEF2F2; border-color:#FECACA;">
     <i class="fas fa-triangle-exclamation" style="color:#DC2626;"></i>
     <div class="text">
@@ -156,7 +191,7 @@
       {% if support_phone %}<div class="row" style="margin-top:6px;">{% trans 'Телефон поддержки:' %} <a href="tel:{{ support_phone }}">{{ support_phone }}</a></div>{% endif %}
     </div>
   </div>
-  {% else %}
+  {% elif topup_configured %}
   <div class="step-card">
     <div class="step-head">
       <div class="step-num">1</div>
@@ -252,7 +287,7 @@
         btn.classList.add('copied');
         var span = btn.querySelector('span');
         var prev = span ? span.textContent : '';
-        if (span) span.textContent = '{% trans "Скопировано" %}';
+        if (span) span.textContent = '{% filter escapejs %}{% trans "Скопировано" %}{% endfilter %}';
         btn.querySelector('i').className = 'fas fa-check';
         setTimeout(function(){
           btn.classList.remove('copied');

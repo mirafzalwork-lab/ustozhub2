@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{# Свой рендер messages ниже — подавляем глобальный из base.html #}
+{% block messages %}{% endblock %}
 {% load static %}
 {% load i18n %}
 
@@ -768,17 +770,17 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                const statusText = isActive ? '{% trans "activated" %}' : '{% trans "deactivated" %}';
-                showNotification(`{% trans "Profile" %} ${statusText}`, 'success');
+                const statusText = isActive ? '{% filter escapejs %}{% trans "activated" %}{% endfilter %}' : '{% filter escapejs %}{% trans "deactivated" %}{% endfilter %}';
+                showNotification(`{% filter escapejs %}{% trans "Profile" %}{% endfilter %} ${statusText}`, 'success');
             } else {
                 checkbox.checked = !isActive;
-                showNotification('{% trans "Error changing status" %}', 'error');
+                showNotification('{% filter escapejs %}{% trans "Error changing status" %}{% endfilter %}', 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
             checkbox.checked = !isActive;
-            showNotification('{% trans "An error occurred" %}', 'error');
+            showNotification('{% filter escapejs %}{% trans "An error occurred" %}{% endfilter %}', 'error');
         });
     }
 
@@ -808,7 +810,7 @@
         
         if (desiredSubjects.length === 0) {
             e.preventDefault();
-            showNotification('{% trans "Select at least one subject to study" %}', 'error');
+            showNotification('{% filter escapejs %}{% trans "Select at least one subject to study" %}{% endfilter %}', 'error');
             return false;
         }
 
@@ -817,7 +819,7 @@
 
         if (budgetMin > 0 && budgetMax > 0 && budgetMin > budgetMax) {
             e.preventDefault();
-            showNotification('{% trans "Maximum budget must be greater than minimum" %}', 'error');
+            showNotification('{% filter escapejs %}{% trans "Maximum budget must be greater than minimum" %}{% endfilter %}', 'error');
             return false;
         }
     });

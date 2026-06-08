@@ -193,6 +193,360 @@ def billing_hub(request):
     return render(request, 'billing/admin/hub.html', ctx)
 
 
+# ---------- Reports: история и статистика денег ----------
+
+
+def _reports_period(request):
+    """Разбирает период из ?period=... или ?from=&to= в (start, end, period_key).
+
+    start — datetime включительно (или None = «с начала»); end — datetime
+    исключительно (или None = «до сейчас»). period_key — для подсветки кнопок.
+    """
+    from datetime import datetime
+
+    now = timezone.now()
+    custom_from = (request.GET.get('from') or '').strip()
+    custom_to = (request.GET.get('to') or '').strip()
+
+    if custom_from or custom_to:
+        start = end = None
+        try:
+            if custom_from:
+                start = timezone.make_aware(datetime.strptime(custom_from, '%Y-%m-%d'))
+        except (ValueError, TypeError):
+            start = None
+        try:
+            if custom_to:
+                end = timezone.make_aware(datetime.strptime(custom_to, '%Y-%m-%d')) + timedelta(days=1)
+        except (ValueError, TypeError):
+            end = None
+        return start, end, 'custom'
+
+    period = request.GET.get('period', '30d')
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    if period == 'today':
+        return today_start, None, 'today'
+    if period == '7d':
+        return now - timedelta(days=7), None, '7d'
+    if period == '90d':
+        return now - timedelta(days=90), None, '90d'
+    if period == 'all':
+        return None, None, 'all'
+    return now - timedelta(days=30), None, '30d'
+
+
+@staff_required
+def billing_reports(request):
+    """История и статистика денежных потоков платформы.
+
+    Отвечает на вопросы: кто сколько пополнил, сколько заработал каждый учитель,
+    сколько комиссии получила платформа (и от каких уроков), сколько выведено.
+    Поддерживает фильтр по периоду, фильтр истории по типу и экспорт в CSV.
+    """
+    from django.core.paginator import Paginator
+    from django.db.models.functions import TruncDate
+
+    now = timezone.now()
+    start, end, period_key = _reports_period(request)
+    platform = get_or_create_platform_user()
+
+    def in_period(qs, field='created_at'):
+        if start is not None:
+            qs = qs.filter(**{f'{field}__gte': start})
+        if end is not None:
+            qs = qs.filter(**{f'{field}__lt': end})
+        return qs
+
+    tx = in_period(Transaction.objects.filter(status=Transaction.Status.COMPLETED))
+
+    def total_by_type(t, qs=None):
+        return (qs or tx).filter(type=t).aggregate(s=Sum('amount'))['s'] or Decimal('0')
+
+    # ---- KPI за период ----
+    deposits_total = total_by_type(Transaction.Type.DEPOSIT)
+    commission_total = (
+        tx.filter(wallet=platform.wallet, type=Transaction.Type.COMMISSION)
+        .aggregate(s=Sum('amount'))['s'] or Decimal('0')
+    )
+    payouts_total = total_by_type(Transaction.Type.LESSON_PAYOUT)
+    refunds_total = total_by_type(Transaction.Type.REFUND)
+
+    withdrawals_qs = in_period(
+        WithdrawalRequest.objects.filter(status='completed'), field='completed_at',
+    )
+    withdrawals_total = withdrawals_qs.aggregate(s=Sum('amount'))['s'] or Decimal('0')
+
+    tx_count = tx.count()
+
+    # ---- Кто сколько пополнил ----
+    top_depositors = list(
+        tx.filter(type=Transaction.Type.DEPOSIT)
+        .exclude(wallet=platform.wallet)
+        .values('wallet__user__id', 'wallet__user__username',
+                'wallet__user__first_name', 'wallet__user__last_name')
+        .annotate(total=Sum('amount'), cnt=Count('id'))
+        .order_by('-total')[:15]
+    )
+
+    # ---- Заработок учителей (payout net + комиссия платформы с него + выведено) ----
+    teacher_rows: dict[int, dict] = {}
+
+    def _row(uid):
+        return teacher_rows.setdefault(uid, {
+            'earned': Decimal('0'), 'commission': Decimal('0'),
+            'withdrawn': Decimal('0'), 'lessons': 0,
+        })
+
+    for r in (tx.filter(type=Transaction.Type.LESSON_PAYOUT)
+              .values('wallet__user__id')
+              .annotate(earned=Sum('amount'), cnt=Count('id'))):
+        row = _row(r['wallet__user__id'])
+        row['earned'] = r['earned'] or Decimal('0')
+        row['lessons'] = r['cnt']
+
+    for r in (tx.filter(type=Transaction.Type.COMMISSION,
+                        related_subscription__isnull=False)
+              .values('related_subscription__teacher__user__id')
+              .annotate(comm=Sum('amount'))):
+        uid = r['related_subscription__teacher__user__id']
+        if uid is not None:
+            _row(uid)['commission'] = r['comm'] or Decimal('0')
+
+    for r in withdrawals_qs.values('user__id').annotate(s=Sum('amount')):
+        _row(r['user__id'])['withdrawn'] = r['s'] or Decimal('0')
+
+    umap = {
+        u.id: u for u in
+        User.objects.filter(id__in=list(teacher_rows.keys())).select_related('wallet')
+    }
+    teachers_list = []
+    for uid, data in teacher_rows.items():
+        u = umap.get(uid)
+        if u is None:
+            continue
+        teachers_list.append({
+            'user': u,
+            'name': u.get_full_name() or u.username,
+            'earned': data['earned'],
+            'commission': data['commission'],
+            'withdrawn': data['withdrawn'],
+            'lessons': data['lessons'],
+            'balance': getattr(getattr(u, 'wallet', None), 'balance', Decimal('0')),
+        })
+    teachers_list.sort(key=lambda x: x['earned'], reverse=True)
+    teachers_list = teachers_list[:25]
+
+    # ---- Доход от комиссии: по каким урокам/от кого ----
+    commission_log = list(
+        tx.filter(wallet=platform.wallet, type=Transaction.Type.COMMISSION)
+        .select_related(
+            'related_subscription__student',
+            'related_subscription__teacher__user',
+            'related_subscription__subject',
+        )
+        .order_by('-created_at')[:25]
+    )
+
+    # ---- График дохода (комиссия) по дням за последние 14 дней ----
+    chart_start = now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=13)
+    daily = (
+        Transaction.objects.filter(
+            status=Transaction.Status.COMPLETED,
+            wallet=platform.wallet,
+            type=Transaction.Type.COMMISSION,
+            created_at__gte=chart_start,
+        )
+        .annotate(d=TruncDate('created_at')).values('d')
+        .annotate(s=Sum('amount')).order_by('d')
+    )
+    daily_map = {r['d']: (r['s'] or Decimal('0')) for r in daily}
+    chart = []
+    for i in range(14):
+        day = (chart_start + timedelta(days=i)).date()
+        chart.append({'day': day, 'value': daily_map.get(day, Decimal('0'))})
+    max_val = max((c['value'] for c in chart), default=Decimal('0')) or Decimal('1')
+    for c in chart:
+        c['pct'] = int(round(100 * c['value'] / max_val))
+
+    # ---- Полная история транзакций (фильтр по типу + пагинация / CSV) ----
+    tx_type_filter = request.GET.get('tx_type', '')
+    all_tx = in_period(
+        Transaction.objects.select_related('wallet__user').order_by('-created_at')
+    )
+    if tx_type_filter and tx_type_filter in dict(Transaction.Type.choices):
+        all_tx = all_tx.filter(type=tx_type_filter)
+
+    if request.GET.get('export') == 'csv':
+        import csv
+
+        from django.http import HttpResponse
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="transactions.csv"'
+        response.write('﻿')  # BOM — чтобы Excel корректно открыл кириллицу
+        writer = csv.writer(response)
+        writer.writerow(['Дата', 'Пользователь', 'Тип', 'Сумма', 'Баланс после', 'Описание'])
+        for t in all_tx[:10000]:
+            writer.writerow([
+                timezone.localtime(t.created_at).strftime('%Y-%m-%d %H:%M'),
+                t.wallet.user.username, t.get_type_display(),
+                t.amount, t.balance_after, t.description,
+            ])
+        return response
+
+    paginator = Paginator(all_tx, 50)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    # querystring без page — для ссылок пагинации/экспорта
+    qd = request.GET.copy()
+    qd.pop('page', None)
+    qd.pop('export', None)
+    querystring = qd.urlencode()
+
+    return render(request, 'billing/admin/reports.html', {
+        'period_key': period_key,
+        'date_from': request.GET.get('from', ''),
+        'date_to': request.GET.get('to', ''),
+        'deposits_total': deposits_total,
+        'commission_total': commission_total,
+        'payouts_total': payouts_total,
+        'refunds_total': refunds_total,
+        'withdrawals_total': withdrawals_total,
+        'tx_count': tx_count,
+        'top_depositors': top_depositors,
+        'teachers_list': teachers_list,
+        'commission_log': commission_log,
+        'chart': chart,
+        'page_obj': page_obj,
+        'tx_types': Transaction.Type.choices,
+        'tx_type_filter': tx_type_filter,
+        'querystring': querystring,
+    })
+
+
+@staff_required
+def billing_income(request):
+    """Детализация дохода платформы — от каких уроков и сколько.
+
+    Полная лента COMMISSION-транзакций на кошельке платформы: дата урока,
+    ученик → учитель, предмет, цена урока, ставка и сумма комиссии. С фильтром
+    по периоду, итогами и экспортом в CSV.
+    """
+    from django.core.paginator import Paginator
+
+    start, end, period_key = _reports_period(request)
+    platform = get_or_create_platform_user()
+
+    def in_period(qs):
+        if start is not None:
+            qs = qs.filter(created_at__gte=start)
+        if end is not None:
+            qs = qs.filter(created_at__lt=end)
+        return qs
+
+    base = (
+        Transaction.objects
+        .filter(
+            wallet=platform.wallet,
+            type=Transaction.Type.COMMISSION,
+            status=Transaction.Status.COMPLETED,
+        )
+        .select_related(
+            'related_booking__slot__teacher__user',
+            'related_booking__student',
+            'related_booking__subject',
+            'related_subscription__student',
+            'related_subscription__teacher__user',
+            'related_subscription__subject',
+        )
+        .order_by('-created_at')
+    )
+    qs = in_period(base)
+
+    # ---- Итоги ----
+    agg = qs.aggregate(total=Sum('amount'), cnt=Count('id'))
+    period_total = agg['total'] or Decimal('0')
+    period_count = agg['cnt'] or 0
+    avg_commission = (period_total / period_count) if period_count else Decimal('0')
+    all_time_total = base.aggregate(s=Sum('amount'))['s'] or Decimal('0')
+
+    # ---- CSV ----
+    if request.GET.get('export') == 'csv':
+        import csv
+
+        from django.http import HttpResponse
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="platform_income.csv"'
+        response.write('﻿')  # BOM для Excel
+        writer = csv.writer(response)
+        writer.writerow(['Дата начисления', 'Дата урока', 'Ученик', 'Учитель',
+                         'Предмет', 'Цена урока', 'Комиссия', 'Источник'])
+        for t in qs[:10000]:
+            row = _income_row(t)
+            writer.writerow([
+                timezone.localtime(t.created_at).strftime('%Y-%m-%d %H:%M'),
+                (timezone.localtime(row['lesson_date']).strftime('%Y-%m-%d %H:%M')
+                 if row['lesson_date'] else '—'),
+                row['student_name'], row['teacher_name'],
+                row['subject_name'] or '—',
+                row['price'] if row['price'] is not None else '',
+                t.amount, row['source'],
+            ])
+        return response
+
+    paginator = Paginator(qs, 50)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    rows = [dict(_income_row(t), tx=t) for t in page_obj.object_list]
+
+    qd = request.GET.copy()
+    qd.pop('page', None)
+    qd.pop('export', None)
+    querystring = qd.urlencode()
+
+    return render(request, 'billing/admin/income.html', {
+        'period_key': period_key,
+        'date_from': request.GET.get('from', ''),
+        'date_to': request.GET.get('to', ''),
+        'period_total': period_total,
+        'period_count': period_count,
+        'avg_commission': avg_commission,
+        'all_time_total': all_time_total,
+        'rows': rows,
+        'page_obj': page_obj,
+        'querystring': querystring,
+    })
+
+
+def _income_row(t) -> dict:
+    """Собирает данные строки дохода из COMMISSION-транзакции.
+
+    Данные берутся из подписки (если урок по подписке) либо из брони (пробный
+    урок — related_subscription может быть пустым).
+    """
+    b = t.related_booking
+    s = t.related_subscription
+    student = s.student if s else (b.student if b else None)
+    if s:
+        teacher_user = s.teacher.user
+    elif b and b.slot_id:
+        teacher_user = b.slot.teacher.user
+    else:
+        teacher_user = None
+    subject = s.subject if s else (b.subject if b else None)
+    lesson_date = b.slot.start_at if (b and b.slot_id) else None
+    price = s.price_per_lesson if s else None
+    source = 'Подписка' if s else ('Пробный урок' if b else 'Прочее')
+    return {
+        'student_name': (student.get_full_name() or student.username) if student else '—',
+        'student_username': student.username if student else '',
+        'teacher_name': (teacher_user.get_full_name() or teacher_user.username) if teacher_user else '—',
+        'teacher_username': teacher_user.username if teacher_user else '',
+        'subject_name': subject.name if subject else None,
+        'lesson_date': lesson_date,
+        'price': price,
+        'source': source,
+    }
+
+
 # ---------- Wallet search + top-up ----------
 
 

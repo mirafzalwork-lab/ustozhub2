@@ -99,6 +99,103 @@ def release_pending_payouts():
     return {'paid': paid, 'skipped': skipped, 'errors': errors, 'total': total}
 
 
+@shared_task(name='billing.reconcile_orphaned_refunds')
+def reconcile_orphaned_refunds():
+    """Страховочная сверка: дозакрывает «потерянные» возвраты за пробные уроки.
+
+    Возврат за платный пробный при отмене/неявке учителя вызывается во view
+    (booking_cancel_api) ПОСЛЕ коммита смены статуса — если процесс упадёт между
+    этими шагами, урок останется отменённым, а деньги ученику не вернутся, и
+    никакой sweep их не подберёт (в отличие от подписок, где escrow страхует
+    settle_expired_subscriptions).
+
+    Эта задача ищет платные пробные в refund-состояниях, у которых нет ни
+    transaction возврата, ни выплаты учителю, и повторяет refund_trial (он
+    идемпотентен по 'trial-refund:<id>'). Берём только брони, не менявшиеся
+    последние 10 минут, чтобы не гоняться с синхронным refund во view.
+    """
+    from teachers.models import Booking
+    from .models import Transaction
+    from .services import TrialService
+
+    REFUND_STATES = (
+        'cancelled_by_student', 'cancelled_by_teacher',
+        'no_show_teacher', 'expired', 'not_held',
+    )
+    buffer = timezone.now() - timedelta(minutes=10)
+
+    candidates = (
+        Booking.objects
+        .filter(status__in=REFUND_STATES, is_trial=True,
+                trial_price_paid__isnull=False, updated_at__lt=buffer)
+        .order_by('updated_at')[:500]
+    )
+
+    recovered = 0
+    checked = 0
+    errors = 0
+    for booking in candidates:
+        checked += 1
+        keys = [f'trial-refund:{booking.id}', f'trial-payout:{booking.id}']
+        if Transaction.objects.filter(idempotency_key__in=keys).exists():
+            continue  # деньги уже двинулись (возврат или выплата) — всё ок
+        try:
+            refunded = TrialService.refund_trial(
+                booking, reason='Авто-сверка потерянного возврата',
+            )
+            if refunded:
+                recovered += 1
+                logger.warning(
+                    'reconcile: recovered orphaned trial refund booking=%s amount=%s',
+                    booking.id, refunded,
+                )
+        except Exception as e:
+            errors += 1
+            logger.exception('reconcile trial refund failed booking=%s: %s', booking.id, e)
+
+    if recovered or errors:
+        logger.warning(
+            'reconcile_orphaned_refunds: checked=%s recovered=%s errors=%s',
+            checked, recovered, errors,
+        )
+    return {'checked': checked, 'recovered': recovered, 'errors': errors}
+
+
+@shared_task(name='billing.reconcile_wallet_balances')
+def reconcile_wallet_balances():
+    """Ночная сверка денежного инварианта: balance == SUM(transactions).
+
+    Денормализованный Wallet.balance — источник скорости, а Transaction —
+    источник правды. При любом баге в логике баланс может разойтись с историей.
+    Эта задача находит расхождения и громко логирует их (НЕ правит автоматически —
+    авто-правка денег без ручного разбора опаснее самого расхождения).
+    """
+    from django.db.models import Sum
+    from .models import Wallet, Transaction
+
+    mismatches = []
+    checked = 0
+    for wallet in Wallet.objects.all().iterator(chunk_size=200):
+        checked += 1
+        agg = (Transaction.objects.filter(wallet=wallet)
+               .aggregate(s=Sum('amount'))['s']) or 0
+        if wallet.balance != agg:
+            mismatches.append({
+                'wallet': str(wallet.pk),
+                'user_id': wallet.user_id,
+                'balance': str(wallet.balance),
+                'ledger_sum': str(agg),
+                'diff': str(wallet.balance - agg),
+            })
+
+    if mismatches:
+        logger.error(
+            'reconcile_wallet_balances: %s MISMATCH(es) found out of %s wallets: %s',
+            len(mismatches), checked, mismatches,
+        )
+    return {'checked': checked, 'mismatches': mismatches}
+
+
 @shared_task(name='billing.expire_unpaid_approvals')
 def expire_unpaid_approvals():
     """Раз в N минут: одобренные, но не оплаченные в срок заявки → EXPIRED."""

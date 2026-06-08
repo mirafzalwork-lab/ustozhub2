@@ -726,7 +726,10 @@ class SubscriptionService:
                     continue
                 # Design A: бронируем ТОЛЬКО реальные свободные слоты из календаря учителя.
                 # Если на эту неделю учитель не открыл слот — пропускаем (ничего не создаём).
-                slot = TimeSlot.objects.filter(
+                # select_for_update: блокируем строку слота, иначе два параллельных
+                # бронирования одного слота оба пройдут filter(status='free') и второй
+                # упадёт IntegrityError по UniqueConstraint вместо аккуратного пропуска.
+                slot = TimeSlot.objects.select_for_update().filter(
                     teacher=teacher, start_at=start_dt, end_at=slot_end, status='free',
                 ).first()
                 if slot is None:
@@ -1264,9 +1267,18 @@ class SubscriptionService:
                 if sub.escrow_balance < 0:
                     sub.escrow_balance = Decimal('0.00')
                 sub.lessons_paid_out = sub.lessons_paid_out + 1
+                _fields = ['escrow_balance', 'lessons_paid_out', 'status', 'updated_at']
+                # Поздняя отмена ученика (штраф учителю) — доставленный урок, но
+                # сигнал _on_completed её не учитывает (срабатывает только на
+                # completed/no_show_student). Инкрементим completed_lessons здесь,
+                # иначе lessons_paid_out обгоняет completed_lessons и progress/
+                # attendance/квота resume разъезжаются.
+                if booking.status == 'cancelled_by_student':
+                    sub.completed_lessons = sub.completed_lessons + 1
+                    _fields.append('completed_lessons')
                 if sub.lessons_paid_out >= sub.total_lessons:
                     sub.status = Subscription.Status.COMPLETED
-                sub.save(update_fields=['escrow_balance', 'lessons_paid_out', 'status', 'updated_at'])
+                sub.save(update_fields=_fields)
 
             return not already_paid
 
@@ -1437,7 +1449,9 @@ class SubscriptionService:
                         continue
 
                     # Ищем существующий free слот ровно на этот интервал.
-                    slot = TimeSlot.objects.filter(
+                    # select_for_update: блокируем строку, чтобы параллельная
+                    # генерация расписания не заняла тот же слот дважды.
+                    slot = TimeSlot.objects.select_for_update().filter(
                         teacher=teacher,
                         start_at=cursor_dt,
                         end_at=slot_end,

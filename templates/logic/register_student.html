@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{# Свой рендер messages ниже — подавляем глобальный из base.html #}
+{% block messages %}{% endblock %}
 {% load static %}
 {% load i18n %}
 
@@ -1454,7 +1456,7 @@
         function updateCounter() {
             const length = bioField.value.length;
             const maxLength = 1000;
-            charCounter.textContent = `${length} / ${maxLength} {% trans "символов" %}`;
+            charCounter.textContent = `${length} / ${maxLength} {% filter escapejs %}{% trans "символов" %}{% endfilter %}`;
             
             if (length < 20) {
                 charCounter.className = 'char-counter error';
@@ -1479,7 +1481,7 @@
             const max = parseFloat(budgetMax.value) || 0;
             
             if (min > 0 && max > 0 && min > max) {
-                budgetMax.setCustomValidity('{% trans "Максимальный бюджет должен быть больше минимального" %}');
+                budgetMax.setCustomValidity('{% filter escapejs %}{% trans "Максимальный бюджет должен быть больше минимального" %}{% endfilter %}');
             } else {
                 budgetMax.setCustomValidity('');
             }
@@ -1496,7 +1498,7 @@
         const btn = this.querySelector('.reg-nav__btn--submit');
         if (btn) {
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% trans "Регистрация..." %}';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% filter escapejs %}{% trans "Регистрация..." %}{% endfilter %}';
         }
     });
 
@@ -1580,11 +1582,11 @@
 
         // Переводы для JavaScript
         const translations = {
-            selected: '{% trans "выбрано" %}',
-            found: '{% trans "Найдено:" %}',
-            subjects: '{% trans "предметов" %}',
-            notFound: '{% trans "Ничего не найдено. Попробуйте изменить запрос" %}',
-            remove: '{% trans "Удалить" %}'
+            selected: '{% filter escapejs %}{% trans "выбрано" %}{% endfilter %}',
+            found: '{% filter escapejs %}{% trans "Найдено:" %}{% endfilter %}',
+            subjects: '{% filter escapejs %}{% trans "предметов" %}{% endfilter %}',
+            notFound: '{% filter escapejs %}{% trans "Ничего не найдено. Попробуйте изменить запрос" %}{% endfilter %}',
+            remove: '{% filter escapejs %}{% trans "Удалить" %}{% endfilter %}'
         };
 
         // Скрываем оригинальные чекбоксы (оставляем как fallback без JS)

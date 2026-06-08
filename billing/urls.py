@@ -5,6 +5,8 @@ from . import admin_views, views
 urlpatterns = [
     # Admin billing dashboard
     path('admin-dashboard/billing/', admin_views.billing_hub, name='admin_billing_hub'),
+    path('admin-dashboard/billing/reports/', admin_views.billing_reports, name='admin_billing_reports'),
+    path('admin-dashboard/billing/income/', admin_views.billing_income, name='admin_billing_income'),
     path('admin-dashboard/billing/wallets/', admin_views.wallet_search, name='admin_billing_wallets'),
     path('admin-dashboard/billing/wallets/<int:user_id>/topup/', admin_views.wallet_topup_action, name='admin_wallet_topup_action'),
     path('admin-dashboard/billing/withdrawals/', admin_views.withdrawals_manage, name='admin_billing_withdrawals'),
@@ -21,8 +23,11 @@ urlpatterns = [
     path('profile/tariffs/<int:pk>/delete/', views.tariff_delete, name='tariff_delete'),
     path('profile/tariffs/<int:pk>/toggle/', views.tariff_toggle_active, name='tariff_toggle_active'),
 
-    # Wallet — пополнение (manual flow до Payme/Click)
+    # Wallet — пополнение
     path('my/wallet/topup/', views.wallet_topup_request, name='wallet_topup_request'),
+    # Онлайн-пополнение через Multicard (callback зарегистрирован в core/urls.py вне i18n)
+    path('my/wallet/topup/multicard/', views.wallet_topup_multicard, name='wallet_topup_multicard'),
+    path('my/wallet/topup/return/', views.wallet_topup_return, name='wallet_topup_return'),
 
     # Покупка подписки + история
     path('subscriptions/buy/<int:tariff_id>/', views.subscription_buy, name='subscription_buy'),

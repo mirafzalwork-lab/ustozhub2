@@ -71,6 +71,79 @@
     .lr-state p { color: var(--text-tertiary, #64748b); margin: 0 0 20px; font-size: 15px; }
     .lr-state .lr-back { background: #3B82F6; color: #fff; border-color: #3B82F6; }
     .lr-state .lr-back:hover { background: #2563EB; }
+
+    /* Статус-бар: таймер урока + индикатор присутствия второй стороны */
+    .lr-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 10px;
+        padding: 9px 14px;
+        background: #fff;
+        border: 1px solid var(--border-light, #e2e8f0);
+        border-radius: 10px;
+        font-size: 13px;
+    }
+    .lr-bar-item { display: inline-flex; align-items: center; gap: 7px; color: var(--text-secondary, #475569); }
+    .lr-bar-item i { color: #3B82F6; }
+    #lr-timer { font-variant-numeric: tabular-nums; font-weight: 600; }
+    #lr-timer.is-ending { color: #DC2626; }
+    .lr-dot { width: 9px; height: 9px; border-radius: 50%; background: #cbd5e1; display: inline-block; }
+    .lr-presence.is-online .lr-dot { background: #22C55E; box-shadow: 0 0 0 3px rgba(34,197,94,.18); }
+    .lr-presence.is-online { color: #166534; }
+    #lr-reload {
+        display: none; margin-top: 14px; text-align: center;
+    }
+    #lr-reload button {
+        padding: 9px 18px; border-radius: 10px; border: 0; cursor: pointer;
+        background: #3B82F6; color: #fff; font-size: 14px; font-weight: 600;
+    }
+
+    /* Материалы урока */
+    .lr-files {
+        margin-top: 14px;
+        background: #fff;
+        border: 1px solid var(--border-light, #e2e8f0);
+        border-radius: 12px;
+        padding: 14px 16px;
+    }
+    .lr-files-head {
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 10px; margin-bottom: 10px;
+    }
+    .lr-files-head h3 {
+        margin: 0; font-size: 15px; font-weight: 700;
+        color: var(--text-primary, #0f172a); display: inline-flex; align-items: center; gap: 8px;
+    }
+    .lr-files-head h3 i { color: #3B82F6; }
+    .lr-upload-btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 8px 14px; border-radius: 9px; border: 1px solid #3B82F6;
+        background: #EFF6FF; color: #1D4ED8; font-size: 13.5px; font-weight: 600;
+        cursor: pointer;
+    }
+    .lr-upload-btn:hover { background: #DBEAFE; }
+    .lr-upload-btn[disabled] { opacity: .6; cursor: default; }
+    .lr-files-hint { font-size: 12px; color: var(--text-tertiary, #94a3b8); margin: 0 0 8px; }
+    .lr-file-list { list-style: none; margin: 0; padding: 0; }
+    .lr-file-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 9px 4px; border-top: 1px solid #f1f5f9; font-size: 13.5px;
+    }
+    .lr-file-item:first-child { border-top: 0; }
+    .lr-file-item .fi-ico { color: #64748b; width: 18px; text-align: center; }
+    .lr-file-item a.fi-name { color: #1D4ED8; text-decoration: none; font-weight: 500; flex: 1; min-width: 0; word-break: break-word; }
+    .lr-file-item a.fi-name:hover { text-decoration: underline; }
+    .lr-file-item .fi-size { color: #94a3b8; font-size: 12px; white-space: nowrap; }
+    .lr-file-del {
+        border: 0; background: transparent; color: #ef4444; cursor: pointer;
+        font-size: 13px; padding: 4px 6px; border-radius: 6px;
+    }
+    .lr-file-del:hover { background: #fef2f2; }
+    .lr-files-empty { color: var(--text-tertiary, #94a3b8); font-size: 13px; padding: 6px 0; }
+    .lr-files-error { color: #b91c1c; font-size: 13px; margin-top: 6px; }
 </style>
 {% endblock %}
 
@@ -93,11 +166,81 @@
     </div>
 
     {% if can_join %}
+        <div class="lr-bar">
+            <span class="lr-bar-item">
+                <i class="fa-regular fa-clock"></i>
+                <span>{% trans "До конца урока" %}:</span>
+                <span id="lr-timer">—:—</span>
+            </span>
+            <span class="lr-bar-item lr-presence" id="lr-presence">
+                <span class="lr-dot"></span>
+                <span id="lr-presence-text">{% blocktrans %}Ожидаем {{ other_name }}…{% endblocktrans %}</span>
+            </span>
+        </div>
         <div id="jitsi-container"></div>
+        <div id="lr-reload">
+            <button type="button" onclick="window.location.reload()">
+                <i class="fa-solid fa-rotate-right"></i> {% trans "Переподключиться" %}
+            </button>
+        </div>
+
+        <div class="lr-files" id="lr-files">
+            <div class="lr-files-head">
+                <h3><i class="fa-solid fa-paperclip"></i> {% trans "Материалы урока" %}</h3>
+                <label class="lr-upload-btn" id="lr-upload-label">
+                    <i class="fa-solid fa-upload"></i>
+                    <span id="lr-upload-text">{% trans "Загрузить файл" %}</span>
+                    <input type="file" id="lr-file-input" hidden
+                           accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip">
+                </label>
+            </div>
+            <p class="lr-files-hint">
+                {% trans "Документы, изображения, презентации — до 25 МБ. Видны обеим сторонам урока." %}
+            </p>
+            <ul class="lr-file-list" id="lr-file-list"></ul>
+            <p class="lr-files-empty" id="lr-files-empty">{% trans "Пока нет загруженных материалов." %}</p>
+            <p class="lr-files-error" id="lr-files-error" hidden></p>
+        </div>
         <div class="lr-trust" style="margin-top:14px; padding:12px 16px; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:10px; font-size:13px; color:#166534; display:flex; align-items:center; gap:10px;">
             <i class="fa-solid fa-shield-halved"></i>
             <span>{% trans "Урок проходит на платформе: оплата защищена, при проблеме можно открыть спор и вернуть деньги. Договорённости вне платформы этих гарантий не дают." %}</span>
         </div>
+
+        {% if can_report_teacher_noshow %}
+        <div class="lr-noshow" style="margin-top:12px; padding:12px 16px; background:#FEF2F2; border:1px solid #FECACA; border-radius:10px; font-size:13px; color:#991B1B;">
+            <div style="margin-bottom:8px;">{% blocktrans %}Преподаватель так и не подключился? Если его нет дольше {{ noshow_grace }} минут, отметьте неявку — урок отменится, а средства сразу вернутся вам.{% endblocktrans %}</div>
+            <button type="button" id="lr-report-noshow" style="background:#DC2626; color:#fff; border:none; border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer;">
+                <i class="fa-solid fa-user-xmark"></i> {% trans "Преподаватель не пришёл" %}
+            </button>
+        </div>
+        <script>
+        (function(){
+            var btn = document.getElementById('lr-report-noshow');
+            if (!btn) return;
+            btn.addEventListener('click', async function(){
+                if (!confirm("{% filter escapejs %}{% trans 'Отметить, что преподаватель не подключился? Урок будет отменён, а средства возвращены.' %}{% endfilter %}")) return;
+                btn.disabled = true;
+                try {
+                    var r = await fetch("{% url 'booking_report_teacher_noshow_api' booking.id %}", {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': "{{ csrf_token }}", 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    var data = await r.json();
+                    if (r.ok) {
+                        alert(data.message || "{% filter escapejs %}{% trans 'Готово' %}{% endfilter %}");
+                        window.location.href = "{% url 'my_bookings_page' %}";
+                    } else {
+                        alert(data.error || "{% filter escapejs %}{% trans 'Не удалось выполнить действие' %}{% endfilter %}");
+                        btn.disabled = false;
+                    }
+                } catch (e) {
+                    alert("{% filter escapejs %}{% trans 'Ошибка сети, попробуйте ещё раз' %}{% endfilter %}");
+                    btn.disabled = false;
+                }
+            });
+        })();
+        </script>
+        {% endif %}
     {% else %}
         <div class="lr-state">
             {% if state == 'too_early' %}
@@ -128,12 +271,20 @@
 (function () {
     const domain = "{{ jitsi_domain|escapejs }}";
     const room = "{{ jitsi_room|escapejs }}";
+    const endAt = new Date("{{ booking.slot.end_at|date:'c' }}");
     const container = document.getElementById('jitsi-container');
-    if (!container || typeof JitsiMeetExternalAPI === 'undefined') {
+    const reloadBox = document.getElementById('lr-reload');
+
+    function showLoadError() {
         if (container) {
             container.innerHTML = '<div style="color:#fff;padding:40px;text-align:center">' +
-                'Не удалось загрузить видео-модуль. Обновите страницу.</div>';
+                '{% filter escapejs %}{% trans "Не удалось загрузить видео-модуль. Проверьте интернет и попробуйте переподключиться." %}{% endfilter %}</div>';
         }
+        if (reloadBox) reloadBox.style.display = 'block';
+    }
+
+    if (!container || typeof JitsiMeetExternalAPI === 'undefined') {
+        showLoadError();
         return;
     }
 
@@ -148,16 +299,76 @@
             disableDeepLinking: true,
             startWithAudioMuted: false,
             startWithVideoMuted: false,
+            // Безопасность: запрещаем приглашать посторонних из комнаты урока —
+            // ссылка должна оставаться только между учителем и учеником.
+            disableInviteFunctions: true,
         },
         interfaceConfigOverwrite: {
             SHOW_JITSI_WATERMARK: false,
             SHOW_WATERMARK_FOR_GUESTS: false,
             DEFAULT_BACKGROUND: '#0b0b0f',
+            DISABLE_FOCUS_INDICATOR: false,
             TOOLBAR_BUTTONS: [
                 'microphone', 'camera', 'desktop', 'chat', 'raisehand',
+                // Интерактивная доска (Excalidraw) и совместный текстовый редактор
+                // — встроенные инструменты Jitsi для совместной работы с материалами.
+                'whiteboard', 'etherpad',
                 'tileview', 'fullscreen', 'settings', 'hangup',
             ],
         },
+    });
+
+    // ---- Таймер: сколько осталось до конца урока ----
+    const timerEl = document.getElementById('lr-timer');
+    function tickTimer() {
+        if (!timerEl) return;
+        let left = Math.floor((endAt - Date.now()) / 1000);
+        if (left <= 0) {
+            timerEl.textContent = "{% filter escapejs %}{% trans 'время вышло' %}{% endfilter %}";
+            timerEl.classList.add('is-ending');
+            return;
+        }
+        const h = Math.floor(left / 3600);
+        const m = Math.floor((left % 3600) / 60);
+        const s = left % 60;
+        const pad = (n) => String(n).padStart(2, '0');
+        timerEl.textContent = (h > 0 ? pad(h) + ':' : '') + pad(m) + ':' + pad(s);
+        timerEl.classList.toggle('is-ending', left <= 300); // последние 5 минут — красным
+    }
+    tickTimer();
+    setInterval(tickTimer, 1000);
+
+    // ---- Индикатор присутствия второй стороны ----
+    const presenceEl = document.getElementById('lr-presence');
+    const presenceText = document.getElementById('lr-presence-text');
+    const otherName = "{{ other_name|escapejs }}";
+    const txtOnline = "{% filter escapejs %}{% trans 'на связи' %}{% endfilter %}";
+    const txtWaiting = "{% filter escapejs %}{% trans 'Ожидаем' %}{% endfilter %}";
+    function setPresence(online) {
+        if (!presenceEl) return;
+        presenceEl.classList.toggle('is-online', online);
+        if (presenceText) {
+            presenceText.textContent = online
+                ? (otherName + ' ' + txtOnline)
+                : (txtWaiting + ' ' + otherName + '…');
+        }
+    }
+    api.addEventListener('participantJoined', function () { setPresence(true); });
+    api.addEventListener('participantLeft', function () {
+        // Если в комнате не осталось других участников — снова «ожидаем».
+        try {
+            const n = api.getNumberOfParticipants ? api.getNumberOfParticipants() : 0;
+            setPresence(n > 1);
+        } catch (e) { setPresence(false); }
+    });
+
+    // ---- Обработка фатальных ошибок конференции ----
+    api.addEventListener('errorOccurred', function (e) {
+        try {
+            if (e && e.error && e.error.isFatal) {
+                if (reloadBox) reloadBox.style.display = 'block';
+            }
+        } catch (err) { /* no-op */ }
     });
 
     // ---- Учёт реального присутствия (без polling: только вход/выход) ----
@@ -196,6 +407,168 @@
         reportLeave();
         window.location.href = back;
     });
+})();
+</script>
+
+<script>
+// ---- Материалы урока: загрузка / список / удаление ----
+(function () {
+    const csrf = "{{ csrf_token }}";
+    const urls = {
+        list:    "{% url 'lesson_file_list' booking.id %}",
+        presign: "{% url 'lesson_file_presign' booking.id %}",
+        save:    "{% url 'lesson_file_save' booking.id %}",
+        del:     "{% url 'lesson_file_delete' booking.id 0 %}", // 0 → заменим на id
+    };
+    const myId = {{ user.pk }};
+    const input = document.getElementById('lr-file-input');
+    const listEl = document.getElementById('lr-file-list');
+    const emptyEl = document.getElementById('lr-files-empty');
+    const errEl = document.getElementById('lr-files-error');
+    const uploadLabel = document.getElementById('lr-upload-label');
+    const uploadText = document.getElementById('lr-upload-text');
+    if (!input || !listEl) return;
+
+    const i18n = {
+        uploading: "{% filter escapejs %}{% trans 'Загрузка…' %}{% endfilter %}",
+        upload: "{% filter escapejs %}{% trans 'Загрузить файл' %}{% endfilter %}",
+        confirmDel: "{% filter escapejs %}{% trans 'Удалить этот файл?' %}{% endfilter %}",
+        tooBig: "{% filter escapejs %}{% trans 'Файл слишком большой (максимум 25 МБ).' %}{% endfilter %}",
+        badType: "{% filter escapejs %}{% trans 'Недопустимый формат файла.' %}{% endfilter %}",
+        failed: "{% filter escapejs %}{% trans 'Не удалось загрузить файл. Попробуйте ещё раз.' %}{% endfilter %}",
+        del: "{% filter escapejs %}{% trans 'Удалить' %}{% endfilter %}",
+    };
+    const MAX_BYTES = 25 * 1024 * 1024;
+
+    function showError(msg) {
+        errEl.textContent = msg || '';
+        errEl.hidden = !msg;
+    }
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, c => (
+            {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+        ));
+    }
+    function humanSize(n) {
+        if (!n) return '';
+        if (n < 1024) return n + ' B';
+        if (n < 1048576) return (n / 1024).toFixed(0) + ' KB';
+        return (n / 1048576).toFixed(1) + ' MB';
+    }
+    function iconFor(name) {
+        const ext = (name.split('.').pop() || '').toLowerCase();
+        if (['png','jpg','jpeg','gif','webp'].includes(ext)) return 'fa-file-image';
+        if (ext === 'pdf') return 'fa-file-pdf';
+        if (['doc','docx'].includes(ext)) return 'fa-file-word';
+        if (['ppt','pptx'].includes(ext)) return 'fa-file-powerpoint';
+        if (['xls','xlsx'].includes(ext)) return 'fa-file-excel';
+        if (ext === 'zip') return 'fa-file-zipper';
+        return 'fa-file';
+    }
+
+    function render(files) {
+        listEl.innerHTML = '';
+        emptyEl.hidden = files.length > 0;
+        files.forEach(f => {
+            const li = document.createElement('li');
+            li.className = 'lr-file-item';
+            const delBtn = f.can_delete
+                ? `<button class="lr-file-del" data-id="${f.id}" title="${i18n.del}"><i class="fa-solid fa-trash"></i></button>`
+                : '';
+            li.innerHTML =
+                `<i class="fi-ico fa-solid ${iconFor(f.file_name)}"></i>` +
+                `<a class="fi-name" href="${escapeHtml(f.file_url)}" target="_blank" rel="noopener">${escapeHtml(f.file_name)}</a>` +
+                `<span class="fi-size">${humanSize(f.size)}</span>` +
+                delBtn;
+            listEl.appendChild(li);
+        });
+    }
+
+    async function loadList() {
+        try {
+            const r = await fetch(urls.list, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!r.ok) return;
+            const data = await r.json();
+            render(data.files || []);
+        } catch (e) { /* тихо */ }
+    }
+
+    function setBusy(busy) {
+        input.disabled = busy;
+        uploadLabel.style.pointerEvents = busy ? 'none' : '';
+        uploadLabel.classList.toggle('is-busy', busy);
+        uploadText.textContent = busy ? i18n.uploading : i18n.upload;
+    }
+
+    async function upload(file) {
+        showError('');
+        if (file.size > MAX_BYTES) { showError(i18n.tooBig); return; }
+        setBusy(true);
+        try {
+            // 1) presigned URL
+            const pres = await fetch(urls.presign, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({
+                    file_name: file.name,
+                    content_type: file.type,
+                    file_size: file.size,
+                }),
+            });
+            const presData = await pres.json();
+            if (!pres.ok) { showError(presData.error || i18n.failed); return; }
+
+            // 2) прямой PUT в хранилище
+            const put = await fetch(presData.upload_url, {
+                method: 'PUT',
+                headers: { 'Content-Type': file.type },
+                body: file,
+            });
+            if (!put.ok) { showError(i18n.failed); return; }
+
+            // 3) сохраняем метаданные
+            const save = await fetch(urls.save, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({
+                    file_url: presData.file_url,
+                    file_key: presData.file_key,
+                    file_name: presData.file_name,
+                    content_type: presData.content_type,
+                    size: presData.size,
+                }),
+            });
+            const saveData = await save.json();
+            if (!save.ok) { showError(saveData.error || i18n.failed); return; }
+            await loadList();
+        } catch (e) {
+            showError(i18n.failed);
+        } finally {
+            setBusy(false);
+            input.value = '';
+        }
+    }
+
+    input.addEventListener('change', function () {
+        if (input.files && input.files[0]) upload(input.files[0]);
+    });
+
+    listEl.addEventListener('click', async function (e) {
+        const btn = e.target.closest('.lr-file-del');
+        if (!btn) return;
+        if (!window.confirm(i18n.confirmDel)) return;
+        const id = btn.getAttribute('data-id');
+        try {
+            const r = await fetch(urls.del.replace(/0\/delete\/$/, id + '/delete/'), {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf },
+            });
+            if (r.ok) await loadList();
+            else showError(i18n.failed);
+        } catch (err) { showError(i18n.failed); }
+    });
+
+    loadList();
 })();
 </script>
 {% endif %}

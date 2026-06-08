@@ -254,8 +254,12 @@
         const start = new Date(b.slot.start);
         const end = new Date(b.slot.end);
         const now = new Date();
-        // ТЗ §1: кнопка активна за 10 минут до начала и до конца урока.
-        return (start - now <= 10 * 60 * 1000) && (now <= end);
+        // Окно должно совпадать с серверным (lesson_room / lesson_attendance_api):
+        // открыто за lead минут до начала и ещё grace минут после конца —
+        // чтобы можно было вернуться после обрыва связи.
+        const lead = (cfg.joinLeadMinutes || 10) * 60 * 1000;
+        const grace = (cfg.joinGraceMinutes || 30) * 60 * 1000;
+        return (start - now <= lead) && (now <= new Date(end.getTime() + grace));
     }
 
     // ---- stats strip ----

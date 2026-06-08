@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{# Свой рендер messages ниже — подавляем глобальный из base.html #}
+{% block messages %}{% endblock %}
 {% load static %}
 {% load i18n %}
 
@@ -1147,19 +1149,19 @@
     const CONVERSATION_ID = '{{ conversation.id }}';
     const AJAX_URL = '{% url "send_message_ajax" conversation_id=conversation.id %}';
     const I18N = {
-        sending:   '{% trans "Отправка…" %}',
-        send:      '{% trans "Отправить" %}',
-        send_err:  '{% trans "Не удалось отправить сообщение" %}',
-        reconnect: '{% trans "Соединение пропало. Сообщение отправлено по резервному каналу." %}',
-        offline:   '{% trans "Офлайн" %}',
-        online:    '{% trans "Онлайн" %}',
-        today:     '{% trans "Сегодня" %}',
-        yesterday: '{% trans "Вчера" %}',
-        read:      '{% trans "Прочитано" %}',
-        sent:      '{% trans "Отправлено" %}',
-        pending:   '{% trans "Отправляется" %}',
-        ws_lost:   '{% trans "Соединение прервано. Переподключаемся…" %}',
-        delete_conv: '{% trans "Удалить переписку?" %}',
+        sending:   '{% filter escapejs %}{% trans "Отправка…" %}{% endfilter %}',
+        send:      '{% filter escapejs %}{% trans "Отправить" %}{% endfilter %}',
+        send_err:  '{% filter escapejs %}{% trans "Не удалось отправить сообщение" %}{% endfilter %}',
+        reconnect: '{% filter escapejs %}{% trans "Соединение пропало. Сообщение отправлено по резервному каналу." %}{% endfilter %}',
+        offline:   '{% filter escapejs %}{% trans "Офлайн" %}{% endfilter %}',
+        online:    '{% filter escapejs %}{% trans "Онлайн" %}{% endfilter %}',
+        today:     '{% filter escapejs %}{% trans "Сегодня" %}{% endfilter %}',
+        yesterday: '{% filter escapejs %}{% trans "Вчера" %}{% endfilter %}',
+        read:      '{% filter escapejs %}{% trans "Прочитано" %}{% endfilter %}',
+        sent:      '{% filter escapejs %}{% trans "Отправлено" %}{% endfilter %}',
+        pending:   '{% filter escapejs %}{% trans "Отправляется" %}{% endfilter %}',
+        ws_lost:   '{% filter escapejs %}{% trans "Соединение прервано. Переподключаемся…" %}{% endfilter %}',
+        delete_conv: '{% filter escapejs %}{% trans "Удалить переписку?" %}{% endfilter %}',
     };
 
     const messagesList = document.getElementById('messagesList');
@@ -1351,7 +1353,7 @@
             pill.classList.add('is-offline');
             txt.textContent = I18N.offline;
         } else {
-            txt.textContent = '{% trans "Подключение…" %}';
+            txt.textContent = '{% filter escapejs %}{% trans "Подключение…" %}{% endfilter %}';
         }
     }
 

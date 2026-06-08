@@ -387,11 +387,11 @@
           }, 200);
         } else {
           btn.disabled = false;
-          if (window.flashToast) window.flashToast('error', '{% trans "Не удалось убрать предложение" %}');
+          if (window.flashToast) window.flashToast('error', '{% filter escapejs %}{% trans "Не удалось убрать предложение" %}{% endfilter %}');
         }
       } catch (e) {
         btn.disabled = false;
-        if (window.flashToast) window.flashToast('error', '{% trans "Произошла ошибка" %}');
+        if (window.flashToast) window.flashToast('error', '{% filter escapejs %}{% trans "Произошла ошибка" %}{% endfilter %}');
       }
     });
   });

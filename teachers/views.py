@@ -2444,9 +2444,21 @@ def admin_conversation_detail(request, conversation_id):
         content = request.POST.get('content', '').strip()
         send_as = request.POST.get('send_as', '')  # user id to send as
         if content:
+            from django.contrib import messages as django_messages
+            # Имперсонация разрешена ТОЛЬКО за участников этой беседы — иначе
+            # staff мог бы слать сообщения от имени любого аккаунта (send_as=<любой id>).
+            allowed_senders = {
+                str(conversation.teacher.user_id): conversation.teacher.user,
+                str(conversation.student_id): conversation.student,
+            }
             if send_as:
-                from .models import User
-                sender = get_object_or_404(User, pk=send_as)
+                sender = allowed_senders.get(str(send_as))
+                if sender is None:
+                    django_messages.error(
+                        request,
+                        _('Можно писать только от имени участников беседы.'),
+                    )
+                    return redirect('admin_conversation_detail', conversation_id=conversation.id)
             else:
                 sender = request.user
             Message.objects.create(
@@ -2455,7 +2467,10 @@ def admin_conversation_detail(request, conversation_id):
                 content=content,
             )
             conversation.save(update_fields=['updated_at'])
-            from django.contrib import messages as django_messages
+            logger.warning(
+                'admin_conversation_detail: staff=%s sent message as user=%s in conversation=%s',
+                request.user.pk, sender.pk, conversation.id,
+            )
             django_messages.success(request, _('Сообщение отправлено от имени %(name)s') % {'name': sender.get_full_name() or sender.username})
             return redirect('admin_conversation_detail', conversation_id=conversation.id)
 

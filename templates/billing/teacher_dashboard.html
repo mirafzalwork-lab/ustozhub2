@@ -74,6 +74,31 @@
     <small>{% trans 'Сводка на сегодня' %}</small>
   </h1>
 
+  {% comment %} Статус модерации: без него только что зарегистрированный учитель видит
+     пустой кабинет с нулями и не понимает, почему его не находят ученики. {% endcomment %}
+  {% if teacher.moderation_status != 'approved' %}
+    {% if teacher.moderation_status == 'rejected' %}
+      <div style="display:flex;gap:12px;align-items:flex-start;background:#FEF2F2;border:1px solid #FCA5A5;border-radius:12px;padding:14px 18px;margin:0 0 18px;color:#991B1B;">
+        <i class="fas fa-circle-xmark" style="font-size:20px;margin-top:2px;"></i>
+        <div>
+          <strong>{% trans 'Профиль отклонён модерацией' %}</strong><br>
+          <span style="font-size:13px;color:#7F1D1D;">{% trans 'Пока профиль не одобрен, он не виден ученикам в поиске. Проверьте данные и обновите профиль либо свяжитесь с поддержкой.' %}</span>
+          <div style="margin-top:8px;">
+            <a href="{% url 'profile_edit' %}" style="color:#991B1B;font-weight:600;text-decoration:underline;">{% trans 'Открыть профиль' %}</a>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div style="display:flex;gap:12px;align-items:flex-start;background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;padding:14px 18px;margin:0 0 18px;color:#92400E;">
+        <i class="fas fa-hourglass-half" style="font-size:20px;margin-top:2px;"></i>
+        <div>
+          <strong>{% trans 'Профиль на модерации' %}</strong><br>
+          <span style="font-size:13px;color:#78350F;">{% trans 'Обычно проверка занимает до 24 часов. Пока профиль не одобрен, ученики не видят вас в поиске и не могут забронировать уроки. Заполните профиль и расписание полностью — это ускорит одобрение.' %}</span>
+        </div>
+      </div>
+    {% endif %}
+  {% endif %}
+
   <div class="tdb-hero">
     <div class="tdb-card green">
       <div class="lbl"><i class="fas fa-wallet"></i> {% trans 'На балансе' %}</div>

@@ -718,6 +718,14 @@ def booking_create_api(request):
             return _json_error('Предмет не найден', status=400)
 
     message = (data.get('message') or '').strip()
+    # Анти-обход платформы: первое сообщение учителю — такой же канал обмена
+    # контактами, как чат. Маскируем по тому же порогу доверия (до N оплаченных
+    # уроков в паре). Один доп. запрос только при непустом сообщении.
+    if message:
+        from .contact_filter import mask_for_pair
+        _slot_for_mask = TimeSlot.objects.select_related('teacher').filter(pk=slot_id).first()
+        if _slot_for_mask is not None:
+            message, _masked = mask_for_pair(request.user, _slot_for_mask.teacher, message)
     is_trial = bool(data.get('is_trial', False))
 
     # Phase 9.5: для пробного выясняем — платный или бесплатный.
@@ -833,7 +841,11 @@ def booking_cancel_api(request, booking_id):
         elif getattr(request.user, 'teacher_profile', None) and request.user.teacher_profile.pk == booking.slot.teacher_id:
             # Учитель отменил confirmed (или pending) — фактически reject-семантика для pending
             if booking.status == 'pending':
-                booking.reject(teacher_reply=(json.loads(request.body or '{}').get('reply', '')))
+                _reply = (json.loads(request.body or '{}').get('reply', '') or '').strip()
+                if _reply:
+                    from .contact_filter import mask_for_pair
+                    _reply, _masked = mask_for_pair(booking.student, booking.slot.teacher, _reply)
+                booking.reject(teacher_reply=_reply)
             else:
                 # confirmed → cancelled_by_teacher (race-safe, под select_for_update)
                 booking.cancel_by_teacher()
@@ -870,6 +882,38 @@ def booking_cancel_api(request, booking_id):
             logger.error(f'Lesson cancel failed for booking={booking.id}: {e}', exc_info=True)
 
     return JsonResponse({'booking': _booking_to_dict(booking)})
+
+
+@authenticated_required
+@require_http_methods(['POST'])
+def booking_report_teacher_noshow_api(request, booking_id):
+    """Ученик сообщает, что преподаватель не подключился к начавшемуся уроку.
+
+    Закрывает тупик: вместо ожидания Celery (end_at+30) ученик сразу получает
+    возврат — но ТОЛЬКО при объективном отсутствии преподавателя в нашей
+    видеокомнате (см. Booking.student_report_teacher_no_show). Иначе 409 с
+    предложением открыть спор.
+    """
+    try:
+        booking = Booking.objects.select_related('slot__teacher__user', 'student').get(pk=booking_id)
+    except Booking.DoesNotExist:
+        return _json_error('Бронирование не найдено', status=404)
+    if booking.student_id != request.user.pk:
+        return _json_error('Доступ запрещён', status=403)
+    try:
+        booking.student_report_teacher_no_show()
+    except ValueError as e:
+        return _json_error(str(e), status=409)
+    # Возврат ученику + уведомление — тот же путь, что Celery-поток settle.
+    from .tasks import _refund_teacher_no_show, _notify_teacher_no_show
+    _refund_teacher_no_show(booking)
+    _notify_teacher_no_show(booking)
+    logger.info(f'Teacher no-show reported by student: booking={booking.id}')
+    return JsonResponse({
+        'ok': True,
+        'status': booking.status,
+        'message': 'Урок отмечен как неявка преподавателя. Средства возвращены — выберите новую дату.',
+    })
 
 
 @student_required
@@ -984,6 +1028,9 @@ def booking_confirm_api(request, booking_id):
         data = {}
 
     reply = (data.get('reply') or '').strip()
+    if reply:
+        from .contact_filter import mask_for_pair
+        reply, _masked = mask_for_pair(booking.student, booking.slot.teacher, reply)
     meeting_url = (data.get('meeting_url') or '').strip()
 
     ok, err = _validate_meeting_url(meeting_url)
@@ -1059,6 +1106,9 @@ def booking_reject_api(request, booking_id):
     except json.JSONDecodeError:
         data = {}
     reply = (data.get('reply') or '').strip()
+    if reply:
+        from .contact_filter import mask_for_pair
+        reply, _masked = mask_for_pair(booking.student, booking.slot.teacher, reply)
 
     try:
         booking.reject(teacher_reply=reply)
@@ -1125,6 +1175,10 @@ def my_bookings_page(request):
     """Страница 'Мои бронирования / Уроки'."""
     return render(request, 'booking/my_bookings.html', {
         'role': request.user.user_type,
+        # Окно активности кнопки «Войти в урок» — должно совпадать с серверным
+        # окном в lesson_room/lesson_attendance_api (−lead … +grace).
+        'join_lead_minutes': getattr(settings, 'LESSON_JOIN_LEAD_MINUTES', 10),
+        'join_grace_minutes': 30,
     })
 
 
@@ -1281,6 +1335,17 @@ def lesson_room(request, booking_id):
     other = booking.slot.teacher.user if is_student else booking.student
     other_name = other.get_full_name() or other.username
 
+    # Ученик может отметить неявку преподавателя, если тот объективно не
+    # подключился к нашей видеокомнате и прошёл порог опоздания.
+    noshow_grace = getattr(settings, 'TEACHER_NO_SHOW_REPORT_AFTER_MINUTES', 15)
+    can_report_teacher_noshow = (
+        is_student
+        and booking.status == 'confirmed'
+        and not (booking.meeting_url and not booking.is_jitsi_meeting())  # не внешняя ссылка
+        and booking.teacher_joined_at is None
+        and now >= booking.slot.start_at + timedelta(minutes=noshow_grace)
+    )
+
     return render(request, 'booking/lesson_room.html', {
         'booking': booking,
         'state': state,
@@ -1292,6 +1357,8 @@ def lesson_room(request, booking_id):
         'other_name': other_name,
         'open_from': open_from,
         'join_lead': lead,
+        'can_report_teacher_noshow': can_report_teacher_noshow,
+        'noshow_grace': noshow_grace,
     })
 
 
@@ -1319,14 +1386,16 @@ def lesson_attendance_api(request, booking_id):
         return _json_error('Доступ запрещён', status=403)
 
     # Присутствие засчитываем только для подтверждённого урока и только в окне
-    # реального занятия (−15 мин … +30 мин), как в lesson_room. Иначе сторона
-    # могла бы «отметиться» в любой момент и обойти детект no-show / накрутить
-    # секунды присутствия.
+    # реального занятия. Окно ДОЛЖНО совпадать с окном входа в lesson_room
+    # (−LESSON_JOIN_LEAD_MINUTES … +30 мин): иначе при lead>15 сторона входит в
+    # комнату, но beacon join отклоняется → join_at не пишется → settle считает
+    # реально присутствовавшего за no-show и ошибочно трогает деньги.
     from datetime import timedelta
     now = timezone.now()
+    lead = getattr(settings, 'LESSON_JOIN_LEAD_MINUTES', 10)
     if booking.status != 'confirmed':
         return _json_error('Урок не подтверждён', status=409)
-    if not (booking.slot.start_at - timedelta(minutes=15) <= now
+    if not (booking.slot.start_at - timedelta(minutes=lead) <= now
             <= booking.slot.end_at + timedelta(minutes=30)):
         return _json_error('Вне окна урока', status=409)
 
@@ -1379,6 +1448,13 @@ def leave_review(request, booking_id):
         communication = _clamp('communication_rating', rating)
         punctuality = _clamp('punctuality_rating', rating)
         comment = (request.POST.get('comment') or '').strip()[:1000]
+        # Отзыв публичен — контакты маскируем ВСЕГДА (без порога доверия),
+        # чтобы нельзя было оставить телефон/мессенджер в открытом тексте.
+        if comment:
+            from .contact_filter import mask_contacts
+            # NB: не использовать `_` для распаковки — это затеняет gettext `_`,
+            # из-за чего messages.success(_('…')) ниже падал TypeError.
+            comment, _masked = mask_contacts(comment)
 
         review = existing or Review(teacher=teacher, student=request.user, subject=booking.subject, booking=booking)
         review.rating = rating

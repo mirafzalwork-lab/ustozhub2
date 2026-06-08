@@ -2424,3 +2424,386 @@ class StudentNoShowForgivenessTests(TestCase):
         kinds = set(LessonEvent.objects.filter(booking=b).values_list('kind', flat=True))
         self.assertIn('join_teacher', kinds)
         self.assertIn('no_show_forgiven', kinds)
+
+
+class LessonFileTests(TestCase):
+    """Материалы урока (LessonFile): доступ, IDOR, удаление."""
+
+    def setUp(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from teachers.models import TimeSlot, Booking
+        self.teacher, self.subject = _make_teacher_with_subject('lf_t')
+        self.student = _make_student_with_balance('lf_s', balance=Decimal('0'))
+        self.outsider = _make_student_with_balance('lf_x', balance=Decimal('0'))
+        start = timezone.now() + timedelta(minutes=5)
+        self.slot = TimeSlot.objects.create(
+            teacher=self.teacher, start_at=start,
+            end_at=start + timedelta(minutes=60), status='booked',
+        )
+        self.booking = Booking.objects.create(
+            slot=self.slot, student=self.student, subject=self.subject,
+            status='confirmed', is_trial=False,
+        )
+
+    def _url(self, name, *extra):
+        from django.urls import reverse
+        return reverse(name, args=[self.booking.id, *extra])
+
+    def test_list_requires_participant(self):
+        self.client.login(username='lf_x', password='x' * 12)
+        r = self.client.get(self._url('lesson_file_list'))
+        self.assertEqual(r.status_code, 403)
+
+    def test_list_ok_for_participant(self):
+        self.client.login(username='lf_s', password='x' * 12)
+        r = self.client.get(self._url('lesson_file_list'))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()['files'], [])
+
+    @override_settings(S3_PUBLIC_URL='https://cdn.example.com', S3_BUCKET_NAME='bucket')
+    def test_save_and_list_and_delete_flow(self):
+        import json
+        key = f"lessons/{self.booking.id}/abc123.pdf"
+        url = f"https://cdn.example.com/{key}"
+        # Студент сохраняет файл
+        self.client.login(username='lf_s', password='x' * 12)
+        r = self.client.post(
+            self._url('lesson_file_save'),
+            data=json.dumps({
+                'file_url': url, 'file_key': key, 'file_name': 'hw.pdf',
+                'content_type': 'application/pdf', 'size': 1234,
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 200)
+        fid = r.json()['file']['id']
+
+        # Учитель видит файл, но не может удалить (загрузил не он)
+        self.client.login(username='lf_t', password='x' * 12)
+        r = self.client.get(self._url('lesson_file_list'))
+        self.assertEqual(len(r.json()['files']), 1)
+        self.assertFalse(r.json()['files'][0]['can_delete'])
+        r = self.client.post(self._url('lesson_file_delete', fid))
+        self.assertEqual(r.status_code, 403)
+
+        # Загрузивший студент удаляет успешно
+        self.client.login(username='lf_s', password='x' * 12)
+        r = self.client.post(self._url('lesson_file_delete', fid))
+        self.assertEqual(r.status_code, 200)
+        r = self.client.get(self._url('lesson_file_list'))
+        self.assertEqual(r.json()['files'], [])
+
+    @override_settings(S3_PUBLIC_URL='https://cdn.example.com', S3_BUCKET_NAME='bucket')
+    def test_save_rejects_foreign_booking_path(self):
+        import json, uuid
+        # Ключ указывает на ЧУЖУЮ бронь — IDOR должен быть отклонён.
+        key = f"lessons/{uuid.uuid4()}/evil.pdf"
+        url = f"https://cdn.example.com/{key}"
+        self.client.login(username='lf_s', password='x' * 12)
+        r = self.client.post(
+            self._url('lesson_file_save'),
+            data=json.dumps({
+                'file_url': url, 'file_key': key, 'file_name': 'evil.pdf',
+                'content_type': 'application/pdf', 'size': 10,
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 400)
+
+    @override_settings(S3_BUCKET_NAME='', S3_PUBLIC_URL='')
+    def test_presign_unavailable_without_storage(self):
+        import json
+        # Хранилище не настроено → 503 (не падаем, понятная ошибка для UI).
+        self.client.login(username='lf_s', password='x' * 12)
+        r = self.client.post(
+            self._url('lesson_file_presign'),
+            data=json.dumps({'file_name': 'a.pdf', 'content_type': 'application/pdf', 'file_size': 10}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 503)
+
+    @override_settings(S3_PUBLIC_URL='https://cdn.example.com', S3_BUCKET_NAME='bucket')
+    def test_presign_rejects_disallowed_type(self):
+        import json
+        self.client.login(username='lf_s', password='x' * 12)
+        r = self.client.post(
+            self._url('lesson_file_presign'),
+            data=json.dumps({'file_name': 'x.exe', 'content_type': 'application/x-msdownload', 'file_size': 10}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_presign_forbidden_for_outsider(self):
+        import json
+        self.client.login(username='lf_x', password='x' * 12)
+        r = self.client.post(
+            self._url('lesson_file_presign'),
+            data=json.dumps({'file_name': 'a.pdf', 'content_type': 'application/pdf', 'file_size': 10}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 403)
+
+
+@override_settings(STORAGES=SIMPLE_STATIC_STORAGES)
+class PaidTrialExpiryRefundTests(TestCase):
+    """Регрессия: платный пробный, протухший без подтверждения учителя,
+    должен возвращать деньги ученику (раньше деньги зависали в эскроу)."""
+
+    def setUp(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from teachers.models import TeacherSubject, TimeSlot
+        self.teacher, self.subject = _make_teacher_with_subject('pt_t')
+        self.teacher.moderation_status = 'approved'
+        self.teacher.is_active = True
+        self.teacher.save()
+        # Делаем пробный ПЛАТНЫМ.
+        ts = TeacherSubject.objects.get(teacher=self.teacher, subject=self.subject)
+        ts.is_free_trial = False
+        ts.trial_price = Decimal('50000')
+        ts.save()
+        self.ts = ts
+        self.student = _make_student_with_balance('pt_s', balance=Decimal('200000'))
+        future = timezone.now() + timedelta(days=1)
+        self.slot = TimeSlot.objects.create(
+            teacher=self.teacher, start_at=future,
+            end_at=future + timedelta(minutes=60), status='free',
+        )
+
+    def test_expired_paid_trial_refunds_student(self):
+        from billing.services import TrialService
+        booking = TrialService.book_paid_trial(
+            student=self.student, slot_id=self.slot.id, teacher_subject=self.ts,
+        )
+        self.student.wallet.refresh_from_db()
+        # После брони деньги списаны (200000 - 50000).
+        self.assertEqual(self.student.wallet.balance, Decimal('150000.00'))
+
+        # Hold протух — учитель не подтвердил.
+        booking.expire()
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, 'expired')
+
+        # Деньги вернулись ученику.
+        self.student.wallet.refresh_from_db()
+        self.assertEqual(self.student.wallet.balance, Decimal('200000.00'))
+        self.assertTrue(
+            Transaction.objects.filter(
+                idempotency_key=f'trial-refund:{booking.id}',
+                type=Transaction.Type.REFUND,
+            ).exists()
+        )
+        # Слот снова свободен.
+        self.slot.refresh_from_db()
+        self.assertEqual(self.slot.status, 'free')
+
+    def test_expire_refund_is_idempotent(self):
+        from billing.services import TrialService
+        booking = TrialService.book_paid_trial(
+            student=self.student, slot_id=self.slot.id, teacher_subject=self.ts,
+        )
+        booking.expire()
+        # Повторный вызов не должен вернуть деньги дважды.
+        booking.expire()
+        self.student.wallet.refresh_from_db()
+        self.assertEqual(self.student.wallet.balance, Decimal('200000.00'))
+        self.assertEqual(
+            Transaction.objects.filter(
+                idempotency_key=f'trial-refund:{booking.id}',
+            ).count(),
+            1,
+        )
+
+
+@override_settings(STORAGES=SIMPLE_STATIC_STORAGES)
+class TeacherNoShowReportTests(TestCase):
+    """Эскалация неявки преподавателя учеником (закрытие тупика начавшегося урока)."""
+
+    def setUp(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from teachers.models import TeacherSubject, TimeSlot, Booking
+        self.teacher, self.subject = _make_teacher_with_subject('ns_t')
+        self.teacher.moderation_status = 'approved'; self.teacher.is_active = True
+        self.teacher.save()
+        ts = TeacherSubject.objects.get(teacher=self.teacher, subject=self.subject)
+        ts.is_free_trial = False; ts.trial_price = Decimal('50000'); ts.save()
+        self.ts = ts
+        self.student = _make_student_with_balance('ns_s', balance=Decimal('200000'))
+        from billing.services import TrialService
+        now = timezone.now()
+        # Бронируем БУДУЩИЙ слот (create_hold запрещает уже начавшийся)…
+        self.slot = TimeSlot.objects.create(
+            teacher=self.teacher, start_at=now + timedelta(days=1),
+            end_at=now + timedelta(days=1, minutes=60), status='free',
+        )
+        self.booking = TrialService.book_paid_trial(
+            student=self.student, slot_id=self.slot.id, teacher_subject=self.ts,
+        )
+        # …затем «перематываем» слот в прошлое: урок начался 20 мин назад, ещё идёт.
+        self.slot.start_at = now - timedelta(minutes=20)
+        self.slot.end_at = now + timedelta(minutes=40)
+        self.slot.status = 'booked'
+        self.slot.save()
+        self.booking.status = 'confirmed'; self.booking.save()
+
+    def _url(self):
+        from django.urls import reverse
+        return reverse('booking_report_teacher_noshow_api', args=[self.booking.id])
+
+    def test_student_reports_teacher_noshow_refunds(self):
+        self.student.wallet.refresh_from_db()
+        self.assertEqual(self.student.wallet.balance, Decimal('150000.00'))  # списан пробный
+        self.client.login(username='ns_s', password='x' * 12)
+        r = self.client.post(self._url())
+        self.assertEqual(r.status_code, 200)
+        self.booking.refresh_from_db()
+        self.assertEqual(self.booking.status, 'no_show_teacher')
+        # Деньги вернулись.
+        self.student.wallet.refresh_from_db()
+        self.assertEqual(self.student.wallet.balance, Decimal('200000.00'))
+        self.assertTrue(Transaction.objects.filter(
+            idempotency_key=f'trial-refund:{self.booking.id}').exists())
+
+    def test_blocked_if_teacher_joined(self):
+        from django.utils import timezone
+        self.booking.teacher_joined_at = timezone.now()
+        self.booking.save()
+        self.client.login(username='ns_s', password='x' * 12)
+        r = self.client.post(self._url())
+        self.assertEqual(r.status_code, 409)
+        self.booking.refresh_from_db()
+        self.assertEqual(self.booking.status, 'confirmed')  # не тронут
+
+    def test_blocked_before_grace(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        # Урок начался только что (5 мин назад < grace 15).
+        now = timezone.now()
+        self.slot.start_at = now - timedelta(minutes=5)
+        self.slot.end_at = now + timedelta(minutes=55)
+        self.slot.save()
+        self.client.login(username='ns_s', password='x' * 12)
+        r = self.client.post(self._url())
+        self.assertEqual(r.status_code, 409)
+
+    def test_forbidden_for_non_student(self):
+        # Сам преподаватель не может «отметить свою неявку».
+        self.client.login(username='ns_t', password='x' * 12)
+        r = self.client.post(self._url())
+        self.assertEqual(r.status_code, 403)
+
+
+# ---------- Multicard (онлайн-пополнение кошелька) -------------------------
+
+import json  # noqa: E402
+from django.urls import reverse  # noqa: E402
+from billing.models import MulticardInvoice  # noqa: E402
+from billing.multicard import compute_sign, verify_sign, sum_to_tiyin, tiyin_to_sum  # noqa: E402
+
+
+class MulticardSignTests(TestCase):
+    """Подпись callback: md5('{store_id}{invoice_id}{amount}{secret}')."""
+
+    @override_settings(MULTICARD_SECRET='topsecret')
+    def test_compute_sign_matches_formula(self):
+        import hashlib
+        raw = '6' + 'inv-1' + '5000000' + 'topsecret'
+        self.assertEqual(compute_sign(6, 'inv-1', '5000000'),
+                         hashlib.md5(raw.encode()).hexdigest())
+
+    def test_compute_sign_real_sample(self):
+        # Реальный callback из sandbox (секрет Pw18axeBFo8V7NamKHXX).
+        with override_settings(MULTICARD_SECRET='Pw18axeBFo8V7NamKHXX'):
+            self.assertEqual(
+                compute_sign(6, '843c597c-8d11-42af-9a85-cdb8c88cecc9', 40000000),
+                '7f676883dabdc00fcccd8931b878efbd',
+            )
+
+    @override_settings(MULTICARD_SECRET='topsecret')
+    def test_verify_sign_roundtrip(self):
+        sign = compute_sign(6, 'i', 1000)
+        self.assertTrue(verify_sign(6, 'i', 1000, sign))
+        self.assertFalse(verify_sign(6, 'i', 1000, 'deadbeef'))
+        self.assertFalse(verify_sign(6, 'i', 1000, ''))
+
+    def test_tiyin_helpers(self):
+        self.assertEqual(sum_to_tiyin(50000), 5000000)
+        self.assertEqual(tiyin_to_sum(5000000), Decimal('50000.00'))
+
+
+@override_settings(MULTICARD_SECRET='topsecret', STORAGES=SIMPLE_STATIC_STORAGES)
+class MulticardCallbackTests(TestCase):
+
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create_user(username='mc_user', password='x' * 12)
+        self.invoice = MulticardInvoice.objects.create(
+            user=self.user, amount=Decimal('50000.00'),
+            store_id='store-1', multicard_uuid='mc-uuid-1',
+        )
+        self.url = reverse('multicard_callback')
+
+    def _payload(self, **over):
+        amount = over.pop('amount', sum_to_tiyin(self.invoice.amount))
+        invoice_id = over.pop('invoice_id', str(self.invoice.id))
+        uuid_ = over.pop('uuid', 'mc-uuid-1')
+        store_id = over.pop('store_id', 6)
+        p = {
+            'uuid': uuid_, 'invoice_id': invoice_id, 'amount': amount,
+            'store_id': store_id,
+            'status': 'success', 'card_pan': '860006******0007', 'ps': 'humo',
+        }
+        p.update(over)
+        # Подпись считается по тому же amount/invoice_id/store_id, что в payload.
+        p['sign'] = compute_sign(store_id, invoice_id, amount)
+        return p
+
+    def _post(self, payload):
+        return self.client.post(self.url, data=json.dumps(payload),
+                                content_type='application/json')
+
+    def test_success_credits_wallet_once(self):
+        r = self._post(self._payload())
+        self.assertEqual(r.status_code, 200)
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('50000.00'))
+        self.assertEqual(
+            Transaction.objects.filter(
+                wallet=self.user.wallet, type=Transaction.Type.DEPOSIT).count(), 1)
+
+        # Повторный callback (ретрай Multicard) не дублирует зачисление.
+        r2 = self._post(self._payload())
+        self.assertEqual(r2.status_code, 200)
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('50000.00'))
+        self.assertEqual(
+            Transaction.objects.filter(
+                wallet=self.user.wallet, type=Transaction.Type.DEPOSIT).count(), 1)
+
+    def test_success_callback_without_status_credits(self):
+        # «callback-success» приходит БЕЗ поля status, но с payment_time.
+        p = self._payload(status='', payment_time='2026-06-05 11:23:47')
+        r = self._post(p)
+        self.assertEqual(r.status_code, 200)
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('50000.00'))
+
+    def test_bad_sign_rejected(self):
+        p = self._payload()
+        p['sign'] = 'bad'
+        r = self._post(p)
+        self.assertEqual(r.status_code, 400)
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('0.00'))
+
+    def test_amount_mismatch_rejected(self):
+        r = self._post(self._payload(amount=999))
+        self.assertEqual(r.status_code, 400)
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('0.00'))
+
+    def test_unknown_invoice_404(self):
+        r = self._post(self._payload(invoice_id='00000000-0000-0000-0000-000000000000'))
+        self.assertEqual(r.status_code, 404)

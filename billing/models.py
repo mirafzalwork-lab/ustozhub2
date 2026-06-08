@@ -463,6 +463,21 @@ class Subscription(models.Model):
                 check=models.Q(total_lessons__gt=0),
                 name='subscription_total_lessons_positive',
             ),
+            models.CheckConstraint(
+                check=models.Q(commission_rate__gte=Decimal('0'))
+                & models.Q(commission_rate__lte=Decimal('1')),
+                name='subscription_commission_rate_0_1',
+            ),
+            # Defense-in-depth к app-guard `AlreadySubscribed` в create_request:
+            # БД не даст создать вторую незавершённую подписку с тем же учителем
+            # и предметом, даже при гонке мимо application-уровня.
+            models.UniqueConstraint(
+                fields=['student', 'teacher', 'subject'],
+                condition=models.Q(status__in=[
+                    'pending_approval', 'pending_payment', 'active', 'paused',
+                ]),
+                name='uniq_active_subscription_per_triple',
+            ),
         ]
 
     @property
@@ -970,3 +985,74 @@ class DismissedTrialSuggestion(models.Model):
 
     def __str__(self) -> str:
         return f'Dismissed trial: student={self.student_id} teacher={self.teacher_id} subject={self.subject_id}'
+
+
+# ---------- Multicard (онлайн-пополнение кошелька) --------------------------
+
+
+class MulticardInvoice(models.Model):
+    """Инвойс Multicard на онлайн-пополнение кошелька.
+
+    Один объект = одна попытка оплаты. Наш `id` (UUID) уходит в Multicard как
+    invoice_id, их идентификатор приходит в `multicard_uuid`. Связанная DEPOSIT-
+    транзакция создаётся при успешном callback (идемпотентно).
+    """
+
+    class Status(models.TextChoices):
+        # Статусы платежа Multicard (поле status в callback / PaymentModel).
+        DRAFT = 'draft', _('Черновик')
+        PROGRESS = 'progress', _('В обработке')
+        SUCCESS = 'success', _('Оплачен')
+        ERROR = 'error', _('Ошибка')
+        REVERT = 'revert', _('Возврат')
+        HOLD = 'hold', _('Холдирование')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='multicard_invoices',
+    )
+    amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        help_text=_('Сумма пополнения в сумах (UZS).'),
+    )
+    store_id = models.CharField(max_length=64)
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.PROGRESS,
+    )
+    # Идентификатор транзакции на стороне Multicard.
+    multicard_uuid = models.CharField(max_length=64, blank=True, default='', db_index=True)
+    checkout_url = models.URLField(max_length=512, blank=True, default='')
+    short_link = models.CharField(max_length=255, blank=True, default='')
+    # Данные из callback (для аудита/чека).
+    card_pan = models.CharField(max_length=32, blank=True, default='')
+    ps = models.CharField(max_length=32, blank=True, default='')
+    receipt_url = models.URLField(max_length=512, blank=True, default='')
+    # Зачисление в кошелёк (создаётся при первом success-callback).
+    transaction = models.ForeignKey(
+        'billing.Transaction',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+',
+    )
+    paid_at = models.DateTimeField(null=True, blank=True)
+    raw_callback = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _('Инвойс Multicard')
+        verbose_name_plural = _('Инвойсы Multicard')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', '-created_at']),
+            models.Index(fields=['status']),
+        ]
+
+    def __str__(self) -> str:
+        return f'MulticardInvoice {self.id} user={self.user_id} {self.amount} {self.status}'

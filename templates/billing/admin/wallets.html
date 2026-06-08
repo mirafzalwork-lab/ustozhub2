@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{# Свой рендер messages ниже — подавляем глобальный из base.html #}
+{% block messages %}{% endblock %}
 {% load i18n %}
 {% load humanize %}
 

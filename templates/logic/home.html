@@ -2404,8 +2404,8 @@
 
     // ========== ПОКАЗАТЬ/СКРЫТЬ ОПИСАНИЕ (150 символов) ==========
     const ABOUT_LIMIT = 150;
-    const ABOUT_MORE_LABEL = '{% trans "Показать больше" %}';
-    const ABOUT_LESS_LABEL = '{% trans "Скрыть" %}';
+    const ABOUT_MORE_LABEL = '{% filter escapejs %}{% trans "Показать больше" %}{% endfilter %}';
+    const ABOUT_LESS_LABEL = '{% filter escapejs %}{% trans "Скрыть" %}{% endfilter %}';
 
     function truncateText(text, limit) {
         const normalized = (text || '').trim();
@@ -2428,7 +2428,7 @@
             if (!teacherId || !descEl || !wrap) return;
 
             const fullText = (descEl.dataset.fullText || descEl.textContent || '').trim();
-            const shortText = truncateText(fullText || '{% trans "Нет описания" %}', ABOUT_LIMIT);
+            const shortText = truncateText(fullText || '{% filter escapejs %}{% trans "Нет описания" %}{% endfilter %}', ABOUT_LIMIT);
 
             descEl.textContent = shortText;
             btn.setAttribute('aria-expanded', 'false');
@@ -2445,7 +2445,7 @@
                     btn.setAttribute('aria-expanded', 'false');
                     btn.innerHTML = `<i class="fas fa-chevron-down"></i> ${ABOUT_MORE_LABEL}`;
                 } else {
-                    descEl.textContent = fullText || '{% trans "Нет описания" %}';
+                    descEl.textContent = fullText || '{% filter escapejs %}{% trans "Нет описания" %}{% endfilter %}';
                     btn.setAttribute('aria-expanded', 'true');
                     btn.innerHTML = `<i class="fas fa-chevron-up"></i> ${ABOUT_LESS_LABEL}`;
                 }

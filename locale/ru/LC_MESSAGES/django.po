@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: UstozHub 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-04 11:42+0500\n"
+"POT-Creation-Date: 2026-06-06 23:31+0500\n"
 "Language-Team: Russian\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -144,7 +144,7 @@ msgstr "Корректировка (зачисление)"
 msgid "Покупка подписки"
 msgstr "Покупка подписки"
 
-#: billing/models.py:90 templates/billing/teacher_dashboard.html:197
+#: billing/models.py:90 templates/billing/teacher_dashboard.html:222
 #: templates/billing/withdrawals_list.html:6
 #: templates/billing/withdrawals_list.html:68
 msgid "Вывод средств"
@@ -158,7 +158,7 @@ msgstr "Удержание комиссии"
 msgid "Корректировка (списание)"
 msgstr "Корректировка (списание)"
 
-#: billing/models.py:95 teachers/models.py:1828
+#: billing/models.py:95 billing/models.py:1004 teachers/models.py:1828
 msgid "В обработке"
 msgstr "В обработке"
 
@@ -238,7 +238,7 @@ msgid "Учитель"
 msgstr "Учитель"
 
 #: billing/models.py:210 teachers/forms.py:747 teachers/models.py:171
-#: teachers/models.py:2671 templates/billing/continue_learning.html:29
+#: teachers/models.py:2672 templates/billing/continue_learning.html:29
 #: templates/billing/learning_requests.html:29
 #: templates/billing/tariff_form.html:37
 #: templates/booking/book_teacher.html:216
@@ -378,7 +378,7 @@ msgstr ""
 msgid "Гарантирует один Subscription при повторных submit."
 msgstr "Гарантирует один Subscription при повторных submit."
 
-#: billing/models.py:449 teachers/models.py:2217 teachers/models.py:2713
+#: billing/models.py:449 teachers/models.py:2217 teachers/models.py:2714
 msgid "Подписка"
 msgstr "Подписка"
 
@@ -386,85 +386,85 @@ msgstr "Подписка"
 msgid "Подписки"
 msgstr "Подписки"
 
-#: billing/models.py:641
+#: billing/models.py:656
 msgid "Ожидает подтверждения"
 msgstr "Ожидает подтверждения"
 
-#: billing/models.py:642
+#: billing/models.py:657
 msgid "Одобрена (перевод в процессе)"
 msgstr "Одобрена (перевод в процессе)"
 
-#: billing/models.py:643
+#: billing/models.py:658
 msgid "Выполнена"
 msgstr "Выполнена"
 
-#: billing/models.py:644
+#: billing/models.py:659
 msgid "Отклонена"
 msgstr "Отклонена"
 
-#: billing/models.py:645
+#: billing/models.py:660
 msgid "Отменена пользователем"
 msgstr "Отменена пользователем"
 
-#: billing/models.py:648
+#: billing/models.py:663
 msgid "Карта (UzCard / Humo / Visa)"
 msgstr "Карта (UzCard / Humo / Visa)"
 
-#: billing/models.py:649
+#: billing/models.py:664
 msgid "На номер телефона"
 msgstr "На номер телефона"
 
-#: billing/models.py:650 teachers/models.py:229
+#: billing/models.py:665 teachers/models.py:229
 #: templates/booking/teacher_calendar.html:87
 msgid "Другое"
 msgstr "Другое"
 
-#: billing/models.py:674
+#: billing/models.py:689
 msgid "Номер карты / номер телефона / другие реквизиты."
 msgstr "Номер карты / номер телефона / другие реквизиты."
 
-#: billing/models.py:683
+#: billing/models.py:698
 msgid "Админ, который последним менял статус."
 msgstr "Админ, который последним менял статус."
 
-#: billing/models.py:694
+#: billing/models.py:709
 msgid "Защита от двойного submit формы."
 msgstr "Защита от двойного submit формы."
 
-#: billing/models.py:700
+#: billing/models.py:715
 msgid "Заявка на вывод средств"
 msgstr "Заявка на вывод средств"
 
-#: billing/models.py:701
+#: billing/models.py:716
 msgid "Заявки на вывод средств"
 msgstr "Заявки на вывод средств"
 
-#: billing/models.py:743 templates/billing/teacher_student_progress.html:117
+#: billing/models.py:758 templates/billing/teacher_student_progress.html:117
 #: templates/billing/teacher_student_progress.html:122
 msgid "Задано"
 msgstr "Задано"
 
-#: billing/models.py:744
+#: billing/models.py:759
 msgid "Сдано на проверку"
 msgstr "Сдано на проверку"
 
-#: billing/models.py:745
+#: billing/models.py:760
 msgid "Проверено"
 msgstr "Проверено"
 
-#: billing/models.py:746
+#: billing/models.py:761
 msgid "Возвращено на доработку"
 msgstr "Возвращено на доработку"
 
-#: billing/models.py:770
+#: billing/models.py:785
 msgid "Опциональный дедлайн."
 msgstr "Опциональный дедлайн."
 
-#: billing/models.py:782
+#: billing/models.py:797
 msgid "Домашнее задание"
 msgstr "Домашнее задание"
 
-#: billing/models.py:783 templates/billing/homework_teacher_list.html:4
+#: billing/models.py:798 templates/billing/homework_teacher_list.html:4
 #: templates/billing/homework_teacher_list.html:12
 #: templates/billing/student_dashboard.html:270
 #: templates/billing/teacher_student_progress.html:108
@@ -473,166 +473,237 @@ msgstr "Домашнее задание"
 msgid "Домашние задания"
 msgstr "Домашние задания"
 
-#: billing/models.py:810
+#: billing/models.py:825
 msgid "Размер в байтах"
 msgstr "Размер в байтах"
 
-#: billing/models.py:815
+#: billing/models.py:830
 msgid "Файл задания"
 msgstr "Файл задания"
 
-#: billing/models.py:816
+#: billing/models.py:831
 msgid "Файлы заданий"
 msgstr "Файлы заданий"
 
-#: billing/models.py:837
+#: billing/models.py:852
 msgid "Оценка от 0 до 100."
 msgstr "Оценка от 0 до 100."
 
-#: billing/models.py:846
+#: billing/models.py:861
 msgid "Сдача ДЗ"
 msgstr "Сдача ДЗ"
 
-#: billing/models.py:847
+#: billing/models.py:862
 msgid "Сдачи ДЗ"
 msgstr "Сдачи ДЗ"
 
-#: billing/models.py:872
+#: billing/models.py:887
 msgid "Файл сдачи"
 msgstr "Файл сдачи"
 
-#: billing/models.py:873
+#: billing/models.py:888
 msgid "Файлы сдач"
 msgstr "Файлы сдач"
 
-#: billing/models.py:892
+#: billing/models.py:907
 msgid "Открыт"
 msgstr "Открыт"
 
-#: billing/models.py:893
+#: billing/models.py:908
 msgid "Решён в пользу ученика (возврат)"
 msgstr "Решён в пользу ученика (возврат)"
 
-#: billing/models.py:894
+#: billing/models.py:909
 msgid "Отклонён (выплата учителю)"
 msgstr "Отклонён (выплата учителю)"
 
-#: billing/models.py:895
+#: billing/models.py:910
 msgid "Отозван учеником"
 msgstr "Отозван учеником"
 
-#: billing/models.py:919 templates/billing/dispute_open.html:20
+#: billing/models.py:934 templates/billing/dispute_open.html:20
 msgid "Спор по уроку"
 msgstr "Спор по уроку"
 
-#: billing/models.py:920 templates/billing/admin/disputes.html:5
+#: billing/models.py:935 templates/billing/admin/disputes.html:5
 #: templates/billing/admin/disputes.html:28
 msgid "Споры по урокам"
 msgstr "Споры по урокам"
 
-#: billing/models.py:959
-#, fuzzy
-#| msgid "Предложить пробное"
+#: billing/models.py:974
 msgid "Скрытое предложение пробного"
-msgstr "Предложить пробное"
+msgstr "Скрытое предложение пробного"
 
-#: billing/models.py:960
-#, fuzzy
-#| msgid "Предложить пробное"
+#: billing/models.py:975
 msgid "Скрытые предложения пробного"
-msgstr "Предложить пробное"
+msgstr "Скрытые предложения пробного"
 
-#: billing/views.py:40
+#: billing/models.py:1003
+msgid "Черновик"
+msgstr ""
+
+#: billing/models.py:1005
+#, fuzzy
+#| msgid "Оплата"
+msgid "Оплачен"
+msgstr "Оплата"
+
+#: billing/models.py:1006 teachers/models.py:1830 teachers/models.py:1974
+#: templates/logic/_profile_edit_enhancements.html:408
+msgid "Ошибка"
+msgstr "Ошибка"
+
+#: billing/models.py:1007
+#, fuzzy
+#| msgid "Возврат на баланс"
+msgid "Возврат"
+msgstr "Возврат на баланс"
+
+#: billing/models.py:1008
+#, fuzzy
+#| msgid "Бронирование"
+msgid "Холдирование"
+msgstr "Бронирование"
+
+#: billing/models.py:1019
+#, fuzzy
+#| msgid "Сумма в сумах"
+msgid "Сумма пополнения в сумах (UZS)."
+msgstr "Сумма в сумах"
+
+#: billing/models.py:1049
+msgid "Инвойс Multicard"
+msgstr ""
+
+#: billing/models.py:1050
+msgid "Инвойсы Multicard"
+msgstr ""
+
+#: billing/views.py:57
 msgid "Эта страница доступна только учителям."
 msgstr "Эта страница доступна только учителям."
 
-#: billing/views.py:67
+#: billing/views.py:84
 #, python-format
 msgid "Тариф «%(name)s» создан."
 msgstr "Тариф «%(name)s» создан."
 
-#: billing/views.py:91
+#: billing/views.py:108
 msgid "Тариф обновлён."
 msgstr "Тариф обновлён."
 
-#: billing/views.py:113
+#: billing/views.py:130
 msgid "Тариф удалён."
 msgstr "Тариф удалён."
 
-#: billing/views.py:127 teachers/views.py:2969
+#: billing/views.py:144 teachers/views.py:2984
 msgid "включён"
 msgstr "включён"
 
-#: billing/views.py:127 teachers/views.py:2969
+#: billing/views.py:144 teachers/views.py:2984
 msgid "выключен"
 msgstr "выключен"
 
-#: billing/views.py:128
+#: billing/views.py:145
 #, python-format
 msgid "Тариф %(state)s."
 msgstr "Тариф %(state)s."
 
-#: billing/views.py:215
+#: billing/views.py:205
+msgid "Онлайн-оплата временно недоступна."
+msgstr ""
+
+#: billing/views.py:221
+#, fuzzy, python-format
+#| msgid "Минимальная сумма вывода — %(min)s сум."
+msgid "Минимальная сумма пополнения — %(min)s сум."
+msgstr "Минимальная сумма вывода — %(min)s сум."
+
+#: billing/views.py:226
+#, fuzzy, python-format
+#| msgid "Минимальная сумма вывода — %(min)s сум."
+msgid "Максимальная сумма пополнения — %(max)s сум."
+msgstr "Минимальная сумма вывода — %(min)s сум."
+
+#: billing/views.py:256
+#, fuzzy
+#| msgid "Не удалось прочитать расписание. Попробуйте ещё раз."
+msgid "Не удалось создать платёж. Попробуйте позже или другой способ."
+msgstr "Не удалось прочитать расписание. Попробуйте ещё раз."
+
+#: billing/views.py:266
+#, fuzzy
+#| msgid "Слишком много регистраций с этого IP. Попробуйте позже."
+msgid "Платёжный шлюз не вернул ссылку на оплату. Попробуйте позже."
+msgstr "Слишком много регистраций с этого IP. Попробуйте позже."
+
+#: billing/views.py:283
+#, fuzzy
+#| msgid "Пополнение баланса"
+msgid "Пополнение кошелька через Multicard"
+msgstr "Пополнение баланса"
+
+#: billing/views.py:459
 msgid "Только ученик может оформить обучение."
 msgstr "Только ученик может оформить обучение."
 
-#: billing/views.py:218
+#: billing/views.py:462
 msgid "Нельзя оформить обучение у самого себя."
 msgstr "Нельзя оформить обучение у самого себя."
 
 # ========== BASE TEMPLATE ==========
-#: billing/views.py:239
+#: billing/views.py:483
 msgid "У учителя не указаны предметы."
 msgstr "У учителя не указаны предметы."
 
-#: billing/views.py:267
+#: billing/views.py:511
 msgid "Выберите тариф."
 msgstr "Выберите тариф."
 
-#: billing/views.py:282
+#: billing/views.py:526
 msgid "Заявка отправлена учителю. Мы уведомим вас, когда её подтвердят."
 msgstr "Заявка отправлена учителю. Мы уведомим вас, когда её подтвердят."
 
-#: billing/views.py:323
+#: billing/views.py:567
 msgid "Заявка подтверждена. Ученик получит уведомление об оплате."
 msgstr "Заявка подтверждена. Ученик получит уведомление об оплате."
 
-#: billing/views.py:326
+#: billing/views.py:570
 msgid "Заявка отклонена."
 msgstr "Заявка отклонена."
 
-#: billing/views.py:328
+#: billing/views.py:572
 msgid "Неизвестное действие."
 msgstr "Неизвестное действие."
 
-#: billing/views.py:342
+#: billing/views.py:586
 #, python-format
 msgid "Оплата недоступна: статус «%(status)s»."
 msgstr "Оплата недоступна: статус «%(status)s»."
 
-#: billing/views.py:352
+#: billing/views.py:596
 msgid "Оплата прошла! Теперь выберите удобное расписание."
 msgstr "Оплата прошла! Теперь выберите удобное расписание."
 
-#: billing/views.py:373
+#: billing/views.py:617
 msgid "Расписание доступно только для оплаченной подписки."
 msgstr "Расписание доступно только для оплаченной подписки."
 
-#: billing/views.py:380
+#: billing/views.py:626
 msgid "Все уроки уже забронированы."
 msgstr "Все уроки уже забронированы."
 
-#: billing/views.py:424
+#: billing/views.py:670
 #, python-format
 msgid "Выберите ровно %(required)s занятия в неделю (выбрано %(selected)s)."
 msgstr "Выберите ровно %(required)s занятия в неделю (выбрано %(selected)s)."
 
-#: billing/views.py:436
+#: billing/views.py:682
 #, python-format
 msgid "Расписание сформировано: забронировано %(count)s уроков."
 msgstr "Расписание сформировано: забронировано %(count)s уроков."
 
-#: billing/views.py:442
+#: billing/views.py:688
 #, python-format
 msgid ""
 "Забронировано ещё %(count)s уроков по свободным слотам учителя (%(booked)s "
@@ -641,7 +712,7 @@ msgstr ""
 "Забронировано ещё %(count)s уроков по свободным слотам учителя (%(booked)s "
 "из %(total)s)."
 
-#: billing/views.py:448
+#: billing/views.py:694
 msgid ""
 "Остальные уроки можно добрать здесь же, когда учитель откроет новые слоты в "
 "календаре — напишите ему с просьбой добавить время."
@@ -649,23 +720,23 @@ msgstr ""
 "Остальные уроки можно добрать здесь же, когда учитель откроет новые слоты в "
 "календаре — напишите ему с просьбой добавить время."
 
-#: billing/views.py:478
+#: billing/views.py:724
 msgid "Опишите проблему подробнее (минимум 10 символов)."
 msgstr "Опишите проблему подробнее (минимум 10 символов)."
 
-#: billing/views.py:484
+#: billing/views.py:730
 msgid "Спор открыт. Администрация рассмотрит его; выплата учителю заморожена."
 msgstr "Спор открыт. Администрация рассмотрит его; выплата учителю заморожена."
 
-#: billing/views.py:503
+#: billing/views.py:749
 msgid "Спор отозван."
 msgstr "Спор отозван."
 
-#: billing/views.py:566
+#: billing/views.py:812
 msgid "У вас нет прав отменить эту подписку."
 msgstr "У вас нет прав отменить эту подписку."
 
-#: billing/views.py:581
+#: billing/views.py:827
 #, python-format
 msgid ""
 "Подписка отменена. Возвращено на баланс: %(refunded)s сум. Отменено уроков: "
@@ -674,11 +745,11 @@ msgstr ""
 "Подписка отменена. Возвращено на баланс: %(refunded)s сум. Отменено уроков: "
 "%(cancelled)s."
 
-#: billing/views.py:596
+#: billing/views.py:842
 msgid "У вас нет прав приостановить эту подписку."
 msgstr "У вас нет прав приостановить эту подписку."
 
-#: billing/views.py:603
+#: billing/views.py:849
 #, python-format
 msgid ""
 "Подписка приостановлена. Снято будущих уроков: %(freed)s. Возобновите в "
@@ -687,63 +758,63 @@ msgstr ""
 "Подписка приостановлена. Снято будущих уроков: %(freed)s. Возобновите в "
 "любой момент — срок продлится на время паузы."
 
-#: billing/views.py:619
+#: billing/views.py:865
 msgid "У вас нет прав возобновить эту подписку."
 msgstr "У вас нет прав возобновить эту подписку."
 
-#: billing/views.py:625
+#: billing/views.py:871
 #, python-format
 msgid "Подписка возобновлена. Запланировано уроков: %(created)s."
 msgstr "Подписка возобновлена. Запланировано уроков: %(created)s."
 
-#: billing/views.py:662
+#: billing/views.py:908
 #, python-format
 msgid "Заявка на вывод %(amount)s сум создана. Ожидайте подтверждения."
 msgstr "Заявка на вывод %(amount)s сум создана. Ожидайте подтверждения."
 
-#: billing/views.py:686
+#: billing/views.py:932
 #, python-format
 msgid "Заявка отменена, %(amount)s сум возвращены на баланс."
 msgstr "Заявка отменена, %(amount)s сум возвращены на баланс."
 
-#: billing/views.py:794
+#: billing/views.py:1040
 msgid "Выберите активную подписку из списка."
 msgstr "Выберите активную подписку из списка."
 
-#: billing/views.py:818
+#: billing/views.py:1064
 #, python-format
 msgid "Задание «%(title)s» назначено ученику."
 msgstr "Задание «%(title)s» назначено ученику."
 
-#: billing/views.py:844
+#: billing/views.py:1090
 msgid "Доступ к этому заданию только у участников подписки."
 msgstr "Доступ к этому заданию только у участников подписки."
 
-#: billing/views.py:871
+#: billing/views.py:1117
 msgid "Это задание уже сдано и не может быть изменено."
 msgstr "Это задание уже сдано и не может быть изменено."
 
-#: billing/views.py:879
+#: billing/views.py:1125
 msgid "Напишите ответ или прикрепите хотя бы один файл."
 msgstr "Напишите ответ или прикрепите хотя бы один файл."
 
-#: billing/views.py:906
+#: billing/views.py:1152
 msgid "Работа отправлена учителю."
 msgstr "Работа отправлена учителю."
 
-#: billing/views.py:913
+#: billing/views.py:1159
 msgid "Ученик ещё не сдал работу."
 msgstr "Ученик ещё не сдал работу."
 
-#: billing/views.py:916
+#: billing/views.py:1162
 msgid "Это задание нельзя оценить."
 msgstr "Это задание нельзя оценить."
 
-#: billing/views.py:935
+#: billing/views.py:1181
 msgid "Работа возвращена ученику на доработку."
 msgstr "Работа возвращена ученику на доработку."
 
-#: billing/views.py:944
+#: billing/views.py:1190
 #, python-format
 msgid "Оценка %(grade)s проставлена."
 msgstr "Оценка %(grade)s проставлена."
@@ -752,15 +823,15 @@ msgstr "Оценка %(grade)s проставлена."
 msgid "Сначала завершите профиль учителя."
 msgstr "Сначала завершите профиль учителя."
 
-#: teachers/booking_views.py:1207
+#: teachers/booking_views.py:1243
 msgid "Учитель не найден"
 msgstr "Учитель не найден"
 
-#: teachers/booking_views.py:1359
+#: teachers/booking_views.py:1411
 msgid "Оставить отзыв можно только после завершения урока."
 msgstr "Оставить отзыв можно только после завершения урока."
 
-#: teachers/booking_views.py:1389
+#: teachers/booking_views.py:1441
 msgid "Спасибо! Ваш отзыв сохранён."
 msgstr "Спасибо! Ваш отзыв сохранён."
 
@@ -809,7 +880,7 @@ msgid "Рекомендуемый размер: 300x300px"
 msgstr "Рекомендуемый размер: 300x300px"
 
 #: teachers/forms.py:75 teachers/forms.py:874
-#: teachers/registration_forms.py:349 templates/logic/register_student.html:977
+#: teachers/registration_forms.py:349 templates/logic/register_student.html:979
 #: templates/logic/teacher_profile.html:1613
 msgid "О себе"
 msgstr "О себе"
@@ -965,6 +1036,7 @@ msgid "Я принимаю условия использования и поли
 msgstr "Я принимаю условия использования и политику конфиденциальности"
 
 #: teachers/forms.py:237 teachers/forms.py:419 teachers/forms.py:638
+#: templates/registration/base_wizard.html:168
 #: templates/registration/step2_account_security.html:89
 msgid "Введите пароль"
 msgstr "Введите пароль"
@@ -983,11 +1055,12 @@ msgstr "Этот email уже используется"
 msgid "Этот номер телефона уже используется"
 msgstr "Этот номер телефона уже используется"
 
-#: teachers/forms.py:259
+#: teachers/forms.py:259 templates/registration/base_wizard.html:184
 msgid "Выберите хотя бы один рабочий день"
 msgstr "Выберите хотя бы один рабочий день"
 
 #: teachers/forms.py:265 teachers/registration_forms.py:181
+#: templates/registration/base_wizard.html:183
 msgid "Выберите хотя бы один язык преподавания"
 msgstr "Выберите хотя бы один язык преподавания"
 
@@ -1142,7 +1215,7 @@ msgid "Можно выбрать максимум 10 предметов"
 msgstr "Можно выбрать максимум 10 предметов"
 
 #: teachers/forms.py:671 teachers/forms.py:1030
-#: templates/logic/register_student.html:1482
+#: templates/logic/register_student.html:1484
 msgid "Максимальный бюджет должен быть больше минимального"
 msgstr "Максимальный бюджет должен быть больше минимального"
 
@@ -1252,7 +1325,69 @@ msgstr "Сообщение слишком длинное (максимум 2000 
 msgid "Какие предметы хотите изучать?"
 msgstr "Какие предметы хотите изучать?"
 
-#: teachers/models.py:46 teachers/models.py:1629 teachers/models.py:2664
+#: teachers/lesson_files_views.py:70
+#, fuzzy
+#| msgid "Доступ запрещен"
+msgid "Доступ запрещён"
+msgstr "Доступ запрещен"
+
+#: teachers/lesson_files_views.py:102
+msgid "Загрузка файлов временно недоступна"
+msgstr ""
+
+#: teachers/lesson_files_views.py:107 teachers/lesson_files_views.py:176
+#: teachers/video_views.py:69 teachers/video_views.py:144
+#: teachers/video_views.py:214
+msgid "Некорректный JSON"
+msgstr "Некорректный JSON"
+
+#: teachers/lesson_files_views.py:119 teachers/lesson_files_views.py:198
+#, fuzzy
+#| msgid "Недопустимый тип изображения"
+msgid "Недопустимый формат файла"
+msgstr "Недопустимый тип изображения"
+
+#: teachers/lesson_files_views.py:125 teachers/video_views.py:84
+#: teachers/video_views.py:224
+msgid "Размер файла не указан"
+msgstr "Размер файла не указан"
+
+#: teachers/lesson_files_views.py:128 teachers/video_views.py:87
+#: teachers/video_views.py:227
+#, python-format
+msgid "Максимальный размер файла: %(mb)sMB"
+msgstr "Максимальный размер файла: %(mb)sMB"
+
+#: teachers/lesson_files_views.py:149 teachers/video_views.py:109
+#: teachers/video_views.py:253
+msgid "Не удалось создать ссылку для загрузки"
+msgstr "Не удалось создать ссылку для загрузки"
+
+#: teachers/lesson_files_views.py:188
+#, fuzzy
+#| msgid "Недостаточно средств для вывода"
+msgid "Недостаточно данных о файле"
+msgstr "Недостаточно средств для вывода"
+
+#: teachers/lesson_files_views.py:194
+#, fuzzy
+#| msgid "Недопустимый URL видео"
+msgid "Недопустимый путь файла"
+msgstr "Недопустимый URL видео"
+
+#: teachers/lesson_files_views.py:196
+#, fuzzy
+#| msgid "Недопустимый URL видео"
+msgid "Недопустимый URL файла"
+msgstr "Недопустимый URL видео"
+
+#: teachers/lesson_files_views.py:223
+#, fuzzy
+#| msgid "Оставить отзыв можно только после завершения урока."
+msgid "Удалить файл может только тот, кто его загрузил"
+msgstr "Оставить отзыв можно только после завершения урока."
+
+#: teachers/models.py:46 teachers/models.py:1629 teachers/models.py:2665
 #: templates/billing/teacher_subscribers.html:153
 #: templates/booking/teacher_calendar.html:107
 #: templates/emails/lesson_reminder.html:34
@@ -1343,14 +1478,14 @@ msgid "Магистр"
 msgstr "Магистр"
 
 #: teachers/models.py:233 teachers/models.py:1320
-#: templates/logic/conversation_detail.html:1155
+#: templates/logic/conversation_detail.html:1157
 #: templates/logic/student_suggestions.html:335
 #: templates/logic/teacher_detail.html:2126
 msgid "Онлайн"
 msgstr "Онлайн"
 
 #: teachers/models.py:234 teachers/models.py:1321
-#: templates/logic/conversation_detail.html:1154
+#: templates/logic/conversation_detail.html:1156
 #: templates/logic/student_suggestions.html:335
 msgid "Офлайн"
 msgstr "Офлайн"
@@ -1588,7 +1723,7 @@ msgstr "От"
 msgid "Договорная"
 msgstr "Договорная"
 
-#: teachers/models.py:1501 templates/logic/conversation_detail.html:5
+#: teachers/models.py:1501 templates/logic/conversation_detail.html:7
 msgid "Переписка"
 msgstr "Переписка"
 
@@ -1596,7 +1731,7 @@ msgstr "Переписка"
 msgid "Переписки"
 msgstr "Переписки"
 
-#: teachers/models.py:1528 templates/base.html:1335 templates/base.html:1501
+#: teachers/models.py:1528 templates/base.html:1358 templates/base.html:1524
 #: templates/logic/conversations_list.html:5
 #: templates/logic/conversations_list.html:525
 msgid "Сообщения"
@@ -1747,15 +1882,10 @@ msgid "Ожидает отправки"
 msgstr "Ожидает отправки"
 
 #: teachers/models.py:1829 teachers/models.py:1908
-#: templates/logic/conversation_detail.html:1065
-#: templates/logic/conversation_detail.html:1159
+#: templates/logic/conversation_detail.html:1067
+#: templates/logic/conversation_detail.html:1161
 msgid "Отправлено"
 msgstr "Отправлено"
-
-#: teachers/models.py:1830 teachers/models.py:1974
-#: templates/logic/_profile_edit_enhancements.html:408
-msgid "Ошибка"
-msgstr "Ошибка"
 
 #: teachers/models.py:1831
 msgid "Отменено"
@@ -1777,7 +1907,7 @@ msgstr "Системное уведомление"
 msgid "Массовая рассылка"
 msgstr "Массовая рассылка"
 
-#: teachers/models.py:1848 templates/billing/topup_request.html:178
+#: teachers/models.py:1848 templates/billing/topup_request.html:213
 msgid "Получатель"
 msgstr "Получатель"
 
@@ -2032,63 +2162,48 @@ msgstr ""
 "уведомления"
 
 #: teachers/models.py:2209
-#, fuzzy
-#| msgid "Общение"
 msgid "Общее"
-msgstr "Общение"
+msgstr "Общее"
 
 #: teachers/models.py:2210 templates/booking/teacher_calendar.html:105
 #: templates/booking/teacher_calendar.html:246
 msgid "Бронирование"
 msgstr "Бронирование"
 
-#: teachers/models.py:2211 templates/booking/lesson_room.html:4
+#: teachers/models.py:2211 teachers/models.py:3483
+#: templates/booking/lesson_room.html:4
 msgid "Урок"
 msgstr "Урок"
 
 #: teachers/models.py:2212
-#, fuzzy
-#| msgid "К выполнению"
 msgid "Пополнение"
-msgstr "К выполнению"
+msgstr "Пополнение"
 
 #: teachers/models.py:2213
-#, fuzzy
-#| msgid "Описание"
 msgid "Списание"
-msgstr "Описание"
+msgstr "Списание"
 
 #: teachers/models.py:2215
-#, fuzzy
-#| msgid "На модерации"
 msgid "Модерация"
-msgstr "На модерации"
+msgstr "Модерация"
 
 #: teachers/models.py:2216
-#, fuzzy
-#| msgid "Название"
 msgid "Напоминание"
-msgstr "Название"
+msgstr "Напоминание"
 
 #: teachers/models.py:2218
-#, fuzzy
-#| msgid "Успешно"
 msgid "Успех"
-msgstr "Успешно"
+msgstr "Успех"
 
 #: teachers/models.py:2219
-#, fuzzy
-#| msgid "Прекращение"
 msgid "Предупреждение"
-msgstr "Прекращение"
+msgstr "Предупреждение"
 
 #: teachers/models.py:2227
-#, fuzzy
-#| msgid "Только активные уведомления видны пользователям"
 msgid "Определяет иконку уведомления в интерфейсе"
-msgstr "Только активные уведомления видны пользователям"
+msgstr "Определяет иконку уведомления в интерфейсе"
 
-#: teachers/models.py:2257 templates/base.html:1327 templates/base.html:1510
+#: teachers/models.py:2257 templates/base.html:1350 templates/base.html:1533
 #: templates/notifications/detail.html:6
 #: templates/notifications/detail.html:465 templates/notifications/list.html:6
 #: templates/notifications/list.html:363
@@ -2151,8 +2266,8 @@ msgstr "Шаблон ежедневного напоминания"
 msgid "Шаблоны ежедневных напоминаний"
 msgstr "Шаблоны ежедневных напоминаний"
 
-#: teachers/models.py:2475 templates/logic/conversation_detail.html:1065
-#: templates/logic/conversation_detail.html:1158
+#: teachers/models.py:2475 templates/logic/conversation_detail.html:1067
+#: templates/logic/conversation_detail.html:1160
 #: templates/notifications/detail.html:483
 #: templates/notifications/list.html:400
 msgid "Прочитано"
@@ -2224,7 +2339,7 @@ msgstr "Временной слот"
 msgid "Временные слоты"
 msgstr "Временные слоты"
 
-#: teachers/models.py:2638 templates/booking/my_bookings.html:390
+#: teachers/models.py:2638 templates/booking/my_bookings.html:392
 msgid "Подтверждено"
 msgstr "Подтверждено"
 
@@ -2257,30 +2372,36 @@ msgstr "Ученик не пришёл"
 msgid "Учитель не пришёл"
 msgstr "Учитель не пришёл"
 
-#: teachers/models.py:2658 templates/booking/teacher_calendar.html:70
+#: teachers/models.py:2646
+#, fuzzy
+#| msgid "Ученик не пришёл"
+msgid "Не состоялся (никто не пришёл)"
+msgstr "Ученик не пришёл"
+
+#: teachers/models.py:2659 templates/booking/teacher_calendar.html:70
 #: templates/booking/teacher_calendar.html:244
 msgid "Слот"
 msgstr "Слот"
 
-#: teachers/models.py:2686
+#: teachers/models.py:2687
 msgid "Сообщение от ученика при бронировании"
 msgstr "Сообщение от ученика при бронировании"
 
-#: teachers/models.py:2690
+#: teachers/models.py:2691
 msgid "Комментарий учителя при подтверждении/отказе"
 msgstr "Комментарий учителя при подтверждении/отказе"
 
-#: teachers/models.py:2695 templates/logic/teacher_detail.html:2619
+#: teachers/models.py:2696 templates/logic/teacher_detail.html:2619
 #: templates/notifications/detail.html:523
 #: templates/registration/step5_subjects.html:58
 msgid "Пробный урок"
 msgstr "Пробный урок"
 
-#: teachers/models.py:2703
+#: teachers/models.py:2704
 msgid "Оплачено за пробный"
 msgstr "Оплачено за пробный"
 
-#: teachers/models.py:2704
+#: teachers/models.py:2705
 msgid ""
 "Снэпшот цены платного пробного на момент бронирования. NULL = бесплатный или "
 "не пробный."
@@ -2288,21 +2409,111 @@ msgstr ""
 "Снэпшот цены платного пробного на момент бронирования. NULL = бесплатный или "
 "не пробный."
 
-#: teachers/models.py:3239
+#: teachers/models.py:3382
 msgid "За 24 часа"
 msgstr "За 24 часа"
 
-#: teachers/models.py:3240
+#: teachers/models.py:3383
 msgid "За 3 часа"
 msgstr "За 3 часа"
 
-#: teachers/models.py:3241
+#: teachers/models.py:3384
 msgid "За 10 минут"
 msgstr "За 10 минут"
 
-#: teachers/models.py:3254
+#: teachers/models.py:3397
 msgid "Каналы через запятую: email,in_app,telegram"
 msgstr "Каналы через запятую: email,in_app,telegram"
+
+#: teachers/models.py:3426
+#, fuzzy
+#| msgid "учитель не подключался"
+msgid "Учитель подключился"
+msgstr "учитель не подключался"
+
+#: teachers/models.py:3427
+#, fuzzy
+#| msgid "учитель не подключался"
+msgid "Ученик подключился"
+msgstr "учитель не подключался"
+
+#: teachers/models.py:3428
+#, fuzzy
+#| msgid "Урок подтверждён!"
+msgid "Урок проведён"
+msgstr "Урок подтверждён!"
+
+#: teachers/models.py:3429
+#, fuzzy
+#| msgid "Только учителя"
+msgid "Неявка учителя"
+msgstr "Только учителя"
+
+#: teachers/models.py:3430
+#, fuzzy
+#| msgid "Отказ ученика от лида"
+msgid "Неявка ученика прощена"
+msgstr "Отказ ученика от лида"
+
+#: teachers/models.py:3431
+#, fuzzy
+#| msgid "Отказ ученика от лида"
+msgid "Неявка ученика — урок списан"
+msgstr "Отказ ученика от лида"
+
+#: teachers/models.py:3432
+#, fuzzy
+#| msgid "Уроков в неделю"
+msgid "Урок не состоялся"
+msgstr "Уроков в неделю"
+
+#: teachers/models.py:3433
+#, fuzzy
+#| msgid "Предупреждение"
+msgid "Отправлено предупреждение"
+msgstr "Предупреждение"
+
+#: teachers/models.py:3434
+#, fuzzy
+#| msgid "Выплачено учителю"
+msgid "Выплата учителю"
+msgstr "Выплачено учителю"
+
+#: teachers/models.py:3435
+#, fuzzy
+#| msgid "Написать ученику"
+msgid "Возврат ученику"
+msgstr "Написать ученику"
+
+#: teachers/models.py:3449
+#, fuzzy
+#| msgid "Войти в урок"
+msgid "Событие урока"
+msgstr "Войти в урок"
+
+#: teachers/models.py:3450
+#, fuzzy
+#| msgid "История уроков"
+msgid "События уроков"
+msgstr "История уроков"
+
+#: teachers/models.py:3489
+#, fuzzy
+#| msgid "Кто выдал"
+msgid "Кто загрузил"
+msgstr "Кто выдал"
+
+#: teachers/models.py:3500
+#, fuzzy
+#| msgid "К моим урокам"
+msgid "Файл урока"
+msgstr "К моим урокам"
+
+#: teachers/models.py:3501
+#, fuzzy
+#| msgid "Файлы сдач"
+msgid "Файлы урока"
+msgstr "Файлы сдач"
 
 #: teachers/registration_forms.py:23
 msgid "Не указывать"
@@ -2361,6 +2572,7 @@ msgstr ""
 "555 0143."
 
 #: teachers/registration_forms.py:127
+#: templates/registration/base_wizard.html:167
 msgid "Размер файла не должен превышать 5 МБ"
 msgstr "Размер файла не должен превышать 5 МБ"
 
@@ -2648,6 +2860,7 @@ msgid "Ошибка при проверке предмета %(row)s"
 msgstr "Ошибка при проверке предмета %(row)s"
 
 #: teachers/registration_forms.py:759
+#: templates/registration/base_wizard.html:185
 msgid "Добавьте хотя бы один предмет с ценой"
 msgstr "Добавьте хотя бы один предмет с ценой"
 
@@ -2714,27 +2927,9 @@ msgstr "Профиль учителя не найден"
 msgid "Только учителя могут загружать видео"
 msgstr "Только учителя могут загружать видео"
 
-#: teachers/video_views.py:69 teachers/video_views.py:144
-#: teachers/video_views.py:214
-msgid "Некорректный JSON"
-msgstr "Некорректный JSON"
-
 #: teachers/video_views.py:77 teachers/video_views.py:220
 msgid "Допустимый формат: MP4 (video/mp4)"
 msgstr "Допустимый формат: MP4 (video/mp4)"
-
-#: teachers/video_views.py:84 teachers/video_views.py:224
-msgid "Размер файла не указан"
-msgstr "Размер файла не указан"
-
-#: teachers/video_views.py:87 teachers/video_views.py:227
-#, python-format
-msgid "Максимальный размер файла: %(mb)sMB"
-msgstr "Максимальный размер файла: %(mb)sMB"
-
-#: teachers/video_views.py:109 teachers/video_views.py:253
-msgid "Не удалось создать ссылку для загрузки"
-msgstr "Не удалось создать ссылку для загрузки"
 
 #: teachers/video_views.py:149
 msgid "URL видео не указан"
@@ -2998,60 +3193,66 @@ msgid "Ошибка: %(err)s"
 msgstr "Ошибка: %(err)s"
 
 #: teachers/views.py:2459
+#, fuzzy
+#| msgid "Вы можете писать только ученикам"
+msgid "Можно писать только от имени участников беседы."
+msgstr "Вы можете писать только ученикам"
+
+#: teachers/views.py:2474
 #, python-format
 msgid "Сообщение отправлено от имени %(name)s"
 msgstr "Сообщение отправлено от имени %(name)s"
 
-#: teachers/views.py:2567
+#: teachers/views.py:2582
 msgid "У вас нет доступа к этому уведомлению."
 msgstr "У вас нет доступа к этому уведомлению."
 
-#: teachers/views.py:2607
+#: teachers/views.py:2622
 msgid "Нет доступа"
 msgstr "Нет доступа"
 
-#: teachers/views.py:2788
+#: teachers/views.py:2803
 msgid "Добро пожаловать! Мы подберём для вас подходящих учителей."
 msgstr "Добро пожаловать! Мы подберём для вас подходящих учителей."
 
-#: teachers/views.py:2824
+#: teachers/views.py:2839
 msgid "У вас уже есть профиль"
 msgstr "У вас уже есть профиль"
 
-#: teachers/views.py:2918
+#: teachers/views.py:2933
 msgid "Выберите корректный период (утро/вечер)."
 msgstr "Выберите корректный период (утро/вечер)."
 
-#: teachers/views.py:2920
+#: teachers/views.py:2935
 msgid "Выберите корректный язык."
 msgstr "Выберите корректный язык."
 
-#: teachers/views.py:2922
+#: teachers/views.py:2937
 msgid "Текст сообщения не может быть пустым."
 msgstr "Текст сообщения не может быть пустым."
 
-#: teachers/views.py:2924
+#: teachers/views.py:2939
 msgid "Текст слишком длинный (максимум 4000 символов)."
 msgstr "Текст слишком длинный (максимум 4000 символов)."
 
-#: teachers/views.py:2936
+#: teachers/views.py:2951
 msgid "Шаблон обновлён."
 msgstr "Шаблон обновлён."
 
-#: teachers/views.py:2936
+#: teachers/views.py:2951
 msgid "Шаблон создан."
 msgstr "Шаблон создан."
 
-#: teachers/views.py:2956
+#: teachers/views.py:2971
 msgid "Шаблон удалён."
 msgstr "Шаблон удалён."
 
-#: teachers/views.py:2969
+#: teachers/views.py:2984
 #, python-format
 msgid "Шаблон %(state)s."
 msgstr "Шаблон %(state)s."
 
-#: teachers/views.py:2989
+#: teachers/views.py:3004
 msgid ""
 "Ваш аккаунт не привязан к Telegram-боту — привяжите его, чтобы получать "
 "тестовые сообщения."
@@ -3059,15 +3260,15 @@ msgstr ""
 "Ваш аккаунт не привязан к Telegram-боту — привяжите его, чтобы получать "
 "тестовые сообщения."
 
-#: teachers/views.py:3002
+#: teachers/views.py:3017
 msgid "Тестовое сообщение отправлено вам в Telegram."
 msgstr "Тестовое сообщение отправлено вам в Telegram."
 
-#: teachers/views.py:3004
+#: teachers/views.py:3019
 msgid "Не удалось отправить тестовое сообщение."
 msgstr "Не удалось отправить тестовое сообщение."
 
-#: templates/admin/_mobile_nav.html:16 templates/base.html:1438
+#: templates/admin/_mobile_nav.html:16 templates/base.html:1461
 msgid "Меню"
 msgstr "Меню"
 
@@ -3076,173 +3277,173 @@ msgstr "Меню"
 msgid "Add %(name)s"
 msgstr "Добавить %(name)s"
 
-#: templates/base.html:1252
+#: templates/base.html:1275
 msgid "Перейти к контенту"
 msgstr "Перейти к контенту"
 
-#: templates/base.html:1265
+#: templates/base.html:1288
 msgid "Поиск преподавателей, предметов…"
 msgstr "Поиск преподавателей, предметов…"
 
-#: templates/base.html:1267 templates/logic/home.html:1472
+#: templates/base.html:1290 templates/logic/home.html:1472
 msgid "Поиск преподавателей"
 msgstr "Поиск преподавателей"
 
-#: templates/base.html:1367 templates/base.html:1493 templates/base.html:1590
+#: templates/base.html:1390 templates/base.html:1516 templates/base.html:1613
 msgid "Кабинет"
 msgstr "Кабинет"
 
-#: templates/base.html:1372 templates/base.html:1497
+#: templates/base.html:1395 templates/base.html:1520
 #: templates/billing/student_dashboard.html:334
 #: templates/logic/student_profile.html:5
 #: templates/logic/teacher_profile.html:6
 msgid "Мой профиль"
 msgstr "Мой профиль"
 
-#: templates/base.html:1378 templates/billing/teacher_dashboard.html:188
+#: templates/base.html:1401 templates/billing/teacher_dashboard.html:213
 #: templates/booking/teacher_calendar.html:4
 msgid "Календарь"
 msgstr "Календарь"
 
-#: templates/base.html:1382 templates/booking/my_bookings.html:296
+#: templates/base.html:1405 templates/booking/my_bookings.html:296
 #: templates/logic/teacher_profile.html:1533
 #: templates/logic/teacher_profile.html:1578
 msgid "Заявки и уроки"
 msgstr "Заявки и уроки"
 
-#: templates/base.html:1386 templates/billing/learning_requests.html:5
+#: templates/base.html:1409 templates/billing/learning_requests.html:5
 #: templates/billing/learning_requests.html:23
 msgid "Заявки на обучение"
 msgstr "Заявки на обучение"
 
-#: templates/base.html:1391 templates/booking/my_bookings.html:4
+#: templates/base.html:1414 templates/booking/my_bookings.html:4
 #: templates/booking/my_bookings.html:298
 msgid "Мои бронирования"
 msgstr "Мои бронирования"
 
-#: templates/base.html:1395 templates/base.html:1520
+#: templates/base.html:1418 templates/base.html:1543
 msgid "Избранное"
 msgstr "Избранное"
 
-#: templates/base.html:1401 templates/logic/student_detail.html:1824
+#: templates/base.html:1424 templates/logic/student_detail.html:1824
 msgid "Чат онлайн"
 msgstr "Чат онлайн"
 
-#: templates/base.html:1406 templates/base.html:1531
+#: templates/base.html:1429 templates/base.html:1554
 msgid "Настройки"
 msgstr "Настройки"
 
-#: templates/base.html:1415 templates/base.html:1538
+#: templates/base.html:1438 templates/base.html:1561
 #: templates/logic/student_profile.html:819
 #: templates/logic/teacher_profile.html:1551
 msgid "Выйти"
 msgstr "Выйти"
 
-#: templates/base.html:1424 templates/base.html:1544 templates/base.html:1626
-#: templates/billing/student_dashboard.html:259 templates/logic/login.html:417
-#: templates/logic/student_detail.html:1866
+#: templates/base.html:1447 templates/base.html:1567 templates/base.html:1663
+#: templates/billing/student_dashboard.html:259 templates/logic/login.html:419
+#: templates/logic/student_detail.html:1868
 msgid "Войти"
 msgstr "Войти"
 
-#: templates/base.html:1428 templates/base.html:1548
-#: templates/logic/student_detail.html:1869
+#: templates/base.html:1451 templates/base.html:1571
+#: templates/logic/student_detail.html:1871
 msgid "Регистрация"
 msgstr "Регистрация"
 
-#: templates/base.html:1449
+#: templates/base.html:1472
 msgid "Поиск..."
 msgstr "Поиск..."
 
-#: templates/base.html:1526 templates/base.html:1552 templates/base.html:1631
+#: templates/base.html:1549 templates/base.html:1575 templates/base.html:1668
 #: templates/logic/home.html:1452
 msgid "Стать учителем"
 msgstr "Стать учителем"
 
-#: templates/base.html:1587
+#: templates/base.html:1610
 msgid "Основная навигация"
 msgstr "Основная навигация"
 
-#: templates/base.html:1594 templates/logic/students_list.html:1076
+#: templates/base.html:1617 templates/logic/students_list.html:1076
 #: templates/logic/teacher_detail.html:2086
 msgid "Учителя"
 msgstr "Учителя"
 
-#: templates/base.html:1598 templates/logic/teacher_detail.html:2641
+#: templates/base.html:1621 templates/logic/teacher_detail.html:2641
 msgid "Чат"
 msgstr "Чат"
 
-#: templates/base.html:1603
+#: templates/base.html:1626
 msgid "Профиль"
 msgstr "Профиль"
 
-#: templates/base.html:1618
+#: templates/base.html:1655
 msgid "Платформа №1 для поиска квалифицированных преподавателей в Узбекистане."
 msgstr ""
 "Платформа №1 для поиска квалифицированных преподавателей в Узбекистане."
 
-#: templates/base.html:1623
+#: templates/base.html:1660
 msgid "Ученикам"
 msgstr "Ученикам"
 
-#: templates/base.html:1624 templates/billing/my_subscriptions.html:277
+#: templates/base.html:1661 templates/billing/my_subscriptions.html:277
 #: templates/billing/student_dashboard.html:218
 #: templates/billing/student_progress.html:140
-#: templates/booking/my_bookings.html:405
+#: templates/booking/my_bookings.html:407
 #: templates/logic/conversations_list.html:598
 msgid "Найти учителя"
 msgstr "Найти учителя"
 
-#: templates/base.html:1625 templates/logic/login.html:434
+#: templates/base.html:1662 templates/logic/login.html:436
 msgid "Зарегистрироваться"
 msgstr "Зарегистрироваться"
 
-#: templates/base.html:1630
+#: templates/base.html:1667
 msgid "Учителям"
 msgstr "Учителям"
 
-#: templates/base.html:1632
+#: templates/base.html:1669
 msgid "Войти в кабинет"
 msgstr "Войти в кабинет"
 
-#: templates/base.html:1636 templates/logic/teacher_profile.html:1461
+#: templates/base.html:1673 templates/logic/teacher_profile.html:1461
 msgid "Поддержка"
 msgstr "Поддержка"
 
-#: templates/base.html:1643
+#: templates/base.html:1680
 msgid "Все права защищены."
 msgstr "Все права защищены."
 
-#: templates/base.html:1645 templates/legal/privacy.html:4
+#: templates/base.html:1682 templates/legal/privacy.html:4
 #: templates/legal/privacy.html:22
 msgid "Политика конфиденциальности"
 msgstr "Политика конфиденциальности"
 
-#: templates/base.html:1646 templates/legal/terms.html:4
+#: templates/base.html:1683 templates/legal/terms.html:4
 #: templates/legal/terms.html:20
 msgid "Условия использования"
 msgstr "Условия использования"
 
-#: templates/base.html:2125 templates/billing/homework_create.html:60
+#: templates/base.html:2162 templates/billing/homework_create.html:60
 #: templates/billing/tariff_form.html:90
 #: templates/booking/book_teacher.html:303
 #: templates/booking/my_bookings.html:322
-#: templates/booking/my_bookings.html:367
+#: templates/booking/my_bookings.html:369
 #: templates/booking/teacher_calendar.html:119
 #: templates/booking/teacher_calendar.html:182
 #: templates/booking/teacher_calendar.html:210
-#: templates/logic/conversation_detail.html:1133
+#: templates/logic/conversation_detail.html:1135
 #: templates/logic/favorites_teachers.html:465
 #: templates/registration/step6_certificates.html:147
 msgid "Отмена"
 msgstr "Отмена"
 
-#: templates/base.html:2126 templates/billing/learning_requests.html:40
+#: templates/base.html:2163 templates/billing/learning_requests.html:40
 #: templates/billing/learning_requests.html:43
-#: templates/booking/my_bookings.html:352
+#: templates/booking/my_bookings.html:354
 msgid "Подтвердить"
 msgstr "Подтвердить"
 
-#: templates/base.html:2176
+#: templates/base.html:2213
 msgid "Подождите…"
 msgstr "Подождите…"
 
@@ -3372,7 +3573,7 @@ msgstr "мес"
 #: templates/billing/subscription_pay.html:52
 #: templates/billing/teacher_subscribers.html:94
 #: templates/billing/topup_request.html:136
-#: templates/billing/topup_request.html:194
+#: templates/billing/topup_request.html:229
 #: templates/billing/withdrawals_list.html:165
 #: templates/booking/book_teacher.html:226
 #: templates/booking/book_teacher.html:352 templates/logic/home.html:2240
@@ -3441,7 +3642,7 @@ msgstr ""
 "соответствует"
 
 #: templates/billing/dispute_open.html:48
-#: templates/booking/my_bookings.html:384
+#: templates/booking/my_bookings.html:386
 msgid "Открыть спор"
 msgstr "Открыть спор"
 
@@ -3556,9 +3757,9 @@ msgid "Прикрепить файлы (PDF/DOCX/JPG и т.п.)"
 msgstr "Прикрепить файлы (PDF/DOCX/JPG и т.п.)"
 
 #: templates/billing/homework_detail.html:105
-#: templates/logic/conversation_detail.html:1115
 #: templates/logic/conversation_detail.html:1117
-#: templates/logic/conversation_detail.html:1151
+#: templates/logic/conversation_detail.html:1119
+#: templates/logic/conversation_detail.html:1153
 msgid "Отправить"
 msgstr "Отправить"
 
@@ -3645,7 +3846,7 @@ msgstr ""
 
 #: templates/billing/learning_requests.html:47
 #: templates/billing/learning_requests.html:50
-#: templates/booking/my_bookings.html:353
+#: templates/booking/my_bookings.html:355
 #: templates/notifications/detail.html:545
 #: templates/notifications/detail.html:686
 msgid "Отклонить"
@@ -3717,7 +3918,7 @@ msgid "Прогресс"
 msgstr "Прогресс"
 
 #: templates/billing/my_subscriptions.html:112
-#: templates/billing/teacher_dashboard.html:113
+#: templates/billing/teacher_dashboard.html:138
 msgid "В эскроу"
 msgstr "В эскроу"
 
@@ -3773,7 +3974,7 @@ msgstr "Возобновить"
 
 #: templates/billing/my_subscriptions.html:150
 #: templates/billing/withdrawals_list.html:172
-#: templates/booking/my_bookings.html:354
+#: templates/booking/my_bookings.html:356
 #: templates/booking/teacher_calendar.html:61
 #: templates/logic/_profile_edit_enhancements.html:215
 msgid "Отменить"
@@ -3928,7 +4129,7 @@ msgstr "Уроков в ближайшие 7 дней нет"
 
 #: templates/billing/student_dashboard.html:271
 #: templates/billing/student_dashboard.html:300
-#: templates/billing/teacher_dashboard.html:165
+#: templates/billing/teacher_dashboard.html:190
 msgid "все →"
 msgstr "все →"
 
@@ -3937,7 +4138,7 @@ msgid "Сдать"
 msgstr "Сдать"
 
 #: templates/billing/student_dashboard.html:289
-#: templates/billing/teacher_dashboard.html:175
+#: templates/billing/teacher_dashboard.html:200
 msgid "На проверке"
 msgstr "На проверке"
 
@@ -3954,7 +4155,7 @@ msgid "найти учителя"
 msgstr "найти учителя"
 
 #: templates/billing/student_dashboard.html:326
-#: templates/billing/teacher_dashboard.html:186
+#: templates/billing/teacher_dashboard.html:211
 msgid "Быстро"
 msgstr "Быстро"
 
@@ -3970,20 +4171,18 @@ msgid "Все домашние задания"
 msgstr "Все домашние задания"
 
 #: templates/billing/student_dashboard.html:339
-#: templates/billing/teacher_dashboard.html:211
+#: templates/billing/teacher_dashboard.html:242
 msgid "Последние транзакции"
 msgstr "Последние транзакции"
 
 #: templates/billing/student_dashboard.html:353
-#: templates/billing/teacher_dashboard.html:225
+#: templates/billing/teacher_dashboard.html:256
 msgid "Пока пусто"
 msgstr "Пока пусто"
 
 #: templates/billing/student_dashboard.html:390
-#, fuzzy
-#| msgid "Не удалось отправить сообщение"
 msgid "Не удалось убрать предложение"
-msgstr "Не удалось отправить сообщение"
+msgstr "Не удалось убрать предложение"
 
 #: templates/billing/student_progress.html:45
 msgid "Сводка по вашим подпискам, урокам и домашним заданиям"
@@ -4250,7 +4449,7 @@ msgid "Создать тариф"
 msgstr "Создать тариф"
 
 #: templates/billing/tariffs_list.html:5 templates/billing/tariffs_list.html:44
-#: templates/billing/teacher_dashboard.html:194
+#: templates/billing/teacher_dashboard.html:219
 #: templates/logic/teacher_profile.html:1521
 msgid "Мои тарифы"
 msgstr "Мои тарифы"
@@ -4290,14 +4489,15 @@ msgstr "Удалить тариф?"
 
 #: templates/billing/tariffs_list.html:79
 #: templates/billing/tariffs_list.html:81
+#: templates/booking/lesson_room.html:439
 #: templates/booking/teacher_calendar.html:116
-#: templates/logic/conversation_detail.html:1024
-#: templates/logic/conversation_detail.html:1025
-#: templates/logic/conversation_detail.html:1134
+#: templates/logic/conversation_detail.html:1026
+#: templates/logic/conversation_detail.html:1027
+#: templates/logic/conversation_detail.html:1136
 #: templates/logic/favorites_teachers.html:464
-#: templates/logic/register_student.html:1587
-#: templates/logic/teacher_profile_edit.html:1228
-#: templates/logic/teacher_profile_edit.html:1516
+#: templates/logic/register_student.html:1589
+#: templates/logic/teacher_profile_edit.html:1230
+#: templates/logic/teacher_profile_edit.html:1518
 msgid "Удалить"
 msgstr "Удалить"
 
@@ -4321,81 +4521,135 @@ msgstr "Здравствуйте"
 msgid "Сводка на сегодня"
 msgstr "Сводка на сегодня"
 
-#: templates/billing/teacher_dashboard.html:79
+#: templates/billing/teacher_dashboard.html:84
+#, fuzzy
+#| msgid "Профиль отклонён"
+msgid "Профиль отклонён модерацией"
+msgstr "Профиль отклонён"
+
+#: templates/billing/teacher_dashboard.html:85
+#, fuzzy
+#| msgid ""
+#| "Пополнение временно недоступно — реквизиты ещё не настроены. Пожалуйста, "
+#| "свяжитесь с поддержкой."
+msgid ""
+"Пока профиль не одобрен, он не виден ученикам в поиске. Проверьте данные и "
+"обновите профиль либо свяжитесь с поддержкой."
+msgstr ""
+"Пополнение временно недоступно — реквизиты ещё не настроены. Пожалуйста, "
+"свяжитесь с поддержкой."
+
+#: templates/billing/teacher_dashboard.html:87
+#: templates/logic/student_suggestions.html:399
+msgid "Открыть профиль"
+msgstr "Открыть профиль"
+
+#: templates/billing/teacher_dashboard.html:95
+#, fuzzy
+#| msgid "Ваш профиль на модерации"
+msgid "Профиль на модерации"
+msgstr "Ваш профиль на модерации"
+
+#: templates/billing/teacher_dashboard.html:96
+#, fuzzy
+#| msgid ""
+#| "Обычно проверка занимает 24 часа. После одобрения профиль появится в "
+#| "поиске и ученики смогут отправлять запросы."
+msgid ""
+"Обычно проверка занимает до 24 часов. Пока профиль не одобрен, ученики не "
+"видят вас в поиске и не могут забронировать уроки. Заполните профиль и "
+"расписание полностью — это ускорит одобрение."
+msgstr ""
+"Обычно проверка занимает 24 часа. После одобрения профиль появится в поиске "
+"и ученики смогут отправлять запросы."
+
+#: templates/billing/teacher_dashboard.html:104
 msgid "На балансе"
 msgstr "На балансе"
 
-#: templates/billing/teacher_dashboard.html:82
+#: templates/billing/teacher_dashboard.html:107
 #: templates/billing/withdrawals_list.html:87
 #: templates/billing/withdrawals_list.html:133
 msgid "Вывести"
 msgstr "Вывести"
 
-#: templates/billing/teacher_dashboard.html:86
+#: templates/billing/teacher_dashboard.html:111
 msgid "Активных учеников"
 msgstr "Активных учеников"
 
-#: templates/billing/teacher_dashboard.html:89
+#: templates/billing/teacher_dashboard.html:114
 msgid "Список"
 msgstr "Список"
 
-#: templates/billing/teacher_dashboard.html:93
+#: templates/billing/teacher_dashboard.html:118
 msgid "Уроков на неделе"
 msgstr "Уроков на неделе"
 
-#: templates/billing/teacher_dashboard.html:95
+#: templates/billing/teacher_dashboard.html:120
 msgid "из них сегодня"
 msgstr "из них сегодня"
 
-#: templates/billing/teacher_dashboard.html:101
-#: templates/booking/my_bookings.html:406
+#: templates/billing/teacher_dashboard.html:126
 #: templates/booking/my_bookings.html:408
-#: templates/logic/conversation_detail.html:1041
-#: templates/logic/conversation_detail.html:1156
+#: templates/booking/my_bookings.html:410
+#: templates/logic/conversation_detail.html:1043
+#: templates/logic/conversation_detail.html:1158
 msgid "Сегодня"
 msgstr "Сегодня"
 
-#: templates/billing/teacher_dashboard.html:105
+#: templates/billing/teacher_dashboard.html:130
 msgid "Неделя"
 msgstr "Неделя"
 
-#: templates/billing/teacher_dashboard.html:109
+#: templates/billing/teacher_dashboard.html:134
 msgid "Месяц"
 msgstr "Месяц"
 
-#: templates/billing/teacher_dashboard.html:122
+#: templates/billing/teacher_dashboard.html:147
 msgid "Расписание на сегодня"
 msgstr "Расписание на сегодня"
 
-#: templates/billing/teacher_dashboard.html:139
+#: templates/billing/teacher_dashboard.html:164
 msgid "Сегодня уроков нет"
 msgstr "Сегодня уроков нет"
 
-#: templates/billing/teacher_dashboard.html:146
+#: templates/billing/teacher_dashboard.html:171
 msgid "Требуют подтверждения"
 msgstr "Требуют подтверждения"
 
-#: templates/billing/teacher_dashboard.html:156
+#: templates/billing/teacher_dashboard.html:181
 msgid "Открыть"
 msgstr "Открыть"
 
-#: templates/billing/teacher_dashboard.html:164
+#: templates/billing/teacher_dashboard.html:189
 msgid "ДЗ ожидают проверки"
 msgstr "ДЗ ожидают проверки"
 
-#: templates/billing/teacher_dashboard.html:179
+#: templates/billing/teacher_dashboard.html:204
 msgid "Все ДЗ проверены"
 msgstr "Все ДЗ проверены"
 
-#: templates/billing/teacher_dashboard.html:191
+#: templates/billing/teacher_dashboard.html:216
 msgid "Создать ДЗ"
 msgstr "Создать ДЗ"
 
-#: templates/billing/teacher_dashboard.html:202
+#: templates/billing/teacher_dashboard.html:225
+#: templates/logic/potential_students.html:4
+#: templates/logic/potential_students.html:9
+#: templates/logic/teacher_profile.html:1536
+msgid "Потенциальные ученики"
+msgstr "Заинтересованные ученики"
+
+#: templates/billing/teacher_dashboard.html:228
+#: templates/logic/teacher_profile.html:1545
+msgid "Посмотреть других преподавателей"
+msgstr "Посмотреть других преподавателей"
+
+#: templates/billing/teacher_dashboard.html:233
 msgid "Заработок всего"
 msgstr "Заработок всего"
 
-#: templates/billing/teacher_dashboard.html:207
+#: templates/billing/teacher_dashboard.html:238
 msgid "выплачено за всё время"
 msgstr "выплачено за всё время"
 
@@ -4425,10 +4679,8 @@ msgid "Дата"
 msgstr "Дата"
 
 #: templates/billing/teacher_student_progress.html:111
-#, fuzzy
-#| msgid "Домашнее задание"
 msgid "Задать домашнее задание"
-msgstr "Домашнее задание"
+msgstr "Задать домашнее задание"
 
 #: templates/billing/teacher_student_progress.html:117
 #: templates/billing/teacher_student_progress.html:123
@@ -4436,16 +4688,12 @@ msgid "Название"
 msgstr "Название"
 
 #: templates/billing/teacher_student_progress.html:131
-#, fuzzy
-#| msgid "Заданий пока нет"
 msgid "Заданий пока нет."
-msgstr "Заданий пока нет"
+msgstr "Заданий пока нет."
 
 #: templates/billing/teacher_student_progress.html:131
-#, fuzzy
-#| msgid "Создать ДЗ"
 msgid "Создать?"
-msgstr "Создать ДЗ"
+msgstr "Создать?"
 
 #: templates/billing/teacher_subscribers.html:5
 #: templates/billing/teacher_subscribers.html:53
@@ -4518,10 +4766,10 @@ msgid "Подтвердить отмену"
 msgstr "Подтвердить отмену"
 
 #: templates/billing/teacher_subscribers.html:128
-#: templates/billing/topup_request.html:235
-#: templates/logic/conversation_detail.html:988 templates/logic/home.html:1875
-#: templates/logic/register_student.html:1215
-#: templates/logic/register_student.html:1267
+#: templates/billing/topup_request.html:270
+#: templates/logic/conversation_detail.html:990 templates/logic/home.html:1875
+#: templates/logic/register_student.html:1217
+#: templates/logic/register_student.html:1269
 msgid "Назад"
 msgstr "Назад"
 
@@ -4564,6 +4812,34 @@ msgid "Вернуться к покупке"
 msgstr "Вернуться к покупке"
 
 #: templates/billing/topup_request.html:155
+#, fuzzy
+#| msgid "Оплатить и начать обучение"
+msgid "Оплатить картой онлайн"
+msgstr "Оплатить и начать обучение"
+
+#: templates/billing/topup_request.html:158
+msgid ""
+"Мгновенное зачисление. Оплата картой Uzcard / Humo / Visa через защищённую "
+"страницу Multicard."
+msgstr ""
+
+#: templates/billing/topup_request.html:165
+#, fuzzy
+#| msgid "Сумма, сум"
+msgid "Сумма пополнения, сум"
+msgstr "Сумма, сум"
+
+#: templates/billing/topup_request.html:174
+#, fuzzy
+#| msgid "Перейти к контенту"
+msgid "Перейти к оплате"
+msgstr "Перейти к контенту"
+
+#: templates/billing/topup_request.html:181
+msgid "или переводом на карту вручную"
+msgstr ""
+
+#: templates/billing/topup_request.html:190
 msgid ""
 "Пополнение временно недоступно — реквизиты ещё не настроены. Пожалуйста, "
 "свяжитесь с поддержкой."
@@ -4571,36 +4847,36 @@ msgstr ""
 "Пополнение временно недоступно — реквизиты ещё не настроены. Пожалуйста, "
 "свяжитесь с поддержкой."
 
-#: templates/billing/topup_request.html:156
+#: templates/billing/topup_request.html:191
 msgid "Телефон поддержки:"
 msgstr "Телефон поддержки:"
 
-#: templates/billing/topup_request.html:163
+#: templates/billing/topup_request.html:198
 msgid "Переведите нужную сумму на карту"
 msgstr "Переведите нужную сумму на карту"
 
-#: templates/billing/topup_request.html:168
+#: templates/billing/topup_request.html:203
 msgid "Номер карты"
 msgstr "Номер карты"
 
-#: templates/billing/topup_request.html:172
-#: templates/billing/topup_request.html:197
+#: templates/billing/topup_request.html:207
+#: templates/billing/topup_request.html:232
 msgid "Копировать"
 msgstr "Копировать"
 
-#: templates/billing/topup_request.html:185
+#: templates/billing/topup_request.html:220
 msgid "Банк"
 msgstr "Банк"
 
-#: templates/billing/topup_request.html:193
+#: templates/billing/topup_request.html:228
 msgid "Минимальная сумма перевода"
 msgstr "Минимальная сумма перевода"
 
-#: templates/billing/topup_request.html:206
+#: templates/billing/topup_request.html:241
 msgid "Отправьте чек в Telegram"
 msgstr "Отправьте чек в Telegram"
 
-#: templates/billing/topup_request.html:209
+#: templates/billing/topup_request.html:244
 msgid ""
 "Сделайте скриншот успешного перевода и отправьте его боту/менеджеру в "
 "Telegram. В сообщении укажите ваш логин или email — так мы быстрее найдём "
@@ -4610,23 +4886,23 @@ msgstr ""
 "Telegram. В сообщении укажите ваш логин или email — так мы быстрее найдём "
 "ваш кошелёк."
 
-#: templates/billing/topup_request.html:212
+#: templates/billing/topup_request.html:247
 msgid "Здравствуйте! Я пополнил кошелёк UstozHub. Мой email: "
 msgstr "Здравствуйте! Я пополнил кошелёк UstozHub. Мой email: "
 
-#: templates/billing/topup_request.html:212
+#: templates/billing/topup_request.html:247
 msgid " / логин: "
 msgstr " / логин: "
 
-#: templates/billing/topup_request.html:215
+#: templates/billing/topup_request.html:250
 msgid "Открыть Telegram"
 msgstr "Открыть Telegram"
 
-#: templates/billing/topup_request.html:221
+#: templates/billing/topup_request.html:256
 msgid "Или позвоните:"
 msgstr "Или позвоните:"
 
-#: templates/billing/topup_request.html:230
+#: templates/billing/topup_request.html:265
 #, python-format
 msgid ""
 "Зачисление в течение <b>%(hours)s ч</b> в рабочее время (9:00–22:00). Вы "
@@ -4635,14 +4911,65 @@ msgstr ""
 "Зачисление в течение <b>%(hours)s ч</b> в рабочее время (9:00–22:00). Вы "
 "получите уведомление в системе и Telegram."
 
-#: templates/billing/topup_request.html:237
+#: templates/billing/topup_request.html:272
+#: templates/billing/topup_return.html:52
 #: templates/logic/conversations_list.html:601
 msgid "На главную"
 msgstr "На главную"
 
-#: templates/billing/topup_request.html:255
+#: templates/billing/topup_request.html:290
 msgid "Скопировано"
 msgstr "Скопировано"
+
+#: templates/billing/topup_return.html:5
+#, fuzzy
+#| msgid "Способ выплаты"
+msgid "Результат оплаты"
+msgstr "Способ выплаты"
+
+#: templates/billing/topup_return.html:33
+#, fuzzy
+#| msgid "Оплата обучения"
+msgid "Оплата прошла успешно"
+msgstr "Оплата обучения"
+
+#: templates/billing/topup_return.html:34
+msgid "Средства зачислены на ваш кошелёк."
+msgstr ""
+
+#: templates/billing/topup_return.html:38
+#, fuzzy
+#| msgid "Ученик не пришёл"
+msgid "Оплата не прошла"
+msgstr "Ученик не пришёл"
+
+#: templates/billing/topup_return.html:39
+#, fuzzy
+#| msgid "Не удалось прочитать расписание. Попробуйте ещё раз."
+msgid "Платёж был отклонён или отменён. Попробуйте ещё раз."
+msgstr "Не удалось прочитать расписание. Попробуйте ещё раз."
+
+#: templates/billing/topup_return.html:42
+msgid "Платёж обрабатывается"
+msgstr ""
+
+#: templates/billing/topup_return.html:43
+msgid ""
+"Если оплата прошла, средства появятся на балансе в течение нескольких минут. "
+"Можно обновить страницу."
+msgstr ""
+
+#: templates/billing/topup_return.html:49
+#, fuzzy
+#| msgid "Продолжить обучение"
+msgid "Продолжить"
+msgstr "Продолжить обучение"
+
+#: templates/billing/topup_return.html:51
+#, fuzzy
+#| msgid "К выполнению"
+msgid "К пополнению"
+msgstr "К выполнению"
 
 #: templates/billing/withdrawals_list.html:69
 msgid "Запросите перевод заработанных средств на карту или телефон"
@@ -4862,7 +5189,8 @@ msgstr "Забронировать ещё"
 
 #: templates/booking/book_teacher.html:313
 #: templates/booking/book_teacher.html:357
-#: templates/booking/lesson_room.html:91 templates/booking/lesson_room.html:117
+#: templates/booking/lesson_room.html:164
+#: templates/booking/lesson_room.html:260
 msgid "К моим урокам"
 msgstr "К моим урокам"
 
@@ -4964,11 +5292,52 @@ msgstr "Отправить отзыв"
 msgid "Поставьте, пожалуйста, общую оценку."
 msgstr "Поставьте, пожалуйста, общую оценку."
 
-#: templates/booking/lesson_room.html:83
+#: templates/booking/lesson_room.html:156
 msgid "Урок с"
 msgstr "Урок с"
 
-#: templates/booking/lesson_room.html:99
+#: templates/booking/lesson_room.html:172
+#, fuzzy
+#| msgid "К моим урокам"
+msgid "До конца урока"
+msgstr "К моим урокам"
+
+#: templates/booking/lesson_room.html:177
+#, python-format
+msgid "Ожидаем %(other_name)s…"
+msgstr ""
+
+#: templates/booking/lesson_room.html:183
+#, fuzzy
+#| msgid "учитель не подключался"
+msgid "Переподключиться"
+msgstr "учитель не подключался"
+
+#: templates/booking/lesson_room.html:189
+#, fuzzy
+#| msgid "История уроков"
+msgid "Материалы урока"
+msgstr "История уроков"
+
+#: templates/booking/lesson_room.html:192
+#: templates/booking/lesson_room.html:434
+#, fuzzy
+#| msgid "Загрузить"
+msgid "Загрузить файл"
+msgstr "Загрузить"
+
+#: templates/booking/lesson_room.html:198
+msgid ""
+"Документы, изображения, презентации — до 25 МБ. Видны обеим сторонам урока."
+msgstr ""
+
+#: templates/booking/lesson_room.html:201
+#, fuzzy
+#| msgid "Пока нет потенциальных учеников"
+msgid "Пока нет загруженных материалов."
+msgstr "Пока нет заинтересованных учеников"
+
+#: templates/booking/lesson_room.html:206
 msgid ""
 "Урок проходит на платформе: оплата защищена, при проблеме можно открыть спор "
 "и вернуть деньги. Договорённости вне платформы этих гарантий не дают."
@@ -4976,43 +5345,132 @@ msgstr ""
 "Урок проходит на платформе: оплата защищена, при проблеме можно открыть спор "
 "и вернуть деньги. Договорённости вне платформы этих гарантий не дают."
 
+#: templates/booking/lesson_room.html:211
+#, python-format
+msgid ""
+"Преподаватель так и не подключился? Если его нет дольше %(noshow_grace)s "
+"минут, отметьте неявку — урок отменится, а средства сразу вернутся вам."
+msgstr ""
+"Преподаватель так и не подключился? Если его нет дольше %(noshow_grace)s "
+"минут, отметьте неявку — урок отменится, а средства сразу вернутся вам."
+
+#: templates/booking/lesson_room.html:213
+msgid "Преподаватель не пришёл"
+msgstr "Преподаватель не пришёл"
+
+#: templates/booking/lesson_room.html:221
+msgid ""
+"Отметить, что преподаватель не подключился? Урок будет отменён, а средства "
+"возвращены."
+msgstr ""
+"Отметить, что преподаватель не подключился? Урок будет отменён, а средства "
+"возвращены."
+
+#: templates/booking/lesson_room.html:230
+#: templates/logic/_profile_edit_enhancements.html:406
+msgid "Готово"
+msgstr "Готово"
+
+#: templates/booking/lesson_room.html:233
+msgid "Не удалось выполнить действие"
+msgstr "Не удалось выполнить действие"
+
+#: templates/booking/lesson_room.html:237
+msgid "Ошибка сети, попробуйте ещё раз"
+msgstr "Ошибка сети, попробуйте ещё раз"
+
 # New login required messages
-#: templates/booking/lesson_room.html:105
+#: templates/booking/lesson_room.html:248
 msgid "Комната ещё закрыта"
 msgstr "Комната ещё закрыта"
 
-#: templates/booking/lesson_room.html:106
-msgid "Вы сможете войти за 15 минут до начала урока"
+#: templates/booking/lesson_room.html:249
+#, fuzzy, python-format
+#| msgid "Вы сможете войти за 15 минут до начала урока"
+msgid "Вы сможете войти за %(join_lead)s минут до начала урока"
 msgstr "Вы сможете войти за 15 минут до начала урока"
 
-#: templates/booking/lesson_room.html:109
+#: templates/booking/lesson_room.html:252
 msgid "Урок завершён"
 msgstr "Урок завершён"
 
-#: templates/booking/lesson_room.html:110
+#: templates/booking/lesson_room.html:253
 msgid "Время этого урока уже прошло."
 msgstr "Время этого урока уже прошло."
 
-#: templates/booking/lesson_room.html:113
+#: templates/booking/lesson_room.html:256
 msgid "Урок ещё не подтверждён"
 msgstr "Урок ещё не подтверждён"
 
-#: templates/booking/lesson_room.html:114
+#: templates/booking/lesson_room.html:257
 msgid "Комната станет доступной после подтверждения брони учителем."
 msgstr "Комната станет доступной после подтверждения брони учителем."
 
+#: templates/booking/lesson_room.html:281
+#, fuzzy
+#| msgid "Не удалось загрузить. Проверьте соединение."
+msgid ""
+"Не удалось загрузить видео-модуль. Проверьте интернет и попробуйте "
+"переподключиться."
+msgstr "Не удалось загрузить. Проверьте соединение."
+
+#: templates/booking/lesson_room.html:327
+#, fuzzy
+#| msgid "Время попытки"
+msgid "время вышло"
+msgstr "Время попытки"
+
+#: templates/booking/lesson_room.html:345
+msgid "на связи"
+msgstr ""
+
+#: templates/booking/lesson_room.html:346
+#, fuzzy
+#| msgid "Ожидает"
+msgid "Ожидаем"
+msgstr "Ожидает"
+
+#: templates/booking/lesson_room.html:433
+#: templates/booking/my_bookings.html:351
+msgid "Загрузка…"
+msgstr "Загрузка…"
+
+#: templates/booking/lesson_room.html:435
+#, fuzzy
+#| msgid "Удалить этот слот?"
+msgid "Удалить этот файл?"
+msgstr "Удалить этот слот?"
+
+#: templates/booking/lesson_room.html:436
+#, fuzzy
+#| msgid "Текст слишком длинный (максимум 4000 символов)."
+msgid "Файл слишком большой (максимум 25 МБ)."
+msgstr "Текст слишком длинный (максимум 4000 символов)."
+
+#: templates/booking/lesson_room.html:437
+#, fuzzy
+#| msgid "Некорректный формат расписания."
+msgid "Недопустимый формат файла."
+msgstr "Некорректный формат расписания."
+
+#: templates/booking/lesson_room.html:438
+#, fuzzy
+#| msgid "Не удалось прочитать расписание. Попробуйте ещё раз."
+msgid "Не удалось загрузить файл. Попробуйте ещё раз."
+msgstr "Не удалось прочитать расписание. Попробуйте ещё раз."
+
 #: templates/booking/my_bookings.html:302
-#: templates/booking/my_bookings.html:387
+#: templates/booking/my_bookings.html:389
 msgid "Срочно"
 msgstr "Срочно"
 
 #: templates/booking/my_bookings.html:303
-#: templates/booking/my_bookings.html:388
+#: templates/booking/my_bookings.html:390
 msgid "Предстоящие"
 msgstr "Предстоящие"
 
 #: templates/booking/my_bookings.html:304
-#: templates/booking/my_bookings.html:389
+#: templates/booking/my_bookings.html:391
 msgid "Прошедшие"
 msgstr "Прошедшие"
 
@@ -5022,55 +5480,51 @@ msgid "Загрузка..."
 msgstr "Загрузка..."
 
 #: templates/booking/my_bookings.html:323
-#: templates/booking/my_bookings.html:366
+#: templates/booking/my_bookings.html:368
 msgid "ОК"
 msgstr "ОК"
 
-#: templates/booking/my_bookings.html:349
-msgid "Загрузка…"
-msgstr "Загрузка…"
-
-#: templates/booking/my_bookings.html:350
+#: templates/booking/my_bookings.html:352
 msgid "Не удалось загрузить. Проверьте соединение."
 msgstr "Не удалось загрузить. Проверьте соединение."
 
-#: templates/booking/my_bookings.html:351
+#: templates/booking/my_bookings.html:353
 msgid "Повторить"
 msgstr "Повторить"
 
-#: templates/booking/my_bookings.html:355 templates/notifications/list.html:407
+#: templates/booking/my_bookings.html:357 templates/notifications/list.html:407
 msgid "Подробнее"
 msgstr "Подробнее"
 
-#: templates/booking/my_bookings.html:356
+#: templates/booking/my_bookings.html:358
 msgid "Пока нет бронирований"
 msgstr "Пока нет бронирований"
 
-#: templates/booking/my_bookings.html:357
+#: templates/booking/my_bookings.html:359
 msgid "Сообщение ученику (необязательно):"
 msgstr "Сообщение ученику (необязательно):"
 
-#: templates/booking/my_bookings.html:358
+#: templates/booking/my_bookings.html:360
 msgid "Причина отклонения (необязательно):"
 msgstr "Причина отклонения (необязательно):"
 
-#: templates/booking/my_bookings.html:359
+#: templates/booking/my_bookings.html:361
 msgid "Отменить это бронирование?"
 msgstr "Отменить это бронирование?"
 
-#: templates/booking/my_bookings.html:360
+#: templates/booking/my_bookings.html:362
 msgid "Войти в урок"
 msgstr "Войти в урок"
 
-#: templates/booking/my_bookings.html:361
+#: templates/booking/my_bookings.html:363
 msgid "Добавить ссылку"
 msgstr "Добавить ссылку"
 
-#: templates/booking/my_bookings.html:362
+#: templates/booking/my_bookings.html:364
 msgid "Изменить ссылку"
 msgstr "Изменить ссылку"
 
-#: templates/booking/my_bookings.html:363
+#: templates/booking/my_bookings.html:365
 msgid ""
 "Ссылка на встречу (Meet/Zoom). Оставьте пустым — создадим видео-комнату "
 "автоматически:"
@@ -5078,54 +5532,54 @@ msgstr ""
 "Ссылка на встречу (Meet/Zoom). Оставьте пустым — создадим видео-комнату "
 "автоматически:"
 
-#: templates/booking/my_bookings.html:364
+#: templates/booking/my_bookings.html:366
 msgid "Оставить отзыв"
 msgstr "Оставить отзыв"
 
-#: templates/booking/my_bookings.html:365
+#: templates/booking/my_bookings.html:367
 msgid "Изменить отзыв"
 msgstr "Изменить отзыв"
 
-#: templates/booking/my_bookings.html:368
+#: templates/booking/my_bookings.html:370
 #: templates/notifications/detail.html:548
 msgid "Подтвердить урок"
 msgstr "Подтвердить урок"
 
-#: templates/booking/my_bookings.html:369
+#: templates/booking/my_bookings.html:371
 msgid "Отклонить заявку"
 msgstr "Отклонить заявку"
 
-#: templates/booking/my_bookings.html:370
+#: templates/booking/my_bookings.html:372
 msgid "Отменить бронирование"
 msgstr "Отменить бронирование"
 
-#: templates/booking/my_bookings.html:371
-#: templates/booking/my_bookings.html:372
+#: templates/booking/my_bookings.html:373
+#: templates/booking/my_bookings.html:374
 msgid "Ссылка на встречу"
 msgstr "Ссылка на встречу"
 
-#: templates/booking/my_bookings.html:373
+#: templates/booking/my_bookings.html:375
 msgid "Оставьте пустым — создадим видео-комнату автоматически"
 msgstr "Оставьте пустым — создадим видео-комнату автоматически"
 
-#: templates/booking/my_bookings.html:374
+#: templates/booking/my_bookings.html:376
 #: templates/notifications/detail.html:540
 msgid "Сообщение ученику (необязательно)"
 msgstr "Сообщение ученику (необязательно)"
 
-#: templates/booking/my_bookings.html:375
+#: templates/booking/my_bookings.html:377
 msgid "Причина отклонения (необязательно)"
 msgstr "Причина отклонения (необязательно)"
 
-#: templates/booking/my_bookings.html:376
+#: templates/booking/my_bookings.html:378
 msgid "Перенести"
 msgstr "Перенести"
 
-#: templates/booking/my_bookings.html:377
+#: templates/booking/my_bookings.html:379
 msgid "Перенести урок"
 msgstr "Перенести урок"
 
-#: templates/booking/my_bookings.html:378
+#: templates/booking/my_bookings.html:380
 msgid ""
 "Выберите другой свободный слот. После переноса учитель подтвердит новое "
 "время."
@@ -5133,89 +5587,89 @@ msgstr ""
 "Выберите другой свободный слот. После переноса учитель подтвердит новое "
 "время."
 
-#: templates/booking/my_bookings.html:379
+#: templates/booking/my_bookings.html:381
 #: templates/booking/teacher_calendar.html:245
 msgid "Новый слот"
 msgstr "Новый слот"
 
-#: templates/booking/my_bookings.html:380
+#: templates/booking/my_bookings.html:382
 msgid "У учителя нет свободных слотов на ближайшие 30 дней."
 msgstr "У учителя нет свободных слотов на ближайшие 30 дней."
 
-#: templates/booking/my_bookings.html:381
+#: templates/booking/my_bookings.html:383
 msgid "Добавить в календарь (.ics)"
 msgstr "Добавить в календарь (.ics)"
 
-#: templates/booking/my_bookings.html:382
+#: templates/booking/my_bookings.html:384
 msgid "Урок перенесён — ждёт подтверждения учителя."
 msgstr "Урок перенесён — ждёт подтверждения учителя."
 
-#: templates/booking/my_bookings.html:385
+#: templates/booking/my_bookings.html:387
 msgid "Спор"
 msgstr "Спор"
 
-#: templates/booking/my_bookings.html:391
+#: templates/booking/my_bookings.html:393
 msgid "С сообщением"
 msgstr "С сообщением"
 
-#: templates/booking/my_bookings.html:392
+#: templates/booking/my_bookings.html:394
 msgid "В это время занят"
 msgstr "В это время занят"
 
-#: templates/booking/my_bookings.html:393
+#: templates/booking/my_bookings.html:395
 msgid "Заболел, не смогу провести"
 msgstr "Заболел, не смогу провести"
 
-#: templates/booking/my_bookings.html:394
+#: templates/booking/my_bookings.html:396
 msgid "Давайте перенесём — предложите другое время"
 msgstr "Давайте перенесём — предложите другое время"
 
-#: templates/booking/my_bookings.html:395
+#: templates/booking/my_bookings.html:397
 msgid "Другая причина"
 msgstr "Другая причина"
 
-#: templates/booking/my_bookings.html:396
+#: templates/booking/my_bookings.html:398
 msgid "уроков сегодня"
 msgstr "уроков сегодня"
 
-#: templates/booking/my_bookings.html:397
+#: templates/booking/my_bookings.html:399
 msgid "ждут подтверждения"
 msgstr "ждут подтверждения"
 
-#: templates/booking/my_bookings.html:398
+#: templates/booking/my_bookings.html:400
 msgid "истекают скоро"
 msgstr "истекают скоро"
 
-#: templates/booking/my_bookings.html:399
+#: templates/booking/my_bookings.html:401
 msgid "предстоит"
 msgstr "предстоит"
 
-#: templates/booking/my_bookings.html:400
+#: templates/booking/my_bookings.html:402
 msgid "Все запросы обработаны"
 msgstr "Все запросы обработаны"
 
-#: templates/booking/my_bookings.html:401
+#: templates/booking/my_bookings.html:403
 msgid "Нет уроков, ждущих подтверждения"
 msgstr "Нет уроков, ждущих подтверждения"
 
-#: templates/booking/my_bookings.html:402
+#: templates/booking/my_bookings.html:404
 msgid "У вас нет предстоящих уроков"
 msgstr "У вас нет предстоящих уроков"
 
-#: templates/booking/my_bookings.html:403
+#: templates/booking/my_bookings.html:405
 msgid "У вас нет предстоящих уроков. Найдите учителя →"
 msgstr "У вас нет предстоящих уроков. Найдите учителя →"
 
-#: templates/booking/my_bookings.html:404
+#: templates/booking/my_bookings.html:406
 msgid "Здесь будут уроки после их завершения"
 msgstr "Здесь будут уроки после их завершения"
 
-#: templates/booking/my_bookings.html:407
+#: templates/booking/my_bookings.html:409
 #: templates/emails/lesson_reminder.html:12
 msgid "Завтра"
 msgstr "Завтра"
 
-#: templates/booking/my_bookings.html:409
+#: templates/booking/my_bookings.html:411
 #: templates/logic/teacher_detail.html:2299
 msgid "Пробный"
 msgstr "Пробный"
@@ -5763,7 +6217,7 @@ msgstr ""
 "приложении не менее чем за 14 дней до вступления в силу."
 
 #: templates/legal/privacy.html:80
-#: templates/logic/student_profile_edit.html:698
+#: templates/logic/student_profile_edit.html:700
 msgid "Контакты"
 msgstr "Контакты"
 
@@ -6029,103 +6483,99 @@ msgstr "Отменить несохранённые изменения и обн
 msgid "Отменить изменения"
 msgstr "Отменить изменения"
 
-#: templates/logic/_profile_edit_enhancements.html:406
-msgid "Готово"
-msgstr "Готово"
-
 # ========== STUDENT DETAIL PAGE ==========
-#: templates/logic/conversation_detail.html:1005
-#: templates/logic/conversation_detail.html:1354
+#: templates/logic/conversation_detail.html:1007
+#: templates/logic/conversation_detail.html:1356
 msgid "Подключение…"
 msgstr "Подключение…"
 
-#: templates/logic/conversation_detail.html:1014
+#: templates/logic/conversation_detail.html:1016
 msgid "Предмет беседы"
 msgstr "Предмет беседы"
 
-#: templates/logic/conversation_detail.html:1074
+#: templates/logic/conversation_detail.html:1076
 msgid "Начните беседу"
 msgstr "Начните беседу"
 
-#: templates/logic/conversation_detail.html:1077
+#: templates/logic/conversation_detail.html:1079
 msgid "Поздоровайтесь и расскажите, что вас интересует."
 msgstr "Поздоровайтесь и расскажите, что вас интересует."
 
-#: templates/logic/conversation_detail.html:1079
+#: templates/logic/conversation_detail.html:1081
 msgid "Поприветствуйте ученика и предложите помощь."
 msgstr "Поприветствуйте ученика и предложите помощь."
 
-#: templates/logic/conversation_detail.html:1084
+#: templates/logic/conversation_detail.html:1086
 msgid "Здравствуйте! Интересует ваш курс."
 msgstr "Здравствуйте! Интересует ваш курс."
 
-#: templates/logic/conversation_detail.html:1084
-#: templates/logic/conversation_detail.html:1089
+#: templates/logic/conversation_detail.html:1086
+#: templates/logic/conversation_detail.html:1091
 msgid "Поприветствовать"
 msgstr "Поприветствовать"
 
-#: templates/logic/conversation_detail.html:1085
+#: templates/logic/conversation_detail.html:1087
 msgid "Можно ли начать с пробного урока?"
 msgstr "Можно ли начать с пробного урока?"
 
-#: templates/logic/conversation_detail.html:1085
+#: templates/logic/conversation_detail.html:1087
 msgid "Спросить о пробном"
 msgstr "Спросить о пробном"
 
-#: templates/logic/conversation_detail.html:1086
+#: templates/logic/conversation_detail.html:1088
 msgid "Какие у вас свободные слоты на этой неделе?"
 msgstr "Какие у вас свободные слоты на этой неделе?"
 
-#: templates/logic/conversation_detail.html:1086
+#: templates/logic/conversation_detail.html:1088
 msgid "Узнать расписание"
 msgstr "Узнать расписание"
 
-#: templates/logic/conversation_detail.html:1087
+#: templates/logic/conversation_detail.html:1089
 msgid "Сколько стоит занятие?"
 msgstr "Сколько стоит занятие?"
 
-#: templates/logic/conversation_detail.html:1087
+#: templates/logic/conversation_detail.html:1089
 msgid "Цена"
 msgstr "Цена"
 
-#: templates/logic/conversation_detail.html:1089
+#: templates/logic/conversation_detail.html:1091
 msgid "Здравствуйте! Чем могу помочь?"
 msgstr "Здравствуйте! Чем могу помочь?"
 
-#: templates/logic/conversation_detail.html:1090
+#: templates/logic/conversation_detail.html:1092
 msgid "Расскажите немного о вашем уровне и целях."
 msgstr "Расскажите немного о вашем уровне и целях."
 
-#: templates/logic/conversation_detail.html:1090
+#: templates/logic/conversation_detail.html:1092
 msgid "Узнать цели"
 msgstr "Узнать цели"
 
-#: templates/logic/conversation_detail.html:1091
+#: templates/logic/conversation_detail.html:1093
 msgid "Готов предложить бесплатное пробное занятие."
 msgstr "Готов предложить бесплатное пробное занятие."
 
-#: templates/logic/conversation_detail.html:1091
+#: templates/logic/conversation_detail.html:1093
 msgid "Предложить пробное"
 msgstr "Предложить пробное"
 
-#: templates/logic/conversation_detail.html:1092
+#: templates/logic/conversation_detail.html:1094
 msgid "Когда вам удобно начать?"
 msgstr "Когда вам удобно начать?"
 
-#: templates/logic/conversation_detail.html:1092
+#: templates/logic/conversation_detail.html:1094
 msgid "Уточнить время"
 msgstr "Уточнить время"
 
-#: templates/logic/conversation_detail.html:1105
+#: templates/logic/conversation_detail.html:1107
 msgid "Сообщение..."
 msgstr "Сообщение..."
 
-#: templates/logic/conversation_detail.html:1128
-#: templates/logic/conversation_detail.html:1162
+#: templates/logic/conversation_detail.html:1130
+#: templates/logic/conversation_detail.html:1164
 msgid "Удалить переписку?"
 msgstr "Удалить переписку?"
 
-#: templates/logic/conversation_detail.html:1130
+#: templates/logic/conversation_detail.html:1132
 msgid ""
 "Переписка скроется из вашего списка. История сообщений сохранится — если "
 "собеседник напишет вам снова, чат восстановится."
@@ -6133,27 +6583,27 @@ msgstr ""
 "Переписка скроется из вашего списка. История сообщений сохранится — если "
 "собеседник напишет вам снова, чат восстановится."
 
-#: templates/logic/conversation_detail.html:1150
+#: templates/logic/conversation_detail.html:1152
 msgid "Отправка…"
 msgstr "Отправка…"
 
-#: templates/logic/conversation_detail.html:1152
+#: templates/logic/conversation_detail.html:1154
 msgid "Не удалось отправить сообщение"
 msgstr "Не удалось отправить сообщение"
 
-#: templates/logic/conversation_detail.html:1153
+#: templates/logic/conversation_detail.html:1155
 msgid "Соединение пропало. Сообщение отправлено по резервному каналу."
 msgstr "Соединение пропало. Сообщение отправлено по резервному каналу."
 
-#: templates/logic/conversation_detail.html:1157
+#: templates/logic/conversation_detail.html:1159
 msgid "Вчера"
 msgstr "Вчера"
 
-#: templates/logic/conversation_detail.html:1160
+#: templates/logic/conversation_detail.html:1162
 msgid "Отправляется"
 msgstr "Отправляется"
 
-#: templates/logic/conversation_detail.html:1161
+#: templates/logic/conversation_detail.html:1163
 msgid "Соединение прервано. Переподключаемся…"
 msgstr "Соединение прервано. Переподключаемся…"
 
@@ -6350,7 +6800,7 @@ msgstr "Найти репетитора"
 msgid "преподавателей"
 msgstr "преподавателей"
 
-#: templates/logic/home.html:1461 templates/logic/register_student.html:1585
+#: templates/logic/home.html:1461 templates/logic/register_student.html:1587
 msgid "предметов"
 msgstr "предметов"
 
@@ -6456,7 +6906,7 @@ msgstr "От 10 лет"
 msgid "Применить фильтры"
 msgstr "Применить фильтры"
 
-#: templates/logic/home.html:2153 templates/logic/register_student.html:1584
+#: templates/logic/home.html:2153 templates/logic/register_student.html:1586
 #: templates/logic/students_list.html:1212
 msgid "Найдено:"
 msgstr "Найдено:"
@@ -6515,44 +6965,38 @@ msgstr "Скрыть"
 msgid "Нет описания"
 msgstr "Нет описания"
 
-#: templates/logic/login.html:5
+#: templates/logic/login.html:7
 msgid "Вход"
 msgstr "Вход"
 
 # ========== TEACHER DETAIL PAGE ==========
-#: templates/logic/login.html:359
+#: templates/logic/login.html:361
 msgid "Вход в UstozHub"
 msgstr "Вход в UstozHub"
 
-#: templates/logic/login.html:360
+#: templates/logic/login.html:362
 msgid "Войдите чтобы продолжить"
 msgstr "Войдите чтобы продолжить"
 
-#: templates/logic/login.html:413
+#: templates/logic/login.html:415
 msgid "Забыли пароль?"
 msgstr "Забыли пароль?"
 
-#: templates/logic/login.html:421
+#: templates/logic/login.html:423
 msgid "или"
 msgstr "или"
 
-#: templates/logic/login.html:430
+#: templates/logic/login.html:432
 msgid "Войти через Google"
 msgstr "Войти через Google"
 
-#: templates/logic/login.html:434
+#: templates/logic/login.html:436
 msgid "Нет аккаунта?"
 msgstr "Нет аккаунта?"
 
-#: templates/logic/login.html:445
+#: templates/logic/login.html:447
 msgid "Вход..."
 msgstr "Вход..."
-
-#: templates/logic/potential_students.html:4
-#: templates/logic/potential_students.html:9
-#: templates/logic/teacher_profile.html:1536
-msgid "Потенциальные ученики"
-msgstr "Заинтересованные ученики"
 
 #: templates/logic/potential_students.html:12
 msgid ""
@@ -6706,111 +7150,111 @@ msgstr "Уже есть аккаунт?"
 msgid "Log in"
 msgstr "Войти"
 
-#: templates/logic/register_student.html:5
-#: templates/logic/register_student.html:959
+#: templates/logic/register_student.html:7
+#: templates/logic/register_student.html:961
 msgid "Регистрация ученика"
 msgstr "Регистрация ученика"
 
-#: templates/logic/register_student.html:960
+#: templates/logic/register_student.html:962
 msgid "Заполните форму для создания аккаунта"
 msgstr "Заполните форму для создания аккаунта"
 
-#: templates/logic/register_student.html:974
+#: templates/logic/register_student.html:976
 msgid "Прогресс регистрации"
 msgstr "Прогресс регистрации"
 
-#: templates/logic/register_student.html:975
+#: templates/logic/register_student.html:977
 msgid "Аккаунт"
 msgstr "Аккаунт"
 
-#: templates/logic/register_student.html:976
+#: templates/logic/register_student.html:978
 msgid "Что учить"
 msgstr "Что учить"
 
-#: templates/logic/register_student.html:982
+#: templates/logic/register_student.html:984
 msgid "Создайте аккаунт"
 msgstr "Создайте аккаунт"
 
-#: templates/logic/register_student.html:983
+#: templates/logic/register_student.html:985
 msgid "Минимум информации — остальное можно заполнить позже"
 msgstr "Минимум информации — остальное можно заполнить позже"
 
-#: templates/logic/register_student.html:1037
+#: templates/logic/register_student.html:1039
 msgid "Это имя будет использоваться для входа (латиница)"
 msgstr "Это имя будет использоваться для входа (латиница)"
 
-#: templates/logic/register_student.html:1049
+#: templates/logic/register_student.html:1051
 msgid "Минимум 8 символов"
 msgstr "Минимум 8 символов"
 
-#: templates/logic/register_student.html:1064
+#: templates/logic/register_student.html:1066
 msgid "Дополнительно (необязательно)"
 msgstr "Дополнительно (необязательно)"
 
-#: templates/logic/register_student.html:1096
+#: templates/logic/register_student.html:1098
 msgid "Я принимаю"
 msgstr "Я принимаю"
 
-#: templates/logic/register_student.html:1096
+#: templates/logic/register_student.html:1098
 msgid "условия использования"
 msgstr "условия использования"
 
-#: templates/logic/register_student.html:1096
+#: templates/logic/register_student.html:1098
 msgid "и"
 msgstr "и"
 
-#: templates/logic/register_student.html:1096
+#: templates/logic/register_student.html:1098
 msgid "политику конфиденциальности"
 msgstr "политику конфиденциальности"
 
-#: templates/logic/register_student.html:1105
+#: templates/logic/register_student.html:1107
 msgid "К выбору роли"
 msgstr "К выбору роли"
 
-#: templates/logic/register_student.html:1109
-#: templates/logic/register_student.html:1219
+#: templates/logic/register_student.html:1111
+#: templates/logic/register_student.html:1221
 msgid "Далее"
 msgstr "Далее"
 
-#: templates/logic/register_student.html:1116
+#: templates/logic/register_student.html:1118
 msgid "Что хотите изучать?"
 msgstr "Что хотите изучать?"
 
-#: templates/logic/register_student.html:1117
+#: templates/logic/register_student.html:1119
 msgid "Поможем подобрать лучших учителей именно под вас"
 msgstr "Поможем подобрать лучших учителей именно под вас"
 
 # ========== BASE TEMPLATE ==========
-#: templates/logic/register_student.html:1130
+#: templates/logic/register_student.html:1132
 msgid "Начните вводить название предмета..."
 msgstr "Начните вводить название предмета..."
 
-#: templates/logic/register_student.html:1132
+#: templates/logic/register_student.html:1134
 msgid "Поиск предметов"
 msgstr "Поиск предметов"
 
-#: templates/logic/register_student.html:1136
-#: templates/logic/register_student.html:1583
+#: templates/logic/register_student.html:1138
+#: templates/logic/register_student.html:1585
 msgid "выбрано"
 msgstr "выбрано"
 
-#: templates/logic/register_student.html:1143
+#: templates/logic/register_student.html:1145
 msgid "Очистить выбор"
 msgstr "Очистить выбор"
 
-#: templates/logic/register_student.html:1153
+#: templates/logic/register_student.html:1155
 msgid "Начните вводить название или используйте быстрые кнопки ниже"
 msgstr "Начните вводить название или используйте быстрые кнопки ниже"
 
-#: templates/logic/register_student.html:1194
+#: templates/logic/register_student.html:1196
 msgid "Бюджет необязателен — можно договориться с учителем индивидуально."
 msgstr "Бюджет необязателен — можно договориться с учителем индивидуально."
 
-#: templates/logic/register_student.html:1226
+#: templates/logic/register_student.html:1228
 msgid "Расскажите о себе"
 msgstr "Расскажите о себе"
 
-#: templates/logic/register_student.html:1226
+#: templates/logic/register_student.html:1228
 #: templates/registration/step1_basic_profile.html:91
 #: templates/registration/step4_availability.html:89
 #: templates/registration/step6_certificates.html:9
@@ -6818,7 +7262,7 @@ msgstr "Расскажите о себе"
 msgid "необязательно"
 msgstr "необязательно"
 
-#: templates/logic/register_student.html:1227
+#: templates/logic/register_student.html:1229
 msgid ""
 "Это помогает учителям лучше понять ваши цели. Можно заполнить позже в "
 "профиле."
@@ -6826,32 +7270,32 @@ msgstr ""
 "Это помогает учителям лучше понять ваши цели. Можно заполнить позже в "
 "профиле."
 
-#: templates/logic/register_student.html:1232
-#: templates/logic/register_student.html:1457
+#: templates/logic/register_student.html:1234
+#: templates/logic/register_student.html:1459
 msgid "символов"
 msgstr "символов"
 
-#: templates/logic/register_student.html:1241
+#: templates/logic/register_student.html:1243
 msgid "Контакты для связи (необязательно)"
 msgstr "Контакты для связи (необязательно)"
 
-#: templates/logic/register_student.html:1262
+#: templates/logic/register_student.html:1264
 msgid "Telegram/WhatsApp ускорят связь с учителем, но это необязательно."
 msgstr "Telegram/WhatsApp ускорят связь с учителем, но это необязательно."
 
-#: templates/logic/register_student.html:1270
+#: templates/logic/register_student.html:1272
 msgid "Пропустить и завершить"
 msgstr "Пропустить и завершить"
 
-#: templates/logic/register_student.html:1274
+#: templates/logic/register_student.html:1276
 msgid "Создать аккаунт"
 msgstr "Создать аккаунт"
 
-#: templates/logic/register_student.html:1499
+#: templates/logic/register_student.html:1501
 msgid "Регистрация..."
 msgstr "Регистрация..."
 
-#: templates/logic/register_student.html:1586
+#: templates/logic/register_student.html:1588
 msgid "Ничего не найдено. Попробуйте изменить запрос"
 msgstr "Ничего не найдено. Попробуйте изменить запрос"
 
@@ -6915,44 +7359,44 @@ msgstr "Подходящие учителя"
 msgid "Бюджет ученика"
 msgstr "Бюджет ученика"
 
-#: templates/logic/student_detail.html:1832
-#: templates/logic/student_detail.html:1837
+#: templates/logic/student_detail.html:1834
+#: templates/logic/student_detail.html:1839
 msgid "Написать в Telegram"
 msgstr "Написать в Telegram"
 
-#: templates/logic/student_detail.html:1845
+#: templates/logic/student_detail.html:1847
 #: templates/logic/teacher_detail.html:2646
 #: templates/logic/teacher_detail.html:2648
 #: templates/logic/teacher_detail.html:2737
 msgid "В избранном"
 msgstr "В избранном"
 
-#: templates/logic/student_detail.html:1845
+#: templates/logic/student_detail.html:1847
 #: templates/logic/teacher_detail.html:2646
 #: templates/logic/teacher_detail.html:2648
 #: templates/logic/teacher_detail.html:2737
 msgid "В избранное"
 msgstr "В избранное"
 
-#: templates/logic/student_detail.html:1852
+#: templates/logic/student_detail.html:1854
 #: templates/logic/teacher_detail.html:2656
 msgid "Безопасная сделка через платформу"
 msgstr "Безопасная сделка через платформу"
 
-#: templates/logic/student_detail.html:1858
+#: templates/logic/student_detail.html:1860
 #: templates/logic/teacher_profile.html:1789
 msgid "Контактная информация"
 msgstr "Контактная информация"
 
-#: templates/logic/student_detail.html:1863
+#: templates/logic/student_detail.html:1865
 msgid "Войдите, чтобы видеть контакты"
 msgstr "Войдите, чтобы видеть контакты"
 
-#: templates/logic/student_detail.html:1913
+#: templates/logic/student_detail.html:1918
 msgid "Доступность"
 msgstr "Доступность"
 
-#: templates/logic/student_detail.html:1940
+#: templates/logic/student_detail.html:1945
 msgid "Похожие ученики"
 msgstr "Похожие ученики"
 
@@ -7037,68 +7481,68 @@ msgstr "Завершите заполнение профиля для лучше
 msgid "Заполнить профиль"
 msgstr "Заполнить профиль"
 
-#: templates/logic/student_profile_edit.html:5
-#: templates/logic/student_profile_edit.html:461
+#: templates/logic/student_profile_edit.html:7
+#: templates/logic/student_profile_edit.html:463
 msgid "Student Profile Edit"
 msgstr "Редактирование профиля ученика"
 
-#: templates/logic/student_profile_edit.html:464
+#: templates/logic/student_profile_edit.html:466
 msgid "Display in search:"
 msgstr "Отображение в поиске:"
 
-#: templates/logic/student_profile_edit.html:490
+#: templates/logic/student_profile_edit.html:492
 msgid "Personal Information"
 msgstr "Личная информация"
 
-#: templates/logic/student_profile_edit.html:494
+#: templates/logic/student_profile_edit.html:496
 msgid "Profile Photo"
 msgstr "Фото профиля"
 
-#: templates/logic/student_profile_edit.html:590
+#: templates/logic/student_profile_edit.html:592
 msgid "Subjects and Learning Goals"
 msgstr "Предметы и цели обучения"
 
-#: templates/logic/student_profile_edit.html:639
+#: templates/logic/student_profile_edit.html:641
 msgid "Additional Interests"
 msgstr "Дополнительные интересы"
 
-#: templates/logic/student_profile_edit.html:647
+#: templates/logic/student_profile_edit.html:649
 msgid "Learning Preferences"
 msgstr "Предпочтения по обучению"
 
-#: templates/logic/student_profile_edit.html:726
+#: templates/logic/student_profile_edit.html:728
 msgid "Cancel"
 msgstr "Отмена"
 
-#: templates/logic/student_profile_edit.html:729
+#: templates/logic/student_profile_edit.html:731
 msgid "Save Changes"
 msgstr "Сохранить изменения"
 
-#: templates/logic/student_profile_edit.html:771
+#: templates/logic/student_profile_edit.html:773
 msgid "activated"
 msgstr "активирован"
 
-#: templates/logic/student_profile_edit.html:771
+#: templates/logic/student_profile_edit.html:773
 msgid "deactivated"
 msgstr "деактивирован"
 
-#: templates/logic/student_profile_edit.html:772
+#: templates/logic/student_profile_edit.html:774
 msgid "Profile"
 msgstr "Профиль"
 
-#: templates/logic/student_profile_edit.html:775
+#: templates/logic/student_profile_edit.html:777
 msgid "Error changing status"
 msgstr "Ошибка при изменении статуса"
 
-#: templates/logic/student_profile_edit.html:781
+#: templates/logic/student_profile_edit.html:783
 msgid "An error occurred"
 msgstr "Произошла ошибка"
 
-#: templates/logic/student_profile_edit.html:811
+#: templates/logic/student_profile_edit.html:813
 msgid "Select at least one subject to study"
 msgstr "Выберите хотя бы один предмет для изучения"
 
-#: templates/logic/student_profile_edit.html:820
+#: templates/logic/student_profile_edit.html:822
 msgid "Maximum budget must be greater than minimum"
 msgstr "Максимальный бюджет должен быть больше минимального"
 
@@ -7143,10 +7587,6 @@ msgstr "Лучшее совпадение"
 #: templates/logic/student_suggestions.html:366
 msgid "совпадение"
 msgstr "совпадение"
-
-#: templates/logic/student_suggestions.html:399
-msgid "Открыть профиль"
-msgstr "Открыть профиль"
 
 #: templates/logic/student_suggestions.html:412
 msgid "Хотите больше вариантов?"
@@ -7646,12 +8086,6 @@ msgstr "Подписчики"
 msgid "Вывести средства"
 msgstr "Вывести средства"
 
-#: templates/logic/teacher_profile.html:1545
-#, fuzzy
-#| msgid "Поиск преподавателей"
-msgid "Посмотреть других преподавателей"
-msgstr "Поиск преподавателей"
-
 #: templates/logic/teacher_profile.html:1567
 msgid "Управляйте своим расписанием"
 msgstr "Управляйте своим расписанием"
@@ -7751,15 +8185,15 @@ msgstr "Да"
 msgid "Нет"
 msgstr "Нет"
 
-#: templates/logic/teacher_profile_edit.html:770
+#: templates/logic/teacher_profile_edit.html:772
 msgid "мин."
 msgstr "мин."
 
-#: templates/logic/teacher_profile_edit.html:1011
+#: templates/logic/teacher_profile_edit.html:1013
 msgid "Без предметов вас нельзя забронировать!"
 msgstr "Без предметов вас нельзя забронировать!"
 
-#: templates/logic/teacher_profile_edit.html:1012
+#: templates/logic/teacher_profile_edit.html:1014
 msgid ""
 "Добавьте хотя бы один предмет с ценой за час, чтобы появиться в поиске "
 "учителей."
@@ -7767,11 +8201,11 @@ msgstr ""
 "Добавьте хотя бы один предмет с ценой за час, чтобы появиться в поиске "
 "учителей."
 
-#: templates/logic/teacher_profile_edit.html:1227
+#: templates/logic/teacher_profile_edit.html:1229
 msgid "Вы уверены, что хотите удалить этот предмет?"
 msgstr "Вы уверены, что хотите удалить этот предмет?"
 
-#: templates/logic/teacher_profile_edit.html:1515
+#: templates/logic/teacher_profile_edit.html:1517
 msgid "Вы уверены, что хотите удалить видео-визитку?"
 msgstr "Вы уверены, что хотите удалить видео-визитку?"
 
@@ -7948,6 +8382,95 @@ msgstr "У вас пока нет уведомлений"
 msgid "Здесь будут отображаться важные обновления и новости"
 msgstr "Здесь будут отображаться важные обновления и новости"
 
+#: templates/registration/base_wizard.html:166
+#, fuzzy
+#| msgid "Пожалуйста, завершите регистрацию"
+msgid "Пожалуйста, выберите файл JPG, JPEG или PNG"
+msgstr "Пожалуйста, завершите регистрацию"
+
+#: templates/registration/base_wizard.html:169
+#, fuzzy
+#| msgid "Забыли пароль?"
+msgid "Слабый пароль"
+msgstr "Забыли пароль?"
+
+#: templates/registration/base_wizard.html:170
+#, fuzzy
+#| msgid "Введите пароль"
+msgid "Средний пароль"
+msgstr "Введите пароль"
+
+#: templates/registration/base_wizard.html:171
+#, fuzzy
+#| msgid "Введите надежный пароль"
+msgid "Надежный пароль"
+msgstr "Введите надежный пароль"
+
+#: templates/registration/base_wizard.html:172
+#, fuzzy
+#| msgid "Пожалуйста, завершите регистрацию"
+msgid "Пожалуйста, выберите файл JPG, PNG или PDF"
+msgstr "Пожалуйста, завершите регистрацию"
+
+#: templates/registration/base_wizard.html:173
+#, fuzzy
+#| msgid "Размер файла не должен превышать 5 МБ"
+msgid "Размер файла не должен превышать 10 МБ"
+msgstr "Размер файла не должен превышать 5 МБ"
+
+#: templates/registration/base_wizard.html:174
+#, fuzzy
+#| msgid "Файл сдачи"
+msgid "Файл выбран"
+msgstr "Файл сдачи"
+
+#: templates/registration/base_wizard.html:175
+#, fuzzy
+#| msgid "Нет пользователей для отправки сообщения"
+msgid "Это поле обязательно для заполнения"
+msgstr "Нет пользователей для отправки сообщения"
+
+#: templates/registration/base_wizard.html:176
+#, fuzzy
+#| msgid "Выберите корректный язык."
+msgid "Введите корректный email адрес"
+msgstr "Выберите корректный язык."
+
+#: templates/registration/base_wizard.html:177
+#, fuzzy
+#| msgid ""
+#| "Некорректный номер телефона в Telegram. Формат: +<код страны><номер>."
+msgid "Введите корректный номер телефона в формате +998 XX XXX XX XX"
+msgstr "Некорректный номер телефона в Telegram. Формат: +<код страны><номер>."
+
+#: templates/registration/base_wizard.html:178
+#, fuzzy
+#| msgid "Пароли не совпадают."
+msgid "Пароли не совпадают"
+msgstr "Пароли не совпадают."
+
+#: templates/registration/base_wizard.html:179
+#, fuzzy
+#| msgid "Описание слишком короткое. Минимум 40 символов (сейчас: %(len)s)"
+msgid "Описание слишком короткое. Минимум 100 символов"
+msgstr "Описание слишком короткое. Минимум 40 символов (сейчас: %(len)s)"
+
+#: templates/registration/base_wizard.html:180
+#, fuzzy
+#| msgid "Сообщение слишком длинное (максимум 2000 символов)"
+msgid "Описание слишком длинное. Максимум 1000 символов"
+msgstr "Сообщение слишком длинное (максимум 2000 символов)"
+
+#: templates/registration/base_wizard.html:181
+msgid "сейчас"
+msgstr ""
+
+#: templates/registration/base_wizard.html:182
+#, fuzzy
+#| msgid "Время когда уведомление должно быть отправлено"
+msgid "Время окончания должно быть позже времени начала"
+msgstr "Время когда уведомление должно быть отправлено"
+
 #: templates/registration/complete.html:5
 msgid "Регистрация завершена"
 msgstr "Регистрация завершена"
@@ -8013,10 +8536,8 @@ msgid "Перейти в профиль"
 msgstr "Перейти в профиль"
 
 #: templates/registration/complete.html:98
-#, fuzzy
-#| msgid "Кабинет"
 msgid "В кабинет"
-msgstr "Кабинет"
+msgstr "В кабинет"
 
 #: templates/registration/complete.html:108
 msgid "Возникли вопросы? Свяжитесь с нами:"
@@ -8369,16 +8890,13 @@ msgstr ""
 "настройках профиля."
 
 #, fuzzy
-#~| msgid "Notification"
 #~ msgid "Syndication"
 #~ msgstr "Уведомление"
 
 #, fuzzy
-#~| msgid "Registration"
 #~ msgid "Duration"
 #~ msgstr "Регистрация"
 
 #, fuzzy
-#~| msgid "Save Changes"
 #~ msgid "Change"
 #~ msgstr "Сохранить изменения"

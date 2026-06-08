@@ -1,16 +1,22 @@
 from __future__ import annotations
 
+import json
+import logging
 import uuid
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
+from django.db import transaction as db_transaction
 from django.db.models import Q
-from django.http import Http404, HttpResponseRedirect
+from django.http import Http404, HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from teachers.models import TeacherProfile
@@ -19,7 +25,15 @@ from .forms import HomeworkForm, HomeworkGradeForm, HomeworkSubmissionForm, Tari
 from .models import (
     DismissedTrialSuggestion,
     Homework, HomeworkAttachment, HomeworkSubmission, HomeworkSubmissionFile,
+    MulticardInvoice,
     Subscription, Tariff, Transaction, WithdrawalRequest,
+)
+from .multicard import (
+    MulticardClient,
+    MulticardError,
+    build_topup_ofd,
+    sum_to_tiyin,
+    verify_sign,
 )
 from .validators import validate_homework_file
 from .services import (
@@ -27,9 +41,12 @@ from .services import (
     CancellationError,
     InsufficientFunds,
     SubscriptionService,
+    WalletService,
     WithdrawalError,
     WithdrawalService,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _get_teacher_or_403(request):
@@ -160,6 +177,8 @@ def wallet_topup_request(request):
         'amount': amount,
         'needed': needed,
         'next_url': next_url,
+        'multicard_enabled': getattr(settings, 'MULTICARD_ENABLED', False),
+        'min_topup': getattr(settings, 'MULTICARD_MIN_TOPUP', 1000),
         'topup_configured': bool(getattr(settings, 'TOPUP_CARD_NUMBER', '')),
         'card_number': getattr(settings, 'TOPUP_CARD_NUMBER', ''),
         'card_holder': getattr(settings, 'TOPUP_CARD_HOLDER', ''),
@@ -167,6 +186,231 @@ def wallet_topup_request(request):
         'telegram_handle': getattr(settings, 'TOPUP_TELEGRAM_HANDLE', ''),
         'support_phone': getattr(settings, 'TOPUP_SUPPORT_PHONE', ''),
         'processing_hours': getattr(settings, 'TOPUP_PROCESSING_HOURS', '1-2'),
+    })
+
+
+# ---------- Multicard: онлайн-пополнение кошелька -------------------------
+
+
+def _absolute_url(path: str) -> str:
+    """SITE_URL + path. Multicard требует публичный HTTPS-URL для callback."""
+    return f"{settings.SITE_URL.rstrip('/')}{path}"
+
+
+@login_required
+@require_POST
+def wallet_topup_multicard(request):
+    """Создать инвойс Multicard и отправить пользователя на checkout_url."""
+    if not getattr(settings, 'MULTICARD_ENABLED', False):
+        messages.error(request, _('Онлайн-оплата временно недоступна.'))
+        return redirect('wallet_topup_request')
+
+    try:
+        amount = int(float(request.POST.get('amount') or 0))
+    except (TypeError, ValueError):
+        amount = 0
+
+    next_url = request.POST.get('next', '')
+    if next_url and not url_has_allowed_host_and_scheme(
+        next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        next_url = ''
+    back = f"{reverse('wallet_topup_request')}?next={next_url}" if next_url else reverse('wallet_topup_request')
+
+    if amount < settings.MULTICARD_MIN_TOPUP:
+        messages.error(request, _('Минимальная сумма пополнения — %(min)s сум.') % {
+            'min': settings.MULTICARD_MIN_TOPUP,
+        })
+        return redirect(back)
+    if amount > settings.MULTICARD_MAX_TOPUP:
+        messages.error(request, _('Максимальная сумма пополнения — %(max)s сум.') % {
+            'max': settings.MULTICARD_MAX_TOPUP,
+        })
+        return redirect(back)
+
+    invoice = MulticardInvoice.objects.create(
+        user=request.user,
+        amount=amount,
+        store_id=settings.MULTICARD_STORE_ID,
+    )
+    amount_tiyin = sum_to_tiyin(amount)
+    return_path = f"{reverse('wallet_topup_return')}?invoice={invoice.id}"
+    if next_url:
+        return_path += f'&next={next_url}'
+
+    try:
+        client = MulticardClient()
+        data = client.create_invoice(
+            store_id=settings.MULTICARD_STORE_ID,
+            amount_tiyin=amount_tiyin,
+            invoice_id=str(invoice.id),
+            callback_url=_absolute_url(reverse('multicard_callback')),
+            ofd=build_topup_ofd(amount_tiyin),
+            return_url=_absolute_url(return_path),
+            lang=(request.LANGUAGE_CODE or 'ru')[:2],
+        )
+    except MulticardError as exc:
+        logger.error('Multicard create_invoice failed for invoice %s: %s', invoice.id, exc)
+        invoice.status = MulticardInvoice.Status.ERROR
+        invoice.save(update_fields=['status', 'updated_at'])
+        messages.error(request, _('Не удалось создать платёж. Попробуйте позже или другой способ.'))
+        return redirect(back)
+
+    checkout_url = data.get('checkout_url')
+    invoice.multicard_uuid = data.get('uuid', '')
+    invoice.checkout_url = checkout_url or ''
+    invoice.short_link = data.get('short_link', '')
+    invoice.save(update_fields=['multicard_uuid', 'checkout_url', 'short_link', 'updated_at'])
+
+    if not checkout_url:
+        messages.error(request, _('Платёжный шлюз не вернул ссылку на оплату. Попробуйте позже.'))
+        return redirect(back)
+
+    return redirect(checkout_url)
+
+
+def _credit_invoice(invoice: MulticardInvoice, payload: dict) -> None:
+    """Идемпотентно зачислить успешный платёж в кошелёк и закрыть инвойс."""
+    with db_transaction.atomic():
+        inv = MulticardInvoice.objects.select_for_update().get(pk=invoice.pk)
+        if inv.status == MulticardInvoice.Status.SUCCESS and inv.transaction_id:
+            return  # уже зачислено
+        tx = WalletService.credit(
+            user=inv.user,
+            amount=inv.amount,
+            tx_type=Transaction.Type.DEPOSIT,
+            idempotency_key=f'multicard:{inv.id}',
+            description=_('Пополнение кошелька через Multicard'),
+            reference=inv.multicard_uuid or str(inv.id),
+        )
+        inv.status = MulticardInvoice.Status.SUCCESS
+        inv.transaction = tx
+        inv.paid_at = timezone.now()
+        inv.card_pan = payload.get('card_pan', '') or inv.card_pan
+        inv.ps = payload.get('ps', '') or inv.ps
+        inv.receipt_url = payload.get('receipt_url', '') or inv.receipt_url
+        inv.raw_callback = payload
+        inv.save(update_fields=[
+            'status', 'transaction', 'paid_at', 'card_pan', 'ps',
+            'receipt_url', 'raw_callback', 'updated_at',
+        ])
+
+
+@csrf_exempt
+@require_POST
+def multicard_callback(request):
+    """Webhook Multicard. Проверяет подпись, зачисляет DEPOSIT идемпотентно.
+
+    Должен отвечать 2xx — иначе Multicard повторяет до 5 раз.
+    """
+    # Опциональный whitelisting по IP (X-Forwarded-For за reverse-proxy).
+    allowed_ip = getattr(settings, 'MULTICARD_CALLBACK_IP', '')
+    if allowed_ip:
+        xff = request.META.get('HTTP_X_FORWARDED_FOR', '')
+        remote = (xff.split(',')[0].strip() if xff else request.META.get('REMOTE_ADDR', ''))
+        if remote and remote != allowed_ip:
+            logger.warning('Multicard callback с неожиданного IP: %s', remote)
+            # Не блокируем жёстко (балансировщики/прокси), но логируем.
+
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+    except (ValueError, UnicodeDecodeError):
+        payload = request.POST.dict()
+
+    uuid_ = payload.get('uuid', '')
+    invoice_id = payload.get('invoice_id', '')
+    amount = payload.get('amount', '')
+    status = payload.get('status', '')
+    sign = payload.get('sign', '')
+    # store_id из callback — числовой (напр. 6), участвует в подписи.
+    callback_store_id = payload.get('store_id', '')
+
+    if not verify_sign(callback_store_id, invoice_id, amount, sign):
+        logger.warning(
+            'Multicard callback: неверная подпись (invoice_id=%s, store_id=%s)',
+            invoice_id, callback_store_id,
+        )
+        return JsonResponse({'success': False, 'error': 'invalid sign'}, status=400)
+
+    try:
+        invoice = MulticardInvoice.objects.get(pk=invoice_id)
+    except (MulticardInvoice.DoesNotExist, ValueError, ValidationError):
+        logger.warning('Multicard callback: инвойс не найден (invoice_id=%s)', invoice_id)
+        return JsonResponse({'success': False, 'error': 'invoice not found'}, status=404)
+
+    # Сумма из callback (тийины) должна совпадать с заявленной.
+    try:
+        if int(amount) != sum_to_tiyin(invoice.amount):
+            logger.error(
+                'Multicard callback: сумма не совпала invoice=%s callback=%s expected=%s',
+                invoice.id, amount, sum_to_tiyin(invoice.amount),
+            )
+            return JsonResponse({'success': False, 'error': 'amount mismatch'}, status=400)
+    except (TypeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'bad amount'}, status=400)
+
+    if not invoice.multicard_uuid and uuid_:
+        invoice.multicard_uuid = uuid_
+        invoice.save(update_fields=['multicard_uuid', 'updated_at'])
+
+    # Multicard шлёт ДВА вида callback:
+    #   * «callback-success» — после успешного списания, БЕЗ поля status,
+    #     но с payment_time / card_pan / receipt_url;
+    #   * «webhook» — при смене статуса, с явным полем status
+    #     (draft/progress/success/error/revert/hold).
+    is_success = (
+        status == MulticardInvoice.Status.SUCCESS
+        or (not status and bool(payload.get('payment_time')))
+    )
+
+    if is_success:
+        _credit_invoice(invoice, payload)
+    elif status in (MulticardInvoice.Status.ERROR, MulticardInvoice.Status.REVERT):
+        # Не трогаем уже зачисленный инвойс (revert обрабатывается отдельно вручную).
+        if invoice.status != MulticardInvoice.Status.SUCCESS:
+            invoice.status = status
+            invoice.raw_callback = payload
+            invoice.save(update_fields=['status', 'raw_callback', 'updated_at'])
+    # Подтверждаем 200, чтобы Multicard не ретраил и не отменял платёж.
+    return JsonResponse({'success': True})
+
+
+@login_required
+def wallet_topup_return(request):
+    """Страница возврата после оплаты на стороне Multicard (return_url)."""
+    invoice_id = request.GET.get('invoice', '')
+    invoice = None
+    if invoice_id:
+        try:
+            invoice = MulticardInvoice.objects.filter(
+                pk=invoice_id, user=request.user
+            ).first()
+        except (ValueError, ValidationError):
+            invoice = None
+
+    # Callback мог ещё не прийти — подтянем статус напрямую (best-effort).
+    if invoice and invoice.status not in (
+        MulticardInvoice.Status.SUCCESS, MulticardInvoice.Status.ERROR,
+    ) and invoice.multicard_uuid:
+        try:
+            data = MulticardClient().get_payment(invoice.multicard_uuid)
+            if data.get('status') == MulticardInvoice.Status.SUCCESS:
+                _credit_invoice(invoice, data)
+                invoice.refresh_from_db()
+        except MulticardError as exc:
+            logger.info('Multicard get_payment при возврате не удался: %s', exc)
+
+    next_url = request.GET.get('next', '')
+    if next_url and not url_has_allowed_host_and_scheme(
+        next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        next_url = ''
+
+    return render(request, 'billing/topup_return.html', {
+        'invoice': invoice,
+        'wallet': request.user.wallet,
+        'next_url': next_url,
+        'is_success': bool(invoice and invoice.status == MulticardInvoice.Status.SUCCESS),
     })
 
 

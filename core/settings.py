@@ -548,12 +548,40 @@ JITSI_ROOM_PREFIX = os.environ.get('JITSI_ROOM_PREFIX', 'UstozHub')
 # За сколько минут до начала открывается комната и активируется кнопка
 # «Присоединиться к уроку» (ТЗ §1 — 10 минут).
 LESSON_JOIN_LEAD_MINUTES = int(os.environ.get('LESSON_JOIN_LEAD_MINUTES', '10'))
+# Через сколько минут после начала урока ученик может САМ отметить неявку
+# преподавателя (если тот объективно не подключался к нашей видеокомнате) и
+# сразу получить возврат — не дожидаясь Celery settle_after_end (end_at+30).
+# Порог защищает преподавателя от штрафа за небольшое опоздание.
+TEACHER_NO_SHOW_REPORT_AFTER_MINUTES = int(
+    os.environ.get('TEACHER_NO_SHOW_REPORT_AFTER_MINUTES', '15'))
 # Неявка ученика (ТЗ §6): первые N неявок за окно «прощаются» — урок
 # возвращается ученику (escrow не трогаем, учителю не платим). Начиная с
 # (N+1)-й — урок списывается и оплачивается учителю.
 STUDENT_NO_SHOW_FORGIVE_LIMIT = int(os.environ.get('STUDENT_NO_SHOW_FORGIVE_LIMIT', '3'))
 # Окно подсчёта неявок ученика в днях (ТЗ §6 — за последние 90 дней).
 STUDENT_NO_SHOW_WINDOW_DAYS = int(os.environ.get('STUDENT_NO_SHOW_WINDOW_DAYS', '90'))
+
+# Материалы урока (LessonFile): прямая загрузка в S3/R2 через presigned URL.
+# Белый список форматов — только безопасные учебные документы/изображения,
+# без исполняемых типов. Лимит размера защищает хранилище.
+LESSON_FILE_MAX_SIZE_MB = int(os.environ.get('LESSON_FILE_MAX_SIZE_MB', '25'))
+LESSON_FILE_ALLOWED_TYPES = {
+    'application/pdf': 'pdf',
+    'image/png': 'png',
+    'image/jpeg': 'jpg',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+    'text/plain': 'txt',
+    'application/msword': 'doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+    'application/vnd.ms-powerpoint': 'ppt',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+    'application/vnd.ms-excel': 'xls',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+    'application/zip': 'zip',
+}
+# Сколько секунд живёт presigned-ссылка на загрузку файла урока.
+LESSON_FILE_PRESIGNED_URL_EXPIRY = int(os.environ.get('LESSON_FILE_PRESIGNED_URL_EXPIRY', '600'))
 
 # =============================================================================
 # LOGGING
@@ -677,3 +705,35 @@ TOPUP_BANK_NAME = os.environ.get('TOPUP_BANK_NAME', 'Uzcard / Humo')
 TOPUP_TELEGRAM_HANDLE = os.environ.get('TOPUP_TELEGRAM_HANDLE', 'ustozhub_pay')
 TOPUP_SUPPORT_PHONE = os.environ.get('TOPUP_SUPPORT_PHONE', '+998 90 000 00 00')
 TOPUP_PROCESSING_HOURS = os.environ.get('TOPUP_PROCESSING_HOURS', '1-2')
+
+# =============================================================================
+# 💳 MULTICARD (платёжный шлюз — онлайн-пополнение кошелька)
+# =============================================================================
+# Документация: https://docs.multicard.uz/
+# Поток: создаём инвойс (POST /payment/invoice) → редиректим клиента на
+# checkout_url → Multicard шлёт callback на MULTICARD_CALLBACK_URL → зачисляем
+# в кошелёк (DEPOSIT) идемпотентно. Суммы в API — в ТИЙИНАХ (1 сум = 100 тийин).
+#
+# Sandbox:  https://dev-mesh.multicard.uz   (тестовая карта 8600533364098829/2806, OTP 112233)
+# Prod:     https://mesh.multicard.uz
+MULTICARD_BASE_URL = os.environ.get('MULTICARD_BASE_URL', 'https://dev-mesh.multicard.uz').rstrip('/')
+MULTICARD_APPLICATION_ID = os.environ.get('MULTICARD_APPLICATION_ID', '')
+MULTICARD_SECRET = os.environ.get('MULTICARD_SECRET', '')
+MULTICARD_STORE_ID = os.environ.get('MULTICARD_STORE_ID', '')
+# Включатель онлайн-оплаты на странице пополнения (по умолчанию — по наличию ключей).
+MULTICARD_ENABLED = (
+    os.environ.get('MULTICARD_ENABLED', '').lower() in ('true', '1', 'yes')
+    or bool(MULTICARD_APPLICATION_ID and MULTICARD_SECRET and MULTICARD_STORE_ID)
+)
+# IP, с которого Multicard шлёт callback (для опционального whitelisting во view).
+MULTICARD_CALLBACK_IP = os.environ.get('MULTICARD_CALLBACK_IP', '195.158.26.90')
+MULTICARD_HTTP_TIMEOUT = int(os.environ.get('MULTICARD_HTTP_TIMEOUT', '20'))
+# Лимиты суммы онлайн-пополнения (в сумах).
+MULTICARD_MIN_TOPUP = int(os.environ.get('MULTICARD_MIN_TOPUP', '1000'))
+MULTICARD_MAX_TOPUP = int(os.environ.get('MULTICARD_MAX_TOPUP', '10000000'))
+# Фискальные данные (ofd) для строки чека «Пополнение кошелька».
+# MXIK и код упаковки выдаёт налоговая/Multicard под конкретную услугу.
+MULTICARD_OFD_MXIK = os.environ.get('MULTICARD_OFD_MXIK', '')
+MULTICARD_OFD_PACKAGE_CODE = os.environ.get('MULTICARD_OFD_PACKAGE_CODE', '')
+MULTICARD_OFD_NAME = os.environ.get('MULTICARD_OFD_NAME', 'Пополнение кошелька UstozHub')
+MULTICARD_OFD_VAT_PERCENT = int(os.environ.get('MULTICARD_OFD_VAT_PERCENT', '0'))

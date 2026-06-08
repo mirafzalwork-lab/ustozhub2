@@ -368,7 +368,7 @@ function showLanguageError() {
     err.id = 'languageInlineError';
     err.className = 'field-error';
     err.style.cssText = 'color: var(--danger-color, #EF4444); font-size: 13px; margin-top: 6px;';
-    err.textContent = '{% trans "Пожалуйста, выберите хотя бы один язык преподавания" %}';
+    err.textContent = '{% filter escapejs %}{% trans "Пожалуйста, выберите хотя бы один язык преподавания" %}{% endfilter %}';
     container.parentNode.insertBefore(err, container.nextSibling);
 }
 

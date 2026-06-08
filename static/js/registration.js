@@ -3,6 +3,13 @@
  * Client-side validation and UX enhancements
  */
 
+// i18n: строки задаются шаблоном через window.REG_I18N ({% trans %}).
+// Русский текст вторым аргументом — fallback, если перевод не передан.
+const REG_I18N = (typeof window !== 'undefined' && window.REG_I18N) || {};
+function t(key, fallback) {
+    return (REG_I18N[key] != null && REG_I18N[key] !== '') ? REG_I18N[key] : fallback;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize all components
     initPhotoPreview();
@@ -35,13 +42,13 @@ function initPhotoPreview() {
             // Validate file type
             const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
             if (!validTypes.includes(file.type)) {
-                showError(avatarInput, 'Пожалуйста, выберите файл JPG, JPEG или PNG');
+                showError(avatarInput, t('avatarType', 'Пожалуйста, выберите файл JPG, JPEG или PNG'));
                 return;
             }
-            
+
             // Validate file size (5MB)
             if (file.size > 5 * 1024 * 1024) {
-                showError(avatarInput, 'Размер файла не должен превышать 5 МБ');
+                showError(avatarInput, t('avatarSize', 'Размер файла не должен превышать 5 МБ'));
                 return;
             }
             
@@ -78,21 +85,21 @@ function initPasswordStrength() {
         
         if (password.length === 0) {
             strengthFill.style.width = '0%';
-            strengthText.textContent = 'Введите пароль';
+            strengthText.textContent = t('pwEnter', 'Введите пароль');
             return;
         }
-        
+
         if (strength < 3) {
             strengthFill.classList.add('weak');
-            strengthText.textContent = 'Слабый пароль';
+            strengthText.textContent = t('pwWeak', 'Слабый пароль');
             strengthText.style.color = '#ef4444';
         } else if (strength < 5) {
             strengthFill.classList.add('medium');
-            strengthText.textContent = 'Средний пароль';
+            strengthText.textContent = t('pwMedium', 'Средний пароль');
             strengthText.style.color = '#f59e0b';
         } else {
             strengthFill.classList.add('strong');
-            strengthText.textContent = 'Надежный пароль';
+            strengthText.textContent = t('pwStrong', 'Надежный пароль');
             strengthText.style.color = '#10b981';
         }
     });
@@ -195,12 +202,12 @@ function updateFileUploadUI(file) {
     // Validate file
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
     if (!validTypes.includes(file.type)) {
-        showError(uploadArea, 'Пожалуйста, выберите файл JPG, PNG или PDF');
+        showError(uploadArea, t('certType', 'Пожалуйста, выберите файл JPG, PNG или PDF'));
         return;
     }
-    
+
     if (file.size > 10 * 1024 * 1024) {
-        showError(uploadArea, 'Размер файла не должен превышать 10 МБ');
+        showError(uploadArea, t('certSize', 'Размер файла не должен превышать 10 МБ'));
         return;
     }
     
@@ -210,7 +217,7 @@ function updateFileUploadUI(file) {
             <polyline points="20 6 9 17 4 12"></polyline>
         </svg>
         <p class="upload-text">${file.name}</p>
-        <p class="upload-hint">Файл выбран (${formatFileSize(file.size)})</p>
+        <p class="upload-hint">${t('fileSelected', 'Файл выбран')} (${formatFileSize(file.size)})</p>
     `;
     
     clearError(uploadArea);
@@ -234,7 +241,7 @@ function initFormValidation() {
         const requiredFields = form.querySelectorAll('[required]');
         requiredFields.forEach(field => {
             if (!field.value.trim()) {
-                showError(field, 'Это поле обязательно для заполнения');
+                showError(field, t('required', 'Это поле обязательно для заполнения'));
                 isValid = false;
             }
         });
@@ -243,7 +250,7 @@ function initFormValidation() {
         const emailField = form.querySelector('input[type="email"]');
         if (emailField && emailField.value) {
             if (!isValidEmail(emailField.value)) {
-                showError(emailField, 'Введите корректный email адрес');
+                showError(emailField, t('email', 'Введите корректный email адрес'));
                 isValid = false;
             }
         }
@@ -254,7 +261,7 @@ function initFormValidation() {
             const phonePattern = /^\+998\d{9}$/;
             const phoneDigits = phoneField.value.replace(/[\s\-]/g, '');
             if (!phonePattern.test(phoneDigits)) {
-                showError(phoneField, 'Введите корректный номер телефона в формате +998 XX XXX XX XX');
+                showError(phoneField, t('phone', 'Введите корректный номер телефона в формате +998 XX XXX XX XX'));
                 isValid = false;
             }
         }
@@ -264,7 +271,7 @@ function initFormValidation() {
         const password2 = form.querySelector('input[name$="password2"]');
         if (password1 && password2) {
             if (password1.value !== password2.value) {
-                showError(password2, 'Пароли не совпадают');
+                showError(password2, t('pwMismatch', 'Пароли не совпадают'));
                 isValid = false;
             }
         }
@@ -274,10 +281,10 @@ function initFormValidation() {
         if (bioField && bioField.value) {
             const length = bioField.value.trim().length;
             if (length < 100) {
-                showError(bioField, `Описание слишком короткое. Минимум 100 символов (сейчас: ${length})`);
+                showError(bioField, `${t('bioShort', 'Описание слишком короткое. Минимум 100 символов')} (${t('now', 'сейчас')}: ${length})`);
                 isValid = false;
             } else if (length > 1000) {
-                showError(bioField, `Описание слишком длинное. Максимум 1000 символов (сейчас: ${length})`);
+                showError(bioField, `${t('bioLong', 'Описание слишком длинное. Максимум 1000 символов')} (${t('now', 'сейчас')}: ${length})`);
                 isValid = false;
             }
         }
@@ -287,7 +294,7 @@ function initFormValidation() {
         const timeTo = form.querySelector('input[name$="available_to"]');
         if (timeFrom && timeTo && timeFrom.value && timeTo.value) {
             if (timeFrom.value >= timeTo.value) {
-                showError(timeTo, 'Время окончания должно быть позже времени начала');
+                showError(timeTo, t('timeRange', 'Время окончания должно быть позже времени начала'));
                 isValid = false;
             }
         }
@@ -298,7 +305,7 @@ function initFormValidation() {
             const isChecked = Array.from(languageCheckboxes).some(cb => cb.checked);
             if (!isChecked) {
                 const container = languageCheckboxes[0].closest('.form-group');
-                showError(container, 'Выберите хотя бы один язык преподавания');
+                showError(container, t('langRequired', 'Выберите хотя бы один язык преподавания'));
                 isValid = false;
             }
         }
@@ -309,7 +316,7 @@ function initFormValidation() {
             const isChecked = Array.from(weekdayCheckboxes).some(cb => cb.checked);
             if (!isChecked) {
                 const container = weekdayCheckboxes[0].closest('.form-group');
-                showError(container, 'Выберите хотя бы один рабочий день');
+                showError(container, t('weekdayRequired', 'Выберите хотя бы один рабочий день'));
                 isValid = false;
             }
         }
@@ -319,7 +326,7 @@ function initFormValidation() {
         const price1 = form.querySelector('input[name$="hourly_rate_1"]');
         if (subject1 && price1) {
             if (!subject1.value || !price1.value || parseFloat(price1.value) <= 0) {
-                showError(subject1, 'Добавьте хотя бы один предмет с ценой');
+                showError(subject1, t('subjectRequired', 'Добавьте хотя бы один предмет с ценой'));
                 isValid = false;
             }
         }

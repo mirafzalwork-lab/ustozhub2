@@ -1826,12 +1826,14 @@
                         {% endif %}
 
                         {% if student.telegram and student.telegram|length > 0 %}
-                            {% if user.is_authenticated %}
+                            {% if user.is_authenticated and can_view_contacts %}
+                                {% comment %} Прямой контакт доступен только после порога оплаченных уроков
+                                   (can_view_contacts) — иначе анти-обход платформы теряет смысл. {% endcomment %}
                                 <a href="https://t.me/{{ student.telegram|cut:'@'|cut:' ' }}" target="_blank" class="btn-telegram" rel="noopener noreferrer">
                                     <i class="fab fa-telegram"></i>
                                     {% trans "Написать в Telegram" %}
                                 </a>
-                            {% else %}
+                            {% elif not user.is_authenticated %}
                                 <button class="btn-telegram" onclick="window.location.href='/login/?next={{ request.path }}'">
                                     <i class="fab fa-telegram"></i>
                                     {% trans "Написать в Telegram" %}
@@ -1872,13 +1874,16 @@
                     </div>
                     {% endif %}
                     
+                    {% comment %} Реальные контакты отдаём в HTML только при can_view_contacts —
+                       иначе CSS-блюр обходится через просмотр исходника. Без доступа
+                       показываем маскированные плейсхолдеры (тизер-вид). {% endcomment %}
                     <div class="contact-list">
                         {% if student.user.phone %}
                             <div class="contact-item">
                                 <div class="contact-icon">
                                     <i class="fas fa-phone"></i>
                                 </div>
-                                <span>{{ student.user.phone }}</span>
+                                <span>{% if can_view_contacts %}{{ student.user.phone }}{% else %}••• ••• •• ••{% endif %}</span>
                             </div>
                         {% endif %}
                         {% if student.telegram %}
@@ -1886,7 +1891,7 @@
                                 <div class="contact-icon">
                                     <i class="fab fa-telegram"></i>
                                 </div>
-                                <span>{{ student.telegram }}</span>
+                                <span>{% if can_view_contacts %}{{ student.telegram }}{% else %}@•••••••{% endif %}</span>
                             </div>
                         {% endif %}
                         {% if student.whatsapp %}
@@ -1894,7 +1899,7 @@
                                 <div class="contact-icon">
                                     <i class="fab fa-whatsapp"></i>
                                 </div>
-                                <span>{{ student.whatsapp }}</span>
+                                <span>{% if can_view_contacts %}{{ student.whatsapp }}{% else %}••• ••• •• ••{% endif %}</span>
                             </div>
                         {% endif %}
                         {% if student.user.email %}
@@ -1902,7 +1907,7 @@
                                 <div class="contact-icon">
                                     <i class="fas fa-envelope"></i>
                                 </div>
-                                <span>{{ student.user.email }}</span>
+                                <span>{% if can_view_contacts %}{{ student.user.email }}{% else %}•••••@•••••{% endif %}</span>
                             </div>
                         {% endif %}
                     </div>

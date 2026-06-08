@@ -64,9 +64,9 @@
     function tick() {
       var diff = dl - Date.now();
       if (isNaN(dl)) { box.style.display = 'none'; return; }
-      if (diff <= 0) { val.textContent = '{% trans "Срок оплаты этой заявки истёк" %}'; box.classList.add('urgent'); return; }
+      if (diff <= 0) { val.textContent = '{% filter escapejs %}{% trans "Срок оплаты этой заявки истёк" %}{% endfilter %}'; box.classList.add('urgent'); return; }
       var h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000);
-      val.textContent = '{% trans "Оплатите в течение" %} ' + h + ' ч ' + m + ' мин, иначе заявку придётся оформить заново.';
+      val.textContent = '{% filter escapejs %}{% trans "Оплатите в течение" %}{% endfilter %} ' + h + ' ч ' + m + ' мин, иначе заявку придётся оформить заново.';
       if (diff < 6 * 3600000) box.classList.add('urgent');
     }
     tick(); setInterval(tick, 30000);

@@ -458,9 +458,9 @@
         e.preventDefault();
         
         const btn = this;
-        const _label = '<i class="fas fa-check-double"></i> {% trans "Отметить все как прочитанные" %}';
+        const _label = '<i class="fas fa-check-double"></i> {% filter escapejs %}{% trans "Отметить все как прочитанные" %}{% endfilter %}';
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% trans "Обработка..." %}';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% filter escapejs %}{% trans "Обработка..." %}{% endfilter %}';
 
         try {
             const response = await fetch('{% url "mark_all_notifications_read" %}', {
@@ -476,13 +476,13 @@
             if (data.success) {
                 window.location.reload();
             } else {
-                window.flashToast('error', data.error || '{% trans "Произошла ошибка" %}');
+                window.flashToast('error', data.error || '{% filter escapejs %}{% trans "Произошла ошибка" %}{% endfilter %}');
                 btn.disabled = false;
                 btn.innerHTML = _label;
             }
         } catch (error) {
             console.error('Error:', error);
-            window.flashToast('error', '{% trans "Произошла ошибка при обработке запроса" %}');
+            window.flashToast('error', '{% filter escapejs %}{% trans "Произошла ошибка при обработке запроса" %}{% endfilter %}');
             btn.disabled = false;
             btn.innerHTML = _label;
         }

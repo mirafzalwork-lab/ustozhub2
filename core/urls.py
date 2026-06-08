@@ -11,6 +11,7 @@ from django.views.i18n import set_language  # Добавлен импорт!
 
 from teachers.sitemaps import SITEMAPS
 from teachers.views import robots_txt, healthz
+from billing.views import multicard_callback
 
 urlpatterns = [
     path('i18n/setlang/', set_language, name='set_language'),
@@ -19,6 +20,8 @@ urlpatterns = [
     path('sitemap.xml', sitemap, {'sitemaps': SITEMAPS}, name='django.contrib.sitemaps.views.sitemap'),
     path('robots.txt', robots_txt, name='robots_txt'),
     path('healthz/', healthz, name='healthz'),  # мониторинг (DB + Redis)
+    # Webhook Multicard — вне i18n, чтобы URL был без языкового префикса
+    path('payments/multicard/callback/', multicard_callback, name='multicard_callback'),
 ]
 
 urlpatterns += i18n_patterns(

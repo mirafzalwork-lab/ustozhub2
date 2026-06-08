@@ -215,8 +215,8 @@
           var escrow = b.dataset.escrow;
           var remaining = b.dataset.remaining;
           form.action = b.dataset.cancelUrl;
-          summary.innerHTML = '<b>{% trans "Возврат на баланс" %}:</b> ~' + escrow + ' сум<br>' +
-                              '<b>{% trans "Отменено уроков" %}:</b> ' + remaining;
+          summary.innerHTML = '<b>{% filter escapejs %}{% trans "Возврат на баланс" %}{% endfilter %}:</b> ~' + escrow + ' {% filter escapejs %}{% trans "сум" %}{% endfilter %}<br>' +
+                              '<b>{% filter escapejs %}{% trans "Отменено уроков" %}{% endfilter %}:</b> ' + remaining;
           modal.hidden = false;
         });
       });
@@ -235,10 +235,10 @@
           var val = t.querySelector('.pay-timer-val');
           var diff = dl - now;
           if (isNaN(dl)) { t.style.display = 'none'; return; }
-          if (diff <= 0) { val.textContent = '{% trans "срок оплаты истёк" %}'; t.classList.add('urgent'); return; }
+          if (diff <= 0) { val.textContent = '{% filter escapejs %}{% trans "срок оплаты истёк" %}{% endfilter %}'; t.classList.add('urgent'); return; }
           var h = Math.floor(diff / 3600000);
           var m = Math.floor((diff % 3600000) / 60000);
-          val.textContent = '{% trans "оплатите в течение" %} ' + h + ' ч ' + m + ' мин';
+          val.textContent = '{% filter escapejs %}{% trans "оплатите в течение" %}{% endfilter %} ' + h + ' {% filter escapejs %}{% trans "ч" %}{% endfilter %} ' + m + ' {% filter escapejs %}{% trans "мин" %}{% endfilter %}';
           if (diff < 6 * 3600000) t.classList.add('urgent');
         });
       }

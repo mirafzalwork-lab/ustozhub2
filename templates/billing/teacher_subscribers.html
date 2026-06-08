@@ -150,8 +150,8 @@
       document.querySelectorAll('.t-cancel-btn').forEach(function(b){
         b.addEventListener('click', function() {
           form.action = b.dataset.cancelUrl;
-          summary.innerHTML = '<b>{% trans "Ученик" %}:</b> ' + b.dataset.student + '<br>' +
-                              '<b>{% trans "Будет возвращено ученику" %}:</b> ' + b.dataset.escrow + ' сум';
+          summary.innerHTML = '<b>{% filter escapejs %}{% trans "Ученик" %}{% endfilter %}:</b> ' + b.dataset.student + '<br>' +
+                              '<b>{% filter escapejs %}{% trans "Будет возвращено ученику" %}{% endfilter %}:</b> ' + b.dataset.escrow + ' сум';
           modal.hidden = false;
         });
       });

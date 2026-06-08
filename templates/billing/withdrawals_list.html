@@ -130,8 +130,8 @@
         var raw = amountEl ? amountEl.value : '';
         var n = parseInt(raw, 10);
         var amt = isNaN(n) ? (raw || '—') : n.toLocaleString('ru-RU');
-        form.dataset.confirm = '{% trans "Вывести" %} ' + amt + ' {% trans "сум на реквизиты" %} '
-          + mask(detailsEl ? detailsEl.value : '') + '? {% trans "Заявка уйдёт администратору и отменяема только до обработки." %}';
+        form.dataset.confirm = '{% filter escapejs %}{% trans "Вывести" %}{% endfilter %} ' + amt + ' {% filter escapejs %}{% trans "сум на реквизиты" %}{% endfilter %} '
+          + mask(detailsEl ? detailsEl.value : '') + '? {% filter escapejs %}{% trans "Заявка уйдёт администратору и отменяема только до обработки." %}{% endfilter %}';
       }
       if (amountEl) amountEl.addEventListener('input', update);
       if (detailsEl) detailsEl.addEventListener('input', update);

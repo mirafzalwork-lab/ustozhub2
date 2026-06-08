@@ -1243,6 +1243,29 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #999;
         }
+
+        /* Глобальные flash-сообщения (см. base block messages) */
+        .global-messages {
+            max-width: 1200px;
+            margin: 16px auto 0;
+            padding: 0 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .global-message {
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 14px;
+            border: 1px solid transparent;
+            background: #F1F5F9;
+            color: #0A2540;
+        }
+        .global-message--success { background: #ECFDF5; border-color: #10B981; color: #065F46; }
+        .global-message--error,
+        .global-message--danger  { background: #FEF2F2; border-color: #EF4444; color: #991B1B; }
+        .global-message--warning { background: #FFFBEB; border-color: #F59E0B; color: #92400E; }
+        .global-message--info    { background: #EFF6FF; border-color: #3B82F6; color: #1E40AF; }
     </style>
 
     {% block extra_css %}{% endblock %}
@@ -1607,6 +1630,20 @@
 
     <!-- Main Content -->
     <main id="main-content" tabindex="-1">
+        {% comment %} Глобальный рендер flash-сообщений. Раньше messages показывались
+           только на страницах со своим блоком — на остальных молча терялись.
+           Шаблоны со своим оформлением переопределяют блок messages пустым. {% endcomment %}
+        {% block messages %}
+            {% if messages %}
+            <div class="global-messages" role="status" aria-live="polite">
+                {% for message in messages %}
+                <div class="global-message global-message--{{ message.tags }}">
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% endblock %}
         {% block content %}{% endblock %}
     </main>
 
@@ -2122,8 +2159,8 @@
                 // Текст через textContent — без риска инъекции
                 if (opts.title) { overlay.querySelector('.confirm-box__title').textContent = opts.title; }
                 overlay.querySelector('.confirm-box__text').textContent = message || '';
-                overlay.querySelector('.confirm-btn--cancel').textContent = opts.cancelText || '{% trans "Отмена" %}';
-                overlay.querySelector('.confirm-btn--ok').textContent = opts.okText || '{% trans "Подтвердить" %}';
+                overlay.querySelector('.confirm-btn--cancel').textContent = opts.cancelText || '{% filter escapejs %}{% trans "Отмена" %}{% endfilter %}';
+                overlay.querySelector('.confirm-btn--ok').textContent = opts.okText || '{% filter escapejs %}{% trans "Подтвердить" %}{% endfilter %}';
 
                 document.body.appendChild(overlay);
                 requestAnimationFrame(function(){ overlay.classList.add('show'); });
@@ -2173,7 +2210,7 @@
                 btn.setAttribute('aria-busy', 'true');
                 btn.style.opacity = '0.7';
                 btn.style.pointerEvents = 'none';
-                var loading = btn.getAttribute('data-loading-text') || '{% trans "Подождите…" %}';
+                var loading = btn.getAttribute('data-loading-text') || '{% filter escapejs %}{% trans "Подождите…" %}{% endfilter %}';
                 if (btn.tagName !== 'INPUT') {
                     btn.dataset.origHtml = btn.innerHTML;
                     btn.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> ' + loading;

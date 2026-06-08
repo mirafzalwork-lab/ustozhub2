@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{# Свой рендер messages ниже — подавляем глобальный из base.html #}
+{% block messages %}{% endblock %}
 {% load static %}
 {% load i18n %}
 
@@ -1224,8 +1226,8 @@
     }
 
     async function deleteSubject(subjectId) {
-        const ok = await window.confirmDialog('{% trans "Вы уверены, что хотите удалить этот предмет?" %}', {
-            okText: '{% trans "Удалить" %}', danger: true
+        const ok = await window.confirmDialog('{% filter escapejs %}{% trans "Вы уверены, что хотите удалить этот предмет?" %}{% endfilter %}', {
+            okText: '{% filter escapejs %}{% trans "Удалить" %}{% endfilter %}', danger: true
         });
         if (!ok) { return; }
         window.location.href = "{% url 'delete_teacher_subject' 0 %}".replace('0', subjectId);
@@ -1512,8 +1514,8 @@
 
         // Удалить видео
         window.videoDelete = async function() {
-            const ok = await window.confirmDialog('{% trans "Вы уверены, что хотите удалить видео-визитку?" %}', {
-                okText: '{% trans "Удалить" %}', danger: true
+            const ok = await window.confirmDialog('{% filter escapejs %}{% trans "Вы уверены, что хотите удалить видео-визитку?" %}{% endfilter %}', {
+                okText: '{% filter escapejs %}{% trans "Удалить" %}{% endfilter %}', danger: true
             });
             if (!ok) return;
 

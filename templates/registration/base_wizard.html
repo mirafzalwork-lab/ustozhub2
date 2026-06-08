@@ -1,5 +1,8 @@
 {% extends 'base.html' %}
+{# Свой рендер messages ниже — подавляем глобальный из base.html #}
+{% block messages %}{% endblock %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}Регистрация учителя - {{ step_title }}{% endblock %}
 
@@ -156,5 +159,31 @@
 {% endblock %}
 
 {% block extra_js %}
+{% comment %} i18n-строки для клиентской валидации (registration.js). Локализуются здесь,
+   чтобы узбеко-/англоязычные учителя видели ошибки на своём языке. {% endcomment %}
+<script>
+window.REG_I18N = {
+    avatarType: "{% filter escapejs %}{% trans 'Пожалуйста, выберите файл JPG, JPEG или PNG' %}{% endfilter %}",
+    avatarSize: "{% filter escapejs %}{% trans 'Размер файла не должен превышать 5 МБ' %}{% endfilter %}",
+    pwEnter: "{% filter escapejs %}{% trans 'Введите пароль' %}{% endfilter %}",
+    pwWeak: "{% filter escapejs %}{% trans 'Слабый пароль' %}{% endfilter %}",
+    pwMedium: "{% filter escapejs %}{% trans 'Средний пароль' %}{% endfilter %}",
+    pwStrong: "{% filter escapejs %}{% trans 'Надежный пароль' %}{% endfilter %}",
+    certType: "{% filter escapejs %}{% trans 'Пожалуйста, выберите файл JPG, PNG или PDF' %}{% endfilter %}",
+    certSize: "{% filter escapejs %}{% trans 'Размер файла не должен превышать 10 МБ' %}{% endfilter %}",
+    fileSelected: "{% filter escapejs %}{% trans 'Файл выбран' %}{% endfilter %}",
+    required: "{% filter escapejs %}{% trans 'Это поле обязательно для заполнения' %}{% endfilter %}",
+    email: "{% filter escapejs %}{% trans 'Введите корректный email адрес' %}{% endfilter %}",
+    phone: "{% filter escapejs %}{% trans 'Введите корректный номер телефона в формате +998 XX XXX XX XX' %}{% endfilter %}",
+    pwMismatch: "{% filter escapejs %}{% trans 'Пароли не совпадают' %}{% endfilter %}",
+    bioShort: "{% filter escapejs %}{% trans 'Описание слишком короткое. Минимум 100 символов' %}{% endfilter %}",
+    bioLong: "{% filter escapejs %}{% trans 'Описание слишком длинное. Максимум 1000 символов' %}{% endfilter %}",
+    now: "{% filter escapejs %}{% trans 'сейчас' %}{% endfilter %}",
+    timeRange: "{% filter escapejs %}{% trans 'Время окончания должно быть позже времени начала' %}{% endfilter %}",
+    langRequired: "{% filter escapejs %}{% trans 'Выберите хотя бы один язык преподавания' %}{% endfilter %}",
+    weekdayRequired: "{% filter escapejs %}{% trans 'Выберите хотя бы один рабочий день' %}{% endfilter %}",
+    subjectRequired: "{% filter escapejs %}{% trans 'Добавьте хотя бы один предмет с ценой' %}{% endfilter %}"
+};
+</script>
 <script src="{% static 'js/registration.js' %}"></script>
 {% endblock %}

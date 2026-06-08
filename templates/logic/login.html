@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{# Свой рендер messages ниже — подавляем глобальный из base.html #}
+{% block messages %}{% endblock %}
 {% load static %}
 {% load i18n %}
 
@@ -442,7 +444,7 @@
     document.getElementById('loginForm').addEventListener('submit', function(e) {
         const btn = this.querySelector('.submit-btn');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% trans "Вход..." %}';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% filter escapejs %}{% trans "Вход..." %}{% endfilter %}';
     });
 </script>
 {% endblock %}

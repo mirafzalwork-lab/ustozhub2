@@ -460,9 +460,9 @@
 
 <script>
 async function removeFavorite(teacherId, button) {
-    const ok = await window.confirmDialog('{% trans "Удалить учителя из избранного?" %}', {
-        okText: '{% trans "Удалить" %}',
-        cancelText: '{% trans "Отмена" %}',
+    const ok = await window.confirmDialog('{% filter escapejs %}{% trans "Удалить учителя из избранного?" %}{% endfilter %}', {
+        okText: '{% filter escapejs %}{% trans "Удалить" %}{% endfilter %}',
+        cancelText: '{% filter escapejs %}{% trans "Отмена" %}{% endfilter %}',
         danger: true
     });
     if (!ok) { return; }
@@ -483,7 +483,7 @@ async function removeFavorite(teacherId, button) {
             card.style.opacity = '0';
             card.style.transform = 'scale(0.9)';
             
-            window.flashToast('success', '{% trans "Удалено из избранного" %}');
+            window.flashToast('success', '{% filter escapejs %}{% trans "Удалено из избранного" %}{% endfilter %}');
             setTimeout(() => {
                 card.remove();
 
@@ -495,12 +495,12 @@ async function removeFavorite(teacherId, button) {
                 }
             }, 300);
         } else {
-            window.flashToast('error', '{% trans "Произошла ошибка. Попробуйте позже." %}');
+            window.flashToast('error', '{% filter escapejs %}{% trans "Произошла ошибка. Попробуйте позже." %}{% endfilter %}');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        window.flashToast('error', '{% trans "Произошла ошибка. Попробуйте позже." %}');
+        window.flashToast('error', '{% filter escapejs %}{% trans "Произошла ошибка. Попробуйте позже." %}{% endfilter %}');
     });
 }
 </script>

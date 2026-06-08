@@ -424,8 +424,10 @@ def _notify_teacher_no_show(booking) -> None:
 
 
 def _handle_not_held(booking) -> None:
-    """ТЗ §8: никто не пришёл. Платный пробный — возврат денег; урок подписки —
-    эскроу остаётся (вернётся ученику при закрытии подписки), новая дата."""
+    """ТЗ §8: никто не пришёл. Возврат денег (никто не виноват — не списываем):
+    платный пробный → refund_trial; урок подписки → refund_lesson (возврат на
+    кошелёк ученика + уменьшение пакета). Раньше для подписки эскроу зависал до
+    закрытия подписки (недели) — деньги были заперты, если перебронировать некуда."""
     from .models import Notification
     if booking.is_trial and booking.trial_price_paid:
         try:
@@ -435,6 +437,17 @@ def _handle_not_held(booking) -> None:
             LessonEvent.log(booking, 'refund', meta={'reason': 'not_held'})
         except Exception:
             logger.warning('not_held refund_trial failed booking=%s', booking.pk, exc_info=True)
+    elif booking.subscription_id:
+        try:
+            from billing.services import SubscriptionService
+            SubscriptionService.refund_lesson(
+                booking, cancelled_by='teacher',
+                reason='Урок не состоялся (никто не подключился)',
+            )
+            from .models import LessonEvent
+            LessonEvent.log(booking, 'refund', meta={'reason': 'not_held'})
+        except Exception:
+            logger.warning('not_held refund_lesson failed booking=%s', booking.pk, exc_info=True)
     for user in (booking.student, booking.slot.teacher.user):
         _notify(
             user,

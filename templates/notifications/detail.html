@@ -604,9 +604,9 @@
     
     if (markReadBtn) {
         markReadBtn.addEventListener('click', async function() {
-            const _label = '<i class="fas fa-check"></i> {% trans "Отметить как прочитанное" %}';
+            const _label = '<i class="fas fa-check"></i> {% filter escapejs %}{% trans "Отметить как прочитанное" %}{% endfilter %}';
             this.disabled = true;
-            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% trans "Обработка..." %}';
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% filter escapejs %}{% trans "Обработка..." %}{% endfilter %}';
 
             try {
                 const response = await fetch(this.dataset.markUrl, {
@@ -622,13 +622,13 @@
                 if (data.success) {
                     window.location.reload();
                 } else {
-                    window.flashToast('error', data.error || '{% trans "Произошла ошибка" %}');
+                    window.flashToast('error', data.error || '{% filter escapejs %}{% trans "Произошла ошибка" %}{% endfilter %}');
                     this.disabled = false;
                     this.innerHTML = _label;
                 }
             } catch (error) {
                 console.error('Error:', error);
-                window.flashToast('error', '{% trans "Произошла ошибка при обработке запроса" %}');
+                window.flashToast('error', '{% filter escapejs %}{% trans "Произошла ошибка при обработке запроса" %}{% endfilter %}');
                 this.disabled = false;
                 this.innerHTML = _label;
             }
@@ -682,8 +682,8 @@
             act(cfg.confirmUrl, { reply: $reply.value.trim(), meeting_url: $url.value.trim() }, $confirm);
         });
         if ($reject) $reject.addEventListener('click', async () => {
-            const ok = await window.confirmDialog('{% trans "Отклонить эту заявку? Слот снова станет свободным." %}', {
-                okText: '{% trans "Отклонить" %}', danger: true
+            const ok = await window.confirmDialog('{% filter escapejs %}{% trans "Отклонить эту заявку? Слот снова станет свободным." %}{% endfilter %}', {
+                okText: '{% filter escapejs %}{% trans "Отклонить" %}{% endfilter %}', danger: true
             });
             if (!ok) return;
             act(cfg.rejectUrl, { reply: $reply.value.trim() }, $reject);

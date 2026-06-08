@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+{# Свой рендер messages ниже — подавляем глобальный из base.html #}
+{% block messages %}{% endblock %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}История и статистика — Финансы{% endblock %}
+
+{% block content %}
+<div class="ab-page">
+  <h1><i class="fas fa-chart-pie"></i> История и статистика денег</h1>
+  <p class="subtitle">Полная картина денежных потоков: пополнения, заработок учителей, комиссия платформы и выводы</p>
+
+  {% with active_tab='reports' %}{% include 'billing/admin/_base.html' %}{% endwith %}
+
+  {% if messages %}
+    {% for m in messages %}
+      <div style="padding:12px 16px; border-radius:8px; margin-bottom:14px; background:{% if m.tags == 'error' %}#FEF2F2{% elif m.tags == 'success' %}#ECFDF5{% else %}#FFFBEB{% endif %};">{{ m }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {# ---- Фильтр по периоду ---- #}
+  <div class="ab-section" style="padding:16px 20px;">
+    <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between;">
+      <div class="ab-tabs" style="margin:0;">
+        <a href="?period=today" {% if period_key == 'today' %}class="active"{% endif %}>Сегодня</a>
+        <a href="?period=7d" {% if period_key == '7d' %}class="active"{% endif %}>7 дней</a>
+        <a href="?period=30d" {% if period_key == '30d' %}class="active"{% endif %}>30 дней</a>
+        <a href="?period=90d" {% if period_key == '90d' %}class="active"{% endif %}>90 дней</a>
+        <a href="?period=all" {% if period_key == 'all' %}class="active"{% endif %}>Всё время</a>
+      </div>
+      <form method="get" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <input type="date" name="from" value="{{ date_from }}" style="padding:8px 10px; border:1px solid #E2E8F0; border-radius:8px; font-size:13px;">
+        <span style="color:#94A3B8;">—</span>
+        <input type="date" name="to" value="{{ date_to }}" style="padding:8px 10px; border:1px solid #E2E8F0; border-radius:8px; font-size:13px;">
+        <button class="ab-btn ab-btn-secondary" style="font-size:13px;"><i class="fas fa-filter"></i> Период</button>
+      </form>
+    </div>
+  </div>
+
+  {# ---- KPI ---- #}
+  <div class="ab-cards">
+    <div class="ab-card success">
+      <div class="lbl"><i class="fas fa-arrow-down"></i> Пополнено за период</div>
+      <div class="val">{{ deposits_total|floatformat:0|intcomma }} <small>сум</small></div>
+    </div>
+    <div class="ab-card brand">
+      <div class="lbl"><i class="fas fa-percent"></i> Доход платформы (комиссия)</div>
+      <div class="val">{{ commission_total|floatformat:0|intcomma }} <small>сум</small></div>
+    </div>
+    <div class="ab-card">
+      <div class="lbl"><i class="fas fa-chalkboard-teacher"></i> Выплачено учителям</div>
+      <div class="val">{{ payouts_total|floatformat:0|intcomma }} <small>сум</small></div>
+    </div>
+    <div class="ab-card warn">
+      <div class="lbl"><i class="fas fa-money-bill-wave"></i> Выведено учителями</div>
+      <div class="val">{{ withdrawals_total|floatformat:0|intcomma }} <small>сум</small></div>
+    </div>
+    <div class="ab-card">
+      <div class="lbl"><i class="fas fa-rotate-left"></i> Возвраты ученикам</div>
+      <div class="val">{{ refunds_total|floatformat:0|intcomma }} <small>сум</small></div>
+    </div>
+    <div class="ab-card">
+      <div class="lbl"><i class="fas fa-receipt"></i> Транзакций за период</div>
+      <div class="val">{{ tx_count|intcomma }}</div>
+    </div>
+  </div>
+
+  {# ---- График комиссии по дням ---- #}
+  <div class="ab-section">
+    <h2><i class="fas fa-chart-column"></i> Комиссия платформы по дням (14 дней)</h2>
+    <div style="display:flex; align-items:flex-end; gap:6px; height:140px; padding-top:10px;">
+      {% for c in chart %}
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end;"
+             title="{{ c.day|date:'d.m.Y' }}: {{ c.value|floatformat:0|intcomma }} сум">
+          <div style="font-size:10px; color:#64748B; white-space:nowrap;">{% if c.value %}{{ c.value|floatformat:0 }}{% endif %}</div>
+          <div style="width:100%; max-width:36px; border-radius:6px 6px 0 0; background:linear-gradient(180deg,#6366F1,#4338CA); height:{{ c.pct }}%; min-height:{% if c.value %}4px{% else %}2px{% endif %}; {% if not c.value %}background:#E2E8F0;{% endif %}"></div>
+          <div style="font-size:10px; color:#94A3B8;">{{ c.day|date:'d.m' }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="ab-grid-2">
+    {# ---- Кто сколько пополнил ---- #}
+    <div class="ab-section" style="padding:0;">
+      <h2 style="padding:22px 24px 0;"><i class="fas fa-wallet"></i> Кто сколько пополнил</h2>
+      {% if top_depositors %}
+        <table class="ab-table" style="margin-top:12px;">
+          <thead><tr><th>Пользователь</th><th style="text-align:center;">Раз</th><th style="text-align:right;">Сумма</th></tr></thead>
+          <tbody>
+            {% for d in top_depositors %}
+            <tr>
+              <td>
+                <a href="{% url 'admin_billing_wallets' %}?user_id={{ d.wallet__user__id }}" style="color:#4F46E5; text-decoration:none;">
+                  {{ d.wallet__user__first_name }} {{ d.wallet__user__last_name }}
+                  {% if not d.wallet__user__first_name %}{{ d.wallet__user__username }}{% endif %}
+                </a>
+                <div style="font-size:11px; color:#94A3B8;">@{{ d.wallet__user__username }}</div>
+              </td>
+              <td style="text-align:center; color:#64748B;">{{ d.cnt }}</td>
+              <td style="text-align:right; font-weight:700; color:#047857;">{{ d.total|floatformat:0|intcomma }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p style="color:#94A3B8; padding:24px; text-align:center;">Пополнений за период нет</p>
+      {% endif %}
+    </div>
+
+    {# ---- Доход от комиссии: по урокам ---- #}
+    <div class="ab-section" style="padding:0;">
+      <div style="display:flex; gap:10px; align-items:center; justify-content:space-between; padding:22px 24px 0;">
+        <h2 style="margin:0;"><i class="fas fa-percent"></i> Доход от комиссии — по урокам</h2>
+        <a href="{% url 'admin_billing_income' %}?period={{ period_key }}" style="font-size:13px; color:#4F46E5; text-decoration:none; white-space:nowrap;">Все →</a>
+      </div>
+      {% if commission_log %}
+        <table class="ab-table" style="margin-top:12px; font-size:13px;">
+          <thead><tr><th>Дата</th><th>Ученик → Учитель</th><th style="text-align:right;">Комиссия</th></tr></thead>
+          <tbody>
+            {% for t in commission_log %}
+            <tr>
+              <td style="white-space:nowrap;">{{ t.created_at|date:"d.m H:i" }}</td>
+              <td>
+                {% with sub=t.related_subscription %}
+                  {% if sub %}
+                    {{ sub.student.get_full_name|default:sub.student.username }}
+                    <span style="color:#94A3B8;">→</span>
+                    {{ sub.teacher.user.get_full_name|default:sub.teacher.user.username }}
+                    <div style="font-size:11px; color:#94A3B8;">{{ sub.subject.name }}</div>
+                  {% else %}
+                    <span style="color:#94A3B8;">{{ t.description|truncatechars:40 }}</span>
+                  {% endif %}
+                {% endwith %}
+              </td>
+              <td style="text-align:right; font-weight:700; color:#4338CA;">+{{ t.amount|floatformat:0|intcomma }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p style="color:#94A3B8; padding:24px; text-align:center;">Комиссии за период нет</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ---- Заработок учителей ---- #}
+  <div class="ab-section" style="padding:0;">
+    <h2 style="padding:22px 24px 0;"><i class="fas fa-chalkboard-teacher"></i> Заработок учителей</h2>
+    <p style="padding:4px 24px 0; color:#94A3B8; font-size:13px;">Заработано чистыми за период · комиссия, которую платформа взяла с его уроков · выведено · текущий баланс кошелька</p>
+    {% if teachers_list %}
+      <table class="ab-table" style="margin-top:12px;">
+        <thead>
+          <tr>
+            <th>Учитель</th>
+            <th style="text-align:center;">Уроков<br>оплачено</th>
+            <th style="text-align:right;">Заработал<br>(чистыми)</th>
+            <th style="text-align:right;">Комиссия<br>платформы</th>
+            <th style="text-align:right;">Выведено</th>
+            <th style="text-align:right;">Баланс<br>сейчас</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in teachers_list %}
+          <tr>
+            <td>
+              <a href="{% url 'admin_billing_wallets' %}?user_id={{ t.user.id }}" style="color:#4F46E5; text-decoration:none; font-weight:500;">{{ t.name }}</a>
+              <div style="font-size:11px; color:#94A3B8;">@{{ t.user.username }}</div>
+            </td>
+            <td style="text-align:center; color:#64748B;">{{ t.lessons }}</td>
+            <td style="text-align:right; font-weight:700; color:#047857;">{{ t.earned|floatformat:0|intcomma }}</td>
+            <td style="text-align:right; color:#4338CA;">{{ t.commission|floatformat:0|intcomma }}</td>
+            <td style="text-align:right; color:#B45309;">{{ t.withdrawn|floatformat:0|intcomma }}</td>
+            <td style="text-align:right; font-weight:600;">{{ t.balance|floatformat:0|intcomma }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p style="color:#94A3B8; padding:24px; text-align:center;">За период учителям ничего не выплачивалось</p>
+    {% endif %}
+  </div>
+
+  {# ---- Полная история транзакций ---- #}
+  <div class="ab-section" style="padding:0;">
+    <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; padding:22px 24px 0;">
+      <h2 style="margin:0;"><i class="fas fa-list"></i> Полная история транзакций</h2>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <form method="get" style="display:flex; gap:8px; align-items:center;">
+          {% if period_key != 'custom' %}<input type="hidden" name="period" value="{{ period_key }}">{% endif %}
+          {% if date_from %}<input type="hidden" name="from" value="{{ date_from }}">{% endif %}
+          {% if date_to %}<input type="hidden" name="to" value="{{ date_to }}">{% endif %}
+          <select name="tx_type" onchange="this.form.submit()" style="padding:8px 12px; border:1px solid #E2E8F0; border-radius:8px; font-size:13px;">
+            <option value="">Все типы</option>
+            {% for val, label in tx_types %}
+              <option value="{{ val }}" {% if tx_type_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </form>
+        <a href="?{{ querystring }}{% if querystring %}&{% endif %}export=csv" class="ab-btn ab-btn-secondary" style="font-size:13px;"><i class="fas fa-file-csv"></i> Экспорт CSV</a>
+      </div>
+    </div>
+
+    {% if page_obj.object_list %}
+      <table class="ab-table" style="margin-top:12px; font-size:13px;">
+        <thead>
+          <tr><th>Дата</th><th>Пользователь</th><th>Тип</th><th style="text-align:right;">Сумма</th><th style="text-align:right;">Баланс после</th></tr>
+        </thead>
+        <tbody>
+          {% for t in page_obj.object_list %}
+          <tr>
+            <td style="white-space:nowrap;">{{ t.created_at|date:"d.m.Y H:i" }}</td>
+            <td>{{ t.wallet.user.get_full_name|default:t.wallet.user.username }}<div style="font-size:11px; color:#94A3B8;">@{{ t.wallet.user.username }}</div></td>
+            <td><span style="font-size:11px;">{{ t.get_type_display }}</span></td>
+            <td style="text-align:right; font-weight:700; color:{% if t.amount > 0 %}#047857{% else %}#B91C1C{% endif %};">
+              {% if t.amount > 0 %}+{% endif %}{{ t.amount|floatformat:0|intcomma }}
+            </td>
+            <td style="text-align:right; color:#64748B;">{{ t.balance_after|floatformat:0|intcomma }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {# ---- Пагинация ---- #}
+      {% if page_obj.has_other_pages %}
+      <div style="display:flex; gap:8px; align-items:center; justify-content:center; padding:18px;">
+        {% if page_obj.has_previous %}
+          <a href="?{{ querystring }}{% if querystring %}&{% endif %}page={{ page_obj.previous_page_number }}" class="ab-btn ab-btn-secondary" style="font-size:13px;">← Назад</a>
+        {% endif %}
+        <span style="color:#64748B; font-size:13px;">Стр. {{ page_obj.number }} из {{ page_obj.paginator.num_pages }} · всего {{ page_obj.paginator.count|intcomma }}</span>
+        {% if page_obj.has_next %}
+          <a href="?{{ querystring }}{% if querystring %}&{% endif %}page={{ page_obj.next_page_number }}" class="ab-btn ab-btn-secondary" style="font-size:13px;">Вперёд →</a>
+        {% endif %}
+      </div>
+      {% endif %}
+    {% else %}
+      <p style="color:#94A3B8; padding:24px; text-align:center;">Транзакций за период нет</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,7 +1,7 @@
 {% load i18n %}
-{# Мобильная навигация админки: гамбургер в topbar + выезжающий сайдбар.
+{% comment %} Мобильная навигация админки: гамбургер в topbar + выезжающий сайдбар.
    Подключать перед </body> на каждой автономной admin-странице с .sidebar/.topbar.
-   Стили — в static/teachers/admin.css (.sidebar-toggle, .sidebar.open, .admin-backdrop). #}
+   Стили — в static/teachers/admin.css (.sidebar-toggle, .sidebar.open, .admin-backdrop). {% endcomment %}
 <div class="admin-backdrop" id="adminBackdrop"></div>
 <script>
 (function () {
@@ -13,7 +13,7 @@
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'sidebar-toggle';
-    btn.setAttribute('aria-label', '{% trans "Меню" %}');
+    btn.setAttribute('aria-label', '{% filter escapejs %}{% trans "Меню" %}{% endfilter %}');
     btn.innerHTML = '<i class="fas fa-bars" aria-hidden="true"></i>';
     topbarLeft.insertBefore(btn, topbarLeft.firstChild);
 

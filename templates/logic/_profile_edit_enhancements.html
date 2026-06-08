@@ -323,10 +323,10 @@
     if (percentEl) percentEl.textContent = p + '%';
     if (fillEl) fillEl.style.width = p + '%';
     if (hintEl) {
-      if (p >= 90) hintEl.textContent = '{% trans "Отличный профиль! Ученики будут видеть полную информацию о вас." %}';
-      else if (p >= 70) hintEl.textContent = '{% trans "Профиль почти готов. Допишите оставшиеся поля для лучшей видимости." %}';
-      else if (p >= 40) hintEl.textContent = '{% trans "Хорошее начало. Заполните больше полей, чтобы повысить шансы быть найденным." %}';
-      else hintEl.textContent = '{% trans "Начните с базовой информации — это поможет ученикам понять, кто вы." %}';
+      if (p >= 90) hintEl.textContent = '{% filter escapejs %}{% trans "Отличный профиль! Ученики будут видеть полную информацию о вас." %}{% endfilter %}';
+      else if (p >= 70) hintEl.textContent = '{% filter escapejs %}{% trans "Профиль почти готов. Допишите оставшиеся поля для лучшей видимости." %}{% endfilter %}';
+      else if (p >= 40) hintEl.textContent = '{% filter escapejs %}{% trans "Хорошее начало. Заполните больше полей, чтобы повысить шансы быть найденным." %}{% endfilter %}';
+      else hintEl.textContent = '{% filter escapejs %}{% trans "Начните с базовой информации — это поможет ученикам понять, кто вы." %}{% endfilter %}';
     }
   }
   refreshProgress();
@@ -376,13 +376,13 @@
   // Submit
   saveBtn.addEventListener('click', function() {
     saveBtn.disabled = true;
-    saveBtn.innerHTML = '<i class="fas fa-hourglass-half"></i> {% trans "Сохраняем..." %}';
+    saveBtn.innerHTML = '<i class="fas fa-hourglass-half"></i> {% filter escapejs %}{% trans "Сохраняем..." %}{% endfilter %}';
     form.submit();
   });
 
   cancelBtn.addEventListener('click', async function() {
-    const ok = await window.confirmDialog('{% trans "Отменить несохранённые изменения и обновить страницу?" %}', {
-      okText: '{% trans "Отменить изменения" %}', danger: true
+    const ok = await window.confirmDialog('{% filter escapejs %}{% trans "Отменить несохранённые изменения и обновить страницу?" %}{% endfilter %}', {
+      okText: '{% filter escapejs %}{% trans "Отменить изменения" %}{% endfilter %}', danger: true
     });
     if (!ok) return;
     window.location.reload();
@@ -402,10 +402,10 @@
     document.body.classList.add('pe-hide-default-alerts');
     alerts.forEach((a, idx) => {
       let type = 'info';
-      let title = '{% trans "Уведомление" %}';
-      if (a.classList.contains('alert-success')) { type = 'success'; title = '{% trans "Готово" %}'; }
+      let title = '{% filter escapejs %}{% trans "Уведомление" %}{% endfilter %}';
+      if (a.classList.contains('alert-success')) { type = 'success'; title = '{% filter escapejs %}{% trans "Готово" %}{% endfilter %}'; }
       else if (a.classList.contains('alert-error') || a.classList.contains('alert-danger')) {
-        type = 'error'; title = '{% trans "Ошибка" %}';
+        type = 'error'; title = '{% filter escapejs %}{% trans "Ошибка" %}{% endfilter %}';
       }
       setTimeout(() => showToast(title, a.textContent.trim(), type, idx === 0 ? 4000 : 6000), idx * 200);
     });

@@ -70,6 +70,17 @@ app.conf.beat_schedule = {
         'task': 'billing.settle_expired_subscriptions',
         'schedule': 3600.0,
     },
+    # Страховка: дозакрыть потерянные возвраты за пробные (сбой между сменой
+    # статуса и refund во view). Идемпотентно.
+    'reconcile-orphaned-refunds-every-30min': {
+        'task': 'billing.reconcile_orphaned_refunds',
+        'schedule': 1800.0,
+    },
+    # Ночная сверка денежного инварианта balance == SUM(transactions).
+    'reconcile-wallet-balances-daily': {
+        'task': 'billing.reconcile_wallet_balances',
+        'schedule': crontab(hour=4, minute=0),
+    },
     # --- Обслуживание очереди Telegram-уведомлений ---
     # Саму очередь обрабатывает демон telegram-bot.service (process_notifications
     # --daemon). Здесь — только сервисные задачи, которых демон не делает.

@@ -2929,6 +2929,53 @@ class Booking(models.Model):
             locked.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
             self.refresh_from_db()
 
+    def student_report_teacher_no_show(self):
+        """Ученик отмечает, что преподаватель не подключился к начавшемуся уроку.
+
+        Решает «тупик»: раньше начавшийся урок нельзя было ни отменить, ни
+        ускорить возврат — ученик ждал Celery settle_after_end (end_at+30 мин).
+
+        Жёсткие гарантии против ложного возврата (деньги нельзя забрать у
+        преподавателя, который пришёл):
+          * только наш Jitsi — есть объективный сигнал присутствия; для внешних
+            ссылок присутствие не отслеживается → такой кейс идёт через спор;
+          * преподаватель ОБЪЕКТИВНО не подключался (teacher_joined_at is None);
+          * прошёл порог TEACHER_NO_SHOW_REPORT_AFTER_MINUTES после начала —
+            чтобы не штрафовать за небольшое опоздание.
+        Если преподаватель всё же подключался — ValueError, ученика направляем
+        в dispute-флоу. Возврат денег и уведомление делает вызывающая вьюха
+        (тот же путь, что Celery-поток no_show_teacher).
+        Race-safe: select_for_update; гонка с settle_after_end закрыта статус-гардом.
+        """
+        from datetime import timedelta
+        from django.conf import settings as dj_settings
+        from django.db import transaction
+        with transaction.atomic():
+            locked = type(self).objects.select_for_update().get(pk=self.pk)
+            if locked.status != 'confirmed':
+                raise ValueError('Действие доступно только для подтверждённого урока')
+            # Присутствие отслеживается только в нашей видеокомнате. Пустой
+            # meeting_url = наш Jitsi (как в lesson_room); настоящая внешняя
+            # ссылка (Zoom и т.п.) — присутствия не знаем → только спор.
+            if locked.meeting_url and not locked.is_jitsi_meeting():
+                raise ValueError('Урок проходит по внешней ссылке — откройте спор')
+            if locked.teacher_joined_at is not None:
+                raise ValueError(
+                    'Преподаватель подключался к уроку. Если есть претензии — откройте спор'
+                )
+            grace = getattr(dj_settings, 'TEACHER_NO_SHOW_REPORT_AFTER_MINUTES', 15)
+            now = timezone.now()
+            if now < locked.slot.start_at + timedelta(minutes=grace):
+                raise ValueError(
+                    f'Подождите {grace} мин после начала урока, прежде чем отметить неявку'
+                )
+            locked.status = 'no_show_teacher'
+            locked.ended_at = now
+            locked.save(update_fields=['status', 'ended_at', 'updated_at'])
+            self.refresh_from_db()
+            LessonEvent.log(self, 'settle_no_show_teacher', actor='student')
+            return 'no_show_teacher'
+
     def cancel_by_teacher(self):
         """Учитель отменяет подтверждённую бронь: slot снова free.
 
@@ -3093,6 +3140,21 @@ class Booking(models.Model):
                 slot.status = 'free'
                 slot.hold_expires_at = None
                 slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
+            # Платный пробный протух без подтверждения учителя — деньги ученика
+            # нельзя оставлять в эскроу: expired-урок не выплачивается и не
+            # settle-ится отдельным sweep'ом. Возврат идёт в ЭТОЙ ЖЕ atomic-
+            # транзакции и без перехвата: если refund упадёт, откатится весь
+            # expire() (бронь снова pending, слот held) и release_expired_holds
+            # повторит попытку. Так деньги не теряются; refund идемпотентен по
+            # 'trial-refund:<id>', а payout по такому уроку невозможен (статус
+            # никогда не станет completed/no_show_student).
+            if locked.is_trial and locked.trial_price_paid:
+                from billing.services import TrialService
+                refunded = TrialService.refund_trial(
+                    locked, reason='Пробный урок не подтверждён учителем (истёк срок)',
+                )
+                if refunded:
+                    LessonEvent.log(locked, 'refund', meta={'reason': 'trial_hold_expired'})
             self.refresh_from_db()
 
     def mark_completed(self):
@@ -3122,23 +3184,36 @@ class Booking(models.Model):
     def record_join(self, *, is_teacher: bool):
         """Фиксирует факт входа стороны в комнату урока (для учёта присутствия).
 
-        Идемпотентно: первое значение не перезаписывается. Пишем через
-        .update(), чтобы не словить гонку двух одновременных открытий комнаты.
+        Идемпотентно: первое значение не перезаписывается.
+
+        Race-safe: берём select_for_update на брони — общая точка сериализации с
+        student_report_teacher_no_show/settle_after_end. Без лока запись входа
+        могла «просочиться» уже ПОСЛЕ того, как бронь отрасчётана как неявка
+        учителя (ученик увидел teacher_joined_at=None, оформил возврат, а join
+        записался следом — деньги ушли пришедшему учителю). Запись входа имеет
+        смысл только пока урок confirmed.
         """
+        from django.db import transaction
         now = timezone.now()
-        updates = {}
-        if is_teacher and self.teacher_joined_at is None:
-            updates['teacher_joined_at'] = now
-        if (not is_teacher) and self.student_joined_at is None:
-            updates['student_joined_at'] = now
-        if not updates:
-            return
-        if self.started_at is None:
-            updates['started_at'] = now
-        updates['updated_at'] = now
-        type(self).objects.filter(pk=self.pk).update(**updates)
-        for field, value in updates.items():
-            setattr(self, field, value)
+        with transaction.atomic():
+            locked = type(self).objects.select_for_update().get(pk=self.pk)
+            if locked.status != 'confirmed':
+                # Урок уже отменён/отрасчётан — вход фиксировать поздно и опасно.
+                self.refresh_from_db()
+                return
+            updates = {}
+            if is_teacher and locked.teacher_joined_at is None:
+                updates['teacher_joined_at'] = now
+            if (not is_teacher) and locked.student_joined_at is None:
+                updates['student_joined_at'] = now
+            if not updates:
+                return
+            if locked.started_at is None:
+                updates['started_at'] = now
+            updates['updated_at'] = now
+            type(self).objects.filter(pk=self.pk).update(**updates)
+            for field, value in updates.items():
+                setattr(self, field, value)
         LessonEvent.log(
             self, 'join_teacher' if is_teacher else 'join_student',
             actor='teacher' if is_teacher else 'student',
@@ -3391,5 +3466,45 @@ class LessonEvent(models.Model):
         except Exception:
             logger.warning('LessonEvent.log failed: %s %s', kind, getattr(booking, 'pk', None),
                            exc_info=True)
+
+
+class LessonFile(models.Model):
+    """Учебный материал, прикреплённый к уроку (броне).
+
+    Файл загружается напрямую в S3/R2 через presigned URL — Django хранит
+    только метаданные и публичную ссылку (как видео-визитка, см. video_views).
+    Доступен обеим сторонам урока (учителю и ученику) — совместная работа с
+    материалами. Удалить файл может только тот, кто его загрузил.
+    """
+    booking = models.ForeignKey(
+        Booking,
+        on_delete=models.CASCADE,
+        related_name='files',
+        verbose_name=_('Урок'),
+    )
+    uploaded_by = models.ForeignKey(
+        'User',
+        on_delete=models.CASCADE,
+        related_name='lesson_files',
+        verbose_name=_('Кто загрузил'),
+    )
+    # Исходное имя файла (для показа в UI). Хранилищный ключ — отдельно.
+    file_name = models.CharField(max_length=255)
+    file_key = models.CharField(max_length=512)
+    file_url = models.URLField(max_length=1000)
+    content_type = models.CharField(max_length=120, blank=True, default='')
+    size = models.PositiveBigIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('Файл урока')
+        verbose_name_plural = _('Файлы урока')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['booking', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.booking_id} • {self.file_name}'
 
 

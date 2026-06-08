@@ -294,7 +294,7 @@
     document.getElementById('onboardingForm').addEventListener('submit', function(e) {
         var btn = this.querySelector('.submit-btn');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% trans "Saving..." %}';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% filter escapejs %}{% trans "Saving..." %}{% endfilter %}';
     });
 </script>
 {% endblock %}

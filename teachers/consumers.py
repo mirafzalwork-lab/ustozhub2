@@ -7,6 +7,7 @@ WebSocket Consumers:
 
 import json
 import logging
+import time
 from datetime import timedelta
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
@@ -63,6 +64,9 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     Получает события: new_message, new_notification, badge_update.
     """
 
+    # Мин. интервал (сек) между обработкой клиентских get_badges на соединение.
+    _BADGES_MIN_INTERVAL = 2.0
+
     async def connect(self):
         self.user = self.scope.get('user')
         if not self.user or isinstance(self.user, AnonymousUser):
@@ -93,6 +97,14 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         if data.get('type') == 'ping':
             await self.send(text_data=json.dumps({'type': 'pong'}))
         elif data.get('type') == 'get_badges':
+            # Анти-DoS: get_badges делает запрос в БД. Троттлим служебный запрос
+            # до 1 раза в _BADGES_MIN_INTERVAL сек на соединение — иначе один
+            # сокет может флудить get_badges и нагружать БД.
+            now = time.monotonic()
+            last = getattr(self, '_last_badges_ts', 0.0)
+            if now - last < self._BADGES_MIN_INTERVAL:
+                return
+            self._last_badges_ts = now
             counts = await self.get_badge_counts()
             await self.send(text_data=json.dumps({
                 'type': 'badge_update',
@@ -141,7 +153,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
     WebSocket Consumer для чата между двумя пользователями
     Интегрируется с существующей системой Conversation
     """
-    
+
+    # Мин. интервал (сек) между обработкой клиентских mark_as_read на соединение.
+    _MARK_READ_MIN_INTERVAL = 1.0
+
     async def connect(self):
         """
         ✅ Подключение клиента к WebSocket с обработкой исключений
@@ -284,6 +299,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 )
             
             elif message_type == 'mark_as_read':
+                # Анти-DoS: mark_as_read пишет в БД. Троттлим служебный запрос,
+                # чтобы один сокет не флудил UPDATE'ами.
+                _now = time.monotonic()
+                if _now - getattr(self, '_last_mark_read_ts', 0.0) < self._MARK_READ_MIN_INTERVAL:
+                    return
+                self._last_mark_read_ts = _now
                 # ✅ Помечаем сообщения как прочитанные с обработкой ошибок
                 try:
                     updated_count = await self.mark_messages_as_read()
