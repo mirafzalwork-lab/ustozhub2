@@ -342,6 +342,21 @@ def push_notification_realtime(sender, instance, created, **kwargs):
                 'title': instance.title,
                 'short_text': instance.short_text,
             })
+            # Дубль на email — асинхронно через Celery (SMTP не должен держать
+            # web-worker). Eager-fallback на синхронное выполнение, если брокер недоступен.
+            from django.conf import settings
+            if getattr(settings, 'NOTIFY_EMAIL_ENABLED', True):
+                from .tasks import send_notification_email
+                try:
+                    send_notification_email.delay(instance.pk)
+                except Exception as e:
+                    logger.warning(
+                        f'Celery broker unavailable, sending notification email sync for {instance.pk}: {e}'
+                    )
+                    try:
+                        send_notification_email.apply(args=[instance.pk])
+                    except Exception:
+                        logger.error(f'sync email send failed for notification {instance.pk}', exc_info=True)
         elif instance.target in ('all', 'students', 'teachers', 'admins'):
             # Массовая рассылка — в Celery, чтобы не подвешивать web-процесс.
             # Eager-fallback: если Celery недоступен, выполнится синхронно (.apply()).

@@ -69,6 +69,80 @@ def broadcast_notification_push(self, notification_id: int) -> int:
     return sent
 
 
+@shared_task(
+    name='teachers.send_notification_email',
+    bind=True, max_retries=3, default_retry_delay=60,
+)
+def send_notification_email(self, notification_id: int) -> bool:
+    """Дублирует персональное уведомление на email пользователя.
+
+    Вызывается из сигнала push_notification_realtime для target='specific_user'.
+    Идемпотентность не нужна (одно уведомление = одно письмо), но при сбое SMTP
+    задача ретраится. Не отправляет, если у пользователя нет email, отключён
+    приём писем или фича выключена флагом NOTIFY_EMAIL_ENABLED.
+
+    Возвращает True, если письмо ушло (передано backend'у).
+    """
+    from django.conf import settings
+    from django.core.mail import EmailMultiAlternatives
+    from django.template.loader import render_to_string
+    from django.utils.html import strip_tags
+    from .models import Notification
+
+    if not getattr(settings, 'NOTIFY_EMAIL_ENABLED', True):
+        return False
+
+    try:
+        n = Notification.objects.select_related('target_user').get(
+            pk=notification_id, is_active=True,
+        )
+    except Notification.DoesNotExist:
+        logger.warning('send_notification_email: notification %s not found', notification_id)
+        return False
+
+    user = n.target_user
+    if not user or not user.email or not user.is_active:
+        return False
+    # Уважение opt-out: поле на профиле может появиться позже — по умолчанию шлём.
+    if getattr(user, 'email_notifications', True) is False:
+        return False
+
+    base = getattr(settings, 'SITE_BASE_URL', '').rstrip('/')
+    action_url = n.action_url or ''
+    if action_url.startswith('/'):
+        action_url = f'{base}{action_url}'
+
+    context = {
+        'title': n.title,
+        'full_text': n.full_text or n.short_text,
+        'action_url': action_url,
+        'site_url': base,
+        'user': user,
+    }
+    try:
+        html_body = render_to_string('email/notification.html', context)
+        text_body = strip_tags(n.full_text or n.short_text)
+        if action_url:
+            text_body = f'{text_body}\n\n{action_url}'
+
+        msg = EmailMultiAlternatives(
+            subject=n.title,
+            body=text_body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[user.email],
+        )
+        msg.attach_alternative(html_body, 'text/html')
+        msg.send(fail_silently=False)
+        logger.info('send_notification_email: sent notification=%s to %s', n.id, user.email)
+        return True
+    except Exception as exc:
+        logger.warning(
+            'send_notification_email: failed notification=%s to=%s: %s',
+            n.id, user.email, exc,
+        )
+        raise self.retry(exc=exc)
+
+
 @shared_task(name='teachers.cleanup_wizard_drafts_async')
 def cleanup_wizard_drafts_async(days: int = 14) -> int:
     """Удалить устаревшие WizardDraft. Дублирует management-команду,

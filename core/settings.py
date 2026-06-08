@@ -690,6 +690,13 @@ EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in ('true', '1',
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'UstozHub <noreply@ustozhubedu.uz>')
 SERVER_EMAIL = os.environ.get('SERVER_EMAIL', DEFAULT_FROM_EMAIL)
 
+# Базовый абсолютный URL сайта — нужен, чтобы строить полные ссылки в письмах
+# (action_url у Notification хранится относительным, '/billing/...').
+SITE_BASE_URL = os.environ.get('SITE_BASE_URL', 'https://ustozhubedu.uz').rstrip('/')
+
+# Дублировать персональные in-app уведомления на email (можно выключить через env).
+NOTIFY_EMAIL_ENABLED = os.environ.get('NOTIFY_EMAIL_ENABLED', 'True').lower() in ('true', '1', 'yes')
+
 # =============================================================================
 # 💳 WALLET TOPUP (manual flow — до интеграции Payme/Click)
 # =============================================================================
