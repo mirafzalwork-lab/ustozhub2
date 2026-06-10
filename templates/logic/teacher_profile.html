@@ -1315,7 +1315,7 @@
                 <div class="ad-tile__value" data-stat="pending">{{ activity_all.pending }}</div>
                 <div class="ad-tile__sub">
                     {% if activity_all.pending %}
-                        <a href="{% url 'my_bookings' %}" style="color:#FBBF24;text-decoration:underline;">{% trans 'Ответить →' %}</a>
+                        <a href="{% url 'my_bookings_page' %}" style="color:#FBBF24;text-decoration:underline;">{% trans 'Ответить →' %}</a>
                     {% else %}
                         {% trans 'нет ожидающих' %}
                     {% endif %}

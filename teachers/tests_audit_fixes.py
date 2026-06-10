@@ -894,3 +894,28 @@ class UiHardeningTests(TestCase):
         r = self.client.get(reverse('wallet_topup_request'))
         if r.status_code == 200:
             self.assertContains(r, 'data-lock')
+
+
+@override_settings(STORAGES=SIMPLE_STATIC_STORAGES)
+class TeacherProfilePendingBookingTests(TestCase):
+    """Инцидент 2026-06-10: 500 на /profile/ у учителя с ожидающей заявкой.
+
+    В teacher_profile.html ссылка «Ответить →» (блок «Ждут ответа») вела на
+    несуществующее имя url 'my_bookings' (правильно — 'my_bookings_page').
+    Блок условный — стрелял только при activity_all.pending > 0, поэтому
+    жил незамеченным с 2026-06-04.
+    """
+
+    def test_profile_renders_with_pending_booking(self):
+        teacher, subject = _make_teacher_with_subject('pf500_t')
+        teacher.moderation_status = 'approved'
+        teacher.is_active = True
+        teacher.save()
+        student = _make_student_with_balance('pf500_s', balance=Decimal('0'))
+        slot = _slot(teacher)
+        Booking.create_hold(slot_id=slot.id, student=student, subject=subject)
+
+        self.client.force_login(teacher.user)
+        r = self.client.get(reverse('profile'))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, '/my/bookings/')  # ссылка «Ответить →» валидна
