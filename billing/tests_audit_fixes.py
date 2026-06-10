@@ -959,3 +959,72 @@ class MoneyInvariantChaosTests(TestCase):
             Decimal('1000000.00') - self.teacher.user.wallet.balance
             - self.platform.wallet.balance,
         )
+
+
+@override_settings(STORAGES=SIMPLE_STATIC_STORAGES)
+class MulticardProdResponseFormatTests(TestCase):
+    """Инцидент 2026-06-10 (первое боевое пополнение): боевой get_payment
+    НЕ возвращает поле `amount` — сумма в `payment_amount`/`total_amount`
+    (sandbox отдавал `amount`). Сверка суммы падала → реально оплаченный
+    инвойс не зачислялся («шлюз НЕ подтвердил оплату»)."""
+
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+        from billing.models import MulticardInvoice
+        User = get_user_model()
+        self.user = User.objects.create_user(username='mc_prod', password='x' * 12)
+        self.invoice = MulticardInvoice.objects.create(
+            user=self.user, amount=Decimal('1000.00'),
+            store_id='store-1', multicard_uuid='mc-uuid-prod',
+        )
+
+    def _prod_gw_response(self, **over):
+        """Реальная форма ответа боевого шлюза (поля по инциденту)."""
+        data = {
+            'uuid': 'mc-uuid-prod', 'status': 'success',
+            'payment_amount': 100000, 'total_amount': 100000,
+            'commission_amount': 2000, 'ps': 'payme',
+            'payment_time': '2026-06-10 15:21:40',
+        }
+        data.update(over)
+        return data
+
+    def test_gateway_amount_helper_handles_all_formats(self):
+        from billing.views import _gateway_amount_tiyin
+        self.assertEqual(_gateway_amount_tiyin({'amount': 100000}), 100000)
+        self.assertEqual(_gateway_amount_tiyin({'payment_amount': 100000}), 100000)
+        self.assertEqual(_gateway_amount_tiyin({'total_amount': '100000'}), 100000)
+        self.assertIsNone(_gateway_amount_tiyin({}))
+        self.assertIsNone(_gateway_amount_tiyin({'payment_amount': 'мусор'}))
+
+    def test_verify_accepts_prod_response_without_amount_field(self):
+        from billing.views import _verify_payment_with_gateway
+        with patch('billing.views.MulticardClient') as MockClient:
+            MockClient.return_value.get_payment.return_value = self._prod_gw_response()
+            verdict = _verify_payment_with_gateway(self.invoice, {})
+        self.assertEqual(verdict, 'success')
+
+    def test_verify_rejects_wrong_payment_amount(self):
+        from billing.views import _verify_payment_with_gateway
+        with patch('billing.views.MulticardClient') as MockClient:
+            MockClient.return_value.get_payment.return_value = (
+                self._prod_gw_response(payment_amount=50000, total_amount=50000))
+            verdict = _verify_payment_with_gateway(self.invoice, {})
+        self.assertEqual(verdict, 'not_success')
+
+    def test_sweep_credits_with_prod_response_format(self):
+        """Сценарий инцидента: инвойс завис в PROGRESS → sweep дозачисляет."""
+        from billing.models import MulticardInvoice
+        from billing.tasks import reconcile_multicard_invoices
+        MulticardInvoice.objects.filter(pk=self.invoice.pk).update(
+            updated_at=timezone.now() - timedelta(minutes=30))
+        with patch('billing.multicard.MulticardClient.get_payment',
+                   return_value=self._prod_gw_response()):
+            res = reconcile_multicard_invoices()
+        self.assertEqual(res['credited'], 1)
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('1000.00'))
+        # Уведомление о пополнении создано.
+        from teachers.models import Notification
+        self.assertTrue(Notification.objects.filter(
+            target_user=self.user, title='Баланс пополнен').exists())

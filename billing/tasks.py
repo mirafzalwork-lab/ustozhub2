@@ -352,7 +352,7 @@ def reconcile_multicard_invoices():
     """
     from .models import MulticardInvoice
     from .multicard import MulticardClient, MulticardError, sum_to_tiyin
-    from .views import _credit_invoice
+    from .views import _credit_invoice, _gateway_amount_tiyin
 
     now = timezone.now()
     candidates = (
@@ -384,14 +384,12 @@ def reconcile_multicard_invoices():
             continue
         if data.get('status') != MulticardInvoice.Status.SUCCESS:
             continue
-        try:
-            if int(data.get('amount')) != sum_to_tiyin(inv.amount):
-                logger.error(
-                    'reconcile multicard: сумма шлюза %s != ожидаемой %s invoice=%s',
-                    data.get('amount'), sum_to_tiyin(inv.amount), inv.id,
-                )
-                continue
-        except (TypeError, ValueError):
+        gw_amount = _gateway_amount_tiyin(data)
+        if gw_amount is None or gw_amount != sum_to_tiyin(inv.amount):
+            logger.error(
+                'reconcile multicard: сумма шлюза %s != ожидаемой %s invoice=%s',
+                gw_amount, sum_to_tiyin(inv.amount), inv.id,
+            )
             continue
         try:
             _credit_invoice(inv, data, gateway_confirmed=True)

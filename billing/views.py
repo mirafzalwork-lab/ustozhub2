@@ -320,6 +320,14 @@ def _credit_invoice(invoice: MulticardInvoice, payload: dict,
             'status', 'transaction', 'paid_at', 'card_pan', 'ps',
             'receipt_url', 'raw_callback', 'updated_at',
         ])
+        # Уведомление о пополнении (пользователь мог не вернуться на
+        # return-страницу — иначе об успехе он не узнавал вовсе).
+        from .services import SubscriptionService, _safe_reverse
+        SubscriptionService._notify(
+            inv.user, 'Баланс пополнен',
+            f'Кошелёк пополнен на {inv.amount} сум через Multicard.',
+            _safe_reverse('wallet_topup_request'),
+        )
 
 
 def _callback_client_ip(request) -> str:
@@ -333,6 +341,26 @@ def _callback_client_ip(request) -> str:
     if xff:
         return xff.split(',')[-1].strip()
     return request.META.get('REMOTE_ADDR', '')
+
+
+def _gateway_amount_tiyin(data: dict):
+    """Сумма платежа (тийины) из ответа get_payment.
+
+    Боевой шлюз НЕ возвращает поле `amount` — сумма лежит в `payment_amount`
+    (и дублируется в `total_amount`); sandbox отдавал `amount`. Из-за этого
+    сверка суммы падала и реально оплаченные инвойсы не зачислялись
+    (инцидент 2026-06-10 на первом боевом пополнении).
+    Возвращает int или None, если ни одного поля нет/не парсится.
+    """
+    for key in ('amount', 'payment_amount', 'total_amount'):
+        value = data.get(key)
+        if value is None:
+            continue
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            continue
+    return None
 
 
 def _verify_payment_with_gateway(invoice, payload) -> str:
@@ -354,15 +382,15 @@ def _verify_payment_with_gateway(invoice, payload) -> str:
         return 'unknown'
     if data.get('status') != MulticardInvoice.Status.SUCCESS:
         return 'not_success'
-    try:
-        if int(data.get('amount')) != sum_to_tiyin(invoice.amount):
-            logger.error(
-                'Multicard get_payment: сумма шлюза %s != ожидаемой %s invoice=%s',
-                data.get('amount'), sum_to_tiyin(invoice.amount), invoice.id,
-            )
-            return 'not_success'
-    except (TypeError, ValueError):
+    gw_amount = _gateway_amount_tiyin(data)
+    if gw_amount is None:
         return 'unknown'
+    if gw_amount != sum_to_tiyin(invoice.amount):
+        logger.error(
+            'Multicard get_payment: сумма шлюза %s != ожидаемой %s invoice=%s',
+            gw_amount, sum_to_tiyin(invoice.amount), invoice.id,
+        )
+        return 'not_success'
     return 'success'
 
 
@@ -536,10 +564,9 @@ def wallet_topup_return(request):
             data = MulticardClient().get_payment(invoice.multicard_uuid)
             if data.get('status') == MulticardInvoice.Status.SUCCESS:
                 # Сумму сверяем и здесь: подтверждение шлюза = статус + сумма.
-                try:
-                    amount_ok = int(data.get('amount')) == sum_to_tiyin(invoice.amount)
-                except (TypeError, ValueError):
-                    amount_ok = False
+                amount_ok = (
+                    _gateway_amount_tiyin(data) == sum_to_tiyin(invoice.amount)
+                )
                 if amount_ok:
                     _credit_invoice(invoice, data, gateway_confirmed=True)
                     invoice.refresh_from_db()
