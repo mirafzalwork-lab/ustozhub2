@@ -87,7 +87,7 @@
             <p class="rv-hint">{% trans "Вы уже оставляли отзыв — его можно обновить." %}</p>
         {% endif %}
 
-        <form method="post" id="reviewForm">
+        <form method="post" id="reviewForm" data-lock>
             {% csrf_token %}
 
             <div class="rv-block">

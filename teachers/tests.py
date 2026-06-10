@@ -348,3 +348,37 @@ class ExportCSVTest(BaseTestCase):
         content = resp.content.decode('utf-8-sig')
         self.assertIn('Telegram ID', content)
         self.assertIn('123456789', content)
+
+
+# =====================================================================
+# 9. Тест: экранирование Markdown в Telegram-уведомлениях (анти-инъекция)
+# =====================================================================
+
+class TelegramMarkdownEscapeTest(TestCase):
+    """build_notification_text экранирует user-контент от Markdown-инъекции."""
+
+    def test_phishing_link_is_neutralized(self):
+        from telegram_bot.notification_service import build_notification_text
+        # Вредоносное превью сообщения с замаскированной фишинг-ссылкой.
+        text = build_notification_text('Новое сообщение', '[жми сюда](http://evil.example)')
+        # `[` экранирован (`\[`) → Telegram не отрендерит кликабельную ссылку.
+        self.assertIn('\\[жми сюда]', text)
+
+    def test_markup_metachars_escaped(self):
+        from telegram_bot.notification_service import build_notification_text
+        text = build_notification_text('T', 'a_b *bold* `code`')
+        self.assertIn('\\_', text)
+        self.assertIn('\\*', text)
+        self.assertIn('\\`', text)
+
+    def test_title_bold_wrapper_preserved(self):
+        from telegram_bot.notification_service import build_notification_text
+        # Жирная обёртка заголовка остаётся (звёздочки вокруг — не от user).
+        text = build_notification_text('Заголовок', 'тело')
+        self.assertTrue(text.startswith('*Заголовок*'))
+        self.assertIn('тело', text)
+
+    def test_none_safe(self):
+        from telegram_bot.notification_service import build_notification_text
+        # Не падаем на пустых/None значениях.
+        self.assertEqual(build_notification_text('', ''), '**\n\n')

@@ -199,6 +199,22 @@ class AntiSpamFirstMessageTest(LeadsBaseTestCase):
         self.assertEqual(self._send('Первое').json().get('success'), True)
         self.assertEqual(self._send('Второе').json().get('success'), True)
 
+    def test_ajax_rate_limit_blocks_flood(self):
+        # AJAX-путь подчиняется тому же лимиту (5/60с), что и WebSocket —
+        # иначе спамер обходил WS-лимит через AJAX.
+        from teachers.consumers import MESSAGE_RATE_LIMIT
+        self.client.login(username='s1', password='pass12345!')
+        for i in range(MESSAGE_RATE_LIMIT):
+            self.assertEqual(self._send(f'msg {i}').json().get('success'), True)
+        # (MESSAGE_RATE_LIMIT+1)-е сообщение упирается в лимит → 429.
+        r = self._send('флуд')
+        self.assertEqual(r.status_code, 429)
+        self.assertFalse(r.json().get('success'))
+        self.assertEqual(
+            self.conversation.messages.filter(sender=self.student_user).count(),
+            MESSAGE_RATE_LIMIT,
+        )
+
 
 class LeadOptOutTest(LeadsBaseTestCase):
     def test_opt_out_toggle_and_blocks_initiation(self):

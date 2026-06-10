@@ -15,10 +15,28 @@ from django.conf import settings
 
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import TelegramError, RetryAfter, TimedOut, NetworkError
+from telegram.helpers import escape_markdown
 
 from teachers.models import User, TelegramUser, NotificationQueue, NotificationLog
 
 logger = logging.getLogger(__name__)
+
+
+def build_notification_text(title: str, message: str) -> str:
+    """Собирает текст уведомления для Telegram (parse_mode='Markdown').
+
+    КРИТИЧНО для безопасности: `title`/`message` могут содержать
+    пользовательский контент (превью сообщения чата, имя отправителя). Без
+    экранирования валидная вредоносная Markdown-разметка проходит fallback
+    «can't parse» и доставляется получателю — например замаскированная
+    фишинговая ссылка `[жми](http://evil)` или поломанное форматирование.
+    escape_markdown(version=1) экранирует спецсимволы legacy-Markdown (_ * [ `),
+    нейтрализуя и ссылки (для ссылки обязателен `[`). Жирная обёртка `*...*`
+    остаётся вокруг уже экранированного заголовка.
+    """
+    safe_title = escape_markdown(title or '', version=1)
+    safe_message = escape_markdown(message or '', version=1)
+    return f"*{safe_title}*\n\n{safe_message}"
 
 
 class RateLimiter:
@@ -207,8 +225,8 @@ class TelegramNotificationService:
                 notification.save()
                 return False
             
-            # Формируем сообщение
-            full_message = f"*{notification.title}*\n\n{notification.message}"
+            # Формируем сообщение (user-контент экранируется от Markdown-инъекции)
+            full_message = build_notification_text(notification.title, notification.message)
             
             # Создаем кнопки если есть URL
             reply_markup = None
@@ -433,7 +451,7 @@ class TelegramNotificationService:
                 )
                 return False
 
-            text = f"*{notification.title}*\n\n{notification.message}"
+            text = build_notification_text(notification.title, notification.message)
             ok, err, msg_id = self._tg_send_sync(
                 token, telegram_user.telegram_id, text, notification.data,
             )

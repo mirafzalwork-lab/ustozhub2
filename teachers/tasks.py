@@ -33,9 +33,10 @@ def broadcast_notification_push(self, notification_id: int) -> int:
     web-worker при массовых уведомлениях (10k+ пользователей).
     Возвращает количество получателей.
     """
-    from .models import Notification, User
-    from .consumers import notify_user
-    from .context_processors import invalidate_notification_cache
+    from asgiref.sync import async_to_sync
+    from channels.layers import get_channel_layer
+
+    from .models import Notification
 
     try:
         n = Notification.objects.get(pk=notification_id, is_active=True)
@@ -45,28 +46,34 @@ def broadcast_notification_push(self, notification_id: int) -> int:
 
     payload = {'id': n.id, 'title': n.title, 'short_text': n.short_text}
 
-    qs = User.objects.filter(is_active=True)
-    if n.target == 'students':
-        qs = qs.filter(user_type='student')
-    elif n.target == 'teachers':
-        qs = qs.filter(user_type='teacher')
-    elif n.target == 'admins':
-        qs = qs.filter(is_staff=True)
-    elif n.target != 'all':
+    # Аудит 2026-06-10 H15: ОДИН group_send в общую broadcast-группу
+    # (NotificationConsumer подписывает сокет на broadcast_<target> при
+    # connect) вместо цикла по всем N пользователям с per-user group_send +
+    # cache.delete (на 100k пользователей задача убивалась по time limit).
+    # Per-user инвалидация бейджей не нужна: кэш бейджа живёт 30с и догонит
+    # сам, а тост приходит мгновенно по WS.
+    group_by_target = {
+        'all': 'broadcast_all',
+        'students': 'broadcast_students',
+        'teachers': 'broadcast_teachers',
+        'admins': 'broadcast_admins',
+    }
+    group = group_by_target.get(n.target)
+    if group is None:
         return 0  # неожиданный target — пропускаем
 
-    sent = 0
-    # Батчим по 500 — баланс между памятью и числом round-trips к channel layer
-    for uid in qs.values_list('id', flat=True).iterator(chunk_size=500):
-        try:
-            invalidate_notification_cache(uid)
-            notify_user(uid, 'new_notification', payload)
-            sent += 1
-        except Exception as e:
-            logger.warning(f'broadcast push failed for user_id={uid}: {e}')
+    channel_layer = get_channel_layer()
+    if channel_layer is None:
+        logger.warning('broadcast_notification_push: channel layer недоступен')
+        return 0
+    async_to_sync(channel_layer.group_send)(group, {
+        'type': 'push_notification',
+        'event_type': 'new_notification',
+        'payload': payload,
+    })
 
-    logger.info(f'broadcast_notification_push: notification={n.id} target={n.target} sent={sent}')
-    return sent
+    logger.info(f'broadcast_notification_push: notification={n.id} target={n.target} group={group}')
+    return 1
 
 
 @shared_task(
@@ -480,16 +487,28 @@ def _safe_url(name, *args):
 
 
 def _notify_teacher_no_show(booking) -> None:
-    """ТЗ §7: учитель не пришёл — уведомляем ученика, предлагаем новую дату."""
+    """ТЗ §7: учитель не пришёл — уведомляем ученика.
+
+    Текст соответствует фактическому движению денег (аудит 2026-06-10 M15):
+    _refund_teacher_no_show возвращает стоимость урока НА БАЛАНС (и уменьшает
+    пакет подписки) — раньше текст обещал «урок возвращён, выберите новую
+    дату», и ученик искал несуществующий урок в пакете.
+    """
     from .models import Notification
     teacher = booking.slot.teacher.user.get_full_name() or booking.slot.teacher.user.username
+    if booking.subscription_id or (booking.is_trial and booking.trial_price_paid):
+        money_text = (
+            'Стоимость урока возвращена на ваш баланс — её можно потратить '
+            'на нового учителя или новую подписку.'
+        )
+    else:
+        money_text = 'Деньги за урок не списывались.'
     _notify(
         booking.student,
         title='Преподаватель не подключился',
         short_text=f'Урок с {teacher} не состоялся по вине преподавателя.',
         full_text=(
-            f'Преподаватель {teacher} не подключился к уроку. '
-            f'Урок возвращён вам — выберите новую дату в расписании.'
+            f'Преподаватель {teacher} не подключился к уроку. {money_text}'
         ),
         category=Notification.Category.LESSON,
         booking=booking, priority=7,
@@ -522,14 +541,20 @@ def _handle_not_held(booking) -> None:
             LessonEvent.log(booking, 'refund', meta={'reason': 'not_held'})
         except Exception:
             logger.warning('not_held refund_lesson failed booking=%s', booking.pk, exc_info=True)
+    # Текст соответствует фактическому движению денег (аудит 2026-06-10 M15):
+    # выше refund_trial/refund_lesson вернули стоимость урока на баланс ученика.
+    if booking.subscription_id or (booking.is_trial and booking.trial_price_paid):
+        money_text = 'Стоимость урока возвращена на баланс ученика.'
+    else:
+        money_text = 'Деньги не списывались.'
     for user in (booking.student, booking.slot.teacher.user):
         _notify(
             user,
             title='Урок не состоялся',
             short_text='К уроку никто не подключился.',
             full_text=(
-                'Урок не состоялся — к видеокомнате никто не подключился. '
-                'Средства не списаны. Можно выбрать новую дату.'
+                f'Урок не состоялся — к видеокомнате никто не подключился. '
+                f'{money_text}'
             ),
             category=Notification.Category.LESSON,
             booking=booking, priority=6,
@@ -575,10 +600,16 @@ def _handle_student_no_show(booking) -> None:
         )
         priority = 9
 
+    # Прощённая неявка по подписке: урок вернулся в квоту, добор новой даты —
+    # на странице выбора расписания, а не в списке броней (аудит 2026-06-10 M15).
+    if booking.no_show_forgiven and booking.subscription_id:
+        action_url = _safe_url('subscription_schedule', booking.subscription_id)
+    else:
+        action_url = _safe_url('my_bookings_page')
     _notify(
         booking.student, title=title, short_text=warn[:120], full_text=warn,
         category=Notification.Category.WARNING, booking=booking, priority=priority,
-        action_url=_safe_url('my_bookings_page'),
+        action_url=action_url,
     )
     LessonEvent.log(
         booking, 'warning_sent', actor='system',
@@ -607,3 +638,31 @@ def _refund_teacher_no_show(booking) -> None:
             f'_refund_teacher_no_show failed for booking {booking.pk}: {e}',
             exc_info=True,
         )
+
+
+@shared_task(name='teachers.cleanup_old_inapp_notifications')
+def cleanup_old_inapp_notifications(days: int = 90) -> dict:
+    """Деактивация старых in-app уведомлений (аудит 2026-06-10 H15).
+
+    teachers.Notification не чистилась никем: напоминания дают до 6 строк на
+    урок, плюс платежи/модерация — бейдж (anti-join по всем активным) и листинг
+    деградировали линейно, а каждый новый пользователь «наследовал» все старые
+    broadcast как непрочитанные.
+
+    Деактивируем (не удаляем — история/аудит остаются) всё старше `days` дней:
+    get_unread_count/get_user_notifications фильтруют is_active=True, так что
+    деактивированные сразу выпадают из горячих запросов.
+    """
+    from datetime import timedelta
+    from django.utils import timezone as _tz
+    from .models import Notification
+
+    cutoff = _tz.now() - timedelta(days=days)
+    updated = (
+        Notification.objects
+        .filter(is_active=True, created_at__lt=cutoff)
+        .update(is_active=False)
+    )
+    if updated:
+        logger.info('cleanup_old_inapp_notifications: deactivated %s', updated)
+    return {'deactivated': updated}

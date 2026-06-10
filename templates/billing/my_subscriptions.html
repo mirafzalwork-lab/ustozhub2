@@ -264,6 +264,13 @@
               <i class="fas fa-circle-check"></i> {{ s.completed_lessons }} / {{ s.total_lessons }} {% trans 'уроков' %}<br>
               <i class="fas fa-calendar-days"></i> {{ s.started_at|date:"d M Y" }} → {{ s.expires_at|date:"d M Y" }}
             </div>
+            {% if s.status == 'completed' or s.status == 'expired' %}
+              {% comment %}Аудит 2026-06-10 M22: ре-покупка — главная money-механика
+              удержания; раньше завершённый пакет заканчивался тишиной.{% endcomment %}
+              <a href="{% url 'continue_learning' s.teacher_id %}?subject={{ s.subject_id }}" class="pay-btn">
+                <i class="fas fa-rotate-right"></i> {% trans 'Продлить' %}
+              </a>
+            {% endif %}
           </div>
         {% endfor %}
       </div>

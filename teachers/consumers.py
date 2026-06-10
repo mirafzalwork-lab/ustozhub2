@@ -26,6 +26,24 @@ MIN_MESSAGE_LENGTH = 1
 MAX_MESSAGE_LENGTH = 5000
 
 
+def message_rate_limited(user) -> bool:
+    """Единый лимит сообщений по отправителю — общий для WS и AJAX-путей.
+
+    Считает Message пользователя за окно MESSAGE_RATE_WINDOW. Поскольку и
+    WebSocket, и AJAX (`send_message_ajax`) пишут в одну таблицу Message,
+    подсчёт по sender автоматически даёт ОБЩИЙ лимит независимо от канала —
+    спамер не может обойти WS-лимит, переключившись на AJAX. При ошибке БД не
+    блокируем (fail-open), чтобы временный сбой не рвал переписку.
+    """
+    try:
+        threshold = timezone.now() - timedelta(seconds=MESSAGE_RATE_WINDOW)
+        recent = Message.objects.filter(sender=user, created_at__gte=threshold).count()
+        return recent >= MESSAGE_RATE_LIMIT
+    except Exception as e:
+        logger.error(f"Error checking message rate limit: {e}")
+        return False
+
+
 # =============================================================================
 # Хелпер: отправка push-уведомления пользователю через channel layer
 # =============================================================================
@@ -75,6 +93,19 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
         self.group_name = f'notifications_{self.user.pk}'
         await self.channel_layer.group_add(self.group_name, self.channel_name)
+        # Общие broadcast-группы (аудит 2026-06-10 H15): массовая рассылка —
+        # один group_send вместо group_send на КАЖДОГО из N пользователей
+        # (на 100k пользователей задача не укладывалась в time limit).
+        self.broadcast_groups = ['broadcast_all']
+        user_type = getattr(self.user, 'user_type', '') or ''
+        if user_type == 'student':
+            self.broadcast_groups.append('broadcast_students')
+        elif user_type == 'teacher':
+            self.broadcast_groups.append('broadcast_teachers')
+        if getattr(self.user, 'is_staff', False):
+            self.broadcast_groups.append('broadcast_admins')
+        for g in self.broadcast_groups:
+            await self.channel_layer.group_add(g, self.channel_name)
         await self.accept()
 
         # Сразу отправляем текущие badge-счётчики при подключении
@@ -87,6 +118,8 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         if hasattr(self, 'group_name'):
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        for g in getattr(self, 'broadcast_groups', []):
+            await self.channel_layer.group_discard(g, self.channel_name)
 
     async def receive(self, text_data):
         """Клиент может запросить актуальные badge"""
@@ -538,32 +571,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def check_rate_limit(self):
-        """
-        ✅ Проверяет rate limit для пользователя
-        """
-        try:
-            # ✅ Считаем сообщения за последнюю минуту
-            time_threshold = timezone.now() - timedelta(seconds=MESSAGE_RATE_WINDOW)
-            
-            recent_messages = Message.objects.filter(
-                sender=self.user,
-                created_at__gte=time_threshold
-            ).count()
-            
-            is_limited = recent_messages >= MESSAGE_RATE_LIMIT
-            
-            if is_limited:
-                logger.debug(
-                    f"Rate limit exceeded for user_id={self.user.pk}: "
-                    f"{recent_messages}/{MESSAGE_RATE_LIMIT} messages"
-                )
-            
-            return is_limited
-        
-        except Exception as e:
-            logger.error(f"Error checking rate limit: {e}")
-            # В случае ошибки - не блокируем пользователя
-            return False
+        """Проверяет единый rate limit (общий с AJAX-путём, см. message_rate_limited)."""
+        return message_rate_limited(self.user)
 
     async def send_message_history(self):
         """

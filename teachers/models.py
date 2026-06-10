@@ -173,7 +173,9 @@ class Subject(models.Model):
         indexes = [
             models.Index(fields=['category', 'is_active']),
             models.Index(fields=['is_popular', 'is_active']),
-            models.Index(fields=['search_text']),
+            # search_text ищется через LIKE '%…%' — b-tree для этого бесполезен,
+            # а индексная строка может превысить лимит PG (~2.7 КБ) и уронить
+            # save(). На PostgreSQL вместо него GIN(pg_trgm) — миграция 0047.
         ]
 
     def __str__(self):
@@ -370,7 +372,10 @@ class TeacherProfile(models.Model):
             models.Index(fields=['city', 'is_active']),  # Для фильтра по городу
             models.Index(fields=['teaching_format']),  # Для фильтра формата
             models.Index(fields=['experience_years']),  # Для фильтра опыта
-            models.Index(fields=['search_text']),  # Для быстрого LIKE-поиска
+            # search_text ищется через LIKE '%…%' — b-tree для этого бесполезен,
+            # а search_text (имя+bio до 1000 симв., кириллица = 2 байта/символ)
+            # реально превышает лимит индексной строки PG (~2.7 КБ) → падал бы
+            # save() профиля. На PostgreSQL вместо него GIN(pg_trgm) — миграция 0047.
         ]
     
     def update_ranking_score(self):
@@ -429,6 +434,17 @@ class TeacherProfile(models.Model):
         self.moderated_by = moderator
         self.save()
         # Notification is created automatically in save() via _create_rejection_notification()
+        # Бан/отклонение учителя закрывает его обязательства: активные подписки
+        # отменяются с возвратом эскроу, одиночные брони — с возвратом пробных.
+        # Иначе деньги учеников возвращались бы по одному уроку через
+        # no_show_teacher неделями (аудит 2026-06-10 H7).
+        try:
+            from billing.services import SubscriptionService
+            SubscriptionService.cancel_all_for_teacher(
+                self, reason='Профиль учителя отклонён модерацией',
+            )
+        except Exception:
+            logger.exception('reject(): не удалось закрыть обязательства учителя %s', self.pk)
     
     def _create_approval_notification(self, moderator, comment=''):
         """Вспомогательный метод для создания уведомления об одобрении"""
@@ -664,8 +680,13 @@ class TeacherProfile(models.Model):
             'missing': missing,
         }
 
-    def calculate_match_score(self, student):
+    def calculate_match_score(self, student, *, _desired_ids=None):
         """Возвращает совместимость учителя с конкретным студентом (0-100).
+
+        _desired_ids — предвычисленное множество id желаемых предметов
+        (get_smart_matches передаёт его один раз на весь пул — аудит
+        2026-06-10 M6: раньше каждый кандидат делал 2-3 своих запроса,
+        ~150-250 запросов на страницу рекомендаций).
 
         Returns: dict {
             'score': int 0-100,
@@ -687,15 +708,23 @@ class TeacherProfile(models.Model):
 
         # ─── Subjects (40) ─────────────────────────────────────────
         try:
-            desired_ids = set(student.desired_subjects.values_list('id', flat=True))
-            teacher_subject_ids = set(self.teachersubject_set.values_list('subject_id', flat=True))
+            if _desired_ids is not None:
+                desired_ids = set(_desired_ids)
+            else:
+                desired_ids = set(student.desired_subjects.values_list('id', flat=True))
+            # .all() использует prefetch_related('teachersubject_set__subject'),
+            # когда он есть (get_smart_matches), — без отдельного запроса на учителя.
+            ts_list = list(self.teachersubject_set.all())
+            teacher_subject_ids = {ts.subject_id for ts in ts_list}
             inter_ids = desired_ids & teacher_subject_ids
         except Exception:
+            ts_list = []
             inter_ids = set()
         subjects_matched = bool(inter_ids)
         if subjects_matched:
-            from .models import Subject as _Subject
-            matched_subjects = list(_Subject.objects.filter(id__in=inter_ids).only('id', 'name'))
+            matched_subjects = [
+                ts.subject for ts in ts_list if ts.subject_id in inter_ids
+            ]
             score += 40
         factors.append({
             'icon': '📚',
@@ -709,7 +738,10 @@ class TeacherProfile(models.Model):
 
         # ─── Budget (20) ────────────────────────────────────────────
         try:
-            min_price = self.get_min_price() or 0
+            if ts_list:
+                min_price = min((ts.hourly_rate for ts in ts_list), default=0) or 0
+            else:
+                min_price = self.get_min_price() or 0
         except Exception:
             min_price = 0
         budget_max = student.budget_max
@@ -830,8 +862,9 @@ class TeacherProfile(models.Model):
         # Берём с запасом (для разнообразия отсева), считаем score и сортируем
         pool = list(candidates[:60])
         scored = []
+        desired_set = set(desired_ids)
         for t in pool:
-            data = t.calculate_match_score(student)
+            data = t.calculate_match_score(student, _desired_ids=desired_set)
             data['teacher'] = t
             scored.append(data)
         scored.sort(key=lambda d: (-d['score'], -float(d['teacher'].rating or 0)))
@@ -944,11 +977,13 @@ class TeacherProfile(models.Model):
         }
 
     def get_earnings_stats(self, period='30d'):
-        """Заработок за период: completed bookings × hourly_rate + trial_price_paid.
+        """Заработок за период — из леджера: фактические выплаты LESSON_PAYOUT.
 
-        Считаем только completed (не pending/confirmed) — это то, что точно заработано.
-        Использует hourly_rate из TeacherSubject (на текущий момент) — упрощение,
-        для точных финансов нужен снапшот цены в Booking. Это достаточно для дашборда.
+        Раньше считалось по ТЕКУЩЕМУ hourly_rate × completed-брони: цифра
+        расходилась с кошельком (смена цены задним числом, комиссия платформы,
+        late-charge выплаты) и подрывала доверие учителя (аудит 2026-06-10 M14).
+        Теперь — сумма payout-транзакций (нетто, после комиссии): ровно то,
+        что реально пришло в кошелёк за уроки (подписки + платные пробные).
         """
         cache_key = f'teacher_earnings_{self.id}_{period}'
         cached = cache.get(cache_key)
@@ -956,32 +991,18 @@ class TeacherProfile(models.Model):
             return cached
 
         since = self._period_to_since(period)
-        from .models import Booking as _Booking
-        qs = _Booking.objects.filter(
-            slot__teacher=self, status='completed',
-        ).select_related('slot', 'subject')
+        from django.db.models import Count, Sum
+        from billing.models import Transaction as _Tx
+        qs = _Tx.objects.filter(
+            wallet__user=self.user,
+            type=_Tx.Type.LESSON_PAYOUT,
+            status=_Tx.Status.COMPLETED,
+        )
         if since:
-            qs = qs.filter(ended_at__gte=since)
-
-        # Карта subject_id → hourly_rate учителя
-        rates = dict(self.teachersubject_set.values_list('subject_id', 'hourly_rate'))
-        # Fallback для booking без subject — берём минимальную цену учителя
-        fallback_rate = min(rates.values()) if rates else None
-
-        total = 0
-        lessons = 0
-        trial_revenue = 0
-        for b in qs:
-            lessons += 1
-            if b.trial_price_paid:
-                trial_revenue += float(b.trial_price_paid)
-                continue
-            if b.is_trial:
-                continue  # бесплатный пробный — 0
-            rate = rates.get(b.subject_id) if b.subject_id else fallback_rate
-            if rate is not None:
-                total += float(rate)
-        gross = total + trial_revenue
+            qs = qs.filter(created_at__gte=since)
+        agg = qs.aggregate(s=Sum('amount'), n=Count('id'))
+        gross = float(agg['s'] or 0)
+        lessons = agg['n'] or 0
 
         result = {
             'gross': int(gross),
@@ -1179,11 +1200,20 @@ class TeacherProfile(models.Model):
                     if cursor < now or overlaps(cursor, slot_end):
                         skipped += 1
                     else:
-                        TimeSlot.objects.create(
-                            teacher=self, start_at=cursor, end_at=slot_end, status='free',
-                        )
-                        existing.append((cursor, slot_end))
-                        created += 1
+                        try:
+                            # Savepoint: exclusion-констрейнт (миграция 0048)
+                            # ловит гонку с параллельным созданием — конфликт
+                            # считаем skip, а не валим всю генерацию.
+                            from django.db import IntegrityError, transaction as _tx
+                            with _tx.atomic():
+                                TimeSlot.objects.create(
+                                    teacher=self, start_at=cursor,
+                                    end_at=slot_end, status='free',
+                                )
+                            existing.append((cursor, slot_end))
+                            created += 1
+                        except IntegrityError:
+                            skipped += 1
                     cursor = slot_end
             current += timedelta(days=1)
         return {'created': created, 'skipped': skipped, 'total': total}
@@ -1500,6 +1530,11 @@ class Conversation(models.Model):
         ordering = ['-updated_at']
         verbose_name = _('Переписка')
         verbose_name_plural = _('Переписки')
+        indexes = [
+            # Списки чатов: filter(teacher/student, is_active) + order_by('-updated_at').
+            models.Index(fields=['teacher', 'is_active', '-updated_at']),
+            models.Index(fields=['student', 'is_active', '-updated_at']),
+        ]
 
     def __str__(self):
         return f"Переписка: {self.student.get_full_name()} - {self.teacher.user.get_full_name()}"
@@ -1529,7 +1564,12 @@ class Message(models.Model):
         indexes = [
             models.Index(fields=['conversation', '-created_at']),
             models.Index(fields=['sender', '-created_at']),
-            models.Index(fields=['is_read']),
+            # Бейдж непрочитанных: WHERE conversation_id IN (...) AND is_read=false.
+            # Partial-индекс крошечный и горячий; одиночный is_read был бесполезен
+            # (низкая селективность по всей таблице).
+            models.Index(fields=['conversation'],
+                         condition=models.Q(is_read=False),
+                         name='message_unread_by_conv_idx'),
         ]
 
     def __str__(self):
@@ -2568,7 +2608,10 @@ class TimeSlot(models.Model):
 
     teacher = models.ForeignKey(
         TeacherProfile,
-        on_delete=models.CASCADE,
+        # PROTECT — слоты несут брони с денежной историей (escrow/payout/неявки).
+        # Каскадное удаление учителя унесло бы Booking'и с незакрытым payout →
+        # потеря денег учителя. Удаление профиля с историей должно блокироваться.
+        on_delete=models.PROTECT,
         related_name='time_slots',
         verbose_name=_('Учитель'),
     )
@@ -2654,13 +2697,21 @@ class Booking(models.Model):
 
     slot = models.ForeignKey(
         TimeSlot,
-        on_delete=models.CASCADE,
+        # PROTECT — каскадное удаление слота уносило бы брони вместе с их
+        # денежной историей (escrow/payout/refund, LessonEvent, связь с
+        # леджером). Слот с бронями (даже отменёнными) удалять нельзя —
+        # delete-вьюхи обязаны проверять bookings.exists() и отвечать 409.
+        on_delete=models.PROTECT,
         related_name='bookings',
         verbose_name=_('Слот'),
     )
     student = models.ForeignKey(
         'User',
-        on_delete=models.CASCADE,
+        # PROTECT — бронь несёт денежную историю (escrow/payout/неявки/споры).
+        # Каскадное удаление ученика унесло бы completed-брони с незакрытым
+        # payout → учитель не получит деньги за проведённый урок. Удаление
+        # пользователя с бронями должно блокироваться, а не терять историю.
+        on_delete=models.PROTECT,
         related_name='bookings',
         verbose_name=_('Ученик'),
     )
@@ -2756,6 +2807,9 @@ class Booking(models.Model):
             models.Index(fields=['slot', 'status']),
             # Горячий путь: уроки подписки (дашборды прогресса, выплаты).
             models.Index(fields=['subscription', 'status']),
+            # count_student_no_shows: filter(student, status='no_show_student',
+            # slot__start_at__gte=...) — вызывается в settle-пути каждой неявки.
+            models.Index(fields=['student', 'status']),
         ]
         constraints = [
             # На slot может быть только один Booking в активных статусах

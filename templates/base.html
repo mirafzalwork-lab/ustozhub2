@@ -1537,6 +1537,22 @@
                         </span>
                     {% endif %}
                 </a>
+                {% if user.user_type == 'teacher' %}
+                {% comment %}Аудит 2026-06-10 M20: на мобильных desktop-дропдаун
+                скрыт — без этих пунктов до календаря с телефона было не добраться.{% endcomment %}
+                <a href="{% url 'teacher_calendar' %}" class="mobile-menu-item">
+                    <i class="fa-regular fa-calendar"></i>
+                    <span>{% trans 'Календарь' %}</span>
+                </a>
+                <a href="{% url 'my_bookings_page' %}" class="mobile-menu-item">
+                    <i class="fa-regular fa-calendar-check"></i>
+                    <span>{% trans 'Заявки и уроки' %}</span>
+                </a>
+                <a href="{% url 'teacher_learning_requests' %}" class="mobile-menu-item">
+                    <i class="fas fa-user-graduate"></i>
+                    <span>{% trans 'Заявки на обучение' %}</span>
+                </a>
+                {% endif %}
                 {% if user.user_type == 'student' %}
                 <a href="{% url 'my_favorite_teachers' %}" class="mobile-menu-item">
                     <i class="fas fa-heart"></i>

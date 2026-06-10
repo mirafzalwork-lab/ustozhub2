@@ -153,10 +153,16 @@ def can_view_contact_info(request, profile_owner):
 
 
 def get_client_ip(request):
-    """Получить IP адрес клиента"""
+    """Получить IP адрес клиента.
+
+    Доверять можно только ПОСЛЕДНЕМУ элементу X-Forwarded-For — его добавил
+    наш nginx ($proxy_add_x_forwarded_for); левые элементы клиент задаёт сам.
+    Первый элемент позволял накручивать просмотры/обходить дедуп статистики
+    подделкой заголовка (аудит 2026-06-10 M13; так же сделано в billing).
+    """
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
+        ip = x_forwarded_for.split(',')[-1].strip()
     else:
         ip = request.META.get('REMOTE_ADDR')
     return ip
@@ -374,14 +380,24 @@ def home(request):
         subject_id, city_id, teaching_format, min_price, max_price,
         min_rating, min_experience, search_query, suggest
     ])
+    _shuffled = False
     if sort_by == 'recommended' and not _has_filters:
         now_ts = int(timezone.now().timestamp())
-        seed = request.session.get('teacher_shuffle_seed')
-        seed_ts = request.session.get('teacher_shuffle_ts', 0)
-        if not seed or (now_ts - seed_ts) > 3600:
-            seed = random.randint(1, 10 ** 9)
-            request.session['teacher_shuffle_seed'] = seed
-            request.session['teacher_shuffle_ts'] = now_ts
+        if request.user.is_authenticated:
+            seed = request.session.get('teacher_shuffle_seed')
+            seed_ts = request.session.get('teacher_shuffle_ts', 0)
+            if not seed or (now_ts - seed_ts) > 3600:
+                seed = random.randint(1, 10 ** 9)
+                request.session['teacher_shuffle_seed'] = seed
+                request.session['teacher_shuffle_ts'] = now_ts
+        else:
+            # Аноним: seed = час + IP, БЕЗ записи в сессию — раньше каждый
+            # гость главной получал строку в django_session (аудит 2026-06-10
+            # H13). Порядок стабилен в пределах часа (пагинация не скачет).
+            import zlib
+            seed = zlib.crc32(
+                f'{get_client_ip(request)}:{now_ts // 3600}'.encode()
+            ) or 1
 
         cache_key = f'teacher_shuffle_ids_{seed}'
         shuffled_ids = cache.get(cache_key)
@@ -391,15 +407,12 @@ def home(request):
             cache.set(cache_key, shuffled_ids, 3600)
 
         if shuffled_ids:
-            preserved_order = Case(
-                *[When(pk=pk, then=pos) for pos, pk in enumerate(shuffled_ids)],
-                output_field=IntegerField()
-            )
-            teachers = TeacherProfile.objects.filter(
-                id__in=shuffled_ids
-            ).select_related('user', 'city').prefetch_related(
-                'subjects', 'teachersubject_set__subject', 'reviews'
-            ).order_by(preserved_order)
+            # Пагинируем СПИСОК id; объекты добираем ниже только для текущей
+            # страницы (12 шт.). Раньше ORDER BY CASE WHEN строился по ВСЕМ id
+            # учителей и ехал в COUNT пагинатора и page-запрос — на тысячах
+            # учителей это был SQL-монстр на каждый просмотр главной (H13).
+            teachers = shuffled_ids
+            _shuffled = True
 
     # ========== ПАГИНАЦИЯ ==========
     # Создаем объект пагинатора (12 учителей на страницу)
@@ -414,7 +427,22 @@ def home(request):
     except EmptyPage:
         # Если page выходит за пределы диапазона, показываем последнюю страницу
         teachers_page = paginator.page(paginator.num_pages)
-    
+
+    if _shuffled:
+        # Подменяем id текущей страницы реальными объектами: CASE-сортировка
+        # теперь только по 12 элементам, а не по всей таблице.
+        _page_ids = list(teachers_page.object_list)
+        _order = Case(
+            *[When(pk=pk, then=pos) for pos, pk in enumerate(_page_ids)],
+            output_field=IntegerField(),
+        )
+        teachers_page.object_list = (
+            TeacherProfile.objects.filter(id__in=_page_ids)
+            .select_related('user', 'city')
+            .prefetch_related('subjects', 'teachersubject_set__subject', 'reviews')
+            .order_by(_order)
+        )
+
     all_subjects = _get_cached_subjects()
     all_cities = _get_cached_cities()
 
@@ -444,12 +472,19 @@ def home(request):
     )
 
     _now_ts = int(timezone.now().timestamp())
-    _featured_seed = request.session.get('featured_shuffle_seed')
-    _featured_ts = request.session.get('featured_shuffle_ts', 0)
-    if not _featured_seed or (_now_ts - _featured_ts) > 3600:
-        _featured_seed = random.randint(1, 10 ** 9)
-        request.session['featured_shuffle_seed'] = _featured_seed
-        request.session['featured_shuffle_ts'] = _now_ts
+    if request.user.is_authenticated:
+        _featured_seed = request.session.get('featured_shuffle_seed')
+        _featured_ts = request.session.get('featured_shuffle_ts', 0)
+        if not _featured_seed or (_now_ts - _featured_ts) > 3600:
+            _featured_seed = random.randint(1, 10 ** 9)
+            request.session['featured_shuffle_seed'] = _featured_seed
+            request.session['featured_shuffle_ts'] = _now_ts
+    else:
+        # Аноним: seed без записи в сессию (см. shuffle сетки выше — H13).
+        import zlib
+        _featured_seed = zlib.crc32(
+            f'feat:{get_client_ip(request)}:{_now_ts // 3600}'.encode()
+        ) or 1
 
     _featured_cache_key = f'featured_shuffle_ids_{_featured_seed}'
     _featured_ids = cache.get(_featured_cache_key)
@@ -1613,7 +1648,7 @@ def potential_students(request):
     teacher_profile = request.user.teacher_profile
 
     all_leads = get_teacher_leads(teacher_profile)
-    counts = count_teacher_leads(teacher_profile)
+    counts = count_teacher_leads(teacher_profile, leads=all_leads)
 
     status_filter = request.GET.get('status')
     if status_filter in (LEAD_HOT, LEAD_WARM):
@@ -1704,6 +1739,8 @@ def conversations_list(request):
 
     user = request.user
 
+    from django.db.models import OuterRef, Subquery
+
     # Общая аннотация непрочитанных сообщений
     unread_annotation = Count(
         Case(
@@ -1711,11 +1748,13 @@ def conversations_list(request):
             output_field=IntegerField()
         )
     )
-    # Prefetch для загрузки последнего сообщения без N+1
-    messages_prefetch = Prefetch(
-        'messages',
-        queryset=Message.objects.select_related('sender').order_by('-created_at'),
-        to_attr='prefetched_messages'
+    # Последнее сообщение — Subquery top-1 + один in_bulk ниже. Раньше
+    # prefetch тянул в память ПОЛНУЮ историю каждой переписки ради первого
+    # элемента: 30 чатов × 2000 сообщений = 60k строк на рендер страницы
+    # (аудит 2026-06-10 H14). Индекс (conversation, -created_at) уже есть.
+    last_msg_id_sq = Subquery(
+        Message.objects.filter(conversation=OuterRef('pk'))
+        .order_by('-created_at').values('id')[:1]
     )
 
     if user.user_type == 'teacher':
@@ -1731,8 +1770,9 @@ def conversations_list(request):
             messages__isnull=False,
         ).select_related(
             'student', 'subject'
-        ).prefetch_related(messages_prefetch).annotate(
-            unread_count=unread_annotation
+        ).annotate(
+            unread_count=unread_annotation,
+            last_msg_id=last_msg_id_sq,
         ).distinct().order_by('-updated_at')
     else:
         try:
@@ -1747,16 +1787,20 @@ def conversations_list(request):
             messages__isnull=False,
         ).select_related(
             'teacher__user', 'teacher__city', 'subject'
-        ).prefetch_related(messages_prefetch).annotate(
-            unread_count=unread_annotation
+        ).annotate(
+            unread_count=unread_annotation,
+            last_msg_id=last_msg_id_sq,
         ).distinct().order_by('-updated_at')
 
+    conversations = list(conversations)
+    last_by_id = Message.objects.select_related('sender').in_bulk(
+        [c.last_msg_id for c in conversations if c.last_msg_id]
+    )
     conversations_with_info = []
     for conv in conversations:
-        last_message = conv.prefetched_messages[0] if conv.prefetched_messages else None
         conversations_with_info.append({
             'conversation': conv,
-            'last_message': last_message,
+            'last_message': last_by_id.get(conv.last_msg_id),
             'unread_count': conv.unread_count
         })
 
@@ -1937,6 +1981,15 @@ def send_message_ajax(request, conversation_id):
     
     try:
         conversation = _get_user_conversation(user, conversation_id)
+
+        # Rate limit — ЕДИНЫЙ с WebSocket-путём (общий счётчик по таблице
+        # Message). Без него спамер обходил WS-лимит, отправляя через AJAX.
+        from .consumers import message_rate_limited
+        if message_rate_limited(user):
+            return JsonResponse({
+                'success': False,
+                'error': _('Слишком много сообщений. Подождите немного.'),
+            }, status=429)
 
         # АНТИСПАМ: учитель вправе отправить только одно первое сообщение,
         # пока ученик не ответил.

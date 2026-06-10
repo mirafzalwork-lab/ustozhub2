@@ -3,7 +3,7 @@
 Документация: https://docs.multicard.uz/
 
 Поток онлайн-пополнения кошелька:
-  1. auth()                  → JWT-токен (кешируется ~24ч), заголовок X-Access-Token
+  1. auth()                  → JWT-токен (кешируется ~24ч), заголовок Authorization: Bearer
   2. create_invoice(...)     → checkout_url, на который редиректим клиента
   3. <клиент платит на странице Multicard>
   4. Multicard шлёт callback → verify_sign() + зачисление DEPOSIT (см. views)
@@ -73,38 +73,6 @@ def verify_sign(store_id, invoice_id: str, amount, sign: str, secret: str = '') 
         return False
     expected = compute_sign(store_id, invoice_id, amount, secret)
     return hmac.compare_digest(expected, str(sign).lower())
-
-
-def find_sign_formula(payload: dict, received_sign: str, secret: str = '') -> list[str]:
-    """ОТЛАДКА: перебрать алгоритмы/порядки полей и вернуть совпавшие формулы.
-
-    Используется временно при расхождении подписи, чтобы выяснить реальную
-    схему Multicard. Возвращает список меток совпавших вариантов (обычно 0 или 1).
-    """
-    secret = secret or settings.MULTICARD_SECRET
-    received = str(received_sign or '').lower()
-    g = lambda k: str(payload.get(k, ''))  # noqa: E731
-    parts = {
-        'uuid': g('uuid'), 'invoice_id': g('invoice_id'), 'amount': g('amount'),
-        'store_id': g('store_id'), 'status': g('status'),
-    }
-    orders = [
-        ('uuid+invoice_id+amount+secret', parts['uuid'] + parts['invoice_id'] + parts['amount'] + secret),
-        ('store_id+invoice_id+amount+secret', parts['store_id'] + parts['invoice_id'] + parts['amount'] + secret),
-        ('uuid+amount+secret', parts['uuid'] + parts['amount'] + secret),
-        ('invoice_id+amount+secret', parts['invoice_id'] + parts['amount'] + secret),
-        ('secret+uuid+invoice_id+amount', secret + parts['uuid'] + parts['invoice_id'] + parts['amount']),
-        ('store_id+amount+invoice_id+secret', parts['store_id'] + parts['amount'] + parts['invoice_id'] + secret),
-        ('amount+invoice_id+uuid+secret', parts['amount'] + parts['invoice_id'] + parts['uuid'] + secret),
-        ('uuid+store_id+invoice_id+amount+secret', parts['uuid'] + parts['store_id'] + parts['invoice_id'] + parts['amount'] + secret),
-    ]
-    matched = []
-    for label, raw in orders:
-        for algo in ('sha1', 'md5'):
-            digest = getattr(hashlib, algo)(raw.encode('utf-8')).hexdigest()
-            if digest == received:
-                matched.append(f'{algo}({label})')
-    return matched
 
 
 class MulticardClient:

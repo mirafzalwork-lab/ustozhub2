@@ -34,52 +34,87 @@ app.autodiscover_tasks()
 # Использует встроенный PersistentScheduler (файл celerybeat-schedule).
 # Не требует django-celery-beat — нужен только для динамического расписания
 # через admin (это в Phase 4).
+#
+# 'options': {'expires': N} на каждой записи (аудит 2026-06-10 M10): после
+# даунтайма воркера накопившиеся в брокере задачи протухают, а не выполняются
+# пачкой параллельно (idempotency-гарды спасли бы деньги, но дали бы шторм
+# lock contention). Для интервальных expires = интервал, для cron — 1 час.
 app.conf.beat_schedule = {
     # Phase 1: освобождать слоты с истёкшим 15-мин hold
     'release-expired-holds-every-minute': {
         'task': 'teachers.release_expired_holds',
         'schedule': 60.0,
+        'options': {'expires': 60.0},
     },
     # Phase 1: помечать прошедшие confirmed-уроки как completed
     'mark-completed-lessons-every-5min': {
         'task': 'teachers.mark_completed_lessons',
         'schedule': 300.0,
+        'options': {'expires': 300.0},
     },
     # Phase 4: напоминания об уроках (T-24h / T-3h / T-10min)
     'send-lesson-reminders-every-minute': {
         'task': 'teachers.send_lesson_reminders',
         'schedule': 60.0,
+        'options': {'expires': 60.0},
+    },
+    # Деактивация in-app уведомлений старше 90 дней (бейдж/листинг не
+    # деградируют от вечного роста таблицы Notification).
+    'cleanup-old-inapp-notifications-daily': {
+        'task': 'teachers.cleanup_old_inapp_notifications',
+        'schedule': crontab(hour=2, minute=30),
+        'options': {'expires': 3600.0},
     },
     # Чистка старых wizard-drafts раз в сутки в 3:00 Asia/Tashkent
     'cleanup-wizard-drafts-daily': {
         'task': 'teachers.cleanup_wizard_drafts_async',
         'schedule': crontab(hour=3, minute=0),
+        'options': {'expires': 3600.0},
     },
     # Phase 4: выплаты учителям за завершённые subscription-уроки после grace window
     'release-pending-payouts-every-5min': {
         'task': 'billing.release_pending_payouts',
         'schedule': 300.0,
+        'options': {'expires': 300.0},
     },
     # ТЗ flow: одобренные, но не оплаченные в срок заявки → EXPIRED
     'expire-unpaid-approvals-every-15min': {
         'task': 'billing.expire_unpaid_approvals',
         'schedule': 900.0,
+        'options': {'expires': 900.0},
     },
     # v2 Шаг 1: истёкшие активные подписки → слить зависший escrow ученику
     'settle-expired-subscriptions-hourly': {
         'task': 'billing.settle_expired_subscriptions',
         'schedule': 3600.0,
+        'options': {'expires': 3600.0},
     },
     # Страховка: дозакрыть потерянные возвраты за пробные (сбой между сменой
     # статуса и refund во view). Идемпотентно.
     'reconcile-orphaned-refunds-every-30min': {
         'task': 'billing.reconcile_orphaned_refunds',
         'schedule': 1800.0,
+        'options': {'expires': 1800.0},
     },
     # Ночная сверка денежного инварианта balance == SUM(transactions).
     'reconcile-wallet-balances-daily': {
         'task': 'billing.reconcile_wallet_balances',
         'schedule': crontab(hour=4, minute=0),
+        'options': {'expires': 3600.0},
+    },
+    # Страховка: дозачислить зависшие Multicard-инвойсы (callback потерян или
+    # error пришёл раньше success). Подтверждение — get_payment у шлюза.
+    'reconcile-multicard-invoices-every-30min': {
+        'task': 'billing.reconcile_multicard_invoices',
+        'schedule': 1800.0,
+        'options': {'expires': 1800.0},
+    },
+    # Ночная сверка эскроу подписок с леджером (эскроу не лежит ни в одном
+    # кошельке — без этой сверки расхождения копились бы незаметно).
+    'reconcile-subscription-escrow-daily': {
+        'task': 'billing.reconcile_subscription_escrow',
+        'schedule': crontab(hour=4, minute=30),
+        'options': {'expires': 3600.0},
     },
     # --- Обслуживание очереди Telegram-уведомлений ---
     # Саму очередь обрабатывает демон telegram-bot.service (process_notifications
@@ -87,22 +122,27 @@ app.conf.beat_schedule = {
     'retry-failed-notifications-hourly': {
         'task': 'retry_failed_notifications',
         'schedule': crontab(minute=0),
+        'options': {'expires': 3600.0},
     },
     'cancel-stuck-notifications-every-15min': {
         'task': 'cancel_stuck_notifications',
         'schedule': 900.0,
+        'options': {'expires': 900.0},
     },
     'health-check-notifications-every-5min': {
         'task': 'health_check_notifications',
         'schedule': 300.0,
+        'options': {'expires': 300.0},
     },
     'cleanup-old-notification-logs-daily': {
         'task': 'cleanup_old_notification_logs',
         'schedule': crontab(hour=3, minute=0),
+        'options': {'expires': 3600.0},
     },
     'cleanup-old-notifications-daily': {
         'task': 'cleanup_old_notifications',
         'schedule': crontab(hour=3, minute=30),
+        'options': {'expires': 3600.0},
     },
 }
 

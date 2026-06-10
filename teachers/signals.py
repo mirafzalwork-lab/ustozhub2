@@ -372,3 +372,32 @@ def push_notification_realtime(sender, instance, created, **kwargs):
     except Exception as e:
         logger.error(f"Error pushing real-time notification id={instance.pk}: {e}", exc_info=True)
 
+
+
+# ---- Инвалидация кэша счётчиков лидов (аудит 2026-06-10 M7) ----------------
+# count_teacher_leads кэшируется на 60с (бейдж дёргается на каждый показ
+# профиля). Чтобы бейдж не отставал, сбрасываем кэш при изменении источников
+# лидов: избранное (warm) и trial-брони (hot).
+
+def _invalidate_lead_counts(teacher_id):
+    cache.delete(f'teacher_lead_counts_{teacher_id}')
+
+
+@receiver([post_save, post_delete], sender='teachers.Favorite',
+          dispatch_uid='teachers.lead_counts_on_favorite')
+def invalidate_lead_counts_on_favorite(sender, instance, **kwargs):
+    try:
+        _invalidate_lead_counts(instance.teacher_id)
+    except Exception:
+        logger.warning('lead counts invalidation failed (favorite)', exc_info=True)
+
+
+@receiver(post_save, sender='teachers.Booking',
+          dispatch_uid='teachers.lead_counts_on_trial_booking')
+def invalidate_lead_counts_on_trial_booking(sender, instance, **kwargs):
+    if not instance.is_trial:
+        return
+    try:
+        _invalidate_lead_counts(instance.slot.teacher_id)
+    except Exception:
+        logger.warning('lead counts invalidation failed (booking)', exc_info=True)

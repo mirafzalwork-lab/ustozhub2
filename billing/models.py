@@ -1010,7 +1010,11 @@ class MulticardInvoice(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        # PROTECT — платёжный аудит (card_pan/receipt_url/raw_callback/paid_at)
+        # нельзя терять при удалении User. Консистентно с Wallet/Transaction/
+        # WithdrawalRequest (все деньги PROTECT). Удаление пользователя с
+        # инвойсами должно блокироваться, а не молча уносить историю платежей.
+        on_delete=models.PROTECT,
         related_name='multicard_invoices',
     )
     amount = models.DecimalField(

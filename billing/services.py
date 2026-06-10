@@ -176,17 +176,22 @@ class WalletService:
                 )
 
             try:
-                tx = Transaction.objects.create(
-                    wallet=wallet,
-                    amount=signed_amount,
-                    balance_after=new_balance,
-                    type=tx_type,
-                    status=Transaction.Status.COMPLETED,
-                    idempotency_key=idempotency_key,
-                    description=description,
-                    related_booking=related_booking,
-                    reference=reference,
-                )
+                # Вложенный atomic = savepoint: на PostgreSQL IntegrityError
+                # переводит внешнюю транзакцию в aborted-состояние, и без
+                # savepoint'а запрос в except-ветке падал бы с
+                # TransactionManagementError вместо возврата существующей tx.
+                with transaction.atomic():
+                    tx = Transaction.objects.create(
+                        wallet=wallet,
+                        amount=signed_amount,
+                        balance_after=new_balance,
+                        type=tx_type,
+                        status=Transaction.Status.COMPLETED,
+                        idempotency_key=idempotency_key,
+                        description=description,
+                        related_booking=related_booking,
+                        reference=reference,
+                    )
             except IntegrityError:
                 # Гонка по idempotency_key: другой процесс успел создать ту же
                 # транзакцию между select и create → возвращаем её. Но если это
@@ -293,8 +298,9 @@ class SubscriptionService:
         teacher = tariff.teacher
         subject = tariff.subject
 
-        # Проверка weekly_schedule.
-        if not teacher.has_schedule:
+        # Проверка weekly_schedule. has_schedule — метод: без скобок проверка
+        # всегда truthy и guard мёртв (падало бы позже с невнятной ошибкой).
+        if not teacher.has_schedule():
             raise NotEnoughCapacity('у учителя не указано расписание')
 
         with transaction.atomic():
@@ -449,6 +455,12 @@ class SubscriptionService:
                 raise AlreadySubscribed(
                     'У вас уже есть заявка или активная подписка к этому учителю по этому предмету.'
                 )
+            # Анти-обход контактов: preferred_schedule — свободный текст
+            # ученик→учитель (до 2000 символов), тот же канал, что и первое
+            # сообщение брони, — маскируем по той же политике (порог пары).
+            from teachers.contact_filter import mask_for_pair
+            masked_schedule, _was = mask_for_pair(
+                student, teacher, (preferred_schedule or '')[:2000])
             sub = Subscription.objects.create(
                 student=student, teacher=teacher, subject=subject, tariff=tariff,
                 status=Subscription.Status.PENDING_APPROVAL,
@@ -460,7 +472,7 @@ class SubscriptionService:
                 price_per_lesson=price_per_lesson,
                 commission_rate=commission_rate,
                 escrow_balance=Decimal('0.00'),
-                preferred_schedule=(preferred_schedule or '')[:2000],
+                preferred_schedule=masked_schedule,
                 purchase_idempotency_key=idempotency_key,
             )
 
@@ -577,26 +589,55 @@ class SubscriptionService:
         return sub
 
     @classmethod
+    def occupied_lessons(cls, sub) -> int:
+        """Сколько уроков пакета занято (активные брони + засчитанные уроки).
+
+        Не занимают квоту:
+          * ранние отмены (refund: total_lessons уже уменьшен) и not_held;
+          * прощённые неявки (урок возвращается ученику, ТЗ §6/§8).
+        Занимают квоту ПОЗДНИЕ отмены ученика: эскроу по ним уже выплачен
+        учителю (lesson-payout), а total_lessons не уменьшался. Без этого
+        ученик поздними отменами «добирал» бы лишние уроки, а на последнем
+        уроке эскроу оказывался пуст — учитель работал бы бесплатно.
+        Late-charge распознаём по payout-транзакции (related_booking + type —
+        переносимо между SQLite/PG, в отличие от Cast(uuid→text) для ключа).
+        """
+        from django.db.models import Exists, OuterRef
+        from teachers.models import Booking
+
+        payout_exists = Exists(
+            Transaction.objects.filter(
+                related_booking=OuterRef('pk'),
+                type=Transaction.Type.LESSON_PAYOUT,
+            )
+        )
+        active = Booking.objects.filter(subscription=sub).exclude(
+            status__in=['cancelled_by_student', 'cancelled_by_teacher', 'not_held']
+        ).exclude(no_show_forgiven=True).count()
+        charged_cancels = (
+            Booking.objects
+            .filter(subscription=sub, status='cancelled_by_student')
+            .annotate(_charged=payout_exists)
+            .filter(_charged=True)
+            .count()
+        )
+        return active + charged_cancels
+
+    @classmethod
     def book_schedule(cls, subscription, weekly_pattern: list) -> list:
         """Шаг 6 ТЗ: по выбранному недельному шаблону бронируем все уроки.
 
         weekly_pattern: [{"day": "monday", "time": "18:00"}, ...]
         Длина шаблона должна совпадать с lessons_per_week.
         """
-        from teachers.models import Booking
         with transaction.atomic():
             sub = (Subscription.objects.select_for_update()
                    .select_related('teacher', 'subject').get(pk=subscription.pk))
             if sub.status != Subscription.Status.ACTIVE:
                 raise ValueError('Расписание доступно только для активной (оплаченной) подписки.')
-            # Дозапись: бронируем недостающие уроки (total − активные брони),
+            # Дозапись: бронируем недостающие уроки (total − занятые),
             # чтобы при нехватке слотов ученик мог вернуться и добрать позже.
-            # Отменённые брони не считаем — иначе оплаченные уроки «потерялись» бы.
-            # Возвращённые ученику уроки (прощённая неявка / не состоялся) не
-            # занимают квоту — даём перебронировать на новую дату (ТЗ §6/§8).
-            already = Booking.objects.filter(subscription=sub).exclude(
-                status__in=['cancelled_by_student', 'cancelled_by_teacher', 'not_held']
-            ).exclude(no_show_forgiven=True).count()
+            already = cls.occupied_lessons(sub)
             remaining = sub.total_lessons - already
             if remaining <= 0:
                 raise ValueError('Все уроки уже забронированы.')
@@ -615,9 +656,19 @@ class SubscriptionService:
             sub.save(update_fields=['weekly_pattern', 'updated_at'])
         return created
 
+    # Сколько часов учитель может не отвечать на заявку, прежде чем она сгорит.
+    # Без TTL заявка PENDING_APPROVAL висела вечно: уникальный констрейнт не
+    # давал ученику подать повторную с тем же предметом — «горячий» ученик с
+    # деньгами оказывался заперт у молчащего учителя (аудит 2026-06-10 H9).
+    APPROVAL_RESPONSE_HOURS = 72
+
     @classmethod
     def expire_unpaid_approvals(cls) -> int:
-        """Celery: одобренные, но неоплаченные в срок заявки → EXPIRED."""
+        """Celery: одобренные, но неоплаченные в срок заявки → EXPIRED.
+
+        Также гасит заявки, на которые учитель не ответил за
+        APPROVAL_RESPONSE_HOURS (PENDING_APPROVAL без дедлайна-поля — по created_at).
+        """
         now = timezone.now()
         stale = list(Subscription.objects.filter(
             status=Subscription.Status.PENDING_PAYMENT,
@@ -639,6 +690,34 @@ class SubscriptionService:
                 'Одобренная заявка не была оплачена вовремя и истекла. '
                 'При желании оформите заявку заново.',
                 _safe_reverse('home'),
+            )
+
+        # --- Заявки без ответа учителя -----------------------------------
+        no_answer_deadline = now - timedelta(hours=cls.APPROVAL_RESPONSE_HOURS)
+        unanswered = list(Subscription.objects.filter(
+            status=Subscription.Status.PENDING_APPROVAL,
+            created_at__lt=no_answer_deadline,
+        ).select_related('teacher__user', 'student'))
+        for sub in unanswered:
+            with transaction.atomic():
+                locked = Subscription.objects.select_for_update().get(pk=sub.pk)
+                if locked.status != Subscription.Status.PENDING_APPROVAL:
+                    continue
+                locked.status = Subscription.Status.EXPIRED
+                locked.save(update_fields=['status', 'updated_at'])
+                count += 1
+            cls._notify(
+                sub.student, 'Учитель не ответил на заявку',
+                'К сожалению, учитель не ответил на вашу заявку за '
+                f'{cls.APPROVAL_RESPONSE_HOURS} часа. Деньги не списывались — '
+                'выберите другого учителя или подайте заявку заново.',
+                _safe_reverse('home'),
+            )
+            cls._notify(
+                sub.teacher.user, 'Заявка на обучение истекла',
+                'Вы не ответили на заявку ученика вовремя, и она истекла. '
+                'Отвечайте на заявки быстрее — это влияет на ваш приоритет в поиске.',
+                _safe_reverse('teacher_learning_requests'),
             )
         return count
 
@@ -777,6 +856,122 @@ class SubscriptionService:
     APPROVAL_PAYMENT_HOURS = 72
 
     @classmethod
+    def cancel_all_for_teacher(cls, teacher, *, reason: str = '') -> dict:
+        """Закрыть ВСЕ обязательства учителя при бане/уходе с платформы.
+
+        Без этого (аудит 2026-06-10 H7) подписки забаненного учителя оставались
+        ACTIVE: деньги учеников возвращались по одному уроку через
+        no_show_teacher неделями, пока ученик сам не догадывался отменить.
+
+        Делает:
+          * отменяет подписки во всех CANCELLABLE-статусах (refund эскроу);
+          * отменяет одиночные pending/confirmed брони (refund платных пробных).
+
+        Каждая подписка/бронь — в своей транзакции: одна ошибка не блокирует
+        остальные возвраты (ошибки логируются и считаются).
+        """
+        from teachers.models import Booking
+
+        reason = (reason or 'Учитель недоступен на платформе').strip()
+        result = {'subscriptions': 0, 'bookings': 0, 'errors': 0}
+
+        subs = list(Subscription.objects.filter(
+            teacher=teacher, status__in=cls.CANCELLABLE_STATUSES,
+        ))
+        for sub in subs:
+            try:
+                cls.cancel(sub, cancelled_by='admin', reason=reason)
+                result['subscriptions'] += 1
+            except Exception:
+                result['errors'] += 1
+                logger.exception(
+                    'cancel_all_for_teacher: не удалось отменить подписку %s', sub.pk)
+
+        single = list(Booking.objects.filter(
+            slot__teacher=teacher, subscription__isnull=True,
+            status__in=('pending', 'confirmed'),
+            slot__start_at__gt=timezone.now(),
+        ).select_related('slot'))
+        for b in single:
+            try:
+                b.cancel_by_teacher()
+                if b.is_trial and b.trial_price_paid:
+                    TrialService.refund_trial(b, reason=reason)
+                result['bookings'] += 1
+            except Exception:
+                result['errors'] += 1
+                logger.exception(
+                    'cancel_all_for_teacher: не удалось отменить бронь %s', b.pk)
+
+        if result['subscriptions'] or result['bookings'] or result['errors']:
+            logger.warning(
+                'cancel_all_for_teacher: teacher=%s subs=%s bookings=%s errors=%s',
+                getattr(teacher, 'pk', teacher), result['subscriptions'],
+                result['bookings'], result['errors'],
+            )
+        return result
+
+    @classmethod
+    def _payout_delivered_unpaid(cls, sub, *, log_prefix: str = 'payout') -> int:
+        """Выплатить учителю все доставленные-но-не-paid уроки подписки.
+
+        Доставленный = completed ИЛИ no_show_student (учитель отработал).
+        PayoutError (спор/нет эскроу) логируется и не прерывает остальные.
+        Вызывать под локом подписки. Возвращает число выплаченных уроков.
+        """
+        from teachers.models import Booking
+
+        unpaid = (
+            Booking.objects
+            .filter(subscription=sub, status__in=('completed', 'no_show_student'))
+            .exclude(
+                id__in=Transaction.objects.filter(
+                    related_subscription=sub,
+                    type=Transaction.Type.LESSON_PAYOUT,
+                ).values_list('related_booking_id', flat=True)
+            )
+            .select_related('slot')
+        )
+        paid = 0
+        for booking in unpaid:
+            try:
+                if cls.release_lesson_payout(booking):
+                    paid += 1
+            except PayoutError as e:
+                logger.warning('%s: payout пропущен booking=%s: %s',
+                               log_prefix, booking.pk, e)
+        return paid
+
+    @classmethod
+    def _withheld_for_open_disputes(cls, sub) -> Decimal:
+        """Сумма эскроу, удерживаемая под уроки с ОТКРЫТЫМ спором.
+
+        При закрытии подписки (cancel/settle_expired) деньги спорных
+        не-выплаченных уроков нельзя возвращать ученику: спор может решиться
+        в пользу учителя (resolve_reject), и платить ему будет нечем.
+        Вызывать под локом подписки.
+        """
+        from teachers.models import Booking
+
+        disputed_unpaid = (
+            Booking.objects
+            .filter(subscription=sub,
+                    status__in=('completed', 'no_show_student'),
+                    dispute__status=LessonDispute.Status.OPEN)
+            .exclude(
+                id__in=Transaction.objects.filter(
+                    related_subscription=sub,
+                    type=Transaction.Type.LESSON_PAYOUT,
+                ).values_list('related_booking_id', flat=True)
+            )
+            .count()
+        )
+        if not disputed_unpaid:
+            return Decimal('0.00')
+        withheld = (sub.price_per_lesson * disputed_unpaid).quantize(Decimal('0.01'))
+        return min(sub.escrow_balance, withheld)
+
+    @classmethod
     def cancel(
         cls,
         subscription: Subscription,
@@ -830,21 +1025,10 @@ class SubscriptionService:
 
             # 1) Доплатить учителю за доставленные-но-не-paid уроки
             #    (completed ИЛИ no_show_student — учитель отработал).
-            unpaid_completed = list(
-                Booking.objects
-                .filter(subscription=sub, status__in=('completed', 'no_show_student'))
-                .exclude(
-                    id__in=Transaction.objects.filter(
-                        related_subscription=sub,
-                        type=Transaction.Type.LESSON_PAYOUT,
-                    ).values_list('related_booking_id', flat=True)
-                )
-                .select_related('slot')
-            )
-            paid_now = 0
-            for booking in unpaid_completed:
-                if cls.release_lesson_payout(booking):
-                    paid_now += 1
+            # PayoutError (открытый спор и т.п.) не валит всю отмену 500-кой —
+            # иначе деньги ученика заперты до решения спора; стоимость спорных
+            # уроков удерживается в эскроу ниже.
+            paid_now = cls._payout_delivered_unpaid(sub, log_prefix='cancel()')
 
             # release_lesson_payout мог изменить sub — refresh.
             sub.refresh_from_db()
@@ -872,6 +1056,15 @@ class SubscriptionService:
             if past_unsettled:
                 sub.refresh_from_db()  # escrow/lessons_paid_out изменились
 
+            # 1.75) Второй проход по доставленным-но-не-paid: урок, который
+            # mark_completed_lessons перевёл в completed МЕЖДУ двумя выборками
+            # выше, не попадал ни в одну — его эскроу уходил ученику, а выплата
+            # учителю становилась невозможной (аудит 2026-06-10 M2).
+            second_pass = cls._payout_delivered_unpaid(sub, log_prefix='cancel():2nd')
+            if second_pass:
+                paid_now += second_pass
+                sub.refresh_from_db()
+
             future = list(
                 Booking.objects
                 .filter(subscription=sub, status__in=('confirmed', 'pending'),
@@ -881,8 +1074,15 @@ class SubscriptionService:
             cancel_status = booking_status_map[cancelled_by]
             cancelled_count = 0
             for b in future:
-                b.status = cancel_status
-                b.save(update_fields=['status', 'updated_at'])
+                # CAS-стиль: пишем только если статус не изменился с момента
+                # выборки (lifecycle-методы Booking работают под собственным
+                # локом — слепой save() давал last-write-wins: слот мог
+                # остаться booked при cancelled-брони, аудит 2026-06-10 M5).
+                changed = Booking.objects.filter(
+                    pk=b.pk, status__in=('confirmed', 'pending'),
+                ).update(status=cancel_status, updated_at=now)
+                if not changed:
+                    continue  # бронь успела измениться — её путь сам разберётся
                 # Освобождаем слот, если он держался под эту бронь.
                 if b.slot and b.slot.status in ('booked', 'held'):
                     b.slot.status = 'free'
@@ -890,12 +1090,18 @@ class SubscriptionService:
                     b.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
                 cancelled_count += 1
 
-            # 3) Refund остатка эскроу ученику.
+            # 3) Refund остатка эскроу ученику — за вычетом стоимости уроков с
+            # ОТКРЫТЫМ спором: их деньги остаются в эскроу до решения спора
+            # (resolve_reject → выплата учителю, resolve_refund → возврат
+            # ученику). Если вернуть их сейчас, при отклонении спора платить
+            # учителю было бы нечем.
+            withheld = cls._withheld_for_open_disputes(sub)
+            refundable = sub.escrow_balance - withheld
             refunded = Decimal('0.00')
-            if sub.escrow_balance > 0:
+            if refundable > 0:
                 WalletService.credit(
                     user=sub.student,
-                    amount=sub.escrow_balance,
+                    amount=refundable,
                     tx_type=Transaction.Type.REFUND,
                     idempotency_key=f'sub-refund:{sub.id}',
                     description=f'Возврат за отменённую подписку (остаток эскроу). Причина: {reason}',
@@ -904,8 +1110,13 @@ class SubscriptionService:
                 Transaction.objects.filter(
                     idempotency_key=f'sub-refund:{sub.id}'
                 ).update(related_subscription=sub)
-                refunded = sub.escrow_balance
-                sub.escrow_balance = Decimal('0.00')
+                refunded = refundable
+            if withheld > 0:
+                logger.warning(
+                    'cancel(): %s удержано в эскроу подписки %s до решения спора',
+                    withheld, sub.id,
+                )
+            sub.escrow_balance = withheld
 
             # 4) Финализируем подписку.
             sub.status = status_map[cancelled_by]
@@ -958,28 +1169,20 @@ class SubscriptionService:
                 return None
             if not sub.expires_at or sub.expires_at > now - grace:
                 return None  # ещё не истекла (с учётом grace)
-
-            paid_now = 0
+            # Будущие подтверждённые брони — подписка ещё «доставляется».
+            # Генератор расписания законно раскладывает уроки на срок длиннее
+            # expires_at (lookahead 2×) при нехватке слотов: срезать такие
+            # оплаченные брони с возвратом нельзя (аудит 2026-06-10 H10) —
+            # ждём последнего урока, потом закрываем штатно.
+            if Booking.objects.filter(
+                subscription=sub, status__in=('confirmed', 'pending'),
+                slot__end_at__gt=now,
+            ).exists():
+                return None
 
             # 1) Доплатить учителю за completed-но-не-paid уроки (он отработал).
-            unpaid_completed = list(
-                Booking.objects
-                .filter(subscription=sub, status__in=('completed', 'no_show_student'))
-                .exclude(
-                    id__in=Transaction.objects.filter(
-                        related_subscription=sub,
-                        type=Transaction.Type.LESSON_PAYOUT,
-                    ).values_list('related_booking_id', flat=True)
-                )
-                .select_related('slot')
-            )
-            for b in unpaid_completed:
-                try:
-                    if cls.release_lesson_payout(b):
-                        paid_now += 1
-                except PayoutError:
-                    pass
-            if unpaid_completed:
+            paid_now = cls._payout_delivered_unpaid(sub, log_prefix='settle_expired')
+            if paid_now:
                 sub.refresh_from_db()
 
             # 2) Доурегулировать прошедшие, но незакрытые (confirmed) уроки.
@@ -1001,6 +1204,15 @@ class SubscriptionService:
             if past_unsettled:
                 sub.refresh_from_db()
 
+            # 2.5) Второй проход (гонка с mark_completed_lessons между двумя
+            # выборками — аудит 2026-06-10 M2): иначе эскроу урока ушёл бы
+            # ученику, а выплата учителю стала бы невозможной.
+            second_pass = cls._payout_delivered_unpaid(
+                sub, log_prefix='settle_expired:2nd')
+            if second_pass:
+                paid_now += second_pass
+                sub.refresh_from_db()
+
             # 3) Отменить будущие брони, освободить слоты.
             future = list(
                 Booking.objects
@@ -1010,21 +1222,28 @@ class SubscriptionService:
             )
             cancelled_count = 0
             for b in future:
-                b.status = 'expired'
-                b.expires_at = None
-                b.save(update_fields=['status', 'expires_at', 'updated_at'])
+                # CAS-стиль (см. cancel(): аудит 2026-06-10 M5).
+                changed = Booking.objects.filter(
+                    pk=b.pk, status__in=('confirmed', 'pending'),
+                ).update(status='expired', expires_at=None, updated_at=now)
+                if not changed:
+                    continue
                 if b.slot and b.slot.status in ('booked', 'held'):
                     b.slot.status = 'free'
                     b.slot.hold_expires_at = None
                     b.slot.save(update_fields=['status', 'hold_expires_at', 'updated_at'])
                 cancelled_count += 1
 
-            # 4) Вернуть остаток escrow ученику.
+            # 4) Вернуть остаток escrow ученику — за вычетом стоимости уроков
+            # с открытым спором (та же политика, что в cancel(): деньги спорного
+            # урока ждут резолюции, иначе resolve_reject не сможет заплатить).
+            withheld = cls._withheld_for_open_disputes(sub)
+            refundable = sub.escrow_balance - withheld
             refunded = Decimal('0.00')
-            if sub.escrow_balance > 0:
+            if refundable > 0:
                 WalletService.credit(
                     user=sub.student,
-                    amount=sub.escrow_balance,
+                    amount=refundable,
                     tx_type=Transaction.Type.REFUND,
                     idempotency_key=f'sub-expire:{sub.id}',
                     description='Возврат за недоставленные уроки истёкшей подписки.',
@@ -1032,8 +1251,13 @@ class SubscriptionService:
                 Transaction.objects.filter(
                     idempotency_key=f'sub-expire:{sub.id}'
                 ).update(related_subscription=sub)
-                refunded = sub.escrow_balance
-                sub.escrow_balance = Decimal('0.00')
+                refunded = refundable
+            if withheld > 0:
+                logger.warning(
+                    'settle_expired: %s удержано в эскроу подписки %s до решения спора',
+                    withheld, sub.id,
+                )
+            sub.escrow_balance = withheld
 
             # 5) Финальный статус.
             if sub.lessons_paid_out >= sub.total_lessons:
@@ -1279,6 +1503,27 @@ class SubscriptionService:
                 if sub.lessons_paid_out >= sub.total_lessons:
                     sub.status = Subscription.Status.COMPLETED
                 sub.save(update_fields=_fields)
+
+                # Удержание (аудит 2026-06-10 M22): когда пакет почти исчерпан —
+                # предложить продление. Идемпотентно: инкремент происходит один
+                # раз на урок, уведомление шлётся на конкретных остатках.
+                remaining = sub.total_lessons - sub.lessons_paid_out
+                if sub.status == Subscription.Status.ACTIVE and remaining == 2:
+                    cls._notify(
+                        sub.student, 'Осталось 2 урока — продлите подписку',
+                        f'В пакете «{sub.subject.name}» осталось 2 урока. '
+                        f'Продлите подписку, чтобы не прерывать занятия.',
+                        _safe_reverse('continue_learning', args=[sub.teacher_id])
+                        + f'?subject={sub.subject_id}',
+                    )
+                elif sub.status == Subscription.Status.COMPLETED:
+                    cls._notify(
+                        sub.student, 'Пакет уроков завершён',
+                        f'Все уроки пакета «{sub.subject.name}» проведены. '
+                        f'Продлите подписку, чтобы продолжить занятия с этим учителем.',
+                        _safe_reverse('continue_learning', args=[sub.teacher_id])
+                        + f'?subject={sub.subject_id}',
+                    )
 
             return not already_paid
 
@@ -1710,6 +1955,14 @@ class TrialService:
         subject = teacher_subject.subject
 
         with transaction.atomic():
+            # 0) Сериализуем ВСЕ попытки этого ученика по его кошельку (как в
+            #    purchase/pay). Без этого два параллельных запроса с РАЗНЫМИ
+            #    слотами оба прошли бы анти-абуз проверку ниже (ни одна бронь ещё
+            #    не закоммичена) и создали два «единственных» пробных у одного
+            #    учителя — обход правила гонкой. Лок заставляет второй запрос
+            #    подождать коммита первого и затем увидеть существующий пробный.
+            Wallet.objects.select_for_update().get(user=student)
+
             # 1) Анти-абуз: один пробный на (student, teacher, subject).
             existing = cls._existing_trial_qs(student, teacher).first()
             if existing is not None:

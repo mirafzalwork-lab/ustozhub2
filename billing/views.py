@@ -269,10 +269,36 @@ def wallet_topup_multicard(request):
     return redirect(checkout_url)
 
 
-def _credit_invoice(invoice: MulticardInvoice, payload: dict) -> None:
-    """Идемпотентно зачислить успешный платёж в кошелёк и закрыть инвойс."""
+def _credit_invoice(invoice: MulticardInvoice, payload: dict,
+                    *, gateway_confirmed: bool = False) -> None:
+    """Идемпотентно зачислить успешный платёж в кошелёк и закрыть инвойс.
+
+    gateway_confirmed — True, если успех и сумма независимо подтверждены самим
+    шлюзом (get_payment), а не только подписью callback'а.
+    """
     with db_transaction.atomic():
         inv = MulticardInvoice.objects.select_for_update().get(pk=invoice.pk)
+        # REVERT запрещает зачисление НАВСЕГДА: деньги вернулись плательщику.
+        # Защита от out-of-order callback'ов Multicard: если revert пришёл
+        # РАНЬШЕ success (webhook'и переупорядочиваются и ретраятся), нельзя
+        # зачислять отменённый платёж — иначе деньги уйдут «из воздуха».
+        if inv.status == MulticardInvoice.Status.REVERT:
+            logger.error(
+                'Multicard credit заблокирован: инвойс %s в статусе revert '
+                '(вероятно revert пришёл раньше success).', inv.id,
+            )
+            return
+        # ERROR — терминальный только без независимого подтверждения: шлюз
+        # переупорядочивает callback'и (error первой попытки → success второй),
+        # и без этого исключения реально оплаченный инвойс никогда бы не
+        # зачислился — клиент заплатил, кошелёк пуст (аудит 2026-06-10 H1).
+        if inv.status == MulticardInvoice.Status.ERROR and not gateway_confirmed:
+            logger.error(
+                'Multicard credit заблокирован: инвойс %s в статусе error и нет '
+                'независимого подтверждения шлюза (вероятно error пришёл раньше '
+                'success).', inv.id,
+            )
+            return
         if inv.status == MulticardInvoice.Status.SUCCESS and inv.transaction_id:
             return  # уже зачислено
         tx = WalletService.credit(
@@ -296,21 +322,109 @@ def _credit_invoice(invoice: MulticardInvoice, payload: dict) -> None:
         ])
 
 
+def _callback_client_ip(request) -> str:
+    """IP источника callback с учётом nginx.
+
+    nginx ставит `X-Forwarded-For: $proxy_add_x_forwarded_for` = "<клиентский XFF>,
+    <реальный peer>". Доверять можно только ПОСЛЕДНЕМУ элементу (его добавил наш
+    nginx); левые элементы клиент может подделать. Без прокси берём REMOTE_ADDR.
+    """
+    xff = request.META.get('HTTP_X_FORWARDED_FOR', '')
+    if xff:
+        return xff.split(',')[-1].strip()
+    return request.META.get('REMOTE_ADDR', '')
+
+
+def _verify_payment_with_gateway(invoice, payload) -> str:
+    """Независимая сверка успеха платежа с Multicard через get_payment(uuid).
+
+    Главная защита от поддельного «success»-callback: даже если кто-то подберёт
+    подпись/сумму, мы спрашиваем у самого шлюза. Возвращает:
+      * 'success'      — шлюз подтвердил оплату и сумму;
+      * 'not_success'  — шлюз НЕ подтвердил (статус не success или сумма иная);
+      * 'unknown'      — шлюз недоступен/нет uuid (доверяем подписи+сумме callback).
+    """
+    uuid_ = invoice.multicard_uuid or payload.get('uuid', '')
+    if not uuid_:
+        return 'unknown'
+    try:
+        data = MulticardClient().get_payment(uuid_)
+    except MulticardError as exc:
+        logger.warning('Multicard get_payment сверка не удалась invoice=%s: %s', invoice.id, exc)
+        return 'unknown'
+    if data.get('status') != MulticardInvoice.Status.SUCCESS:
+        return 'not_success'
+    try:
+        if int(data.get('amount')) != sum_to_tiyin(invoice.amount):
+            logger.error(
+                'Multicard get_payment: сумма шлюза %s != ожидаемой %s invoice=%s',
+                data.get('amount'), sum_to_tiyin(invoice.amount), invoice.id,
+            )
+            return 'not_success'
+    except (TypeError, ValueError):
+        return 'unknown'
+    return 'success'
+
+
+def _handle_revert(invoice, payload) -> None:
+    """Откат уже зачисленного платежа (Multicard прислал status=revert).
+
+    Если деньги были зачислены в кошелёк — делаем обратное списание (идемпотентно
+    по 'multicard-revert:<id>'). Если средства уже потрачены (баланс < суммы) —
+    обратное списание невозможно (защита wallet_balance_non_negative): пишем
+    CRITICAL для ручного разбора, инвойс помечаем revert в любом случае.
+    """
+    with db_transaction.atomic():
+        inv = MulticardInvoice.objects.select_for_update().get(pk=invoice.pk)
+        was_credited = (inv.status == MulticardInvoice.Status.SUCCESS and inv.transaction_id)
+        if was_credited:
+            try:
+                WalletService.debit(
+                    user=inv.user,
+                    amount=inv.amount,
+                    tx_type=Transaction.Type.ADJUSTMENT_OUT,
+                    idempotency_key=f'multicard-revert:{inv.id}',
+                    description=_('Откат пополнения Multicard (revert)'),
+                    reference=inv.multicard_uuid or str(inv.id),
+                )
+                logger.warning('Multicard revert: откат зачисления invoice=%s amount=%s',
+                               inv.id, inv.amount)
+            except InsufficientFunds:
+                logger.critical(
+                    'Multicard revert: НЕДОСТАТОЧНО средств для отката invoice=%s user=%s '
+                    'amount=%s — деньги уже потрачены, нужен РУЧНОЙ разбор.',
+                    inv.id, inv.user_id, inv.amount,
+                )
+        inv.status = MulticardInvoice.Status.REVERT
+        inv.raw_callback = payload
+        inv.save(update_fields=['status', 'raw_callback', 'updated_at'])
+
+
 @csrf_exempt
 @require_POST
 def multicard_callback(request):
-    """Webhook Multicard. Проверяет подпись, зачисляет DEPOSIT идемпотентно.
+    """Webhook Multicard. Проверяет подпись, сверяет платёж со шлюзом, зачисляет.
 
-    Должен отвечать 2xx — иначе Multicard повторяет до 5 раз.
+    ВАЖНО: всегда отвечаем HTTP 200 — иначе Multicard ретраит и может ОТМЕНИТЬ
+    уже успешный платёж. На любые проблемы верификации просто НЕ зачисляем и
+    громко логируем (ack без действия), а не возвращаем ошибку.
     """
-    # Опциональный whitelisting по IP (X-Forwarded-For за reverse-proxy).
-    allowed_ip = getattr(settings, 'MULTICARD_CALLBACK_IP', '')
-    if allowed_ip:
-        xff = request.META.get('HTTP_X_FORWARDED_FOR', '')
-        remote = (xff.split(',')[0].strip() if xff else request.META.get('REMOTE_ADDR', ''))
-        if remote and remote != allowed_ip:
+    # Whitelisting по IP. Не блокируем жёстко весь callback (жёсткий блок при
+    # неверном IP мог бы «потерять» реальный платёж, если Multicard сменит IP),
+    # но запоминаем доверенность источника: она нужна как второй фактор там, где
+    # независимая сверka со шлюзом недоступна (verdict='unknown', см. ниже).
+    # Берём IP, добавленный нашим nginx. Пустой whitelist (env не задан) →
+    # считаем источник доверенным, чтобы не ломать текущее поведение.
+    allowed_ips = {
+        ip.strip() for ip in str(getattr(settings, 'MULTICARD_CALLBACK_IP', '')).split(',')
+        if ip.strip()
+    }
+    ip_trusted = True
+    if allowed_ips:
+        remote = _callback_client_ip(request)
+        if remote and remote not in allowed_ips:
+            ip_trusted = False
             logger.warning('Multicard callback с неожиданного IP: %s', remote)
-            # Не блокируем жёстко (балансировщики/прокси), но логируем.
 
     try:
         payload = json.loads(request.body.decode('utf-8'))
@@ -322,7 +436,7 @@ def multicard_callback(request):
     amount = payload.get('amount', '')
     status = payload.get('status', '')
     sign = payload.get('sign', '')
-    # store_id из callback — числовой (напр. 6), участвует в подписи.
+    # store_id из callback — числовой (напр. 15764), участвует в подписи.
     callback_store_id = payload.get('store_id', '')
 
     if not verify_sign(callback_store_id, invoice_id, amount, sign):
@@ -330,13 +444,13 @@ def multicard_callback(request):
             'Multicard callback: неверная подпись (invoice_id=%s, store_id=%s)',
             invoice_id, callback_store_id,
         )
-        return JsonResponse({'success': False, 'error': 'invalid sign'}, status=400)
+        return JsonResponse({'success': True})  # ack без зачисления
 
     try:
         invoice = MulticardInvoice.objects.get(pk=invoice_id)
     except (MulticardInvoice.DoesNotExist, ValueError, ValidationError):
         logger.warning('Multicard callback: инвойс не найден (invoice_id=%s)', invoice_id)
-        return JsonResponse({'success': False, 'error': 'invoice not found'}, status=404)
+        return JsonResponse({'success': True})  # ack без зачисления
 
     # Сумма из callback (тийины) должна совпадать с заявленной.
     try:
@@ -345,9 +459,9 @@ def multicard_callback(request):
                 'Multicard callback: сумма не совпала invoice=%s callback=%s expected=%s',
                 invoice.id, amount, sum_to_tiyin(invoice.amount),
             )
-            return JsonResponse({'success': False, 'error': 'amount mismatch'}, status=400)
+            return JsonResponse({'success': True})  # ack без зачисления
     except (TypeError, ValueError):
-        return JsonResponse({'success': False, 'error': 'bad amount'}, status=400)
+        return JsonResponse({'success': True})
 
     if not invoice.multicard_uuid and uuid_:
         invoice.multicard_uuid = uuid_
@@ -364,9 +478,33 @@ def multicard_callback(request):
     )
 
     if is_success:
-        _credit_invoice(invoice, payload)
-    elif status in (MulticardInvoice.Status.ERROR, MulticardInvoice.Status.REVERT):
-        # Не трогаем уже зачисленный инвойс (revert обрабатывается отдельно вручную).
+        # C3: независимо подтверждаем оплату у шлюза перед зачислением.
+        verdict = _verify_payment_with_gateway(invoice, payload)
+        if verdict == 'not_success':
+            logger.error(
+                'Multicard callback заявил success, но шлюз НЕ подтвердил оплату '
+                'invoice=%s — зачисление отклонено (возможна подделка).',
+                invoice.id,
+            )
+            return JsonResponse({'success': True})  # ack без зачисления
+        if verdict == 'unknown' and not ip_trusted:
+            # Шлюз не подтвердил оплату (API недоступен/нет uuid) И источник вне
+            # whitelist'а — независимой проверки нет, доверять только подписи
+            # нельзя (publicный store_id + утечка секрета = подделка). НЕ зачисляем.
+            logger.error(
+                'Multicard callback success без подтверждения шлюза и с недоверенного '
+                'IP invoice=%s — зачисление отклонено (нет второго фактора).',
+                invoice.id,
+            )
+            return JsonResponse({'success': True})  # ack без зачисления
+        # 'success' (подтверждено шлюзом) или 'unknown' с доверенного IP
+        # (API недоступен — доверяем подписи+сумме+источнику) → зачисляем идемпотентно.
+        _credit_invoice(invoice, payload,
+                        gateway_confirmed=(verdict == 'success'))
+    elif status == MulticardInvoice.Status.REVERT:
+        # C5: возврат на стороне шлюза — откатываем зачисление (если было).
+        _handle_revert(invoice, payload)
+    elif status == MulticardInvoice.Status.ERROR:
         if invoice.status != MulticardInvoice.Status.SUCCESS:
             invoice.status = status
             invoice.raw_callback = payload
@@ -389,14 +527,22 @@ def wallet_topup_return(request):
             invoice = None
 
     # Callback мог ещё не прийти — подтянем статус напрямую (best-effort).
+    # ERROR не исключаем: error первой попытки оплаты мог прийти раньше
+    # success — get_payment здесь и есть независимое подтверждение шлюза.
     if invoice and invoice.status not in (
-        MulticardInvoice.Status.SUCCESS, MulticardInvoice.Status.ERROR,
+        MulticardInvoice.Status.SUCCESS, MulticardInvoice.Status.REVERT,
     ) and invoice.multicard_uuid:
         try:
             data = MulticardClient().get_payment(invoice.multicard_uuid)
             if data.get('status') == MulticardInvoice.Status.SUCCESS:
-                _credit_invoice(invoice, data)
-                invoice.refresh_from_db()
+                # Сумму сверяем и здесь: подтверждение шлюза = статус + сумма.
+                try:
+                    amount_ok = int(data.get('amount')) == sum_to_tiyin(invoice.amount)
+                except (TypeError, ValueError):
+                    amount_ok = False
+                if amount_ok:
+                    _credit_invoice(invoice, data, gateway_confirmed=True)
+                    invoice.refresh_from_db()
         except MulticardError as exc:
             logger.info('Multicard get_payment при возврате не удался: %s', exc)
 
@@ -616,12 +762,11 @@ def subscription_schedule(request, sub_id):
     if sub.status != Subscription.Status.ACTIVE:
         messages.info(request, _('Расписание доступно только для оплаченной подписки.'))
         return redirect('my_subscriptions')
-    # Возвращённые ученику уроки (ТЗ §6/§8) не занимают квоту: прощённая
-    # неявка и «не состоялся» дают право выбрать новую дату.
-    _active_bk = sub.bookings.exclude(
-        status__in=['cancelled_by_student', 'cancelled_by_teacher', 'not_held']
-    ).exclude(no_show_forgiven=True)
-    booked_count = _active_bk.count()
+    # Занятая квота — единая логика с book_schedule: активные брони + поздние
+    # отмены ученика, по которым эскроу уже выплачен учителю (late-charge).
+    # Возвращённые уроки (прощённая неявка / не состоялся, ТЗ §6/§8) квоту
+    # не занимают — дают право выбрать новую дату.
+    booked_count = SubscriptionService.occupied_lessons(sub)
     if booked_count >= sub.total_lessons:
         messages.info(request, _('Все уроки уже забронированы.'))
         return redirect('my_bookings_page')
@@ -1055,6 +1200,11 @@ def teacher_homework_create(request):
                 hw.subscription = sub
                 hw.teacher = teacher
                 hw.student = sub.student
+                # Анти-обход контактов: ДЗ — приватный канал учитель↔ученик
+                # до порога открытия контактов, маскируем как сообщения чата.
+                from teachers.contact_filter import mask_for_pair
+                hw.title, _w1 = mask_for_pair(sub.student, teacher, hw.title or '')
+                hw.description, _w2 = mask_for_pair(sub.student, teacher, hw.description or '')
                 hw.save()
                 for f in files:
                     HomeworkAttachment.objects.create(
@@ -1138,9 +1288,13 @@ def _handle_student_submit(request, homework, submission):
             submission = form.save(commit=False)
             submission.homework = homework
             submission.student = request.user
-            submission.save()
         else:
-            form.save()
+            submission = form.save(commit=False)
+        # Анти-обход контактов: ответ ученика — тот же приватный канал.
+        from teachers.contact_filter import mask_for_pair
+        submission.text_response, _w = mask_for_pair(
+            homework.student, homework.teacher, submission.text_response or '')
+        submission.save()
         # Новые файлы добавляем (старые остаются — могут уже быть на доработке).
         for f in files:
             HomeworkSubmissionFile.objects.create(
@@ -1172,6 +1326,9 @@ def _handle_teacher_grade(request, homework, submission):
 
     decision = form.cleaned_data['decision']
     feedback = (form.cleaned_data.get('feedback') or '').strip()
+    # Анти-обход контактов: комментарий оценки — приватный канал учитель→ученик.
+    from teachers.contact_filter import mask_for_pair
+    feedback, _w = mask_for_pair(homework.student, homework.teacher, feedback)
     if decision == HomeworkGradeForm.DECISION_RETURN:
         homework.status = Homework.Status.RETURNED
         homework.save(update_fields=['status', 'updated_at'])

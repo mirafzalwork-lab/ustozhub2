@@ -157,7 +157,7 @@
     <p style="margin:0 0 14px; color:#475569; font-size:14px; line-height:1.55;">
       {% trans 'Мгновенное зачисление. Оплата картой Uzcard / Humo / Visa через защищённую страницу Multicard.' %}
     </p>
-    <form method="post" action="{% url 'wallet_topup_multicard' %}">
+    <form method="post" action="{% url 'wallet_topup_multicard' %}" data-lock>
       {% csrf_token %}
       {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
       <div class="req-row" style="background:#fff;">

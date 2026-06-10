@@ -222,10 +222,15 @@ def telegram_auth(request):
 def link_telegram_account(request):
     """
     Связывает существующий аккаунт пользователя с Telegram
-    
-    POST параметры:
-        - telegram_id: ID пользователя в Telegram
-        - user_id: ID пользователя в Django (или использовать текущего авторизованного)
+
+    POST: JSON с подписанными Telegram-данными авторизации (Login Widget /
+    WebApp: id, auth_date, hash, ...). telegram_id берётся ТОЛЬКО из
+    проверенного подписью payload.
+
+    Аудит 2026-06-10 H6: раньше принимался голый telegram_id без доказательства
+    владения — любой авторизованный пользователь мог привязать чужой ещё не
+    привязанный Telegram-аккаунт (его уведомления уходили бы в чужой чат,
+    а жертва больше не могла привязаться сама).
     """
     try:
         if not request.user.is_authenticated:
@@ -233,7 +238,7 @@ def link_telegram_account(request):
                 'success': False,
                 'error': 'Требуется авторизация'
             }, status=401)
-        
+
         # ✅ Безопасный парсинг JSON
         try:
             data = json.loads(request.body)
@@ -243,20 +248,27 @@ def link_telegram_account(request):
                 'success': False,
                 'error': 'Неверный формат данных'
             }, status=400)
-        
-        # ✅ Безопасное преобразование telegram_id
-        telegram_id_raw = data.get('telegram_id')
-        if not telegram_id_raw:
+
+        # Доказательство владения: payload должен быть подписан Telegram
+        # (тот же механизм, что в telegram_auth). Голый telegram_id не принимаем.
+        bot_token = getattr(settings, 'TELEGRAM_BOT_TOKEN', '')
+        if not bot_token or not verify_telegram_auth(data, bot_token):
+            logger.warning(
+                'Link Telegram: payload без валидной подписи Telegram '
+                f'(user_id={request.user.pk})'
+            )
             return JsonResponse({
                 'success': False,
-                'error': 'Не указан telegram_id'
-            }, status=400)
-        
+                'error': 'Данные авторизации Telegram не прошли проверку. '
+                         'Привяжите аккаунт через кнопку Telegram или /start в боте.'
+            }, status=403)
+
+        telegram_id_raw = data.get('id') or data.get('telegram_id')
         try:
             telegram_id = int(telegram_id_raw)
             if telegram_id <= 0:
                 raise ValueError("ID должен быть положительным")
-        except (ValueError, TypeError) as e:
+        except (ValueError, TypeError):
             logger.warning(f"Link Telegram: неверный telegram_id - {telegram_id_raw}")
             return JsonResponse({
                 'success': False,

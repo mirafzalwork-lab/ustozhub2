@@ -10,11 +10,31 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 
 from django.conf import settings
 
 # Плейсхолдер вместо вырезанного контакта.
 _MASK = '••• [контакт скрыт — общайтесь через платформу]'
+
+# Символы нулевой ширины / вариации / keycap — ими разбивают цифры и точки,
+# чтобы обойти регэкспы (9​9​8…, 9️⃣9️⃣8️⃣, t‍.me). Удаляем перед матчингом.
+#   200b zwsp · 200c zwnj · 200d zwj · 2060 word-joiner · feff bom
+#   fe0f variation-selector-16 · 20e3 combining-enclosing-keycap
+_ZERO_WIDTH_TRANS = dict.fromkeys(
+    map(ord, '​‌‍⁠﻿️⃣'), None
+)
+
+
+def _normalize(text: str) -> str:
+    """NFKC + удаление zero-width/keycap.
+
+    NFKC схлопывает полноширинные цифры (９→9), точку-лидер (t․me→t.me),
+    полноширинный ＠→@. Затем убираем невидимые разделители — после этого
+    обычные регэкспы ловят разбитые цифры/эмодзи-цифры. Нормализация обычного
+    кириллического/латинского текста практически идемпотентна.
+    """
+    return unicodedata.normalize('NFKC', text).translate(_ZERO_WIDTH_TRANS)
 
 # --- Регэкспы потенциальных контактов -------------------------------------
 
@@ -51,29 +71,66 @@ _KEYWORD_HANDLE_RE = re.compile(
 # чтобы поймать gmail.com/discord.gg/signal.me и т.п. вне белого списка _URL_RE.
 _BARE_DOMAIN_RE = re.compile(
     r'\b[A-Za-z0-9](?:[A-Za-z0-9\-]{0,40})'
-    r'\.(?:com|net|org|ru|uz|me|gg|io|app|link|site|online|club|info|biz)'
+    r'\.(?:com|net|org|ru|uz|me|gg|io|app|link|site|online|club|info|biz|'
+    r'dev|xyz|tg|su|pro|store|shop|tech|space|click|top|live|chat|fun)'
     r'(?:/\S*)?\b',
     re.IGNORECASE,
 )
 
-# Замаскированные «словесные» цифры мы не трогаем (слишком много ложных
-# срабатываний) — это сознательный компромисс MVP.
+# --- Числительные прописью (обход «девять девять восемь…») -----------------
+# Словарь однозначных числительных ru/uz/en. Детект СОЗНАТЕЛЬНО консервативный:
+# срабатывает только при ≥7 числительных И наличии «контактного» намерения
+# (звони/номер/телефон/raqam/call/телеграм). Иначе легитимный урок счёта
+# («один два три …» у репетитора-языковеда) не маскируется — на этой платформе
+# обучение числам нормально. Чистые числительные без ключевого слова остаются
+# дырой — осознанный компромисс ради нулевых ложных срабатываний.
+_NUMERAL_WORD_RE = re.compile(
+    r'\b(?:'
+    r'ноль|один|два|три|четыре|пять|шесть|семь|восемь|девять|'
+    r'nol|bir|ikki|uch|tort|besh|olti|yetti|sakkiz|toqqiz|'
+    r'zero|one|two|three|four|five|six|seven|eight|nine'
+    r')\b',
+    re.IGNORECASE,
+)
+_CONTACT_INTENT_RE = re.compile(
+    r'(?:звони|позвони|номер|телефон|\bтел\b|raqam|qongiroq|\bcall\b|'
+    r'whatsapp|вотсап|ватсап|телеграм|телега|\bтг\b)',
+    re.IGNORECASE,
+)
+_NUMERAL_PHONE_MIN_WORDS = 7
+
+
+def _looks_like_spelled_phone(text: str) -> bool:
+    """Похоже ли на телефон, записанный числительными прописью."""
+    if not _CONTACT_INTENT_RE.search(text):
+        return False
+    return len(_NUMERAL_WORD_RE.findall(text)) >= _NUMERAL_PHONE_MIN_WORDS
 
 
 def mask_contacts(text: str) -> tuple[str, bool]:
     """Заменяет телефоны/ссылки/@хендлы на плейсхолдер.
 
-    Возвращает (очищенный_текст, было_ли_замаскировано).
+    Возвращает (очищенный_текст, было_ли_замаскировано). Матчинг идёт по
+    нормализованному тексту (NFKC + удаление невидимых разделителей), чтобы
+    ловить обходы полноширинными/эмодзи-цифрами и zero-width. Если ничего не
+    нашли — возвращаем ИСХОДНЫЙ текст без изменений (нормализацию не навязываем).
     """
     if not text:
         return text, False
-    masked = text
+    normalized = _normalize(text)
+    # Телефон числительными прописью с контактным намерением → маскируем целиком.
+    if _looks_like_spelled_phone(normalized):
+        return _MASK, True
+    masked = normalized
     masked = _URL_RE.sub(_MASK, masked)
     masked = _KEYWORD_HANDLE_RE.sub(_MASK, masked)
     masked = _BARE_DOMAIN_RE.sub(_MASK, masked)
     masked = _PHONE_RE.sub(_MASK, masked)
     masked = _HANDLE_RE.sub(_MASK, masked)
-    return masked, (masked != text)
+    if masked != normalized:
+        return masked, True
+    # Контактов нет — отдаём оригинал нетронутым (не навязываем нормализацию).
+    return text, False
 
 
 def paid_lessons_between(student, teacher_profile) -> int:

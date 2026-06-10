@@ -23,7 +23,7 @@ from functools import wraps
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
@@ -285,12 +285,19 @@ def slots_create_api(request):
     if overlap:
         return _json_error('Слот пересекается с существующим', status=409)
 
-    slot = TimeSlot.objects.create(
-        teacher=request.teacher_profile,
-        start_at=start,
-        end_at=end,
-        status=status,
-    )
+    try:
+        # Savepoint: на PostgreSQL exclusion-констрейнт (миграция 0048) ловит
+        # гонку двух параллельных POST, которую select_for_update не закрывает
+        # (лочатся существующие строки, а не «отсутствие» пересечений).
+        with transaction.atomic():
+            slot = TimeSlot.objects.create(
+                teacher=request.teacher_profile,
+                start_at=start,
+                end_at=end,
+                status=status,
+            )
+    except IntegrityError:
+        return _json_error('Слот пересекается с существующим', status=409)
     logger.info(f'Slot created: teacher={request.teacher_profile.pk} slot={slot.pk}')
     return JsonResponse({'event': _slot_to_event(slot)}, status=201)
 
@@ -317,6 +324,14 @@ def slots_detail_api(request, slot_id: int):
             return _json_error(
                 'Нельзя удалить слот с активным бронированием. '
                 'Сначала отмените booking.', status=409,
+            )
+        # Слот с историей броней (включая отменённые/завершённые) удалять
+        # нельзя: брони несут денежную историю, Booking.slot = PROTECT.
+        if slot.bookings.exists():
+            return _json_error(
+                'Слот связан с историей уроков и не может быть удалён. '
+                'Вместо удаления переведите его в «недоступен» (blocked).',
+                status=409,
             )
         slot.delete()
         return JsonResponse({'deleted': slot_id})
@@ -355,7 +370,13 @@ def slots_detail_api(request, slot_id: int):
     slot.start_at = start
     slot.end_at = end
     slot.status = new_status
-    slot.save(update_fields=['start_at', 'end_at', 'status', 'updated_at'])
+    try:
+        # Savepoint: exclusion-констрейнт (0048) ловит гонку, которую
+        # python-проверка выше не закрывает.
+        with transaction.atomic():
+            slot.save(update_fields=['start_at', 'end_at', 'status', 'updated_at'])
+    except IntegrityError:
+        return _json_error('Слот пересекается с существующим', status=409)
 
     return JsonResponse({'event': _slot_to_event(slot)})
 
@@ -479,14 +500,20 @@ def slots_bulk_generate_api(request):
                 elif overlaps_existing(cursor, slot_end):
                     skipped += 1
                 else:
-                    TimeSlot.objects.create(
-                        teacher=teacher,
-                        start_at=cursor,
-                        end_at=slot_end,
-                        status='free',
-                    )
-                    existing.append((cursor, slot_end))  # для последующих проверок в том же запуске
-                    created += 1
+                    try:
+                        # Savepoint: exclusion-констрейнт (0048) ловит гонку
+                        # с параллельным созданием — конфликт считаем skip.
+                        with transaction.atomic():
+                            TimeSlot.objects.create(
+                                teacher=teacher,
+                                start_at=cursor,
+                                end_at=slot_end,
+                                status='free',
+                            )
+                        existing.append((cursor, slot_end))  # для последующих проверок в том же запуске
+                        created += 1
+                    except IntegrityError:
+                        skipped += 1
                 cursor = slot_end
 
         current += timedelta(days=1)
@@ -510,9 +537,11 @@ def slots_bulk_generate_api(request):
 def slots_bulk_delete_api(request):
     """
     Массово удалить слоты в диапазоне.
-    Body: {from: ISO datetime, to: ISO datetime, only_free?: bool=true}
+    Body: {from: ISO datetime, to: ISO datetime}
 
-    Защита: only_free=true (default) — не трогаем held/booked.
+    Удаляются ТОЛЬКО свободные слоты без истории броней. Клиентский флаг
+    only_free больше не принимается: с {"only_free": false} запрос удалял
+    booked-слоты, а CASCADE уносил брони с денежной историей (escrow/payout).
     """
     try:
         data = json.loads(request.body or '{}')
@@ -526,22 +555,22 @@ def slots_bulk_delete_api(request):
     if start >= end:
         return _json_error('from должен быть раньше to')
 
-    only_free = data.get('only_free', True)
-
     qs = TimeSlot.objects.filter(
         teacher=request.teacher_profile,
         start_at__gte=start,
         start_at__lt=end,
+        status='free',
+        # Слоты с историей броней (отменённые/завершённые уроки) не трогаем —
+        # Booking.slot = PROTECT, их удаление уронило бы весь bulk-запрос.
+        bookings__isnull=True,
     )
-    if only_free:
-        qs = qs.filter(status='free')
 
     count = qs.count()
     qs.delete()
 
     logger.info(f'bulk_delete: teacher={request.teacher_profile.pk} '
-                f'range={start}..{end} only_free={only_free} deleted={count}')
-    return JsonResponse({'deleted': count, 'only_free': only_free})
+                f'range={start}..{end} deleted={count}')
+    return JsonResponse({'deleted': count, 'only_free': True})
 
 
 # =============================================================================

@@ -186,9 +186,26 @@ def get_teacher_leads(teacher_profile):
     return hot_list + warm_list
 
 
-def count_teacher_leads(teacher_profile):
-    """Счётчики для бейджей: {'hot': n, 'warm': n, 'total': n}."""
-    leads = get_teacher_leads(teacher_profile)
+def count_teacher_leads(teacher_profile, leads=None):
+    """Счётчики для бейджей: {'hot': n, 'warm': n, 'total': n}.
+
+    leads — уже загруженный get_teacher_leads(...) (чтобы не грузить все лиды
+    второй раз на той же странице). Без него — кэш 60с: бейдж дёргается на
+    каждый показ профиля учителя, а get_teacher_leads загружает ВСЕ trial-брони
+    и избранное без лимита (аудит 2026-06-10 M7).
+    """
+    if leads is None:
+        from django.core.cache import cache
+        cache_key = f'teacher_lead_counts_{teacher_profile.pk}'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
+        leads = get_teacher_leads(teacher_profile)
+        hot = sum(1 for l in leads if l['status'] == LEAD_HOT)
+        warm = sum(1 for l in leads if l['status'] == LEAD_WARM)
+        counts = {'hot': hot, 'warm': warm, 'total': hot + warm}
+        cache.set(cache_key, counts, 60)
+        return counts
     hot = sum(1 for l in leads if l['status'] == LEAD_HOT)
     warm = sum(1 for l in leads if l['status'] == LEAD_WARM)
     return {'hot': hot, 'warm': warm, 'total': hot + warm}

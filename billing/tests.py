@@ -11,8 +11,11 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from unittest import skipUnless
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.db import connection
 from django.db import transaction as db_transaction
 from django.test import TestCase, TransactionTestCase, override_settings
 
@@ -1545,6 +1548,53 @@ class TeacherNoShowSettleTests(TestCase):
         self.assertEqual(b.teacher_joined_at, first)
         self.assertIsNotNone(b.started_at)
 
+    def _orphan_no_show_teacher(self):
+        """Бронь в no_show_teacher БЕЗ возврата (симуляция сбоя между коммитом
+        статуса во view и вызовом _refund_teacher_no_show), updated_at — старее
+        буфера sweep (10 мин)."""
+        from datetime import timedelta
+        from django.utils import timezone
+        from teachers.models import Booking
+        b = self._jitsi_booking()
+        b.record_join(is_teacher=False)         # ученик пришёл, учитель — нет
+        self.assertEqual(b.settle_after_end(), 'no_show_teacher')
+        old = timezone.now() - timedelta(minutes=20)
+        Booking.objects.filter(pk=b.pk).update(updated_at=old)  # bypass auto_now
+        return b
+
+    def test_reconcile_recovers_orphaned_subscription_no_show_teacher(self):
+        from billing.tasks import reconcile_orphaned_refunds
+        b = self._orphan_no_show_teacher()
+        self.student.wallet.refresh_from_db()
+        balance_before = self.student.wallet.balance
+        total_before = self.subscription.total_lessons
+
+        res = reconcile_orphaned_refunds()
+        self.assertGreaterEqual(res['recovered'], 1)
+
+        self.student.wallet.refresh_from_db()
+        self.subscription.refresh_from_db()
+        self.assertEqual(self.student.wallet.balance, balance_before + Decimal('100000.00'))
+        self.assertEqual(self.subscription.total_lessons, total_before - 1)
+
+        # Идемпотентность: повторный прогон не возвращает второй раз.
+        res2 = reconcile_orphaned_refunds()
+        self.student.wallet.refresh_from_db()
+        self.assertEqual(res2['recovered'], 0)
+        self.assertEqual(self.student.wallet.balance, balance_before + Decimal('100000.00'))
+
+    def test_reconcile_skips_already_refunded(self):
+        from billing.tasks import reconcile_orphaned_refunds
+        b = self._orphan_no_show_teacher()
+        # Возврат уже прошёл штатно во view → sweep не должен трогать.
+        SubscriptionService.refund_lesson(b, cancelled_by='teacher', reason='view')
+        self.student.wallet.refresh_from_db()
+        balance_after_refund = self.student.wallet.balance
+        res = reconcile_orphaned_refunds()
+        self.student.wallet.refresh_from_db()
+        self.assertEqual(res['recovered'], 0)
+        self.assertEqual(self.student.wallet.balance, balance_after_refund)
+
 
 # ---------- Enrollment flow: service edge cases ---------------------------
 
@@ -2347,6 +2397,69 @@ class EnrollmentConcurrencyTests(TransactionTestCase):
             self.assertEqual(student.wallet.balance, Decimal('200000.00'))
 
 
+class PaidTrialRaceTests(TransactionTestCase):
+    """Анти-абуз «один пробный» устойчив к гонке (#11)."""
+    reset_sequences = True
+
+    def _setup(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from teachers.models import TeacherSubject, TimeSlot
+        teacher, subject = _make_teacher_with_subject('ptr_t')
+        teacher.moderation_status = 'approved'
+        teacher.is_active = True
+        teacher.save()
+        ts = TeacherSubject.objects.get(teacher=teacher, subject=subject)
+        ts.is_free_trial = False
+        ts.trial_price = Decimal('50000')
+        ts.save()
+        # Баланса хватает на ДВА пробных — значит второй блокирует только анти-абуз,
+        # а не нехватка средств. Это и проверяет фикс.
+        student = _make_student_with_balance('ptr_s', balance=Decimal('200000'))
+        future = timezone.now() + timedelta(days=1)
+        slots = [
+            TimeSlot.objects.create(
+                teacher=teacher, start_at=future + timedelta(hours=i),
+                end_at=future + timedelta(hours=i, minutes=60), status='free',
+            ) for i in range(2)
+        ]
+        return student, ts, slots
+
+    def test_sequential_second_trial_rejected(self):
+        from billing.services import TrialService, TrialAlreadyTaken
+        student, ts, slots = self._setup()
+        TrialService.book_paid_trial(student=student, slot_id=slots[0].id, teacher_subject=ts)
+        with self.assertRaises(TrialAlreadyTaken):
+            TrialService.book_paid_trial(student=student, slot_id=slots[1].id, teacher_subject=ts)
+
+    @skipUnless(connection.vendor == 'postgresql',
+                'гонка детерминирована только при реальном select_for_update (PostgreSQL)')
+    def test_concurrent_trials_create_at_most_one(self):
+        import threading
+        from billing.services import TrialService
+        student, ts, slots = self._setup()
+
+        def worker(slot_id):
+            try:
+                TrialService.book_paid_trial(student=student, slot_id=slot_id, teacher_subject=ts)
+            except Exception:
+                pass
+            finally:
+                connection.close()
+
+        threads = [threading.Thread(target=worker, args=(s.id,)) for s in slots]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        debits = Transaction.objects.filter(
+            idempotency_key__startswith='trial-debit:',
+            wallet__user=student,
+        ).count()
+        self.assertLessEqual(debits, 1, 'создано более одного пробного — гонка не закрыта')
+
+
 @override_settings(STORAGES=SIMPLE_STATIC_STORAGES)
 class StudentNoShowForgivenessTests(TestCase):
     """ТЗ §6/§8: прощение первых неявок ученика, списание с (N+1)-й, not_held."""
@@ -2764,7 +2877,10 @@ class MulticardCallbackTests(TestCase):
         return self.client.post(self.url, data=json.dumps(payload),
                                 content_type='application/json')
 
-    def test_success_credits_wallet_once(self):
+    # C3: успех зачисляется только если шлюз подтвердил оплату через get_payment.
+    # Мокаем сверку = 'success', чтобы не ходить в сеть.
+    @patch('billing.views._verify_payment_with_gateway', return_value='success')
+    def test_success_credits_wallet_once(self, _mock_verify):
         r = self._post(self._payload())
         self.assertEqual(r.status_code, 200)
         self.user.wallet.refresh_from_db()
@@ -2782,7 +2898,8 @@ class MulticardCallbackTests(TestCase):
             Transaction.objects.filter(
                 wallet=self.user.wallet, type=Transaction.Type.DEPOSIT).count(), 1)
 
-    def test_success_callback_without_status_credits(self):
+    @patch('billing.views._verify_payment_with_gateway', return_value='success')
+    def test_success_callback_without_status_credits(self, _mock_verify):
         # «callback-success» приходит БЕЗ поля status, но с payment_time.
         p = self._payload(status='', payment_time='2026-06-05 11:23:47')
         r = self._post(p)
@@ -2790,20 +2907,100 @@ class MulticardCallbackTests(TestCase):
         self.user.wallet.refresh_from_db()
         self.assertEqual(self.user.wallet.balance, Decimal('50000.00'))
 
-    def test_bad_sign_rejected(self):
+    @override_settings(MULTICARD_CALLBACK_IP='127.0.0.1')
+    @patch('billing.views._verify_payment_with_gateway', return_value='unknown')
+    def test_success_credits_when_gateway_unreachable_trusted_ip(self, _mock_verify):
+        # Шлюз недоступен ('unknown'), НО источник в whitelist'е (доверенный IP)
+        # → доверяем проверенным подписи+сумме+источнику, зачисляем.
+        r = self._post(self._payload())
+        self.assertEqual(r.status_code, 200)
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('50000.00'))
+
+    @override_settings(MULTICARD_CALLBACK_IP='195.158.26.90')
+    @patch('billing.views._verify_payment_with_gateway', return_value='unknown')
+    def test_unknown_from_untrusted_ip_no_credit(self, _mock_verify):
+        # Шлюз НЕ подтвердил ('unknown') И источник вне whitelist'а (тестовый
+        # клиент идёт с 127.0.0.1) → второго фактора нет → НЕ зачисляем.
+        r = self._post(self._payload())
+        self.assertEqual(r.status_code, 200)  # ack, чтобы Multicard не ретраил
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('0.00'))
+        self.assertEqual(
+            Transaction.objects.filter(
+                wallet=self.user.wallet, type=Transaction.Type.DEPOSIT).count(), 0)
+
+    @patch('billing.views._verify_payment_with_gateway', return_value='not_success')
+    def test_forged_success_not_confirmed_by_gateway_no_credit(self, _mock_verify):
+        # Подпись/сумма верны, но шлюз НЕ подтвердил оплату → НЕ зачисляем.
+        r = self._post(self._payload())
+        self.assertEqual(r.status_code, 200)  # ack, чтобы Multicard не ретраил
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('0.00'))
+
+    def test_bad_sign_no_credit_acks_200(self):
+        # Неверная подпись → НЕ зачисляем, но отвечаем 200 (иначе Multicard
+        # может отменить реальный платёж при ретраях).
         p = self._payload()
         p['sign'] = 'bad'
         r = self._post(p)
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 200)
         self.user.wallet.refresh_from_db()
         self.assertEqual(self.user.wallet.balance, Decimal('0.00'))
 
-    def test_amount_mismatch_rejected(self):
+    def test_amount_mismatch_no_credit_acks_200(self):
         r = self._post(self._payload(amount=999))
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 200)
         self.user.wallet.refresh_from_db()
         self.assertEqual(self.user.wallet.balance, Decimal('0.00'))
 
-    def test_unknown_invoice_404(self):
+    def test_unknown_invoice_acks_200(self):
         r = self._post(self._payload(invoice_id='00000000-0000-0000-0000-000000000000'))
-        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.status_code, 200)
+
+    @patch('billing.views._verify_payment_with_gateway', return_value='success')
+    def test_revert_after_success_reverses_credit(self, _mock_verify):
+        # Сначала успешное зачисление.
+        self._post(self._payload())
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('50000.00'))
+        # Затем revert от шлюза → баланс откатывается до нуля.
+        r = self._post(self._payload(status='revert'))
+        self.assertEqual(r.status_code, 200)
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('0.00'))
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.status, MulticardInvoice.Status.REVERT)
+
+    @patch('billing.views._verify_payment_with_gateway', return_value='success')
+    def test_revert_before_success_does_not_credit(self, _mock_verify):
+        # Out-of-order: revert приходит РАНЬШЕ success (webhook'и Multicard
+        # переупорядочиваются и ретраятся). Зачисления ещё не было, поэтому
+        # revert просто помечает инвойс REVERT (отката нет). Последующий
+        # success НЕ должен зачислять отменённый платёж.
+        r1 = self._post(self._payload(status='revert'))
+        self.assertEqual(r1.status_code, 200)
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.status, MulticardInvoice.Status.REVERT)
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('0.00'))
+
+        r2 = self._post(self._payload(status='success'))
+        self.assertEqual(r2.status_code, 200)
+        self.user.wallet.refresh_from_db()
+        self.assertEqual(self.user.wallet.balance, Decimal('0.00'))
+        self.assertEqual(
+            Transaction.objects.filter(
+                wallet=self.user.wallet, type=Transaction.Type.DEPOSIT).count(), 0)
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.status, MulticardInvoice.Status.REVERT)
+
+    def test_invoice_protects_user_from_deletion(self):
+        # Платёжный аудит нельзя терять: пока у пользователя есть инвойс
+        # Multicard, удаление User должно блокироваться (on_delete=PROTECT),
+        # а не каскадно уносить историю платежей.
+        from django.db.models import ProtectedError
+        with self.assertRaises(ProtectedError):
+            self.user.delete()
+        self.assertTrue(
+            MulticardInvoice.objects.filter(pk=self.invoice.pk).exists())

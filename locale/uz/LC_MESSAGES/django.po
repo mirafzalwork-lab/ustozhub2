@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: UstozHub 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-06 23:31+0500\n"
+"POT-Creation-Date: 2026-06-10 14:49+0500\n"
 "Language-Team: Uzbek\n"
 "Language: uz\n"
 "MIME-Version: 1.0\n"
@@ -90,7 +90,7 @@ msgstr "Baho kiriting yoki «Qayta ishlashga qaytarish» ni tanlang."
 msgid "При возврате на доработку нужен комментарий."
 msgstr "Qayta ishlashga qaytarishda izoh kerak."
 
-#: billing/models.py:34 teachers/models.py:2042 teachers/models.py:2463
+#: billing/models.py:34 teachers/models.py:2082 teachers/models.py:2503
 msgid "Пользователь"
 msgstr "Foydalanuvchi"
 
@@ -142,7 +142,7 @@ msgstr "Tuzatish (hisobga olish)"
 msgid "Покупка подписки"
 msgstr "Obuna sotib olish"
 
-#: billing/models.py:90 templates/billing/teacher_dashboard.html:222
+#: billing/models.py:90 templates/billing/teacher_dashboard.html:223
 #: templates/billing/withdrawals_list.html:6
 #: templates/billing/withdrawals_list.html:68
 msgid "Вывод средств"
@@ -156,7 +156,7 @@ msgstr "Komissiya ushlab qolish"
 msgid "Корректировка (списание)"
 msgstr "Tuzatish (yechib olish)"
 
-#: billing/models.py:95 billing/models.py:1004 teachers/models.py:1828
+#: billing/models.py:95 billing/models.py:1004 teachers/models.py:1868
 msgid "В обработке"
 msgstr "Ko'rib chiqilmoqda"
 
@@ -193,7 +193,7 @@ msgstr "Moliyaviy tranzaksiya"
 msgid "Финансовые транзакции"
 msgstr "Moliyaviy tranzaksiyalar"
 
-#: billing/models.py:187 teachers/models.py:1249
+#: billing/models.py:187 teachers/models.py:1279
 #: teachers/registration_forms.py:608
 msgid "30 минут"
 msgstr "30 daqiqa"
@@ -202,7 +202,7 @@ msgstr "30 daqiqa"
 msgid "45 минут"
 msgstr "45 daqiqa"
 
-#: billing/models.py:189 teachers/models.py:1250
+#: billing/models.py:189 teachers/models.py:1280
 #: teachers/registration_forms.py:609
 msgid "60 минут"
 msgstr "60 daqiqa"
@@ -231,13 +231,13 @@ msgstr "6 oy"
 msgid "12 месяцев"
 msgstr "12 oy"
 
-#: billing/models.py:204 teachers/models.py:47 teachers/models.py:1633
-#: teachers/models.py:2573 templates/emails/lesson_reminder.html:30
+#: billing/models.py:204 teachers/models.py:47 teachers/models.py:1673
+#: teachers/models.py:2616 templates/emails/lesson_reminder.html:30
 msgid "Учитель"
 msgstr "O'qituvchi"
 
 #: billing/models.py:210 teachers/forms.py:747 teachers/models.py:171
-#: teachers/models.py:2672 templates/billing/continue_learning.html:29
+#: teachers/models.py:2723 templates/billing/continue_learning.html:29
 #: templates/billing/learning_requests.html:29
 #: templates/billing/tariff_form.html:37
 #: templates/booking/book_teacher.html:216
@@ -287,7 +287,7 @@ msgstr "Tarif"
 msgid "Тарифы"
 msgstr "Tariflar"
 
-#: billing/models.py:322 teachers/models.py:2637
+#: billing/models.py:322 teachers/models.py:2680
 msgid "Ожидает подтверждения учителя"
 msgstr "O'qituvchi tasdig'i kutilmoqda"
 
@@ -382,7 +382,7 @@ msgstr ""
 msgid "Гарантирует один Subscription при повторных submit."
 msgstr "Takroriy submitlarda bitta Subscription bo'lishini kafolatlaydi."
 
-#: billing/models.py:449 teachers/models.py:2217 teachers/models.py:2714
+#: billing/models.py:449 teachers/models.py:2257 teachers/models.py:2765
 msgid "Подписка"
 msgstr "Obuna"
 
@@ -418,7 +418,7 @@ msgstr "Karta (UzCard / Humo / Visa)"
 msgid "На номер телефона"
 msgstr "Telefon raqamiga"
 
-#: billing/models.py:665 teachers/models.py:229
+#: billing/models.py:665 teachers/models.py:231
 #: templates/booking/teacher_calendar.html:87
 msgid "Другое"
 msgstr "Boshqa"
@@ -544,44 +544,36 @@ msgstr "Yashirilgan sinov takliflari"
 
 #: billing/models.py:1003
 msgid "Черновик"
-msgstr ""
+msgstr "Qoralama"
 
 #: billing/models.py:1005
-#, fuzzy
-#| msgid "Оплата"
 msgid "Оплачен"
-msgstr "To'lov"
+msgstr "To'langan"
 
-#: billing/models.py:1006 teachers/models.py:1830 teachers/models.py:1974
+#: billing/models.py:1006 teachers/models.py:1870 teachers/models.py:2014
 #: templates/logic/_profile_edit_enhancements.html:408
 msgid "Ошибка"
 msgstr "Xato"
 
 #: billing/models.py:1007
-#, fuzzy
-#| msgid "Возврат на баланс"
 msgid "Возврат"
-msgstr "Balansga qaytarish"
+msgstr "Qaytarish"
 
 #: billing/models.py:1008
-#, fuzzy
-#| msgid "Бронирование"
 msgid "Холдирование"
-msgstr "Bron"
+msgstr "Ushlab turish"
 
-#: billing/models.py:1019
-#, fuzzy
-#| msgid "Сумма в сумах"
+#: billing/models.py:1023
 msgid "Сумма пополнения в сумах (UZS)."
-msgstr "So'mdagi summa"
+msgstr "To'ldirish summasi so'mda (UZS)."
 
-#: billing/models.py:1049
+#: billing/models.py:1053
 msgid "Инвойс Multicard"
-msgstr ""
+msgstr "Multicard hisob-fakturasi"
 
-#: billing/models.py:1050
+#: billing/models.py:1054
 msgid "Инвойсы Multicard"
-msgstr ""
+msgstr "Multicard hisob-fakturalari"
 
 #: billing/views.py:57
 msgid "Эта страница доступна только учителям."
@@ -600,11 +592,11 @@ msgstr "Tarif yangilandi."
 msgid "Тариф удалён."
 msgstr "Tarif o'chirildi."
 
-#: billing/views.py:144 teachers/views.py:2984
+#: billing/views.py:144 teachers/views.py:3037
 msgid "включён"
 msgstr "yoqildi"
 
-#: billing/views.py:144 teachers/views.py:2984
+#: billing/views.py:144 teachers/views.py:3037
 msgid "выключен"
 msgstr "o'chirildi"
 
@@ -615,100 +607,100 @@ msgstr "Tarif %(state)s."
 
 #: billing/views.py:205
 msgid "Онлайн-оплата временно недоступна."
-msgstr ""
+msgstr "Onlayn to'lov vaqtincha mavjud emas."
 
 #: billing/views.py:221
-#, fuzzy, python-format
-#| msgid "Минимальная сумма вывода — %(min)s сум."
+#, python-format
 msgid "Минимальная сумма пополнения — %(min)s сум."
-msgstr "Minimal yechib olish summasi — %(min)s so'm."
+msgstr "Minimal to'ldirish summasi — %(min)s so'm."
 
 #: billing/views.py:226
-#, fuzzy, python-format
-#| msgid "Минимальная сумма вывода — %(min)s сум."
+#, python-format
 msgid "Максимальная сумма пополнения — %(max)s сум."
-msgstr "Minimal yechib olish summasi — %(min)s so'm."
+msgstr "Maksimal to'ldirish summasi — %(max)s so'm."
 
 #: billing/views.py:256
-#, fuzzy
-#| msgid "Не удалось прочитать расписание. Попробуйте ещё раз."
 msgid "Не удалось создать платёж. Попробуйте позже или другой способ."
-msgstr "Jadvalni o'qib bo'lmadi. Qayta urinib ko'ring."
+msgstr ""
+"To'lovni yaratib bo'lmadi. Keyinroq urinib ko'ring yoki boshqa usuldan "
+"foydalaning."
 
 #: billing/views.py:266
-#, fuzzy
-#| msgid "Слишком много регистраций с этого IP. Попробуйте позже."
 msgid "Платёжный шлюз не вернул ссылку на оплату. Попробуйте позже."
-msgstr "Bu IP manzildan juda ko'p ro'yxatdan o'tildi. Keyinroq urinib ko'ring."
+msgstr "To'lov shlyuzi to'lov havolasini qaytarmadi. Keyinroq urinib ko'ring."
 
-#: billing/views.py:283
-#, fuzzy
-#| msgid "Пополнение баланса"
+#: billing/views.py:309
 msgid "Пополнение кошелька через Multicard"
-msgstr "Balansni to'ldirish"
+msgstr "Multicard orqali hamyonni to'ldirish"
 
-#: billing/views.py:459
+#: billing/views.py:387
+#, fuzzy
+#| msgid "Сумма пополнения, сум"
+msgid "Откат пополнения Multicard (revert)"
+msgstr "To'ldirish summasi, so'm"
+
+#: billing/views.py:605
 msgid "Только ученик может оформить обучение."
 msgstr "Faqat o'quvchi o'qishga yozila oladi."
 
-#: billing/views.py:462
+#: billing/views.py:608
 msgid "Нельзя оформить обучение у самого себя."
 msgstr "O'zingizdan o'qishga yozila olmaysiz."
 
 # ========== BASE TEMPLATE ==========
-#: billing/views.py:483
+#: billing/views.py:629
 msgid "У учителя не указаны предметы."
 msgstr "O'qituvchi fanlarni ko'rsatmagan."
 
-#: billing/views.py:511
+#: billing/views.py:657
 msgid "Выберите тариф."
 msgstr "Tarifni tanlang."
 
-#: billing/views.py:526
+#: billing/views.py:672
 msgid "Заявка отправлена учителю. Мы уведомим вас, когда её подтвердят."
 msgstr "So'rovingiz o'qituvchiga yuborildi. Tasdiqlangach sizga xabar beramiz."
 
-#: billing/views.py:567
+#: billing/views.py:713
 msgid "Заявка подтверждена. Ученик получит уведомление об оплате."
 msgstr "So'rov tasdiqlandi. O'quvchi to'lov haqida bildirishnoma oladi."
 
-#: billing/views.py:570
+#: billing/views.py:716
 msgid "Заявка отклонена."
 msgstr "So'rov rad etildi."
 
-#: billing/views.py:572
+#: billing/views.py:718
 msgid "Неизвестное действие."
 msgstr "Noma'lum amal."
 
-#: billing/views.py:586
+#: billing/views.py:732
 #, python-format
 msgid "Оплата недоступна: статус «%(status)s»."
 msgstr "To'lov mavjud emas: holat «%(status)s»."
 
-#: billing/views.py:596
+#: billing/views.py:742
 msgid "Оплата прошла! Теперь выберите удобное расписание."
 msgstr "To'lov amalga oshdi! Endi sizga qulay jadvalni tanlang."
 
-#: billing/views.py:617
+#: billing/views.py:763
 msgid "Расписание доступно только для оплаченной подписки."
 msgstr "Jadval faqat to'langan obuna uchun mavjud."
 
-#: billing/views.py:626
+#: billing/views.py:771
 msgid "Все уроки уже забронированы."
 msgstr "Barcha darslar allaqachon bron qilingan."
 
-#: billing/views.py:670
+#: billing/views.py:815
 #, python-format
 msgid "Выберите ровно %(required)s занятия в неделю (выбрано %(selected)s)."
 msgstr ""
 "Haftasiga aniq %(required)s ta dars tanlang (%(selected)s ta tanlandi)."
 
-#: billing/views.py:682
+#: billing/views.py:827
 #, python-format
 msgid "Расписание сформировано: забронировано %(count)s уроков."
 msgstr "Jadval tuzildi: %(count)s ta dars bron qilindi."
 
-#: billing/views.py:688
+#: billing/views.py:833
 #, python-format
 msgid ""
 "Забронировано ещё %(count)s уроков по свободным слотам учителя (%(booked)s "
@@ -717,7 +709,7 @@ msgstr ""
 "O'qituvchining bo'sh slotlariga yana %(count)s ta dars bron qilindi "
 "(%(total)s tadan %(booked)s ta)."
 
-#: billing/views.py:694
+#: billing/views.py:839
 msgid ""
 "Остальные уроки можно добрать здесь же, когда учитель откроет новые слоты в "
 "календаре — напишите ему с просьбой добавить время."
@@ -725,24 +717,24 @@ msgstr ""
 "Qolgan darslarni o'qituvchi kalendarda yangi slotlar ochgach shu yerdan bron "
 "qilishingiz mumkin — unga vaqt qo'shishni so'rab yozing."
 
-#: billing/views.py:724
+#: billing/views.py:869
 msgid "Опишите проблему подробнее (минимум 10 символов)."
 msgstr "Muammoni batafsilroq tasvirlang (kamida 10 ta belgi)."
 
-#: billing/views.py:730
+#: billing/views.py:875
 msgid "Спор открыт. Администрация рассмотрит его; выплата учителю заморожена."
 msgstr ""
 "Nizo ochildi. Ma'muriyat uni ko'rib chiqadi; o'qituvchiga to'lov muzlatildi."
 
-#: billing/views.py:749
+#: billing/views.py:894
 msgid "Спор отозван."
 msgstr "Nizo qaytarib olindi."
 
-#: billing/views.py:812
+#: billing/views.py:957
 msgid "У вас нет прав отменить эту подписку."
 msgstr "Bu obunani bekor qilishga ruxsatingiz yo'q."
 
-#: billing/views.py:827
+#: billing/views.py:972
 #, python-format
 msgid ""
 "Подписка отменена. Возвращено на баланс: %(refunded)s сум. Отменено уроков: "
@@ -751,11 +743,11 @@ msgstr ""
 "Obuna bekor qilindi. Balansga qaytarildi: %(refunded)s so'm. Bekor qilingan "
 "darslar: %(cancelled)s."
 
-#: billing/views.py:842
+#: billing/views.py:987
 msgid "У вас нет прав приостановить эту подписку."
 msgstr "Bu obunani to'xtatishga ruxsatingiz yo'q."
 
-#: billing/views.py:849
+#: billing/views.py:994
 #, python-format
 msgid ""
 "Подписка приостановлена. Снято будущих уроков: %(freed)s. Возобновите в "
@@ -764,64 +756,64 @@ msgstr ""
 "Obuna to'xtatildi. Olib tashlangan kelgusi darslar: %(freed)s. Istalgan "
 "vaqtda davom ettiring — muddat pauza davriga uzaytiriladi."
 
-#: billing/views.py:865
+#: billing/views.py:1010
 msgid "У вас нет прав возобновить эту подписку."
 msgstr "Bu obunani davom ettirishga ruxsatingiz yo'q."
 
-#: billing/views.py:871
+#: billing/views.py:1016
 #, python-format
 msgid "Подписка возобновлена. Запланировано уроков: %(created)s."
 msgstr "Obuna davom ettirildi. Rejalashtirilgan darslar: %(created)s."
 
-#: billing/views.py:908
+#: billing/views.py:1053
 #, python-format
 msgid "Заявка на вывод %(amount)s сум создана. Ожидайте подтверждения."
 msgstr ""
 "%(amount)s so'mlik yechib olish so'rovi yaratildi. Tasdiqlanishini kuting."
 
-#: billing/views.py:932
+#: billing/views.py:1077
 #, python-format
 msgid "Заявка отменена, %(amount)s сум возвращены на баланс."
 msgstr "So'rov bekor qilindi, %(amount)s so'm balansga qaytarildi."
 
-#: billing/views.py:1040
+#: billing/views.py:1185
 msgid "Выберите активную подписку из списка."
 msgstr "Ro'yxatdan faol obunani tanlang."
 
-#: billing/views.py:1064
+#: billing/views.py:1214
 #, python-format
 msgid "Задание «%(title)s» назначено ученику."
 msgstr "«%(title)s» topshirig'i o'quvchiga berildi."
 
-#: billing/views.py:1090
+#: billing/views.py:1240
 msgid "Доступ к этому заданию только у участников подписки."
 msgstr "Bu topshiriqqa faqat obuna ishtirokchilari kira oladi."
 
-#: billing/views.py:1117
+#: billing/views.py:1267
 msgid "Это задание уже сдано и не может быть изменено."
 msgstr "Bu topshiriq allaqachon topshirilgan va o'zgartirib bo'lmaydi."
 
-#: billing/views.py:1125
+#: billing/views.py:1275
 msgid "Напишите ответ или прикрепите хотя бы один файл."
 msgstr "Javob yozing yoki kamida bitta fayl biriktiring."
 
-#: billing/views.py:1152
+#: billing/views.py:1306
 msgid "Работа отправлена учителю."
 msgstr "Ish o'qituvchiga yuborildi."
 
-#: billing/views.py:1159
+#: billing/views.py:1313
 msgid "Ученик ещё не сдал работу."
 msgstr "O'quvchi hali ishni topshirmadi."
 
-#: billing/views.py:1162
+#: billing/views.py:1316
 msgid "Это задание нельзя оценить."
 msgstr "Bu topshiriqni baholab bo'lmaydi."
 
-#: billing/views.py:1181
+#: billing/views.py:1338
 msgid "Работа возвращена ученику на доработку."
 msgstr "Ish qayta ishlash uchun o'quvchiga qaytarildi."
 
-#: billing/views.py:1190
+#: billing/views.py:1347
 #, python-format
 msgid "Оценка %(grade)s проставлена."
 msgstr "%(grade)s bahosi qo'yildi."
@@ -830,20 +822,20 @@ msgstr "%(grade)s bahosi qo'yildi."
 msgid "Сначала завершите профиль учителя."
 msgstr "Avval o'qituvchi profilini to'ldiring."
 
-#: teachers/booking_views.py:1243
+#: teachers/booking_views.py:1290
 msgid "Учитель не найден"
 msgstr "O'qituvchi topilmadi"
 
-#: teachers/booking_views.py:1411
+#: teachers/booking_views.py:1460
 msgid "Оставить отзыв можно только после завершения урока."
 msgstr "Sharhni faqat dars tugagandan keyin qoldirish mumkin."
 
-#: teachers/booking_views.py:1441
+#: teachers/booking_views.py:1497
 msgid "Спасибо! Ваш отзыв сохранён."
 msgstr "Rahmat! Sharhingiz saqlandi."
 
-#: teachers/forms.py:15 teachers/forms.py:440 teachers/forms.py:1089
-#: teachers/forms.py:1169 teachers/registration_forms.py:42
+#: teachers/forms.py:15 teachers/forms.py:440 teachers/forms.py:1110
+#: teachers/forms.py:1190 teachers/registration_forms.py:42
 msgid "Имя"
 msgstr "Ism"
 
@@ -851,8 +843,8 @@ msgstr "Ism"
 msgid "Введите ваше имя"
 msgstr "Ismingizni kiriting"
 
-#: teachers/forms.py:25 teachers/forms.py:450 teachers/forms.py:1090
-#: teachers/forms.py:1179 teachers/registration_forms.py:54
+#: teachers/forms.py:25 teachers/forms.py:450 teachers/forms.py:1111
+#: teachers/forms.py:1200 teachers/registration_forms.py:54
 msgid "Фамилия"
 msgstr "Familiya"
 
@@ -861,28 +853,28 @@ msgid "Введите вашу фамилию"
 msgstr "Familiyangizni kiriting"
 
 #: teachers/forms.py:34 teachers/forms.py:405 teachers/forms.py:459
-#: teachers/forms.py:1091 teachers/registration_forms.py:225
+#: teachers/forms.py:1112 teachers/registration_forms.py:225
 #: templates/logic/teacher_profile.html:1794
 msgid "Email"
 msgstr "Email"
 
-#: teachers/forms.py:44 teachers/forms.py:469 teachers/forms.py:1092
+#: teachers/forms.py:44 teachers/forms.py:469 teachers/forms.py:1113
 #: templates/logic/student_profile.html:893
 #: templates/logic/teacher_profile.html:1800
 msgid "Телефон"
 msgstr "Telefon"
 
-#: teachers/forms.py:55 teachers/forms.py:480 teachers/forms.py:1093
+#: teachers/forms.py:55 teachers/forms.py:480 teachers/forms.py:1114
 #: templates/logic/student_profile.html:899
 msgid "Возраст"
 msgstr "Yosh"
 
-#: teachers/forms.py:64 teachers/forms.py:1094
+#: teachers/forms.py:64 teachers/forms.py:1115
 #: teachers/registration_forms.py:30
 msgid "Фото профиля"
 msgstr "Profil rasmi"
 
-#: teachers/forms.py:69 teachers/forms.py:1097
+#: teachers/forms.py:69 teachers/forms.py:1118
 msgid "Рекомендуемый размер: 300x300px"
 msgstr "Tavsiya etilgan o'lcham: 300x300px"
 
@@ -901,7 +893,7 @@ msgid "Минимум 50 символов"
 msgstr "Kamida 50 ta belgi"
 
 #: teachers/forms.py:89 teachers/forms.py:523 teachers/forms.py:875
-#: teachers/forms.py:997 teachers/registration_forms.py:304
+#: teachers/forms.py:1018 teachers/registration_forms.py:304
 #: templates/logic/student_profile.html:919
 #: templates/logic/students_list.html:1169
 #: templates/logic/teacher_profile.html:1674
@@ -942,7 +934,7 @@ msgid "Выберите один или несколько языков"
 msgstr "Bir yoki bir nechta tilni tanlang"
 
 #: teachers/forms.py:140 teachers/forms.py:490 teachers/forms.py:879
-#: teachers/forms.py:999 teachers/models.py:203
+#: teachers/forms.py:1020 teachers/models.py:205
 #: teachers/registration_forms.py:418 templates/logic/home.html:2058
 #: templates/logic/student_profile.html:935
 #: templates/logic/students_list.html:1139
@@ -964,7 +956,7 @@ msgid "Формат обучения"
 msgstr "Ta'lim formati"
 
 #: teachers/forms.py:160 teachers/forms.py:580 teachers/forms.py:881
-#: teachers/forms.py:1003 templates/logic/teacher_profile.html:1806
+#: teachers/forms.py:1024 templates/logic/teacher_profile.html:1806
 msgid "Telegram"
 msgstr "Telegram"
 
@@ -973,7 +965,7 @@ msgid "@username или номер телефона"
 msgstr "@username yoki telefon raqami"
 
 #: teachers/forms.py:170 teachers/forms.py:591 teachers/forms.py:882
-#: teachers/forms.py:1004 templates/logic/teacher_profile.html:1812
+#: teachers/forms.py:1025 templates/logic/teacher_profile.html:1812
 msgid "WhatsApp"
 msgstr "WhatsApp"
 
@@ -986,49 +978,49 @@ msgid "Доступен до"
 msgstr "Mavjudlik tugashi"
 
 #: teachers/forms.py:200 teachers/forms.py:601 teachers/forms.py:810
-#: teachers/forms.py:933 teachers/models.py:1071
+#: teachers/forms.py:954 teachers/models.py:1092
 #: teachers/registration_forms.py:394
 #: templates/booking/teacher_calendar.html:231
 msgid "Понедельник"
 msgstr "Dushanba"
 
 #: teachers/forms.py:201 teachers/forms.py:602 teachers/forms.py:811
-#: teachers/forms.py:934 teachers/models.py:1071
+#: teachers/forms.py:955 teachers/models.py:1092
 #: teachers/registration_forms.py:395
 #: templates/booking/teacher_calendar.html:231
 msgid "Вторник"
 msgstr "Seshanba"
 
 #: teachers/forms.py:202 teachers/forms.py:603 teachers/forms.py:812
-#: teachers/forms.py:935 teachers/models.py:1071
+#: teachers/forms.py:956 teachers/models.py:1092
 #: teachers/registration_forms.py:396
 #: templates/booking/teacher_calendar.html:232
 msgid "Среда"
 msgstr "Chorshanba"
 
 #: teachers/forms.py:203 teachers/forms.py:604 teachers/forms.py:813
-#: teachers/forms.py:936 teachers/models.py:1072
+#: teachers/forms.py:957 teachers/models.py:1093
 #: teachers/registration_forms.py:397
 #: templates/booking/teacher_calendar.html:232
 msgid "Четверг"
 msgstr "Payshanba"
 
 #: teachers/forms.py:204 teachers/forms.py:605 teachers/forms.py:814
-#: teachers/forms.py:937 teachers/models.py:1072
+#: teachers/forms.py:958 teachers/models.py:1093
 #: teachers/registration_forms.py:398
 #: templates/booking/teacher_calendar.html:233
 msgid "Пятница"
 msgstr "Juma"
 
 #: teachers/forms.py:205 teachers/forms.py:606 teachers/forms.py:815
-#: teachers/forms.py:938 teachers/models.py:1072
+#: teachers/forms.py:959 teachers/models.py:1093
 #: teachers/registration_forms.py:399
 #: templates/booking/teacher_calendar.html:233
 msgid "Суббота"
 msgstr "Shanba"
 
 #: teachers/forms.py:206 teachers/forms.py:607 teachers/forms.py:816
-#: teachers/forms.py:939 teachers/models.py:1073
+#: teachers/forms.py:960 teachers/models.py:1094
 #: teachers/registration_forms.py:400
 #: templates/booking/teacher_calendar.html:234
 msgid "Воскресенье"
@@ -1043,7 +1035,7 @@ msgid "Я принимаю условия использования и поли
 msgstr "Foydalanish shartlari va maxfiylik siyosatini qabul qilaman"
 
 #: teachers/forms.py:237 teachers/forms.py:419 teachers/forms.py:638
-#: templates/registration/base_wizard.html:168
+#: templates/registration/base_wizard.html:169
 #: templates/registration/step2_account_security.html:89
 msgid "Введите пароль"
 msgstr "Parolni kiriting"
@@ -1053,21 +1045,21 @@ msgstr "Parolni kiriting"
 msgid "Повторите пароль"
 msgstr "Parolni takrorlang"
 
-#: teachers/forms.py:247 teachers/forms.py:648 teachers/forms.py:1108
+#: teachers/forms.py:247 teachers/forms.py:648 teachers/forms.py:1129
 #: teachers/registration_forms.py:269
 msgid "Этот email уже используется"
 msgstr "Bu email allaqachon ishlatilmoqda"
 
-#: teachers/forms.py:253 teachers/forms.py:654 teachers/forms.py:1119
+#: teachers/forms.py:253 teachers/forms.py:654 teachers/forms.py:1140
 msgid "Этот номер телефона уже используется"
 msgstr "Bu telefon raqami allaqachon ishlatilmoqda"
 
-#: teachers/forms.py:259 templates/registration/base_wizard.html:184
+#: teachers/forms.py:259 templates/registration/base_wizard.html:185
 msgid "Выберите хотя бы один рабочий день"
 msgstr "Kamida bitta ish kunini tanlang"
 
 #: teachers/forms.py:265 teachers/registration_forms.py:181
-#: templates/registration/base_wizard.html:183
+#: templates/registration/base_wizard.html:184
 msgid "Выберите хотя бы один язык преподавания"
 msgstr "Kamida bitta o'qitish tilini tanlang"
 
@@ -1086,7 +1078,7 @@ msgstr "Fanni tanlang"
 msgid "Цена за час (сум)"
 msgstr "Soatiga narx (so'm)"
 
-#: teachers/forms.py:338 teachers/forms.py:749 teachers/models.py:1261
+#: teachers/forms.py:338 teachers/forms.py:749 teachers/models.py:1291
 msgid "Бесплатное пробное занятие"
 msgstr "Bepul sinov darsi"
 
@@ -1141,7 +1133,7 @@ msgstr "Meni eslab qolish"
 msgid "Предметы, которые хочу изучать"
 msgstr "O'rganmoqchi bo'lgan fanlar"
 
-#: teachers/forms.py:504 teachers/forms.py:1193
+#: teachers/forms.py:504 teachers/forms.py:1214
 msgid "Выберите один или несколько предметов"
 msgstr "Bir yoki bir nechta fanni tanlang"
 
@@ -1164,7 +1156,7 @@ msgstr ""
 "Kamida 20 ta belgi - bu o'qituvchilarga ehtiyojlaringizni yaxshiroq "
 "tushunishga yordam beradi"
 
-#: teachers/forms.py:532 teachers/forms.py:998
+#: teachers/forms.py:532 teachers/forms.py:1019
 #: templates/logic/student_profile.html:927
 msgid "Школа/Университет"
 msgstr "Maktab/Universitet"
@@ -1173,27 +1165,27 @@ msgstr "Maktab/Universitet"
 msgid "Название вашей школы или университета"
 msgstr "Maktabingiz yoki universitetingiz nomi"
 
-#: teachers/forms.py:542 teachers/models.py:1377
+#: teachers/forms.py:542 teachers/models.py:1407
 msgid "Предпочитаемый формат обучения"
 msgstr "Afzal ko'rilgan o'qitish formati"
 
-#: teachers/forms.py:553 teachers/forms.py:1001 teachers/models.py:1359
+#: teachers/forms.py:553 teachers/forms.py:1022 teachers/models.py:1389
 msgid "Минимальный бюджет (сум/час)"
 msgstr "Minimal byudjet (so'm/soat)"
 
-#: teachers/forms.py:560 teachers/forms.py:1007
+#: teachers/forms.py:560 teachers/forms.py:1028
 msgid "Минимальная цена, которую готовы платить"
 msgstr "To'lashga tayyor bo'lgan minimal narx"
 
-#: teachers/forms.py:567 teachers/forms.py:1002 teachers/models.py:1369
+#: teachers/forms.py:567 teachers/forms.py:1023 teachers/models.py:1399
 msgid "Максимальный бюджет (сум/час)"
 msgstr "Maksimal byudjet (so'm/soat)"
 
-#: teachers/forms.py:574 teachers/forms.py:1008
+#: teachers/forms.py:574 teachers/forms.py:1029
 msgid "Максимальная цена, которую готовы платить"
 msgstr "To'lashga tayyor bo'lgan maksimal narx"
 
-#: teachers/forms.py:583 teachers/forms.py:987
+#: teachers/forms.py:583 teachers/forms.py:1008
 msgid "@username или +998901234567"
 msgstr "@username yoki +998901234567"
 
@@ -1205,7 +1197,7 @@ msgstr "O'qituvchilar bilan qulay aloqa uchun Telegram'ingizni ko'rsating"
 msgid "Укажите номер WhatsApp для связи"
 msgstr "Aloqa uchun WhatsApp raqamingizni ko'rsating"
 
-#: teachers/forms.py:610 teachers/forms.py:942
+#: teachers/forms.py:610 teachers/forms.py:963
 msgid "Доступные дни для занятий"
 msgstr "Dars uchun mavjud kunlar"
 
@@ -1213,15 +1205,15 @@ msgstr "Dars uchun mavjud kunlar"
 msgid "Выберите удобные дни для занятий"
 msgstr "Darslar uchun qulay kunlarni tanlang"
 
-#: teachers/forms.py:660 teachers/forms.py:1199
+#: teachers/forms.py:660 teachers/forms.py:1220
 msgid "Выберите хотя бы один предмет"
 msgstr "Kamida bitta fanni tanlang"
 
-#: teachers/forms.py:662 teachers/forms.py:1201
+#: teachers/forms.py:662 teachers/forms.py:1222
 msgid "Можно выбрать максимум 10 предметов"
 msgstr "Maksimal 10 ta fanni tanlash mumkin"
 
-#: teachers/forms.py:671 teachers/forms.py:1030
+#: teachers/forms.py:671 teachers/forms.py:1051
 #: templates/logic/register_student.html:1484
 msgid "Максимальный бюджет должен быть больше минимального"
 msgstr "Maksimal byudjet minimaldan katta bo'lishi kerak"
@@ -1254,93 +1246,91 @@ msgstr "O'qitish tajribangiz haqida gapiring..."
 msgid "Название университета"
 msgstr "Universitet nomi"
 
-#: teachers/forms.py:915 templates/logic/student_profile.html:849
+#: teachers/forms.py:936 templates/logic/student_profile.html:849
 msgid "Интересующие предметы"
 msgstr "Qiziqtiruvchi fanlar"
 
-#: teachers/forms.py:924
+#: teachers/forms.py:945
 msgid "Предметы для изучения"
 msgstr "O'rganish uchun fanlar"
 
-#: teachers/forms.py:928
+#: teachers/forms.py:949
 msgid "Выберите предметы, которые хотите изучать"
 msgstr "O'rganmoqchi bo'lgan fanlarni tanlang"
 
-#: teachers/forms.py:961
+#: teachers/forms.py:982
 msgid "Краткое описание..."
 msgstr "Qisqacha tavsif..."
 
-#: teachers/forms.py:966
+#: teachers/forms.py:987
 msgid "Расскажите о своих целях обучения..."
 msgstr "O'qish maqsadlaringiz haqida gapiring..."
 
-#: teachers/forms.py:971
+#: teachers/forms.py:992
 msgid "Название школы/университета"
 msgstr "Maktab/universitet nomi"
 
-#: teachers/forms.py:995 teachers/models.py:1344
+#: teachers/forms.py:1016 teachers/models.py:1374
 msgid "Краткое описание"
 msgstr "Qisqacha tavsif"
 
-#: teachers/forms.py:996
+#: teachers/forms.py:1017
 msgid "Подробное описание целей"
 msgstr "Maqsadlarning batafsil tavsifi"
 
-#: teachers/forms.py:1000
+#: teachers/forms.py:1021
 msgid "Предпочитаемый формат"
 msgstr "Afzal ko'rilgan format"
 
-#: teachers/forms.py:1009
+#: teachers/forms.py:1030
 msgid "Ваш Telegram username или номер телефона"
 msgstr "Telegram username yoki telefon raqamingiz"
 
-#: teachers/forms.py:1010
+#: teachers/forms.py:1031
 msgid "Номер WhatsApp для связи"
 msgstr "Aloqa uchun WhatsApp raqami"
 
-#: teachers/forms.py:1064 teachers/forms.py:1172
+#: teachers/forms.py:1085 teachers/forms.py:1193
 msgid "Ваше имя"
 msgstr "Ismingiz"
 
-#: teachers/forms.py:1068 teachers/forms.py:1182
+#: teachers/forms.py:1089 teachers/forms.py:1203
 msgid "Ваша фамилия"
 msgstr "Familiyangiz"
 
-#: teachers/forms.py:1132
+#: teachers/forms.py:1153
 msgid "Введите ваше сообщение..."
 msgstr "Xabaringizni kiriting..."
 
-#: teachers/forms.py:1139 teachers/models.py:1527
+#: teachers/forms.py:1160 teachers/models.py:1562
 #: templates/booking/teacher_calendar.html:109
 #: templates/notifications/detail.html:526
 msgid "Сообщение"
 msgstr "Xabar"
 
-#: teachers/forms.py:1152 teachers/views.py:2320
+#: teachers/forms.py:1173 teachers/views.py:2373
 msgid "Сообщение не может быть пустым"
 msgstr "Xabar bo'sh bo'lishi mumkin emas"
 
-#: teachers/forms.py:1154
+#: teachers/forms.py:1175
 msgid "Сообщение слишком короткое"
 msgstr "Xabar juda qisqa"
 
-#: teachers/forms.py:1156
+#: teachers/forms.py:1177
 msgid "Сообщение слишком длинное (максимум 2000 символов)"
 msgstr "Xabar juda uzun (ko'pi bilan 2000 ta belgi)"
 
-#: teachers/forms.py:1189
+#: teachers/forms.py:1210
 msgid "Какие предметы хотите изучать?"
 msgstr "Qaysi fanlarni o'rganmoqchisiz?"
 
 #: teachers/lesson_files_views.py:70
-#, fuzzy
-#| msgid "Доступ запрещен"
 msgid "Доступ запрещён"
 msgstr "Ruxsat berilmagan"
 
 #: teachers/lesson_files_views.py:102
 msgid "Загрузка файлов временно недоступна"
-msgstr ""
+msgstr "Fayl yuklash vaqtincha mavjud emas"
 
 #: teachers/lesson_files_views.py:107 teachers/lesson_files_views.py:176
 #: teachers/video_views.py:69 teachers/video_views.py:144
@@ -1349,10 +1339,8 @@ msgid "Некорректный JSON"
 msgstr "Yaroqsiz JSON"
 
 #: teachers/lesson_files_views.py:119 teachers/lesson_files_views.py:198
-#, fuzzy
-#| msgid "Недопустимый тип изображения"
 msgid "Недопустимый формат файла"
-msgstr "Rasm turi noto'g'ri"
+msgstr "Yaroqsiz fayl formati"
 
 #: teachers/lesson_files_views.py:125 teachers/video_views.py:84
 #: teachers/video_views.py:224
@@ -1371,30 +1359,22 @@ msgid "Не удалось создать ссылку для загрузки"
 msgstr "Yuklash havolasini yaratib bo'lmadi"
 
 #: teachers/lesson_files_views.py:188
-#, fuzzy
-#| msgid "Недостаточно средств для вывода"
 msgid "Недостаточно данных о файле"
-msgstr "Yechib olish uchun mablag' yetarli emas"
+msgstr "Fayl haqida ma'lumot yetarli emas"
 
 #: teachers/lesson_files_views.py:194
-#, fuzzy
-#| msgid "Недопустимый URL видео"
 msgid "Недопустимый путь файла"
-msgstr "Yaroqsiz video URL"
+msgstr "Yaroqsiz fayl yo'li"
 
 #: teachers/lesson_files_views.py:196
-#, fuzzy
-#| msgid "Недопустимый URL видео"
 msgid "Недопустимый URL файла"
-msgstr "Yaroqsiz video URL"
+msgstr "Yaroqsiz fayl URL manzili"
 
 #: teachers/lesson_files_views.py:223
-#, fuzzy
-#| msgid "Оставить отзыв можно только после завершения урока."
 msgid "Удалить файл может только тот, кто его загрузил"
-msgstr "Sharhni faqat dars tugagandan keyin qoldirish mumkin."
+msgstr "Faylni faqat uni yuklagan shaxs o'chira oladi"
 
-#: teachers/models.py:46 teachers/models.py:1629 teachers/models.py:2665
+#: teachers/models.py:46 teachers/models.py:1669 teachers/models.py:2716
 #: templates/billing/teacher_subscribers.html:153
 #: templates/booking/teacher_calendar.html:107
 #: templates/emails/lesson_reminder.html:34
@@ -1437,7 +1417,7 @@ msgstr "Fan kategoriyasi"
 msgid "Категории предметов"
 msgstr "Fan kategoriyalari"
 
-#: teachers/models.py:155 teachers/models.py:2226
+#: teachers/models.py:155 teachers/models.py:2266
 msgid "Категория"
 msgstr "Kategoriya"
 
@@ -1459,250 +1439,250 @@ msgstr "Tez qidiruv uchun normallashtirilgan matn (kichik harf: nom + tavsif)"
 msgid "Предметы"
 msgstr "Fanlar"
 
-#: teachers/models.py:204
+#: teachers/models.py:206
 msgid "Города"
 msgstr "Shaharlar"
 
-#: teachers/models.py:212
+#: teachers/models.py:214
 msgid "Кто выдал сертификат"
 msgstr "Sertifikatni kim bergan"
 
-#: teachers/models.py:217 templates/registration/step6_certificates.html:27
+#: teachers/models.py:219 templates/registration/step6_certificates.html:27
 msgid "Сертификат"
 msgstr "Sertifikat"
 
-#: teachers/models.py:218
+#: teachers/models.py:220
 msgid "Сертификаты"
 msgstr "Sertifikatlar"
 
-#: teachers/models.py:226
+#: teachers/models.py:228
 msgid "Бакалавр"
 msgstr "Bakalavr"
 
-#: teachers/models.py:227
+#: teachers/models.py:229
 msgid "Магистр"
 msgstr "Magistr"
 
-#: teachers/models.py:233 teachers/models.py:1320
+#: teachers/models.py:235 teachers/models.py:1350
 #: templates/logic/conversation_detail.html:1157
 #: templates/logic/student_suggestions.html:335
 #: templates/logic/teacher_detail.html:2126
 msgid "Онлайн"
 msgstr "Onlayn"
 
-#: teachers/models.py:234 teachers/models.py:1321
+#: teachers/models.py:236 teachers/models.py:1351
 #: templates/logic/conversation_detail.html:1156
 #: templates/logic/student_suggestions.html:335
 msgid "Офлайн"
 msgstr "Oflayn"
 
-#: teachers/models.py:235 teachers/models.py:1322
+#: teachers/models.py:237 teachers/models.py:1352
 msgid "Онлайн и офлайн"
 msgstr "Onlayn va oflayn"
 
-#: teachers/models.py:238
+#: teachers/models.py:240
 msgid "Узбекский"
 msgstr "O'zbekcha"
 
-#: teachers/models.py:239 teachers/models.py:2406
+#: teachers/models.py:241 teachers/models.py:2446
 msgid "Русский"
 msgstr "Ruscha"
 
-#: teachers/models.py:240
+#: teachers/models.py:242
 msgid "Английский"
 msgstr "Inglizcha"
 
-#: teachers/models.py:241
+#: teachers/models.py:243
 msgid "Турецкий"
 msgstr "Turkcha"
 
-#: teachers/models.py:242
+#: teachers/models.py:244
 msgid "Немецкий"
 msgstr "Nemischa"
 
-#: teachers/models.py:243
+#: teachers/models.py:245
 msgid "Французский"
 msgstr "Fransuzcha"
 
-#: teachers/models.py:244
+#: teachers/models.py:246
 msgid "Другой"
 msgstr "Boshqa"
 
-#: teachers/models.py:250
+#: teachers/models.py:252
 msgid "Краткое описание о себе"
 msgstr "O'zingiz haqingizda qisqacha"
 
-#: teachers/models.py:258
+#: teachers/models.py:260
 msgid "Лет опыта преподавания"
 msgstr "O'qitish tajribasi (yil)"
 
-#: teachers/models.py:274
+#: teachers/models.py:276
 msgid "Коды языков через запятую (uz,ru,en)"
 msgstr "Til kodlari vergul bilan ajratilgan (uz,ru,en)"
 
-#: teachers/models.py:280 teachers/models.py:1406
+#: teachers/models.py:282 teachers/models.py:1436
 msgid "Дни недели через запятую (1-7)"
 msgstr "Hafta kunlari vergul bilan ajratilgan (1-7)"
 
-#: teachers/models.py:289
+#: teachers/models.py:291
 msgid "Индивидуальное расписание для каждого дня недели"
 msgstr "Haftaning har bir kuni uchun alohida jadval"
 
-#: teachers/models.py:296 templates/logic/home.html:2189
+#: teachers/models.py:298 templates/logic/home.html:2189
 msgid "Рекомендуемый учитель"
 msgstr "Tavsiya etilgan o'qituvchi"
 
-#: teachers/models.py:302
+#: teachers/models.py:304
 msgid "Приоритет в выдаче (0-100). Рассчитывается автоматически."
 msgstr "Ko'rsatishdagi ustuvorlik (0-100). Avtomatik hisoblanadi."
 
-#: teachers/models.py:310
+#: teachers/models.py:312
 msgid "URL видео-визитки в облачном хранилище"
 msgstr "Bulutli xotiradagi video tanishtiruv URL manzili"
 
-#: teachers/models.py:319
+#: teachers/models.py:321
 msgid "Нормализованный текст для быстрого поиска (заполняется автоматически)"
 msgstr "Tez qidiruv uchun normallashtirilgan matn (avtomatik to'ldiriladi)"
 
-#: teachers/models.py:329 templates/logic/teacher_profile.html:1480
+#: teachers/models.py:331 templates/logic/teacher_profile.html:1480
 #: templates/registration/complete.html:45
 msgid "На модерации"
 msgstr "Moderatsiyada"
 
-#: teachers/models.py:330 templates/logic/teacher_profile.html:1482
+#: teachers/models.py:332 templates/logic/teacher_profile.html:1482
 msgid "Одобрено"
 msgstr "Tasdiqlangan"
 
-#: teachers/models.py:331 templates/logic/teacher_profile.html:1484
+#: teachers/models.py:333 templates/logic/teacher_profile.html:1484
 msgid "Отклонено"
 msgstr "Rad etilgan"
 
-#: teachers/models.py:338
+#: teachers/models.py:340
 msgid "Статус модерации"
 msgstr "Moderatsiya holati"
 
-#: teachers/models.py:343
+#: teachers/models.py:345
 msgid "Комментарий модератора"
 msgstr "Moderator izohi"
 
-#: teachers/models.py:344
+#: teachers/models.py:346
 msgid "Причина отклонения или рекомендации"
 msgstr "Rad etish sababi yoki tavsiyalar"
 
-#: teachers/models.py:350
+#: teachers/models.py:352
 msgid "Дата модерации"
 msgstr "Moderatsiya sanasi"
 
-#: teachers/models.py:359
+#: teachers/models.py:361
 msgid "Проверил"
 msgstr "Tekshirdi"
 
 # ========== STUDENT DETAIL PAGE ==========
-#: teachers/models.py:363 teachers/models.py:1727 teachers/models.py:1751
+#: teachers/models.py:365 teachers/models.py:1767 teachers/models.py:1791
 msgid "Профиль учителя"
 msgstr "O'qituvchi profili"
 
 # ========== STUDENT DETAIL PAGE ==========
-#: teachers/models.py:364
+#: teachers/models.py:366
 msgid "Профили учителей"
 msgstr "O'qituvchi profillari"
 
-#: teachers/models.py:1259
+#: teachers/models.py:1289
 msgid "Цена за час в сумах"
 msgstr "Soatlik narx (so'm)"
 
-#: teachers/models.py:1265
+#: teachers/models.py:1295
 msgid "Длительность пробного урока (30 или 60 минут)"
 msgstr "Sinov darsi davomiyligi (30 yoki 60 daqiqa)"
 
-#: teachers/models.py:1273
+#: teachers/models.py:1303
 msgid ""
 "Цена платного пробного урока в сумах (не указывается, если пробный "
 "бесплатный)"
 msgstr "Pullik sinov darsi narxi (so'm) (sinov bepul bo'lsa kiritilmaydi)"
 
-#: teachers/models.py:1275
+#: teachers/models.py:1305
 msgid "Дополнительная информация по предмету"
 msgstr "Fan bo'yicha qo'shimcha ma'lumot"
 
-#: teachers/models.py:1280
+#: teachers/models.py:1310
 msgid "Предмет учителя"
 msgstr "O'qituvchi fani"
 
-#: teachers/models.py:1281
+#: teachers/models.py:1311
 msgid "Предметы учителей"
 msgstr "O'qituvchi fanlari"
 
-#: teachers/models.py:1312
+#: teachers/models.py:1342
 msgid "Начальная школа (1-4 класс)"
 msgstr "Boshlang'ich maktab (1-4 sinf)"
 
-#: teachers/models.py:1313
+#: teachers/models.py:1343
 msgid "Средняя школа (5-9 класс)"
 msgstr "O'rta maktab (5-9 sinf)"
 
-#: teachers/models.py:1314
+#: teachers/models.py:1344
 msgid "Старшая школа (10-11 класс)"
 msgstr "Yuqori sinf (10-11 sinf)"
 
-#: teachers/models.py:1315
+#: teachers/models.py:1345
 msgid "Университет"
 msgstr "Universitet"
 
-#: teachers/models.py:1316
+#: teachers/models.py:1346
 msgid "Взрослый"
 msgstr "Kattalar"
 
-#: teachers/models.py:1349
+#: teachers/models.py:1379
 msgid "Описание целей и пожеланий"
 msgstr "Maqsad va istaklar tavsifi"
 
-#: teachers/models.py:1350
+#: teachers/models.py:1380
 msgid "Расскажите о своих целях обучения, уровне подготовки и ожиданиях"
 msgstr ""
 "O'quv maqsadlaringiz, tayyorgarlik darajangiz va kutganlaringiz haqida "
 "gapirib bering"
 
-#: teachers/models.py:1360
+#: teachers/models.py:1390
 msgid "Минимальная цена, которую готов платить"
 msgstr "To'lashga tayyor minimal narx"
 
-#: teachers/models.py:1370
+#: teachers/models.py:1400
 msgid "Максимальная цена, которую готов платить"
 msgstr "To'lashga tayyor maksimal narx"
 
-#: teachers/models.py:1385
+#: teachers/models.py:1415
 msgid "Ваш Telegram username (@username) или номер телефона"
 msgstr "Telegram username (@username) yoki telefon raqamingiz"
 
-#: teachers/models.py:1392
+#: teachers/models.py:1422
 msgid "Номер WhatsApp для связи (+998 90 123 45 67)"
 msgstr "Aloqa uchun WhatsApp raqami (+998 90 123 45 67)"
 
-#: teachers/models.py:1397
+#: teachers/models.py:1427
 msgid "Активный профиль"
 msgstr "Faol profil"
 
-#: teachers/models.py:1398
+#: teachers/models.py:1428
 msgid "Ищет ли ученик учителя в данный момент"
 msgstr "O'quvchi hozir o'qituvchi qidiryaptimi"
 
-#: teachers/models.py:1405
+#: teachers/models.py:1435
 msgid "Доступные дни недели"
 msgstr "Mavjud hafta kunlari"
 
 # ========== STUDENT DETAIL PAGE ==========
-#: teachers/models.py:1413 teachers/models.py:1728 teachers/models.py:1759
+#: teachers/models.py:1443 teachers/models.py:1768 teachers/models.py:1799
 #: templates/logic/student_detail.html:4
 msgid "Профиль ученика"
 msgstr "O'quvchi profili"
 
 # ========== STUDENT DETAIL PAGE ==========
-#: teachers/models.py:1414
+#: teachers/models.py:1444
 msgid "Профили учеников"
 msgstr "O'quvchi profillari"
 
-#: teachers/models.py:1437 teachers/models.py:1439 teachers/models.py:1441
+#: teachers/models.py:1467 teachers/models.py:1469 teachers/models.py:1471
 #: templates/booking/book_teacher.html:225
 #: templates/booking/book_teacher.html:350
 #: templates/logic/favorites_teachers.html:426
@@ -1714,230 +1694,230 @@ msgstr "O'quvchi profillari"
 msgid "сум/час"
 msgstr "so'm/soat"
 
-#: teachers/models.py:1439 templates/logic/home.html:2100
+#: teachers/models.py:1469 templates/logic/home.html:2100
 #: templates/logic/students_list.html:1196
 msgid "До"
 msgstr "Gacha"
 
-#: teachers/models.py:1441 templates/logic/favorites_teachers.html:424
+#: teachers/models.py:1471 templates/logic/favorites_teachers.html:424
 #: templates/logic/home.html:2094 templates/logic/students_list.html:1190
 msgid "От"
 msgstr "Dan"
 
-#: teachers/models.py:1442 templates/logic/home.html:2242
+#: teachers/models.py:1472 templates/logic/home.html:2242
 #: templates/logic/teacher_detail.html:2572
 msgid "Договорная"
 msgstr "Kelishiladi"
 
-#: teachers/models.py:1501 templates/logic/conversation_detail.html:7
+#: teachers/models.py:1531 templates/logic/conversation_detail.html:7
 msgid "Переписка"
 msgstr "Yozishma"
 
-#: teachers/models.py:1502
+#: teachers/models.py:1532
 msgid "Переписки"
 msgstr "Yozishmalar"
 
-#: teachers/models.py:1528 templates/base.html:1358 templates/base.html:1524
+#: teachers/models.py:1563 templates/base.html:1358 templates/base.html:1524
 #: templates/logic/conversations_list.html:5
 #: templates/logic/conversations_list.html:525
 msgid "Сообщения"
 msgstr "Xabarlar"
 
-#: teachers/models.py:1556
+#: teachers/models.py:1596
 msgid "Урок, после которого оставлен отзыв"
 msgstr "Sharh qoldirilgan dars"
 
-#: teachers/models.py:1561
+#: teachers/models.py:1601
 msgid "Оценка от 1 до 5"
 msgstr "1 dan 5 gacha baho"
 
-#: teachers/models.py:1570
+#: teachers/models.py:1610
 msgid "Проверенный отзыв (был реальный урок)"
 msgstr "Tasdiqlangan sharh (haqiqiy dars bo'lgan)"
 
-#: teachers/models.py:1579 teachers/models.py:2214
+#: teachers/models.py:1619 teachers/models.py:2254
 #: templates/billing/teacher_student_progress.html:82
 #: templates/billing/teacher_student_progress.html:89
 msgid "Отзыв"
 msgstr "Sharh"
 
-#: teachers/models.py:1580 templates/logic/teacher_detail.html:2458
+#: teachers/models.py:1620 templates/logic/teacher_detail.html:2458
 msgid "Отзывы"
 msgstr "Sharhlar"
 
-#: teachers/models.py:1597
+#: teachers/models.py:1637
 msgid "Избранный учитель"
 msgstr "Saqlangan o'qituvchi"
 
-#: teachers/models.py:1598 templates/logic/student_profile.html:816
+#: teachers/models.py:1638 templates/logic/student_profile.html:816
 msgid "Избранные учителя"
 msgstr "Saqlangan o'qituvchilar"
 
-#: teachers/models.py:1612
+#: teachers/models.py:1652
 msgid "Избранный ученик"
 msgstr "Saqlangan o'quvchi"
 
-#: teachers/models.py:1613 templates/logic/teacher_profile.html:1548
+#: teachers/models.py:1653 templates/logic/teacher_profile.html:1548
 msgid "Избранные ученики"
 msgstr "Saqlangan o'quvchilar"
 
-#: teachers/models.py:1639
+#: teachers/models.py:1679
 msgid "Отказ ученика от лида"
 msgstr "O'quvchining lid kontaktidan voz kechishi"
 
-#: teachers/models.py:1640
+#: teachers/models.py:1680
 msgid "Отказы учеников от лидов"
 msgstr "O'quvchilarning lid kontaktidan voz kechishlari"
 
-#: teachers/models.py:1656
+#: teachers/models.py:1696
 msgid "Связанный пользователь"
 msgstr "Bog'langan foydalanuvchi"
 
-#: teachers/models.py:1660
+#: teachers/models.py:1700
 msgid "Telegram ID"
 msgstr "Telegram ID"
 
-#: teachers/models.py:1661
+#: teachers/models.py:1701
 msgid "Уникальный ID пользователя в Telegram"
 msgstr "Telegramdagi noyob foydalanuvchi ID"
 
-#: teachers/models.py:1667
+#: teachers/models.py:1707
 msgid "Username в Telegram"
 msgstr "Telegramdagi foydalanuvchi nomi"
 
-#: teachers/models.py:1672
+#: teachers/models.py:1712
 msgid "Имя в Telegram"
 msgstr "Telegramdagi ism"
 
-#: teachers/models.py:1677
+#: teachers/models.py:1717
 msgid "Фамилия в Telegram"
 msgstr "Telegramdagi familiya"
 
-#: teachers/models.py:1683
+#: teachers/models.py:1723
 msgid "Язык интерфейса"
 msgstr "Interfeys tili"
 
-#: teachers/models.py:1689
+#: teachers/models.py:1729
 msgid "Уведомления включены"
 msgstr "Bildirishnomalar yoqilgan"
 
-#: teachers/models.py:1695
+#: teachers/models.py:1735
 msgid "Нажал Start в боте"
 msgstr "Botda Start bosgan"
 
-#: teachers/models.py:1699
+#: teachers/models.py:1739
 msgid "Последнее взаимодействие"
 msgstr "Oxirgi o'zaro aloqa"
 
-#: teachers/models.py:1703
+#: teachers/models.py:1743
 msgid "Дата регистрации в боте"
 msgstr "Botda ro'yxatdan o'tgan sana"
 
-#: teachers/models.py:1707
+#: teachers/models.py:1747
 msgid "Telegram пользователь"
 msgstr "Telegram foydalanuvchisi"
 
-#: teachers/models.py:1708
+#: teachers/models.py:1748
 msgid "Telegram пользователи"
 msgstr "Telegram foydalanuvchilari"
 
-#: teachers/models.py:1732
+#: teachers/models.py:1772
 msgid "Тип профиля"
 msgstr "Profil turi"
 
 # ========== TEACHER PROFILE ==========
-#: teachers/models.py:1733
+#: teachers/models.py:1773
 msgid "IP адрес просмотревшего"
 msgstr "Ko'ruvchining IP manzili"
 
-#: teachers/models.py:1740
+#: teachers/models.py:1780
 msgid "Пользователь (если авторизован)"
 msgstr "Foydalanuvchi (agar tizimga kirgan bo'lsa)"
 
-#: teachers/models.py:1742
+#: teachers/models.py:1782
 msgid "Дата и время просмотра"
 msgstr "Ko'rish sanasi va vaqti"
 
-#: teachers/models.py:1768
+#: teachers/models.py:1808
 msgid "Дата просмотра"
 msgstr "Ko'rish sanasi"
 
 # ========== TEACHER PROFILE ==========
-#: teachers/models.py:1772
+#: teachers/models.py:1812
 msgid "Количество просмотров в этот день"
 msgstr "Shu kundagi ko'rishlar soni"
 
-#: teachers/models.py:1776
+#: teachers/models.py:1816
 msgid "Время последнего просмотра в этот день"
 msgstr "Shu kundagi oxirgi ko'rish vaqti"
 
-#: teachers/models.py:1780
+#: teachers/models.py:1820
 msgid "User Agent браузера"
 msgstr "Brauzer user agenti"
 
-#: teachers/models.py:1783 teachers/models.py:1837
+#: teachers/models.py:1823 teachers/models.py:1877
 msgid "Просмотр профиля"
 msgstr "Profil ko'rilishi"
 
-#: teachers/models.py:1784
+#: teachers/models.py:1824
 msgid "Просмотры профилей"
 msgstr "Profil ko'rilishlari"
 
-#: teachers/models.py:1827
+#: teachers/models.py:1867
 msgid "Ожидает отправки"
 msgstr "Yuborilishini kutmoqda"
 
-#: teachers/models.py:1829 teachers/models.py:1908
+#: teachers/models.py:1869 teachers/models.py:1948
 #: templates/logic/conversation_detail.html:1067
 #: templates/logic/conversation_detail.html:1161
 msgid "Отправлено"
 msgstr "Yuborildi"
 
-#: teachers/models.py:1831
+#: teachers/models.py:1871
 msgid "Отменено"
 msgstr "Bekor qilindi"
 
-#: teachers/models.py:1835
+#: teachers/models.py:1875
 msgid "Новое сообщение"
 msgstr "Yangi xabar"
 
-#: teachers/models.py:1836
+#: teachers/models.py:1876
 msgid "Новый отзыв"
 msgstr "Yangi sharh"
 
-#: teachers/models.py:1838
+#: teachers/models.py:1878
 msgid "Системное уведомление"
 msgstr "Tizim bildirishnomasi"
 
-#: teachers/models.py:1839
+#: teachers/models.py:1879
 msgid "Массовая рассылка"
 msgstr "Ommaviy xabar yuborish"
 
-#: teachers/models.py:1848 templates/billing/topup_request.html:213
+#: teachers/models.py:1888 templates/billing/topup_request.html:213
 msgid "Получатель"
 msgstr "Qabul qiluvchi"
 
-#: teachers/models.py:1854
+#: teachers/models.py:1894
 msgid "Тип уведомления"
 msgstr "Bildirishnoma turi"
 
-#: teachers/models.py:1858 teachers/models.py:2117
+#: teachers/models.py:1898 teachers/models.py:2157
 msgid "Заголовок"
 msgstr "Sarlavha"
 
-#: teachers/models.py:1859 teachers/models.py:2422
+#: teachers/models.py:1899 teachers/models.py:2462
 msgid "Текст сообщения"
 msgstr "Xabar matni"
 
-#: teachers/models.py:1863
+#: teachers/models.py:1903
 msgid "Дополнительные данные"
 msgstr "Qo'shimcha ma'lumotlar"
 
-#: teachers/models.py:1864
+#: teachers/models.py:1904
 msgid "JSON с доп. информацией (sender_id, conversation_id, url и т.д.)"
 msgstr "Qo'shimcha ma'lumotli JSON (sender_id, conversation_id, url va h.k.)"
 
-#: teachers/models.py:1873 teachers/models.py:1988 teachers/models.py:2582
+#: teachers/models.py:1913 teachers/models.py:2028 teachers/models.py:2625
 #: templates/billing/teacher_student_progress.html:82
 #: templates/billing/teacher_student_progress.html:88
 #: templates/billing/teacher_student_progress.html:117
@@ -1949,218 +1929,218 @@ msgstr "Qo'shimcha ma'lumotli JSON (sender_id, conversation_id, url va h.k.)"
 msgid "Статус"
 msgstr "Holat"
 
-#: teachers/models.py:1877
+#: teachers/models.py:1917
 msgid "Количество попыток"
 msgstr "Urinishlar soni"
 
-#: teachers/models.py:1881
+#: teachers/models.py:1921
 msgid "Максимум попыток"
 msgstr "Maksimal urinishlar"
 
 # ========== JAVASCRIPT MESSAGES ==========
-#: teachers/models.py:1885
+#: teachers/models.py:1925
 msgid "Последняя ошибка"
 msgstr "Oxirgi xato"
 
-#: teachers/models.py:1892 teachers/models.py:2168
+#: teachers/models.py:1932 teachers/models.py:2208
 msgid "Создано"
 msgstr "Yaratilgan"
 
-#: teachers/models.py:1897
+#: teachers/models.py:1937
 msgid "Запланировано на"
 msgstr "Rejalashtirilgan vaqt"
 
-#: teachers/models.py:1898
+#: teachers/models.py:1938
 msgid "Время когда уведомление должно быть отправлено"
 msgstr "Bildirishnoma yuborilishi kerak bo'lgan vaqt"
 
-#: teachers/models.py:1903
+#: teachers/models.py:1943
 msgid "Начало обработки"
 msgstr "Qayta ishlash boshlandi"
 
-#: teachers/models.py:1916
+#: teachers/models.py:1956
 msgid "Ключ идемпотентности"
 msgstr "Idempotentlik kaliti"
 
-#: teachers/models.py:1917
+#: teachers/models.py:1957
 msgid "Уникальный ключ для предотвращения дублирования"
 msgstr "Takrorlanishni oldini olish uchun noyob kalit"
 
-#: teachers/models.py:1921
+#: teachers/models.py:1961
 msgid "Уведомление в очереди"
 msgstr "Navbatdagi bildirishnoma"
 
-#: teachers/models.py:1922
+#: teachers/models.py:1962
 msgid "Очередь уведомлений"
 msgstr "Bildirishnomalar navbati"
 
-#: teachers/models.py:1973
+#: teachers/models.py:2013
 msgid "Успешно"
 msgstr "Muvaffaqiyatli"
 
-#: teachers/models.py:1975
+#: teachers/models.py:2015
 msgid "Пропущено"
 msgstr "O'tkazib yuborildi"
 
-#: teachers/models.py:1982 teachers/models.py:2256 teachers/models.py:2470
+#: teachers/models.py:2022 teachers/models.py:2296 teachers/models.py:2510
 #: templates/logic/_profile_edit_enhancements.html:405
 msgid "Уведомление"
 msgstr "Bildirishnoma"
 
-#: teachers/models.py:1984
+#: teachers/models.py:2024
 msgid "Номер попытки"
 msgstr "Urinish raqami"
 
-#: teachers/models.py:1992
+#: teachers/models.py:2032
 msgid "Сообщение об ошибке"
 msgstr "Xato xabari"
 
-#: teachers/models.py:1997
+#: teachers/models.py:2037
 msgid "ID сообщения в Telegram"
 msgstr "Telegramdagi xabar ID"
 
-#: teachers/models.py:2002
+#: teachers/models.py:2042
 msgid "Данные ответа"
 msgstr "Javob ma'lumotlari"
 
-#: teachers/models.py:2007
+#: teachers/models.py:2047
 msgid "Время обработки (мс)"
 msgstr "Qayta ishlash vaqti (ms)"
 
-#: teachers/models.py:2012
+#: teachers/models.py:2052
 msgid "Время попытки"
 msgstr "Urinish vaqti"
 
-#: teachers/models.py:2016
+#: teachers/models.py:2056
 msgid "Лог уведомления"
 msgstr "Bildirishnoma jurnali"
 
-#: teachers/models.py:2017
+#: teachers/models.py:2057
 msgid "Логи уведомлений"
 msgstr "Bildirishnoma jurnallari"
 
-#: teachers/models.py:2031
+#: teachers/models.py:2071
 msgid "Поисковый запрос"
 msgstr "Qidiruv so'rovi"
 
-#: teachers/models.py:2044
+#: teachers/models.py:2084
 msgid "IP адрес"
 msgstr "IP manzil"
 
-#: teachers/models.py:2045
+#: teachers/models.py:2085
 msgid "Найдено результатов"
 msgstr "Topilgan natijalar"
 
-#: teachers/models.py:2051
+#: teachers/models.py:2091
 msgid "Выбранный предмет"
 msgstr "Tanlangan fan"
 
-#: teachers/models.py:2053
+#: teachers/models.py:2093
 msgid "Дата поиска"
 msgstr "Qidiruv sanasi"
 
-#: teachers/models.py:2056
+#: teachers/models.py:2096
 msgid "Лог поиска предметов"
 msgstr "Fan qidiruvi jurnali"
 
-#: teachers/models.py:2057
+#: teachers/models.py:2097
 msgid "Логи поиска предметов"
 msgstr "Fan qidiruvi jurnallari"
 
-#: teachers/models.py:2108
+#: teachers/models.py:2148
 msgid "Все пользователи"
 msgstr "Barcha foydalanuvchilar"
 
-#: teachers/models.py:2109
+#: teachers/models.py:2149
 msgid "Только ученики"
 msgstr "Faqat o'quvchilar"
 
-#: teachers/models.py:2110
+#: teachers/models.py:2150
 msgid "Только учителя"
 msgstr "Faqat o'qituvchilar"
 
-#: teachers/models.py:2111
+#: teachers/models.py:2151
 msgid "Только администраторы"
 msgstr "Faqat administratorlar"
 
-#: teachers/models.py:2112 teachers/models.py:2192
+#: teachers/models.py:2152 teachers/models.py:2232
 msgid "Конкретный пользователь"
 msgstr "Aniq foydalanuvchi"
 
-#: teachers/models.py:2118
+#: teachers/models.py:2158
 msgid "Краткий заголовок уведомления"
 msgstr "Bildirishnomaning qisqa sarlavhasi"
 
-#: teachers/models.py:2123
+#: teachers/models.py:2163
 msgid "Краткий текст"
 msgstr "Qisqa matn"
 
-#: teachers/models.py:2124
+#: teachers/models.py:2164
 msgid "Текст для отображения в списке уведомлений"
 msgstr "Bildirishnomalar ro'yxatida ko'rsatiladigan matn"
 
-#: teachers/models.py:2128
+#: teachers/models.py:2168
 msgid "Полный текст"
 msgstr "To'liq matn"
 
-#: teachers/models.py:2129
+#: teachers/models.py:2169
 msgid "Подробное описание уведомления"
 msgstr "Bildirishnomaning batafsil tavsifi"
 
-#: teachers/models.py:2136
+#: teachers/models.py:2176
 msgid "Изображение"
 msgstr "Rasm"
 
-#: teachers/models.py:2137
+#: teachers/models.py:2177
 msgid "Опциональное изображение к уведомлению"
 msgstr "Bildirishnoma uchun ixtiyoriy rasm"
 
-#: teachers/models.py:2143
+#: teachers/models.py:2183
 msgid "Ссылка действия"
 msgstr "Amal havolasi"
 
-#: teachers/models.py:2144
+#: teachers/models.py:2184
 msgid "URL для перехода при клике (опционально)"
 msgstr "Bosilganda ochiladigan URL (ixtiyoriy)"
 
-#: teachers/models.py:2151 templates/notifications/detail.html:584
+#: teachers/models.py:2191 templates/notifications/detail.html:584
 msgid "Целевая аудитория"
 msgstr "Maqsadli auditoriya"
 
-#: teachers/models.py:2156
+#: teachers/models.py:2196
 msgid "Активно"
 msgstr "Faol"
 
-#: teachers/models.py:2157
+#: teachers/models.py:2197
 msgid "Только активные уведомления видны пользователям"
 msgstr "Foydalanuvchilarga faqat faol bildirishnomalar ko'rinadi"
 
-#: teachers/models.py:2162
+#: teachers/models.py:2202
 msgid "Приоритет"
 msgstr "Ustuvorlik"
 
-#: teachers/models.py:2163
+#: teachers/models.py:2203
 msgid "Чем выше число, тем выше в списке. 0 = обычный приоритет"
 msgstr ""
 "Raqam qancha katta bo'lsa, ro'yxatda shuncha yuqori. 0 = oddiy ustuvorlik"
 
-#: teachers/models.py:2173
+#: teachers/models.py:2213
 msgid "Обновлено"
 msgstr "Yangilangan"
 
-#: teachers/models.py:2182
+#: teachers/models.py:2222
 msgid "Создал"
 msgstr "Yaratgan"
 
-#: teachers/models.py:2193
+#: teachers/models.py:2233
 msgid "Если указан, уведомление будет видно только этому пользователю"
 msgstr "Agar belgilansa, bildirishnoma faqat shu foydalanuvchiga ko'rinadi"
 
-#: teachers/models.py:2204
+#: teachers/models.py:2244
 msgid "Связанное бронирование"
 msgstr "Bog'langan bron"
 
-#: teachers/models.py:2205
+#: teachers/models.py:2245
 msgid ""
 "Если уведомление о брони — позволяет подтвердить/отклонить прямо из "
 "уведомления"
@@ -2168,72 +2148,72 @@ msgstr ""
 "Bron haqidagi bildirishnoma bo'lsa — to'g'ridan-to'g'ri bildirishnomadan "
 "tasdiqlash yoki rad etish imkonini beradi"
 
-#: teachers/models.py:2209
+#: teachers/models.py:2249
 msgid "Общее"
 msgstr "Umumiy"
 
-#: teachers/models.py:2210 templates/booking/teacher_calendar.html:105
+#: teachers/models.py:2250 templates/booking/teacher_calendar.html:105
 #: templates/booking/teacher_calendar.html:246
 msgid "Бронирование"
 msgstr "Bron"
 
-#: teachers/models.py:2211 teachers/models.py:3483
+#: teachers/models.py:2251 teachers/models.py:3537
 #: templates/booking/lesson_room.html:4
 msgid "Урок"
 msgstr "Dars"
 
-#: teachers/models.py:2212
+#: teachers/models.py:2252
 msgid "Пополнение"
 msgstr "To'ldirish"
 
-#: teachers/models.py:2213
+#: teachers/models.py:2253
 msgid "Списание"
 msgstr "Yechib olish"
 
-#: teachers/models.py:2215
+#: teachers/models.py:2255
 msgid "Модерация"
 msgstr "Moderatsiya"
 
-#: teachers/models.py:2216
+#: teachers/models.py:2256
 msgid "Напоминание"
 msgstr "Eslatma"
 
-#: teachers/models.py:2218
+#: teachers/models.py:2258
 msgid "Успех"
 msgstr "Muvaffaqiyat"
 
-#: teachers/models.py:2219
+#: teachers/models.py:2259
 msgid "Предупреждение"
 msgstr "Ogohlantirish"
 
-#: teachers/models.py:2227
+#: teachers/models.py:2267
 msgid "Определяет иконку уведомления в интерфейсе"
 msgstr "Interfeysda bildirishnoma belgisini belgilaydi"
 
-#: teachers/models.py:2257 templates/base.html:1350 templates/base.html:1533
+#: teachers/models.py:2297 templates/base.html:1350 templates/base.html:1533
 #: templates/notifications/detail.html:6
 #: templates/notifications/detail.html:465 templates/notifications/list.html:6
 #: templates/notifications/list.html:363
 msgid "Уведомления"
 msgstr "Bildirishnomalar"
 
-#: teachers/models.py:2402 templates/booking/book_teacher.html:185
+#: teachers/models.py:2442 templates/booking/book_teacher.html:185
 msgid "Утро"
 msgstr "Ertalab"
 
-#: teachers/models.py:2403 templates/booking/book_teacher.html:187
+#: teachers/models.py:2443 templates/booking/book_teacher.html:187
 msgid "Вечер"
 msgstr "Kechqurun"
 
-#: teachers/models.py:2414
+#: teachers/models.py:2454
 msgid "Период"
 msgstr "Davr"
 
-#: teachers/models.py:2419
+#: teachers/models.py:2459
 msgid "Язык"
 msgstr "Til"
 
-#: teachers/models.py:2424
+#: teachers/models.py:2464
 msgid ""
 "Поддерживается Markdown: *жирный*, _курсив_. Можно использовать эмодзи и "
 "переводы строк."
@@ -2241,174 +2221,172 @@ msgstr ""
 "Markdown qo'llab-quvvatlanadi: *qalin*, _kursiv_. Emoji va yangi qatorlardan "
 "foydalanishingiz mumkin."
 
-#: teachers/models.py:2430 templates/logic/teacher_profile.html:1864
+#: teachers/models.py:2470 templates/logic/teacher_profile.html:1864
 msgid "Активен"
 msgstr "Faol"
 
-#: teachers/models.py:2431
+#: teachers/models.py:2471
 msgid "Если выключено — шаблон не попадает в рассылку."
 msgstr "O'chirilgan bo'lsa, shablon tarqatmaga kiritilmaydi."
 
-#: teachers/models.py:2437
+#: teachers/models.py:2477
 msgid "Заметка для админа"
 msgstr "Admin uchun eslatma"
 
-#: teachers/models.py:2438
+#: teachers/models.py:2478
 msgid "Необязательное описание — только для вас."
 msgstr "Ixtiyoriy tavsif, faqat siz uchun."
 
-#: teachers/models.py:2440
+#: teachers/models.py:2480
 msgid "Создан"
 msgstr "Yaratildi"
 
-#: teachers/models.py:2441
+#: teachers/models.py:2481
 msgid "Обновлён"
 msgstr "Yangilandi"
 
-#: teachers/models.py:2444
+#: teachers/models.py:2484
 msgid "Шаблон ежедневного напоминания"
 msgstr "Kunlik eslatma shabloni"
 
-#: teachers/models.py:2445
+#: teachers/models.py:2485
 msgid "Шаблоны ежедневных напоминаний"
 msgstr "Kunlik eslatma shablonlari"
 
-#: teachers/models.py:2475 templates/logic/conversation_detail.html:1067
+#: teachers/models.py:2515 templates/logic/conversation_detail.html:1067
 #: templates/logic/conversation_detail.html:1160
 #: templates/notifications/detail.html:483
 #: templates/notifications/list.html:400
 msgid "Прочитано"
 msgstr "O'qildi"
 
-#: teachers/models.py:2479
+#: teachers/models.py:2519
 msgid "Прочитанное уведомление"
 msgstr "O'qilgan bildirishnoma"
 
-#: teachers/models.py:2480
+#: teachers/models.py:2520
 msgid "Прочитанные уведомления"
 msgstr "O'qilgan bildirishnomalar"
 
-#: teachers/models.py:2503
+#: teachers/models.py:2543
 msgid "Ключ сессии Django"
 msgstr "Django sessiya kaliti"
 
-#: teachers/models.py:2508
+#: teachers/models.py:2548
 msgid "Идентификатор wizard (на случай если их будет несколько)"
 msgstr "Wizard identifikatori (bir nechta bo'lishi ehtimoliga qarshi)"
 
-#: teachers/models.py:2513
+#: teachers/models.py:2553
 msgid "На каком шаге был пользователь"
 msgstr "Foydalanuvchi qaysi bosqichda edi"
 
-#: teachers/models.py:2518
+#: teachers/models.py:2558
 msgid "Сериализованные данные wizard (storage.data)"
 msgstr "Serializatsiyalangan wizard ma'lumotlari (storage.data)"
 
-#: teachers/models.py:2524
+#: teachers/models.py:2564
 msgid "Черновик регистрации"
 msgstr "Ro'yxatdan o'tish qoralamasi"
 
-#: teachers/models.py:2525
+#: teachers/models.py:2565
 msgid "Черновики регистрации"
 msgstr "Ro'yxatdan o'tish qoralamalari"
 
-#: teachers/models.py:2563 templates/booking/teacher_calendar.html:25
+#: teachers/models.py:2603 templates/booking/teacher_calendar.html:25
 msgid "Свободен"
 msgstr "Bo'sh"
 
-#: teachers/models.py:2564
+#: teachers/models.py:2604
 msgid "Зарезервирован (ожидает подтверждения)"
 msgstr "Band qilingan (tasdiqlash kutilmoqda)"
 
-#: teachers/models.py:2565 templates/booking/teacher_calendar.html:27
+#: teachers/models.py:2605 templates/booking/teacher_calendar.html:27
 msgid "Забронирован"
 msgstr "Bron qilingan"
 
-#: teachers/models.py:2566
+#: teachers/models.py:2606
 msgid "Заблокирован учителем"
 msgstr "O'qituvchi tomonidan bloklangan"
 
-#: teachers/models.py:2575 templates/logic/teacher_detail.html:2393
+#: teachers/models.py:2618 templates/logic/teacher_detail.html:2393
 #: templates/logic/teacher_profile.html:1735
 msgid "Начало"
 msgstr "Boshlanishi"
 
-#: teachers/models.py:2576 templates/logic/teacher_detail.html:2400
+#: teachers/models.py:2619 templates/logic/teacher_detail.html:2400
 #: templates/logic/teacher_profile.html:1742
 msgid "Конец"
 msgstr "Tugashi"
 
-#: teachers/models.py:2591
+#: teachers/models.py:2634
 msgid "Временной слот"
 msgstr "Vaqt oralig'i"
 
-#: teachers/models.py:2592
+#: teachers/models.py:2635
 msgid "Временные слоты"
 msgstr "Vaqt oraliqlari"
 
-#: teachers/models.py:2638 templates/booking/my_bookings.html:392
+#: teachers/models.py:2681 templates/booking/my_bookings.html:392
 msgid "Подтверждено"
 msgstr "Tasdiqlandi"
 
-#: teachers/models.py:2639 templates/billing/student_dashboard.html:117
+#: teachers/models.py:2682 templates/billing/student_dashboard.html:117
 #: templates/billing/student_dashboard.html:119
 msgid "Завершён"
 msgstr "Yakunlandi"
 
-#: teachers/models.py:2640
+#: teachers/models.py:2683
 msgid "Отменено учеником"
 msgstr "O'quvchi tomonidan bekor qilindi"
 
-#: teachers/models.py:2641
+#: teachers/models.py:2684
 msgid "Отменено учителем"
 msgstr "O'qituvchi tomonidan bekor qilindi"
 
-#: teachers/models.py:2642
+#: teachers/models.py:2685
 msgid "Перенесено"
 msgstr "Boshqa vaqtga ko'chirildi"
 
-#: teachers/models.py:2643
+#: teachers/models.py:2686
 msgid "Заявка истекла (не подтверждена до начала урока)"
 msgstr "So'rov muddati tugadi (dars boshlanishidan oldin tasdiqlanmadi)"
 
-#: teachers/models.py:2644
+#: teachers/models.py:2687
 msgid "Ученик не пришёл"
 msgstr "O'quvchi kelmadi"
 
-#: teachers/models.py:2645
+#: teachers/models.py:2688
 msgid "Учитель не пришёл"
 msgstr "O'qituvchi kelmadi"
 
-#: teachers/models.py:2646
-#, fuzzy
-#| msgid "Ученик не пришёл"
+#: teachers/models.py:2689
 msgid "Не состоялся (никто не пришёл)"
-msgstr "O'quvchi kelmadi"
+msgstr "Bo'lib o'tmadi (hech kim kelmadi)"
 
-#: teachers/models.py:2659 templates/booking/teacher_calendar.html:70
+#: teachers/models.py:2706 templates/booking/teacher_calendar.html:70
 #: templates/booking/teacher_calendar.html:244
 msgid "Слот"
 msgstr "Slot"
 
-#: teachers/models.py:2687
+#: teachers/models.py:2738
 msgid "Сообщение от ученика при бронировании"
 msgstr "Bron qilishda o'quvchidan kelgan xabar"
 
-#: teachers/models.py:2691
+#: teachers/models.py:2742
 msgid "Комментарий учителя при подтверждении/отказе"
 msgstr "O'qituvchining tasdiqlash yoki rad etishdagi izohi"
 
-#: teachers/models.py:2696 templates/logic/teacher_detail.html:2619
+#: teachers/models.py:2747 templates/logic/teacher_detail.html:2619
 #: templates/notifications/detail.html:523
 #: templates/registration/step5_subjects.html:58
 msgid "Пробный урок"
 msgstr "Sinov darsi"
 
-#: teachers/models.py:2704
+#: teachers/models.py:2755
 msgid "Оплачено за пробный"
 msgstr "Sinov darsi uchun to'landi"
 
-#: teachers/models.py:2705
+#: teachers/models.py:2756
 msgid ""
 "Снэпшот цены платного пробного на момент бронирования. NULL = бесплатный или "
 "не пробный."
@@ -2416,111 +2394,81 @@ msgstr ""
 "Bron qilish paytidagi pulli sinov darsi narxi snapshoti. NULL = bepul yoki "
 "sinov darsi emas."
 
-#: teachers/models.py:3382
+#: teachers/models.py:3436
 msgid "За 24 часа"
 msgstr "24 soat oldin"
 
-#: teachers/models.py:3383
+#: teachers/models.py:3437
 msgid "За 3 часа"
 msgstr "3 soat oldin"
 
-#: teachers/models.py:3384
+#: teachers/models.py:3438
 msgid "За 10 минут"
 msgstr "10 daqiqa oldin"
 
-#: teachers/models.py:3397
+#: teachers/models.py:3451
 msgid "Каналы через запятую: email,in_app,telegram"
 msgstr "Kanallar vergul bilan ajratilgan: email,in_app,telegram"
 
-#: teachers/models.py:3426
-#, fuzzy
-#| msgid "учитель не подключался"
+#: teachers/models.py:3480
 msgid "Учитель подключился"
-msgstr "o'qituvchi qo'shilmadi"
+msgstr "O'qituvchi qo'shildi"
 
-#: teachers/models.py:3427
-#, fuzzy
-#| msgid "учитель не подключался"
+#: teachers/models.py:3481
 msgid "Ученик подключился"
-msgstr "o'qituvchi qo'shilmadi"
+msgstr "O'quvchi qo'shildi"
 
-#: teachers/models.py:3428
-#, fuzzy
-#| msgid "Урок подтверждён!"
+#: teachers/models.py:3482
 msgid "Урок проведён"
-msgstr "Dars tasdiqlandi!"
+msgstr "Dars o'tkazildi"
 
-#: teachers/models.py:3429
-#, fuzzy
-#| msgid "Только учителя"
+#: teachers/models.py:3483
 msgid "Неявка учителя"
-msgstr "Faqat o'qituvchilar"
+msgstr "O'qituvchi kelmadi"
 
-#: teachers/models.py:3430
-#, fuzzy
-#| msgid "Отказ ученика от лида"
+#: teachers/models.py:3484
 msgid "Неявка ученика прощена"
-msgstr "O'quvchining lid kontaktidan voz kechishi"
+msgstr "O'quvchining kelmasligi kechirildi"
 
-#: teachers/models.py:3431
-#, fuzzy
-#| msgid "Отказ ученика от лида"
+#: teachers/models.py:3485
 msgid "Неявка ученика — урок списан"
-msgstr "O'quvchining lid kontaktidan voz kechishi"
+msgstr "O'quvchi kelmadi — dars hisobdan yechildi"
 
-#: teachers/models.py:3432
-#, fuzzy
-#| msgid "Уроков в неделю"
+#: teachers/models.py:3486
 msgid "Урок не состоялся"
-msgstr "Haftasiga darslar"
+msgstr "Dars bo'lib o'tmadi"
 
-#: teachers/models.py:3433
-#, fuzzy
-#| msgid "Предупреждение"
+#: teachers/models.py:3487
 msgid "Отправлено предупреждение"
-msgstr "Ogohlantirish"
+msgstr "Ogohlantirish yuborildi"
 
-#: teachers/models.py:3434
-#, fuzzy
-#| msgid "Выплачено учителю"
+#: teachers/models.py:3488
 msgid "Выплата учителю"
-msgstr "O'qituvchiga to'langan"
-
-#: teachers/models.py:3435
-#, fuzzy
-#| msgid "Написать ученику"
-msgid "Возврат ученику"
-msgstr "O'quvchiga yozish"
-
-#: teachers/models.py:3449
-#, fuzzy
-#| msgid "Войти в урок"
-msgid "Событие урока"
-msgstr "Darsga kirish"
-
-#: teachers/models.py:3450
-#, fuzzy
-#| msgid "История уроков"
-msgid "События уроков"
-msgstr "Darslar tarixi"
+msgstr "O'qituvchiga to'lov"
 
 #: teachers/models.py:3489
-#, fuzzy
-#| msgid "Кто выдал"
+msgid "Возврат ученику"
+msgstr "O'quvchiga qaytarish"
+
+#: teachers/models.py:3503
+msgid "Событие урока"
+msgstr "Dars hodisasi"
+
+#: teachers/models.py:3504
+msgid "События уроков"
+msgstr "Dars hodisalari"
+
+#: teachers/models.py:3543
 msgid "Кто загрузил"
-msgstr "Kim tomonidan berilgan"
+msgstr "Kim yukladi"
 
-#: teachers/models.py:3500
-#, fuzzy
-#| msgid "К моим урокам"
+#: teachers/models.py:3554
 msgid "Файл урока"
-msgstr "Mening darslarimga"
+msgstr "Dars fayli"
 
-#: teachers/models.py:3501
-#, fuzzy
-#| msgid "Файлы сдач"
+#: teachers/models.py:3555
 msgid "Файлы урока"
-msgstr "Topshiruv fayllari"
+msgstr "Dars fayllari"
 
 #: teachers/registration_forms.py:23
 msgid "Не указывать"
@@ -2579,7 +2527,7 @@ msgstr ""
 "555 0143."
 
 #: teachers/registration_forms.py:127
-#: templates/registration/base_wizard.html:167
+#: templates/registration/base_wizard.html:168
 msgid "Размер файла не должен превышать 5 МБ"
 msgstr "Fayl hajmi 5 MB dan oshmasligi kerak"
 
@@ -2870,7 +2818,7 @@ msgid "Ошибка при проверке предмета %(row)s"
 msgstr "%(row)s-qatordagi fanni tekshirishda xatolik"
 
 #: teachers/registration_forms.py:759
-#: templates/registration/base_wizard.html:185
+#: templates/registration/base_wizard.html:186
 msgid "Добавьте хотя бы один предмет с ценой"
 msgstr "Kamida narxi bilan bitta fan qo'shing"
 
@@ -2929,7 +2877,7 @@ msgstr "Iltimos, ro'yxatdan o'tishni yakunlang"
 
 #: teachers/registration_wizard.py:614 teachers/video_views.py:63
 #: teachers/video_views.py:139 teachers/video_views.py:188
-#: teachers/views.py:1340 teachers/views.py:1536 teachers/views.py:1907
+#: teachers/views.py:1375 teachers/views.py:1571 teachers/views.py:1951
 msgid "Профиль учителя не найден"
 msgstr "O'qituvchi profili topilmadi"
 
@@ -2961,33 +2909,33 @@ msgstr "Faqat o'qituvchilar videolarni boshqarishi mumkin"
 msgid "Видео не найдено"
 msgstr "Video topilmadi"
 
-#: teachers/views.py:514
+#: teachers/views.py:549
 msgid "У вас нет доступа к админ панели"
 msgstr "Admin paneliga kirish huquqingiz yo'q"
 
-#: teachers/views.py:1049
+#: teachers/views.py:1084
 msgid "Слишком много попыток входа. Подождите 10 минут и попробуйте снова."
 msgstr ""
 "Kirishga urinishlar juda ko'p. 10 daqiqa kuting va qaytadan urinib ko'ring."
 
-#: teachers/views.py:1075
+#: teachers/views.py:1110
 #, python-format
 msgid "Добро пожаловать, %(name)s!"
 msgstr "Xush kelibsiz, %(name)s!"
 
-#: teachers/views.py:1085
+#: teachers/views.py:1120
 msgid "Неверный email или пароль"
 msgstr "Email yoki parol noto'g'ri"
 
-#: teachers/views.py:1101
+#: teachers/views.py:1136
 msgid "Вы успешно вышли из системы"
 msgstr "Tizimdan chiqdingiz"
 
-#: teachers/views.py:1215
+#: teachers/views.py:1250
 msgid "Слишком много регистраций с этого IP. Попробуйте позже."
 msgstr "Bu IP manzildan juda ko'p ro'yxatdan o'tildi. Keyinroq urinib ko'ring."
 
-#: teachers/views.py:1225
+#: teachers/views.py:1260
 msgid ""
 "Регистрация прошла успешно! Мы подобрали учителей, которые точно вам "
 "подойдут."
@@ -2995,100 +2943,100 @@ msgstr ""
 "Ro'yxatdan muvaffaqiyatli o'tdingiz! Sizga mos keladigan o'qituvchilarni "
 "tanladik."
 
-#: teachers/views.py:1298 teachers/views.py:1725
+#: teachers/views.py:1333 teachers/views.py:1764
 msgid "Завершите регистрацию учителя"
 msgstr "O'qituvchi sifatida ro'yxatdan o'tishni yakunlang"
 
-#: teachers/views.py:1392 teachers/views.py:1461
+#: teachers/views.py:1427 teachers/views.py:1496
 msgid "Профиль успешно обновлен!"
 msgstr "Profil yangilandi!"
 
-#: teachers/views.py:1398 teachers/views.py:1401
+#: teachers/views.py:1433 teachers/views.py:1436
 #, python-format
 msgid "Ошибка в поле %(field)s: %(errors)s"
 msgstr "%(field)s maydonida xatolik: %(errors)s"
 
-#: teachers/views.py:1403
+#: teachers/views.py:1438
 msgid "Проверьте правильность заполнения предметов"
 msgstr "Fanlar to'g'ri to'ldirilganini tekshiring"
 
-#: teachers/views.py:1438
+#: teachers/views.py:1473
 msgid "Предмет успешно удален"
 msgstr "Fan o'chirildi"
 
-#: teachers/views.py:1440
+#: teachers/views.py:1475
 msgid "Предмет не найден"
 msgstr "Fan topilmadi"
 
-#: teachers/views.py:1464
+#: teachers/views.py:1499
 msgid "Пожалуйста, исправьте ошибки в форме"
 msgstr "Iltimos, formadagi xatolarni to'g'rilang"
 
-#: teachers/views.py:1483
+#: teachers/views.py:1518
 msgid "Неверный запрос"
 msgstr "Noto'g'ri so'rov"
 
-#: teachers/views.py:1494
+#: teachers/views.py:1529
 msgid "активен"
 msgstr "faol"
 
-#: teachers/views.py:1494
+#: teachers/views.py:1529
 msgid "деактивирован"
 msgstr "o'chirilgan"
 
-#: teachers/views.py:1495
+#: teachers/views.py:1530
 #, python-format
 msgid "Ваш профиль %(status)s в поиске"
 msgstr "Sizning profilingiz qidiruvda %(status)s"
 
-#: teachers/views.py:1500
+#: teachers/views.py:1535
 #, python-format
 msgid "Профиль %(status)s"
 msgstr "Profil %(status)s"
 
-#: teachers/views.py:1503
+#: teachers/views.py:1538
 msgid "Профиль не найден"
 msgstr "Profil topilmadi"
 
-#: teachers/views.py:1510 teachers/views.py:1528 teachers/views.py:1555
+#: teachers/views.py:1545 teachers/views.py:1563 teachers/views.py:1590
 msgid "Неверный метод"
 msgstr "Noto'g'ri usul"
 
-#: teachers/views.py:1513 teachers/views.py:1531 teachers/views.py:1558
-#: teachers/views.py:1575 teachers/views.py:1587 teachers/views.py:1610
-#: teachers/views.py:1663
+#: teachers/views.py:1548 teachers/views.py:1566 teachers/views.py:1593
+#: teachers/views.py:1610 teachers/views.py:1622 teachers/views.py:1645
+#: teachers/views.py:1698
 msgid "Доступ запрещен"
 msgstr "Ruxsat berilmagan"
 
-#: teachers/views.py:1669 teachers/views.py:1741
+#: teachers/views.py:1704 teachers/views.py:1781
 msgid "Заполните профиль ученика"
 msgstr "O'quvchi profilini to'ldiring"
 
-#: teachers/views.py:1833
+#: teachers/views.py:1877
 msgid "Сообщение отправлено!"
 msgstr "Xabar yuborildi!"
 
-#: teachers/views.py:1836
+#: teachers/views.py:1880
 msgid "Ошибка при отправке сообщения"
 msgstr "Xabarni yuborishda xatolik"
 
-#: teachers/views.py:1850
+#: teachers/views.py:1894
 msgid "Переписка не найдена или доступ запрещен"
 msgstr "Suhbat topilmadi yoki ruxsat berilmagan"
 
-#: teachers/views.py:1866
+#: teachers/views.py:1910
 msgid "Вы не можете писать себе"
 msgstr "O'zingizga yoza olmaysiz"
 
-#: teachers/views.py:1875
+#: teachers/views.py:1919
 msgid "Завершите регистрацию учителя, чтобы писать сообщения"
 msgstr "Xabar yuborish uchun o'qituvchi sifatida ro'yxatdan o'tishni yakunlang"
 
-#: teachers/views.py:1881
+#: teachers/views.py:1925
 msgid "Вы можете писать только ученикам"
 msgstr "Faqat o'quvchilarga yoza olasiz"
 
-#: teachers/views.py:1894
+#: teachers/views.py:1938
 msgid ""
 "Написать можно только ученикам, которые добавили вас в избранное или "
 "забронировали пробный урок."
@@ -3096,15 +3044,22 @@ msgstr ""
 "Faqat sizni sevimlilarga qo'shgan yoki sinov darsini bron qilgan "
 "o'quvchilarga yoza olasiz."
 
-#: teachers/views.py:1901
+#: teachers/views.py:1945
 msgid "Вы можете писать только учителям"
 msgstr "Faqat o'qituvchilarga yoza olasiz"
 
-#: teachers/views.py:1934 teachers/views.py:2020
+#: teachers/views.py:1978 teachers/views.py:2073
 msgid "Только POST запросы"
 msgstr "Faqat POST so'rovlar"
 
-#: teachers/views.py:1949
+#: teachers/views.py:1991
+#, fuzzy
+#| msgid "Слишком много попыток входа. Подождите 10 минут и попробуйте снова."
+msgid "Слишком много сообщений. Подождите немного."
+msgstr ""
+"Kirishga urinishlar juda ko'p. 10 daqiqa kuting va qaytadan urinib ko'ring."
+
+#: teachers/views.py:2002
 msgid ""
 "Вы уже отправили первое сообщение. Дождитесь ответа ученика, чтобы "
 "продолжить переписку."
@@ -3112,57 +3067,57 @@ msgstr ""
 "Birinchi xabarni allaqachon yuborgansiz. Suhbatni davom ettirish uchun "
 "o'quvchining javobini kuting."
 
-#: teachers/views.py:2010
+#: teachers/views.py:2063
 msgid "Произошла ошибка при отправке сообщения"
 msgstr "Xabarni yuborishda xatolik yuz berdi"
 
 # ========== JAVASCRIPT MESSAGES ==========
-#: teachers/views.py:2048 templates/billing/student_dashboard.html:394
+#: teachers/views.py:2101 templates/billing/student_dashboard.html:394
 #: templates/logic/teacher_detail.html:2746
 #: templates/notifications/detail.html:625
 #: templates/notifications/list.html:479
 msgid "Произошла ошибка"
 msgstr "Xatolik yuz berdi"
 
-#: teachers/views.py:2058
+#: teachers/views.py:2111
 msgid "Неверный метод запроса"
 msgstr "Noto'g'ri so'rov usuli"
 
-#: teachers/views.py:2070
+#: teachers/views.py:2123
 msgid "Переписка удалена"
 msgstr "Suhbat o'chirildi"
 
-#: teachers/views.py:2075
+#: teachers/views.py:2128
 msgid "Ошибка при удалении переписки"
 msgstr "Suhbatni o'chirishda xatolik"
 
-#: teachers/views.py:2167
+#: teachers/views.py:2220
 msgid "Ошибка поиска предметов"
 msgstr "Fanlarni qidirishda xatolik"
 
-#: teachers/views.py:2224
+#: teachers/views.py:2277
 msgid "Категория не найдена"
 msgstr "Toifa topilmadi"
 
-#: teachers/views.py:2325
+#: teachers/views.py:2378
 msgid "Сообщение слишком длинное (максимум 4000 символов)"
 msgstr "Xabar juda uzun (eng ko'pi 4000 belgi)"
 
-#: teachers/views.py:2343
+#: teachers/views.py:2396
 msgid "Нет пользователей для отправки сообщения"
 msgstr "Xabar yuborish uchun foydalanuvchilar yo'q"
 
-#: teachers/views.py:2362
+#: teachers/views.py:2415
 #, python-format
 msgid "Ошибка сервиса отправки: %(err)s"
 msgstr "Yuborish xizmati xatosi: %(err)s"
 
-#: teachers/views.py:2365
+#: teachers/views.py:2418
 #, python-format
 msgid "Сообщение успешно отправлено %(count)s пользователям"
 msgstr "Xabar %(count)s foydalanuvchiga yuborildi"
 
-#: teachers/views.py:2368
+#: teachers/views.py:2421
 #, python-format
 msgid ""
 "Не удалось отправить %(count)s пользователям (возможно, заблокировали бота "
@@ -3171,25 +3126,25 @@ msgstr ""
 "%(count)s foydalanuvchiga yetkazib bo'lmadi (botni bloklagan yoki chatni "
 "o'chirgan bo'lishi mumkin)"
 
-#: teachers/views.py:2371
+#: teachers/views.py:2424
 #, python-format
 msgid "Ошибка при отправке сообщений: %(err)s"
 msgstr "Xabarlarni yuborishda xatolik: %(err)s"
 
-#: teachers/views.py:2387
+#: teachers/views.py:2440
 msgid "Необходимо выбрать пользователя и ввести сообщение"
 msgstr "Foydalanuvchini tanlang va xabar kiriting"
 
-#: teachers/views.py:2393
+#: teachers/views.py:2446
 msgid "Пользователь не активировал бота"
 msgstr "Foydalanuvchi botni faollashtirmagan"
 
-#: teachers/views.py:2408
+#: teachers/views.py:2461
 #, python-format
 msgid "Сообщение отправлено пользователю %(name)s"
 msgstr "Xabar %(name)s ga yuborildi"
 
-#: teachers/views.py:2410
+#: teachers/views.py:2463
 #, python-format
 msgid ""
 "Не удалось отправить сообщение пользователю %(name)s (возможно, заблокировал "
@@ -3198,72 +3153,70 @@ msgstr ""
 "%(name)s ga xabar yuborib bo'lmadi (botni bloklagan yoki chatni o'chirgan "
 "bo'lishi mumkin)"
 
-#: teachers/views.py:2413
+#: teachers/views.py:2466
 #, python-format
 msgid "Ошибка: %(err)s"
 msgstr "Xatolik: %(err)s"
 
-#: teachers/views.py:2459
-#, fuzzy
-#| msgid "Вы можете писать только ученикам"
+#: teachers/views.py:2512
 msgid "Можно писать только от имени участников беседы."
-msgstr "Faqat o'quvchilarga yoza olasiz"
+msgstr "Faqat suhbat ishtirokchilari nomidan yozish mumkin."
 
-#: teachers/views.py:2474
+#: teachers/views.py:2527
 #, python-format
 msgid "Сообщение отправлено от имени %(name)s"
 msgstr "Xabar %(name)s nomidan yuborildi"
 
-#: teachers/views.py:2582
+#: teachers/views.py:2635
 msgid "У вас нет доступа к этому уведомлению."
 msgstr "Bu bildirishnomaga kirish huquqingiz yo'q."
 
-#: teachers/views.py:2622
+#: teachers/views.py:2675
 msgid "Нет доступа"
 msgstr "Ruxsat berilmagan"
 
-#: teachers/views.py:2803
+#: teachers/views.py:2856
 msgid "Добро пожаловать! Мы подберём для вас подходящих учителей."
 msgstr "Xush kelibsiz! Sizga mos o'qituvchilarni tanlab beramiz."
 
-#: teachers/views.py:2839
+#: teachers/views.py:2892
 msgid "У вас уже есть профиль"
 msgstr "Sizda allaqachon profil bor"
 
-#: teachers/views.py:2933
+#: teachers/views.py:2986
 msgid "Выберите корректный период (утро/вечер)."
 msgstr "To'g'ri vaqtni tanlang (ertalab/kechqurun)."
 
-#: teachers/views.py:2935
+#: teachers/views.py:2988
 msgid "Выберите корректный язык."
 msgstr "To'g'ri tilni tanlang."
 
-#: teachers/views.py:2937
+#: teachers/views.py:2990
 msgid "Текст сообщения не может быть пустым."
 msgstr "Xabar matni bo'sh bo'lishi mumkin emas."
 
-#: teachers/views.py:2939
+#: teachers/views.py:2992
 msgid "Текст слишком длинный (максимум 4000 символов)."
 msgstr "Matn juda uzun (eng ko'pi 4000 belgi)."
 
-#: teachers/views.py:2951
+#: teachers/views.py:3004
 msgid "Шаблон обновлён."
 msgstr "Shablon yangilandi."
 
-#: teachers/views.py:2951
+#: teachers/views.py:3004
 msgid "Шаблон создан."
 msgstr "Shablon yaratildi."
 
-#: teachers/views.py:2971
+#: teachers/views.py:3024
 msgid "Шаблон удалён."
 msgstr "Shablon o'chirildi."
 
-#: teachers/views.py:2984
+#: teachers/views.py:3037
 #, python-format
 msgid "Шаблон %(state)s."
 msgstr "Shablon %(state)s."
 
-#: teachers/views.py:3004
+#: teachers/views.py:3057
 msgid ""
 "Ваш аккаунт не привязан к Telegram-боту — привяжите его, чтобы получать "
 "тестовые сообщения."
@@ -3271,15 +3224,31 @@ msgstr ""
 "Hisobingiz Telegram botga ulanmagan — sinov xabarlarini olish uchun uni "
 "ulang."
 
-#: teachers/views.py:3017
+#: teachers/views.py:3070
 msgid "Тестовое сообщение отправлено вам в Telegram."
 msgstr "Sinov xabari sizga Telegram orqali yuborildi."
 
-#: teachers/views.py:3019
+#: teachers/views.py:3072
 msgid "Не удалось отправить тестовое сообщение."
 msgstr "Sinov xabarini yuborib bo'lmadi."
 
-#: templates/admin/_mobile_nav.html:16 templates/base.html:1461
+#: templates/404.html:11 templates/404.html:24
+#, fuzzy
+#| msgid "Категория не найдена"
+msgid "Страница не найдена"
+msgstr "Toifa topilmadi"
+
+#: templates/404.html:25
+msgid "Возможно, страница была перемещена или удалена, либо в адресе опечатка."
+msgstr ""
+
+#: templates/404.html:26 templates/billing/topup_request.html:272
+#: templates/billing/topup_return.html:52
+#: templates/logic/conversations_list.html:601
+msgid "На главную"
+msgstr "Bosh sahifa"
+
+#: templates/admin/_mobile_nav.html:17 templates/base.html:1461
 msgid "Меню"
 msgstr "Menyu"
 
@@ -3300,7 +3269,7 @@ msgstr "O'qituvchilar, fanlar qidirish…"
 msgid "Поиск преподавателей"
 msgstr "O'qituvchilarni qidirish"
 
-#: templates/base.html:1390 templates/base.html:1516 templates/base.html:1613
+#: templates/base.html:1390 templates/base.html:1516 templates/base.html:1630
 msgid "Кабинет"
 msgstr "Kabinet"
 
@@ -3311,18 +3280,21 @@ msgstr "Kabinet"
 msgid "Мой профиль"
 msgstr "Mening profilim"
 
-#: templates/base.html:1401 templates/billing/teacher_dashboard.html:213
+#: templates/base.html:1401 templates/base.html:1546
+#: templates/billing/teacher_dashboard.html:214
 #: templates/booking/teacher_calendar.html:4
 msgid "Календарь"
 msgstr "Kalendar"
 
-#: templates/base.html:1405 templates/booking/my_bookings.html:296
+#: templates/base.html:1405 templates/base.html:1550
+#: templates/booking/my_bookings.html:296
 #: templates/logic/teacher_profile.html:1533
 #: templates/logic/teacher_profile.html:1578
 msgid "Заявки и уроки"
 msgstr "So'rovlar va darslar"
 
-#: templates/base.html:1409 templates/billing/learning_requests.html:5
+#: templates/base.html:1409 templates/base.html:1554
+#: templates/billing/learning_requests.html:5
 #: templates/billing/learning_requests.html:23
 msgid "Заявки на обучение"
 msgstr "O'qish so'rovlari"
@@ -3332,7 +3304,7 @@ msgstr "O'qish so'rovlari"
 msgid "Мои бронирования"
 msgstr "Mening bronlarim"
 
-#: templates/base.html:1418 templates/base.html:1543
+#: templates/base.html:1418 templates/base.html:1560
 msgid "Избранное"
 msgstr "Sevimlilar"
 
@@ -3340,24 +3312,24 @@ msgstr "Sevimlilar"
 msgid "Чат онлайн"
 msgstr "Onlayn chat"
 
-#: templates/base.html:1429 templates/base.html:1554
+#: templates/base.html:1429 templates/base.html:1571
 msgid "Настройки"
 msgstr "Sozlamalar"
 
-#: templates/base.html:1438 templates/base.html:1561
+#: templates/base.html:1438 templates/base.html:1578
 #: templates/logic/student_profile.html:819
 #: templates/logic/teacher_profile.html:1551
 msgid "Выйти"
 msgstr "Chiqish"
 
-#: templates/base.html:1447 templates/base.html:1567 templates/base.html:1663
+#: templates/base.html:1447 templates/base.html:1584 templates/base.html:1681
 #: templates/billing/student_dashboard.html:259 templates/logic/login.html:419
-#: templates/logic/student_detail.html:1868
+#: templates/logic/student_detail.html:1869
 msgid "Войти"
 msgstr "Kirish"
 
-#: templates/base.html:1451 templates/base.html:1571
-#: templates/logic/student_detail.html:1871
+#: templates/base.html:1451 templates/base.html:1588
+#: templates/logic/student_detail.html:1872
 msgid "Регистрация"
 msgstr "Ro'yxatdan o'tish"
 
@@ -3365,37 +3337,37 @@ msgstr "Ro'yxatdan o'tish"
 msgid "Поиск..."
 msgstr "Qidiruv..."
 
-#: templates/base.html:1549 templates/base.html:1575 templates/base.html:1668
+#: templates/base.html:1566 templates/base.html:1592 templates/base.html:1686
 #: templates/logic/home.html:1452
 msgid "Стать учителем"
 msgstr "O'qituvchi bo'lish"
 
-#: templates/base.html:1610
+#: templates/base.html:1627
 msgid "Основная навигация"
 msgstr "Asosiy navigatsiya"
 
-#: templates/base.html:1617 templates/logic/students_list.html:1076
+#: templates/base.html:1634 templates/logic/students_list.html:1076
 #: templates/logic/teacher_detail.html:2086
 msgid "Учителя"
 msgstr "O'qituvchilar"
 
-#: templates/base.html:1621 templates/logic/teacher_detail.html:2641
+#: templates/base.html:1638 templates/logic/teacher_detail.html:2641
 msgid "Чат"
 msgstr "Chat"
 
-#: templates/base.html:1626
+#: templates/base.html:1643
 msgid "Профиль"
 msgstr "Profil"
 
-#: templates/base.html:1655
+#: templates/base.html:1673
 msgid "Платформа №1 для поиска квалифицированных преподавателей в Узбекистане."
 msgstr "O'zbekistonda malakali o'qituvchilarni topish uchun №1 platforma."
 
-#: templates/base.html:1660
+#: templates/base.html:1678
 msgid "Ученикам"
 msgstr "O'quvchilarga"
 
-#: templates/base.html:1661 templates/billing/my_subscriptions.html:277
+#: templates/base.html:1679 templates/billing/my_subscriptions.html:285
 #: templates/billing/student_dashboard.html:218
 #: templates/billing/student_progress.html:140
 #: templates/booking/my_bookings.html:407
@@ -3403,37 +3375,37 @@ msgstr "O'quvchilarga"
 msgid "Найти учителя"
 msgstr "O'qituvchi topish"
 
-#: templates/base.html:1662 templates/logic/login.html:436
+#: templates/base.html:1680 templates/logic/login.html:436
 msgid "Зарегистрироваться"
 msgstr "Ro'yxatdan o'tish"
 
-#: templates/base.html:1667
+#: templates/base.html:1685
 msgid "Учителям"
 msgstr "O'qituvchilarga"
 
-#: templates/base.html:1669
+#: templates/base.html:1687
 msgid "Войти в кабинет"
 msgstr "Kabinetga kirish"
 
-#: templates/base.html:1673 templates/logic/teacher_profile.html:1461
+#: templates/base.html:1691 templates/logic/teacher_profile.html:1461
 msgid "Поддержка"
 msgstr "Yordam"
 
-#: templates/base.html:1680
+#: templates/base.html:1698
 msgid "Все права защищены."
 msgstr "Barcha huquqlar himoyalangan."
 
-#: templates/base.html:1682 templates/legal/privacy.html:4
+#: templates/base.html:1700 templates/legal/privacy.html:4
 #: templates/legal/privacy.html:22
 msgid "Политика конфиденциальности"
 msgstr "Maxfiylik siyosati"
 
-#: templates/base.html:1683 templates/legal/terms.html:4
+#: templates/base.html:1701 templates/legal/terms.html:4
 #: templates/legal/terms.html:20
 msgid "Условия использования"
 msgstr "Foydalanish shartlari"
 
-#: templates/base.html:2162 templates/billing/homework_create.html:60
+#: templates/base.html:2180 templates/billing/homework_create.html:60
 #: templates/billing/tariff_form.html:90
 #: templates/booking/book_teacher.html:303
 #: templates/booking/my_bookings.html:322
@@ -3447,13 +3419,13 @@ msgstr "Foydalanish shartlari"
 msgid "Отмена"
 msgstr "Bekor qilish"
 
-#: templates/base.html:2163 templates/billing/learning_requests.html:40
+#: templates/base.html:2181 templates/billing/learning_requests.html:40
 #: templates/billing/learning_requests.html:43
 #: templates/booking/my_bookings.html:354
 msgid "Подтвердить"
 msgstr "Tasdiqlash"
 
-#: templates/base.html:2213
+#: templates/base.html:2231
 msgid "Подождите…"
 msgstr "Kuting…"
 
@@ -3500,6 +3472,7 @@ msgstr "o'qituvchi"
 #: templates/billing/continue_learning.html:41
 #: templates/billing/continue_learning.html:51
 #: templates/billing/learning_requests.html:30
+#: templates/billing/my_subscriptions.html:241
 #: templates/billing/subscription_pay.html:29
 #: templates/booking/book_teacher.html:347
 #: templates/booking/teacher_calendar.html:82
@@ -3578,6 +3551,7 @@ msgstr "oy"
 #: templates/billing/my_subscriptions.html:99
 #: templates/billing/my_subscriptions.html:112
 #: templates/billing/my_subscriptions.html:113
+#: templates/billing/my_subscriptions.html:218
 #: templates/billing/subscription_pay.html:31
 #: templates/billing/subscription_pay.html:34
 #: templates/billing/subscription_pay.html:52
@@ -3932,7 +3906,7 @@ msgid "Прогресс"
 msgstr "Progress"
 
 #: templates/billing/my_subscriptions.html:112
-#: templates/billing/teacher_dashboard.html:138
+#: templates/billing/teacher_dashboard.html:139
 msgid "В эскроу"
 msgstr "Eskrouda"
 
@@ -4043,16 +4017,32 @@ msgstr "to'lov muddati o'tdi"
 msgid "оплатите в течение"
 msgstr "to'lov muddati"
 
+#: templates/billing/my_subscriptions.html:241
+#: templates/booking/teacher_calendar.html:84
+#: templates/booking/teacher_calendar.html:85
+#: templates/booking/teacher_calendar.html:86
+#: templates/booking/teacher_calendar.html:169
+#: templates/booking/teacher_calendar.html:170
+#: templates/booking/teacher_calendar.html:171
+msgid "ч"
+msgstr "soat"
+
 #: templates/billing/my_subscriptions.html:252
 #: templates/billing/teacher_subscribers.html:165
 msgid "История"
 msgstr "Tarix"
 
-#: templates/billing/my_subscriptions.html:275
+#: templates/billing/my_subscriptions.html:272
+#, fuzzy
+#| msgid "Продолжить"
+msgid "Продлить"
+msgstr "Davom etish"
+
+#: templates/billing/my_subscriptions.html:283
 msgid "У вас пока нет подписок"
 msgstr "Sizda hali obunalar yo'q"
 
-#: templates/billing/my_subscriptions.html:276
+#: templates/billing/my_subscriptions.html:284
 msgid "Найдите учителя и купите тариф, чтобы начать учиться."
 msgstr "O'qishni boshlash uchun o'qituvchi toping va tarif tanlang."
 
@@ -4143,7 +4133,7 @@ msgstr "Keyingi 7 kunda darslar yo'q"
 
 #: templates/billing/student_dashboard.html:271
 #: templates/billing/student_dashboard.html:300
-#: templates/billing/teacher_dashboard.html:190
+#: templates/billing/teacher_dashboard.html:191
 msgid "все →"
 msgstr "barchasi →"
 
@@ -4152,7 +4142,7 @@ msgid "Сдать"
 msgstr "Topshirish"
 
 #: templates/billing/student_dashboard.html:289
-#: templates/billing/teacher_dashboard.html:200
+#: templates/billing/teacher_dashboard.html:201
 msgid "На проверке"
 msgstr "Tekshiruvda"
 
@@ -4169,7 +4159,7 @@ msgid "найти учителя"
 msgstr "o'qituvchi topish"
 
 #: templates/billing/student_dashboard.html:326
-#: templates/billing/teacher_dashboard.html:211
+#: templates/billing/teacher_dashboard.html:212
 msgid "Быстро"
 msgstr "Tez harakatlar"
 
@@ -4185,12 +4175,12 @@ msgid "Все домашние задания"
 msgstr "Barcha uy vazifalari"
 
 #: templates/billing/student_dashboard.html:339
-#: templates/billing/teacher_dashboard.html:242
+#: templates/billing/teacher_dashboard.html:243
 msgid "Последние транзакции"
 msgstr "So'nggi tranzaksiyalar"
 
 #: templates/billing/student_dashboard.html:353
-#: templates/billing/teacher_dashboard.html:256
+#: templates/billing/teacher_dashboard.html:257
 msgid "Пока пусто"
 msgstr "Hozircha bo'sh"
 
@@ -4467,7 +4457,7 @@ msgid "Создать тариф"
 msgstr "Tarif yaratish"
 
 #: templates/billing/tariffs_list.html:5 templates/billing/tariffs_list.html:44
-#: templates/billing/teacher_dashboard.html:219
+#: templates/billing/teacher_dashboard.html:220
 #: templates/logic/teacher_profile.html:1521
 msgid "Мои тарифы"
 msgstr "Mening tariflarim"
@@ -4541,75 +4531,65 @@ msgstr "Assalomu alaykum"
 msgid "Сводка на сегодня"
 msgstr "Bugungi xulosa"
 
-#: templates/billing/teacher_dashboard.html:84
-#, fuzzy
-#| msgid "Профиль отклонён"
-msgid "Профиль отклонён модерацией"
-msgstr "Profil rad etildi"
-
 #: templates/billing/teacher_dashboard.html:85
-#, fuzzy
-#| msgid ""
-#| "Пополнение временно недоступно — реквизиты ещё не настроены. Пожалуйста, "
-#| "свяжитесь с поддержкой."
+msgid "Профиль отклонён модерацией"
+msgstr "Profil moderatsiyada rad etildi"
+
+#: templates/billing/teacher_dashboard.html:86
 msgid ""
 "Пока профиль не одобрен, он не виден ученикам в поиске. Проверьте данные и "
 "обновите профиль либо свяжитесь с поддержкой."
 msgstr ""
-"Hisobni to'ldirish vaqtincha mavjud emas — rekvizitlar hali sozlanmagan. "
-"Iltimos, qo'llab-quvvatlashga murojaat qiling."
+"Profil tasdiqlanmaguncha, u qidiruvda o'quvchilarga ko'rinmaydi. "
+"Ma'lumotlarni tekshirib, profilni yangilang yoki qo'llab-quvvatlash "
+"xizmatiga murojaat qiling."
 
-#: templates/billing/teacher_dashboard.html:87
+#: templates/billing/teacher_dashboard.html:88
 #: templates/logic/student_suggestions.html:399
 msgid "Открыть профиль"
 msgstr "Profilni ochish"
 
-#: templates/billing/teacher_dashboard.html:95
-#, fuzzy
-#| msgid "Ваш профиль на модерации"
-msgid "Профиль на модерации"
-msgstr "Sizning profilingiz moderatsiyada"
-
 #: templates/billing/teacher_dashboard.html:96
-#, fuzzy
-#| msgid ""
-#| "Обычно проверка занимает 24 часа. После одобрения профиль появится в "
-#| "поиске и ученики смогут отправлять запросы."
+msgid "Профиль на модерации"
+msgstr "Profil moderatsiyada"
+
+#: templates/billing/teacher_dashboard.html:97
 msgid ""
 "Обычно проверка занимает до 24 часов. Пока профиль не одобрен, ученики не "
 "видят вас в поиске и не могут забронировать уроки. Заполните профиль и "
 "расписание полностью — это ускорит одобрение."
 msgstr ""
-"Tekshirish odatda 24 soat davom etadi. Tasdiqlangach, profilingiz qidiruvda "
-"paydo bo'ladi va o'quvchilar so'rov yubora oladi."
+"Tekshiruv odatda 24 soatgacha davom etadi. Profil tasdiqlanmaguncha, "
+"o'quvchilar sizni qidiruvda ko'ra olmaydi va darslarni band qila olmaydi. "
+"Profil va jadvalni to'liq to'ldiring — bu tasdiqlashni tezlashtiradi."
 
-#: templates/billing/teacher_dashboard.html:104
+#: templates/billing/teacher_dashboard.html:105
 msgid "На балансе"
 msgstr "Balansda"
 
-#: templates/billing/teacher_dashboard.html:107
+#: templates/billing/teacher_dashboard.html:108
 #: templates/billing/withdrawals_list.html:87
 #: templates/billing/withdrawals_list.html:133
 msgid "Вывести"
 msgstr "Yechib olish"
 
-#: templates/billing/teacher_dashboard.html:111
+#: templates/billing/teacher_dashboard.html:112
 msgid "Активных учеников"
 msgstr "Faol o'quvchilar"
 
-#: templates/billing/teacher_dashboard.html:114
+#: templates/billing/teacher_dashboard.html:115
 msgid "Список"
 msgstr "Ro'yxat"
 
-#: templates/billing/teacher_dashboard.html:118
+#: templates/billing/teacher_dashboard.html:119
 msgid "Уроков на неделе"
 msgstr "Haftalik darslar"
 
-#: templates/billing/teacher_dashboard.html:120
+#: templates/billing/teacher_dashboard.html:121
 msgid "из них сегодня"
 msgstr "shundan bugun"
 
-#: templates/billing/teacher_dashboard.html:126
+#: templates/billing/teacher_dashboard.html:127
 #: templates/booking/my_bookings.html:408
 #: templates/booking/my_bookings.html:410
 #: templates/logic/conversation_detail.html:1043
@@ -4617,59 +4597,60 @@ msgstr "shundan bugun"
 msgid "Сегодня"
 msgstr "Bugun"
 
-#: templates/billing/teacher_dashboard.html:130
+#: templates/billing/teacher_dashboard.html:131
 msgid "Неделя"
 msgstr "Hafta"
 
-#: templates/billing/teacher_dashboard.html:134
+#: templates/billing/teacher_dashboard.html:135
 msgid "Месяц"
 msgstr "Oy"
 
-#: templates/billing/teacher_dashboard.html:147
+#: templates/billing/teacher_dashboard.html:148
 msgid "Расписание на сегодня"
 msgstr "Bugungi jadval"
 
-#: templates/billing/teacher_dashboard.html:164
+#: templates/billing/teacher_dashboard.html:165
 msgid "Сегодня уроков нет"
 msgstr "Bugun darslar yo'q"
 
-#: templates/billing/teacher_dashboard.html:171
+#: templates/billing/teacher_dashboard.html:172
 msgid "Требуют подтверждения"
 msgstr "Tasdiqlash kerak"
 
-#: templates/billing/teacher_dashboard.html:181
+#: templates/billing/teacher_dashboard.html:182
+#: templates/email/notification.html:29
 msgid "Открыть"
 msgstr "Ochish"
 
-#: templates/billing/teacher_dashboard.html:189
+#: templates/billing/teacher_dashboard.html:190
 msgid "ДЗ ожидают проверки"
 msgstr "Tekshirilishi kutilayotgan uy vazifalari"
 
-#: templates/billing/teacher_dashboard.html:204
+#: templates/billing/teacher_dashboard.html:205
 msgid "Все ДЗ проверены"
 msgstr "Barcha uy vazifalari tekshirilgan"
 
-#: templates/billing/teacher_dashboard.html:216
+#: templates/billing/teacher_dashboard.html:217
 msgid "Создать ДЗ"
 msgstr "Uy vazifasi yaratish"
 
-#: templates/billing/teacher_dashboard.html:225
+#: templates/billing/teacher_dashboard.html:226
 #: templates/logic/potential_students.html:4
 #: templates/logic/potential_students.html:9
 #: templates/logic/teacher_profile.html:1536
 msgid "Потенциальные ученики"
 msgstr "Qiziqqan o'quvchilar"
 
-#: templates/billing/teacher_dashboard.html:228
+#: templates/billing/teacher_dashboard.html:229
 #: templates/logic/teacher_profile.html:1545
 msgid "Посмотреть других преподавателей"
 msgstr "Boshqa o'qituvchilarni ko'rish"
 
-#: templates/billing/teacher_dashboard.html:233
+#: templates/billing/teacher_dashboard.html:234
 msgid "Заработок всего"
 msgstr "Jami daromad"
 
-#: templates/billing/teacher_dashboard.html:238
+#: templates/billing/teacher_dashboard.html:239
 msgid "выплачено за всё время"
 msgstr "butun davr uchun to'langan"
 
@@ -4834,32 +4815,28 @@ msgid "Вернуться к покупке"
 msgstr "Xaridga qaytish"
 
 #: templates/billing/topup_request.html:155
-#, fuzzy
-#| msgid "Оплатить и начать обучение"
 msgid "Оплатить картой онлайн"
-msgstr "To'lash va o'qishni boshlash"
+msgstr "Karta orqali onlayn to'lash"
 
 #: templates/billing/topup_request.html:158
 msgid ""
 "Мгновенное зачисление. Оплата картой Uzcard / Humo / Visa через защищённую "
 "страницу Multicard."
 msgstr ""
+"Bir zumda hisobga o'tkaziladi. Uzcard / Humo / Visa karta orqali xavfsiz "
+"Multicard sahifasida to'lov."
 
 #: templates/billing/topup_request.html:165
-#, fuzzy
-#| msgid "Сумма, сум"
 msgid "Сумма пополнения, сум"
-msgstr "Miqdor, so'm"
+msgstr "To'ldirish summasi, so'm"
 
 #: templates/billing/topup_request.html:174
-#, fuzzy
-#| msgid "Перейти к контенту"
 msgid "Перейти к оплате"
-msgstr "Kontentga o'tish"
+msgstr "To'lovga o'tish"
 
 #: templates/billing/topup_request.html:181
 msgid "или переводом на карту вручную"
-msgstr ""
+msgstr "yoki kartaga qo'lda o'tkazma orqali"
 
 #: templates/billing/topup_request.html:190
 msgid ""
@@ -4933,65 +4910,49 @@ msgstr ""
 "Pul ish vaqtida (9:00–22:00) <b>%(hours)s soat</b> ichida tushadi. Tizimda "
 "va Telegramda bildirishnoma olasiz."
 
-#: templates/billing/topup_request.html:272
-#: templates/billing/topup_return.html:52
-#: templates/logic/conversations_list.html:601
-msgid "На главную"
-msgstr "Bosh sahifa"
-
 #: templates/billing/topup_request.html:290
 msgid "Скопировано"
 msgstr "Nusxa olindi"
 
 #: templates/billing/topup_return.html:5
-#, fuzzy
-#| msgid "Способ выплаты"
 msgid "Результат оплаты"
-msgstr "To'lov usuli"
+msgstr "To'lov natijasi"
 
 #: templates/billing/topup_return.html:33
-#, fuzzy
-#| msgid "Оплата обучения"
 msgid "Оплата прошла успешно"
-msgstr "O'qish uchun to'lov"
+msgstr "To'lov muvaffaqiyatli o'tdi"
 
 #: templates/billing/topup_return.html:34
 msgid "Средства зачислены на ваш кошелёк."
-msgstr ""
+msgstr "Mablag' hamyoningizga o'tkazildi."
 
 #: templates/billing/topup_return.html:38
-#, fuzzy
-#| msgid "Ученик не пришёл"
 msgid "Оплата не прошла"
-msgstr "O'quvchi kelmadi"
+msgstr "To'lov amalga oshmadi"
 
 #: templates/billing/topup_return.html:39
-#, fuzzy
-#| msgid "Не удалось прочитать расписание. Попробуйте ещё раз."
 msgid "Платёж был отклонён или отменён. Попробуйте ещё раз."
-msgstr "Jadvalni o'qib bo'lmadi. Qayta urinib ko'ring."
+msgstr "To'lov rad etildi yoki bekor qilindi. Qayta urinib ko'ring."
 
 #: templates/billing/topup_return.html:42
 msgid "Платёж обрабатывается"
-msgstr ""
+msgstr "To'lov qayta ishlanmoqda"
 
 #: templates/billing/topup_return.html:43
 msgid ""
 "Если оплата прошла, средства появятся на балансе в течение нескольких минут. "
 "Можно обновить страницу."
 msgstr ""
+"Agar to'lov o'tgan bo'lsa, mablag' bir necha daqiqa ichida balansda paydo "
+"bo'ladi. Sahifani yangilashingiz mumkin."
 
 #: templates/billing/topup_return.html:49
-#, fuzzy
-#| msgid "Продолжить обучение"
 msgid "Продолжить"
-msgstr "O'qishni davom ettirish"
+msgstr "Davom etish"
 
 #: templates/billing/topup_return.html:51
-#, fuzzy
-#| msgid "К выполнению"
 msgid "К пополнению"
-msgstr "Bajarish kerak"
+msgstr "To'ldirishga"
 
 #: templates/billing/withdrawals_list.html:69
 msgid "Запросите перевод заработанных средств на карту или телефон"
@@ -5326,45 +5287,37 @@ msgid "Урок с"
 msgstr "Dars:"
 
 #: templates/booking/lesson_room.html:172
-#, fuzzy
-#| msgid "К моим урокам"
 msgid "До конца урока"
-msgstr "Mening darslarimga"
+msgstr "Dars oxirigacha"
 
 #: templates/booking/lesson_room.html:177
 #, python-format
 msgid "Ожидаем %(other_name)s…"
-msgstr ""
+msgstr "%(other_name)s kutilmoqda…"
 
 #: templates/booking/lesson_room.html:183
-#, fuzzy
-#| msgid "учитель не подключался"
 msgid "Переподключиться"
-msgstr "o'qituvchi qo'shilmadi"
+msgstr "Qayta ulanish"
 
 #: templates/booking/lesson_room.html:189
-#, fuzzy
-#| msgid "История уроков"
 msgid "Материалы урока"
-msgstr "Darslar tarixi"
+msgstr "Dars materiallari"
 
 #: templates/booking/lesson_room.html:192
 #: templates/booking/lesson_room.html:434
-#, fuzzy
-#| msgid "Загрузить"
 msgid "Загрузить файл"
-msgstr "Yuklash"
+msgstr "Fayl yuklash"
 
 #: templates/booking/lesson_room.html:198
 msgid ""
 "Документы, изображения, презентации — до 25 МБ. Видны обеим сторонам урока."
 msgstr ""
+"Hujjatlar, rasmlar, taqdimotlar — 25 MB gacha. Darsning ikkala tomoniga "
+"ko'rinadi."
 
 #: templates/booking/lesson_room.html:201
-#, fuzzy
-#| msgid "Пока нет потенциальных учеников"
 msgid "Пока нет загруженных материалов."
-msgstr "Hozircha qiziqqan o'quvchilar yo'q"
+msgstr "Hozircha yuklangan materiallar yo'q."
 
 #: templates/booking/lesson_room.html:206
 msgid ""
@@ -5416,10 +5369,9 @@ msgid "Комната ещё закрыта"
 msgstr "Xona hali yopiq"
 
 #: templates/booking/lesson_room.html:249
-#, fuzzy, python-format
-#| msgid "Вы сможете войти за 15 минут до начала урока"
+#, python-format
 msgid "Вы сможете войти за %(join_lead)s минут до начала урока"
-msgstr "Dars boshlanishidan 15 daqiqa oldin qo'shilishingiz mumkin"
+msgstr "Dars boshlanishidan %(join_lead)s daqiqa oldin qo'shilishingiz mumkin"
 
 #: templates/booking/lesson_room.html:252
 msgid "Урок завершён"
@@ -5438,26 +5390,21 @@ msgid "Комната станет доступной после подтвер�
 msgstr "Xona o'qituvchi bronni tasdiqlaganidan keyin ochiladi."
 
 #: templates/booking/lesson_room.html:281
-#, fuzzy
-#| msgid "Не удалось загрузить. Проверьте соединение."
 msgid ""
 "Не удалось загрузить видео-модуль. Проверьте интернет и попробуйте "
 "переподключиться."
-msgstr "Yuklab bo'lmadi. Ulanishni tekshiring."
+msgstr ""
+"Video modulni yuklab bo'lmadi. Internetni tekshirib, qayta ulanib ko'ring."
 
 #: templates/booking/lesson_room.html:327
-#, fuzzy
-#| msgid "Время попытки"
 msgid "время вышло"
-msgstr "Urinish vaqti"
+msgstr "vaqt tugadi"
 
 #: templates/booking/lesson_room.html:345
 msgid "на связи"
-msgstr ""
+msgstr "aloqada"
 
 #: templates/booking/lesson_room.html:346
-#, fuzzy
-#| msgid "Ожидает"
 msgid "Ожидаем"
 msgstr "Kutilmoqda"
 
@@ -5467,28 +5414,20 @@ msgid "Загрузка…"
 msgstr "Yuklanmoqda…"
 
 #: templates/booking/lesson_room.html:435
-#, fuzzy
-#| msgid "Удалить этот слот?"
 msgid "Удалить этот файл?"
-msgstr "Bu slotni o'chirilsinmi?"
+msgstr "Bu fayl o'chirilsinmi?"
 
 #: templates/booking/lesson_room.html:436
-#, fuzzy
-#| msgid "Текст слишком длинный (максимум 4000 символов)."
 msgid "Файл слишком большой (максимум 25 МБ)."
-msgstr "Matn juda uzun (eng ko'pi 4000 belgi)."
+msgstr "Fayl juda katta (eng ko'pi 25 MB)."
 
 #: templates/booking/lesson_room.html:437
-#, fuzzy
-#| msgid "Некорректный формат расписания."
 msgid "Недопустимый формат файла."
-msgstr "Jadval formati noto'g'ri."
+msgstr "Yaroqsiz fayl formati."
 
 #: templates/booking/lesson_room.html:438
-#, fuzzy
-#| msgid "Не удалось прочитать расписание. Попробуйте ещё раз."
 msgid "Не удалось загрузить файл. Попробуйте ещё раз."
-msgstr "Jadvalni o'qib bo'lmadi. Qayta urinib ko'ring."
+msgstr "Faylni yuklab bo'lmadi. Qayta urinib ko'ring."
 
 #: templates/booking/my_bookings.html:302
 #: templates/booking/my_bookings.html:389
@@ -5748,15 +5687,6 @@ msgstr ""
 msgid "Дата и время начала"
 msgstr "Boshlanish sanasi va vaqti"
 
-#: templates/booking/teacher_calendar.html:84
-#: templates/booking/teacher_calendar.html:85
-#: templates/booking/teacher_calendar.html:86
-#: templates/booking/teacher_calendar.html:169
-#: templates/booking/teacher_calendar.html:170
-#: templates/booking/teacher_calendar.html:171
-msgid "ч"
-msgstr "soat"
-
 #: templates/booking/teacher_calendar.html:92
 msgid "Дата и время конца"
 msgstr "Tugash sanasi va vaqti"
@@ -5951,6 +5881,12 @@ msgstr "bloklangan"
 #: templates/booking/teacher_calendar.html:271
 msgid "Нет слотов в этом периоде."
 msgstr "Bu davrda slotlar yo'q."
+
+#: templates/email/notification.html:38
+msgid ""
+"Это автоматическое уведомление от платформы UstozHub. Отвечать на него не "
+"нужно."
+msgstr ""
 
 #: templates/emails/lesson_reminder.html:5
 msgid "Напоминание об уроке"
@@ -7400,44 +7336,44 @@ msgstr "Mos o'qituvchilar"
 msgid "Бюджет ученика"
 msgstr "O'quvchi byudjeti"
 
-#: templates/logic/student_detail.html:1834
-#: templates/logic/student_detail.html:1839
+#: templates/logic/student_detail.html:1835
+#: templates/logic/student_detail.html:1840
 msgid "Написать в Telegram"
 msgstr "Telegramda yozish"
 
-#: templates/logic/student_detail.html:1847
+#: templates/logic/student_detail.html:1848
 #: templates/logic/teacher_detail.html:2646
 #: templates/logic/teacher_detail.html:2648
 #: templates/logic/teacher_detail.html:2737
 msgid "В избранном"
 msgstr "Sevimlilarda"
 
-#: templates/logic/student_detail.html:1847
+#: templates/logic/student_detail.html:1848
 #: templates/logic/teacher_detail.html:2646
 #: templates/logic/teacher_detail.html:2648
 #: templates/logic/teacher_detail.html:2737
 msgid "В избранное"
 msgstr "Sevimliga qo'shish"
 
-#: templates/logic/student_detail.html:1854
+#: templates/logic/student_detail.html:1855
 #: templates/logic/teacher_detail.html:2656
 msgid "Безопасная сделка через платформу"
 msgstr "Platforma orqali xavfsiz bitim"
 
-#: templates/logic/student_detail.html:1860
+#: templates/logic/student_detail.html:1861
 #: templates/logic/teacher_profile.html:1789
 msgid "Контактная информация"
 msgstr "Aloqa ma'lumotlari"
 
-#: templates/logic/student_detail.html:1865
+#: templates/logic/student_detail.html:1866
 msgid "Войдите, чтобы видеть контакты"
 msgstr "Kontaktlarni ko'rish uchun kiring"
 
-#: templates/logic/student_detail.html:1918
+#: templates/logic/student_detail.html:1920
 msgid "Доступность"
 msgstr "Mavjudlik"
 
-#: templates/logic/student_detail.html:1945
+#: templates/logic/student_detail.html:1947
 msgid "Похожие ученики"
 msgstr "O'xshash o'quvchilar"
 
@@ -8425,94 +8361,65 @@ msgstr "Sizda hali bildirishnomalar yo'q"
 msgid "Здесь будут отображаться важные обновления и новости"
 msgstr "Muhim yangilanishlar va yangiliklar shu yerda ko'rinadi"
 
-#: templates/registration/base_wizard.html:166
-#, fuzzy
-#| msgid "Пожалуйста, завершите регистрацию"
+#: templates/registration/base_wizard.html:167
 msgid "Пожалуйста, выберите файл JPG, JPEG или PNG"
-msgstr "Iltimos, ro'yxatdan o'tishni yakunlang"
-
-#: templates/registration/base_wizard.html:169
-#, fuzzy
-#| msgid "Забыли пароль?"
-msgid "Слабый пароль"
-msgstr "Parolni unutdingizmi?"
+msgstr "Iltimos, JPG, JPEG yoki PNG fayl tanlang"
 
 #: templates/registration/base_wizard.html:170
-#, fuzzy
-#| msgid "Введите пароль"
-msgid "Средний пароль"
-msgstr "Parolni kiriting"
+msgid "Слабый пароль"
+msgstr "Zaif parol"
 
 #: templates/registration/base_wizard.html:171
-#, fuzzy
-#| msgid "Введите надежный пароль"
-msgid "Надежный пароль"
-msgstr "Ishonchli parol kiriting"
+msgid "Средний пароль"
+msgstr "O'rtacha parol"
 
 #: templates/registration/base_wizard.html:172
-#, fuzzy
-#| msgid "Пожалуйста, завершите регистрацию"
-msgid "Пожалуйста, выберите файл JPG, PNG или PDF"
-msgstr "Iltimos, ro'yxatdan o'tishni yakunlang"
+msgid "Надежный пароль"
+msgstr "Ishonchli parol"
 
 #: templates/registration/base_wizard.html:173
-#, fuzzy
-#| msgid "Размер файла не должен превышать 5 МБ"
-msgid "Размер файла не должен превышать 10 МБ"
-msgstr "Fayl hajmi 5 MB dan oshmasligi kerak"
+msgid "Пожалуйста, выберите файл JPG, PNG или PDF"
+msgstr "Iltimos, JPG, PNG yoki PDF fayl tanlang"
 
 #: templates/registration/base_wizard.html:174
-#, fuzzy
-#| msgid "Файл сдачи"
-msgid "Файл выбран"
-msgstr "Topshiruv fayli"
+msgid "Размер файла не должен превышать 10 МБ"
+msgstr "Fayl hajmi 10 MB dan oshmasligi kerak"
 
 #: templates/registration/base_wizard.html:175
-#, fuzzy
-#| msgid "Нет пользователей для отправки сообщения"
-msgid "Это поле обязательно для заполнения"
-msgstr "Xabar yuborish uchun foydalanuvchilar yo'q"
+msgid "Файл выбран"
+msgstr "Fayl tanlandi"
 
 #: templates/registration/base_wizard.html:176
-#, fuzzy
-#| msgid "Выберите корректный язык."
-msgid "Введите корректный email адрес"
-msgstr "To'g'ri tilni tanlang."
+msgid "Это поле обязательно для заполнения"
+msgstr "Bu maydon to'ldirilishi shart"
 
 #: templates/registration/base_wizard.html:177
-#, fuzzy
-#| msgid ""
-#| "Некорректный номер телефона в Telegram. Формат: +<код страны><номер>."
-msgid "Введите корректный номер телефона в формате +998 XX XXX XX XX"
-msgstr "Telegram telefon raqami noto'g'ri. Format: +<mamlakat kodi><raqam>."
+msgid "Введите корректный email адрес"
+msgstr "To'g'ri email manzilini kiriting"
 
 #: templates/registration/base_wizard.html:178
-#, fuzzy
-#| msgid "Пароли не совпадают."
-msgid "Пароли не совпадают"
-msgstr "Parollar mos kelmadi."
+msgid "Введите корректный номер телефона в формате +998 XX XXX XX XX"
+msgstr "+998 XX XXX XX XX formatida to'g'ri telefon raqamini kiriting"
 
 #: templates/registration/base_wizard.html:179
-#, fuzzy
-#| msgid "Описание слишком короткое. Минимум 40 символов (сейчас: %(len)s)"
-msgid "Описание слишком короткое. Минимум 100 символов"
-msgstr "Tavsif juda qisqa. Kamida 40 ta belgi (hozir: %(len)s)"
+msgid "Пароли не совпадают"
+msgstr "Parollar mos kelmadi"
 
 #: templates/registration/base_wizard.html:180
-#, fuzzy
-#| msgid "Сообщение слишком длинное (максимум 2000 символов)"
-msgid "Описание слишком длинное. Максимум 1000 символов"
-msgstr "Xabar juda uzun (ko'pi bilan 2000 ta belgi)"
+msgid "Описание слишком короткое. Минимум 100 символов"
+msgstr "Tavsif juda qisqa. Kamida 100 ta belgi"
 
 #: templates/registration/base_wizard.html:181
+msgid "Описание слишком длинное. Максимум 1000 символов"
+msgstr "Tavsif juda uzun. Ko'pi bilan 1000 ta belgi"
+
+#: templates/registration/base_wizard.html:182
 msgid "сейчас"
 msgstr "hozir"
 
-#: templates/registration/base_wizard.html:182
-#, fuzzy
-#| msgid "Время когда уведомление должно быть отправлено"
+#: templates/registration/base_wizard.html:183
 msgid "Время окончания должно быть позже времени начала"
-msgstr "Bildirishnoma yuborilishi kerak bo'lgan vaqt"
+msgstr "Tugash vaqti boshlanish vaqtidan kechroq bo'lishi kerak"
 
 #: templates/registration/complete.html:5
 msgid "Регистрация завершена"

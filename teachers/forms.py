@@ -886,23 +886,44 @@ class TeacherProfileEditForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         if self.instance and self.instance.pk:
             if self.instance.teaching_languages:
                 self.initial['teaching_languages'] = self.instance.teaching_languages.split(',')
-            
+
             if self.instance.available_weekdays:
                 self.initial['available_weekdays'] = self.instance.available_weekdays.split(',')
-    
+
+    # Публичные текстовые поля профиля видны всем гостям и НЕ проходят
+    # повторную модерацию после одобрения — без маскирования это был самый
+    # дешёвый обход анти-контактного фильтра: учитель вписывал «тг: @ivan»
+    # в bio уже после аппрува (аудит 2026-06-10 H11). Поля telegram/whatsapp
+    # остаются как есть — они легитимны и открываются после 5 оплаченных уроков.
+
+    def _masked(self, field):
+        from .contact_filter import mask_contacts
+        value = self.cleaned_data.get(field) or ''
+        masked, _was = mask_contacts(value)
+        return masked
+
+    def clean_bio(self):
+        return self._masked('bio')
+
+    def clean_university(self):
+        return self._masked('university')
+
+    def clean_specialization(self):
+        return self._masked('specialization')
+
     def save(self, commit=True):
         instance = super().save(commit=False)
-        
+
         instance.teaching_languages = ','.join(self.cleaned_data['teaching_languages'])
         instance.available_weekdays = ','.join(self.cleaned_data['available_weekdays'])
-        
+
         if commit:
             instance.save()
-        
+
         return instance
 
 

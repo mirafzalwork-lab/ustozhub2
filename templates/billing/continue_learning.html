@@ -28,7 +28,7 @@
   <h1>{% trans 'Продолжить обучение с' %} {{ teacher.user.get_full_name|default:teacher.user.username }}</h1>
   <p class="subtitle">{% trans 'Предмет' %}: <b>{{ subject.name }}</b> · {% trans 'выберите тариф и отправьте заявку учителю' %}</p>
 
-  <form method="post">
+  <form method="post" data-lock>
     {% csrf_token %}
     <input type="hidden" name="subject_id" value="{{ subject.id }}">
     <input type="hidden" name="idempotency_key" value="{{ idempotency_key }}">
