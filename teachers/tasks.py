@@ -515,6 +515,24 @@ def _notify_teacher_no_show(booking) -> None:
         action_url=_safe_url('my_bookings_page'),
     )
 
+    # Учителю — уведомление о собственной неявке и возврате средств ученику.
+    if booking.subscription_id or (booking.is_trial and booking.trial_price_paid):
+        teacher_money_text = 'Стоимость урока возвращена ученику.'
+    else:
+        teacher_money_text = 'Деньги за урок с ученика не списывались.'
+    _notify(
+        booking.slot.teacher.user,
+        title='Вы не подключились к уроку',
+        short_text='Урок не состоялся: вы не подключились к видеокомнате.',
+        full_text=(
+            f'Вы не подключились к уроку. Урок не состоялся по вине '
+            f'преподавателя, оплата вам не начисляется. {teacher_money_text}'
+        ),
+        category=Notification.Category.WARNING,
+        booking=booking, priority=7,
+        action_url=_safe_url('my_bookings_page'),
+    )
+
 
 def _handle_not_held(booking) -> None:
     """ТЗ §8: никто не пришёл. Возврат денег (никто не виноват — не списываем):
@@ -614,6 +632,29 @@ def _handle_student_no_show(booking) -> None:
     LessonEvent.log(
         booking, 'warning_sent', actor='system',
         ordinal=ordinal, forgiven=booking.no_show_forgiven,
+    )
+
+    # Учителю — уведомление об итоге обработки урока. Текст соответствует
+    # фактическому движению денег: прощённая неявка возвращает урок ученику
+    # (выплаты нет), засчитанная (N+1) списывает урок и начисляет оплату учителю.
+    student = booking.student.get_full_name() or booking.student.username
+    if booking.no_show_forgiven:
+        teacher_text = (
+            f'Ученик {student} не подключился к уроку. По правилам сервиса урок '
+            f'возвращён ученику, оплата за него не начисляется.'
+        )
+    else:
+        teacher_text = (
+            f'Ученик {student} не подключился к уроку. Урок засчитан, оплата '
+            f'будет начислена вам в ближайшей выплате.'
+        )
+    _notify(
+        booking.slot.teacher.user,
+        title='Ученик не пришёл на урок',
+        short_text=f'Ученик {student} не подключился к уроку.',
+        full_text=teacher_text,
+        category=Notification.Category.LESSON, booking=booking, priority=7,
+        action_url=_safe_url('my_bookings_page'),
     )
 
 

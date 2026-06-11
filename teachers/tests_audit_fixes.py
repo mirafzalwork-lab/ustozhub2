@@ -697,6 +697,46 @@ class NoShowNotificationTextsTests(TestCase):
         # CTA — на страницу добора расписания, а не на список броней.
         self.assertIn(f'/subscriptions/{b.subscription_id}/schedule/', n.action_url)
 
+    def test_teacher_notified_on_teacher_no_show(self):
+        # Учитель не пришёл → учителю приходит уведомление о неявке и возврате ученику.
+        from teachers.tasks import _notify_teacher_no_show
+        from teachers.models import Notification
+        b = self._subscription_booking()
+        _notify_teacher_no_show(b)
+        n = Notification.objects.filter(
+            target_user=self.teacher.user, title='Вы не подключились к уроку').first()
+        self.assertIsNotNone(n)
+        self.assertIn('возвращена ученику', n.full_text)
+        self.assertIn('оплата вам не начисляется', n.full_text)
+
+    def test_teacher_notified_on_student_no_show_forgiven(self):
+        # Прощённая неявка ученика → учителю сообщаем, что оплаты нет.
+        from teachers.tasks import _handle_student_no_show
+        from teachers.models import Notification
+        b = self._subscription_booking()
+        Booking.objects.filter(pk=b.pk).update(
+            status='no_show_student', no_show_forgiven=True)
+        b.refresh_from_db()
+        _handle_student_no_show(b)
+        n = Notification.objects.filter(
+            target_user=self.teacher.user, title='Ученик не пришёл на урок').first()
+        self.assertIsNotNone(n)
+        self.assertIn('возвращён ученику', n.full_text)
+
+    def test_teacher_notified_on_student_no_show_consumed(self):
+        # Засчитанная неявка ученика → учителю сообщаем о начислении оплаты.
+        from teachers.tasks import _handle_student_no_show
+        from teachers.models import Notification
+        b = self._subscription_booking()
+        Booking.objects.filter(pk=b.pk).update(
+            status='no_show_student', no_show_forgiven=False)
+        b.refresh_from_db()
+        _handle_student_no_show(b)
+        n = Notification.objects.filter(
+            target_user=self.teacher.user, title='Ученик не пришёл на урок').first()
+        self.assertIsNotNone(n)
+        self.assertIn('оплата', n.full_text.lower())
+
 
 @override_settings(STORAGES=SIMPLE_STATIC_STORAGES)
 class SmartMatchConsistencyTests(TestCase):
