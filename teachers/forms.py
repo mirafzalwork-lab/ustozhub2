@@ -399,16 +399,17 @@ class CertificateUploadForm(forms.ModelForm):
 
 
 class LoginForm(AuthenticationForm):
-    """Форма входа. Поле username принимает email — fallback в login_view
-    подменит его на username существующего пользователя."""
+    """Форма входа. Поле принимает email ИЛИ имя пользователя (username) —
+    login_view находит пользователя по любому из них и авторизует по паролю.
+    Виджет TextInput (а не EmailInput), иначе браузер блокирует ввод username,
+    не похожего на email (учителя без Google-аккаунта входят по username)."""
     username = forms.CharField(
-        label=_('Email'),
-        widget=forms.EmailInput(attrs={
+        label=_('Email или имя пользователя'),
+        widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': 'your.email@example.com',
-            'autocomplete': 'email',
+            'placeholder': _('email или имя пользователя'),
+            'autocomplete': 'username',
             'autofocus': True,
-            'inputmode': 'email',
         })
     )
 
@@ -429,6 +430,30 @@ class LoginForm(AuthenticationForm):
             'class': 'form-checkbox'
         })
     )
+
+    error_messages = {
+        **AuthenticationForm.error_messages,
+        'invalid_login': _('Неверный email/имя пользователя или пароль'),
+    }
+
+    def clean_username(self):
+        """Принимаем email ИЛИ username в любом регистре и подменяем на
+        канонический username из БД ДО того, как AuthenticationForm.clean()
+        вызовет authenticate() (ModelBackend сверяет username точно).
+        Без этого учителя без Google-аккаунта не могли войти по email."""
+        from django.db.models import Q
+        identifier = (self.cleaned_data.get('username') or '').strip()
+        if not identifier:
+            return identifier
+        try:
+            user = User.objects.get(
+                Q(username__iexact=identifier) | Q(email__iexact=identifier)
+            )
+            return user.get_username()
+        except (User.DoesNotExist, User.MultipleObjectsReturned):
+            # Не раскрываем, существует ли пользователь — пусть authenticate()
+            # вернёт стандартную ошибку «неверный логин или пароль».
+            return identifier
 
 
 class StudentRegistrationForm(UserCreationForm):

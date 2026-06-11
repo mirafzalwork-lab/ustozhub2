@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: UstozHub 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-11 09:36+0500\n"
+"POT-Creation-Date: 2026-06-11 21:34+0500\n"
 "Language-Team: Uzbek\n"
 "Language: uz\n"
 "MIME-Version: 1.0\n"
@@ -236,7 +236,7 @@ msgstr "12 oy"
 msgid "Учитель"
 msgstr "O'qituvchi"
 
-#: billing/models.py:210 teachers/forms.py:747 teachers/models.py:171
+#: billing/models.py:210 teachers/forms.py:767 teachers/models.py:171
 #: teachers/models.py:2728 templates/billing/continue_learning.html:29
 #: templates/billing/learning_requests.html:29
 #: templates/billing/tariff_form.html:37
@@ -834,51 +834,50 @@ msgstr "Sharhni faqat dars tugagandan keyin qoldirish mumkin."
 msgid "Спасибо! Ваш отзыв сохранён."
 msgstr "Rahmat! Sharhingiz saqlandi."
 
-#: teachers/forms.py:15 teachers/forms.py:440 teachers/forms.py:1110
-#: teachers/forms.py:1190 teachers/registration_forms.py:42
+#: teachers/forms.py:15 teachers/forms.py:460 teachers/forms.py:1130
+#: teachers/forms.py:1210 teachers/registration_forms.py:42
 msgid "Имя"
 msgstr "Ism"
 
-#: teachers/forms.py:18 teachers/forms.py:443 teachers/registration_forms.py:45
+#: teachers/forms.py:18 teachers/forms.py:463 teachers/registration_forms.py:45
 msgid "Введите ваше имя"
 msgstr "Ismingizni kiriting"
 
-#: teachers/forms.py:25 teachers/forms.py:450 teachers/forms.py:1111
-#: teachers/forms.py:1200 teachers/registration_forms.py:54
+#: teachers/forms.py:25 teachers/forms.py:470 teachers/forms.py:1131
+#: teachers/forms.py:1220 teachers/registration_forms.py:54
 msgid "Фамилия"
 msgstr "Familiya"
 
-#: teachers/forms.py:28 teachers/forms.py:453 teachers/registration_forms.py:57
+#: teachers/forms.py:28 teachers/forms.py:473 teachers/registration_forms.py:57
 msgid "Введите вашу фамилию"
 msgstr "Familiyangizni kiriting"
 
-#: teachers/forms.py:34 teachers/forms.py:405 teachers/forms.py:459
-#: teachers/forms.py:1112 teachers/registration_forms.py:225
-#: templates/logic/teacher_profile.html:1798
+#: teachers/forms.py:34 teachers/forms.py:479 teachers/forms.py:1132
+#: teachers/registration_forms.py:225 templates/logic/teacher_profile.html:1798
 msgid "Email"
 msgstr "Email"
 
-#: teachers/forms.py:44 teachers/forms.py:469 teachers/forms.py:1113
+#: teachers/forms.py:44 teachers/forms.py:489 teachers/forms.py:1133
 #: templates/logic/student_profile.html:893
 #: templates/logic/teacher_profile.html:1804
 msgid "Телефон"
 msgstr "Telefon"
 
-#: teachers/forms.py:55 teachers/forms.py:480 teachers/forms.py:1114
+#: teachers/forms.py:55 teachers/forms.py:500 teachers/forms.py:1134
 #: templates/logic/student_profile.html:899
 msgid "Возраст"
 msgstr "Yosh"
 
-#: teachers/forms.py:64 teachers/forms.py:1115
+#: teachers/forms.py:64 teachers/forms.py:1135
 #: teachers/registration_forms.py:30
 msgid "Фото профиля"
 msgstr "Profil rasmi"
 
-#: teachers/forms.py:69 teachers/forms.py:1118
+#: teachers/forms.py:69 teachers/forms.py:1138
 msgid "Рекомендуемый размер: 300x300px"
 msgstr "Tavsiya etilgan o'lcham: 300x300px"
 
-#: teachers/forms.py:75 teachers/forms.py:874
+#: teachers/forms.py:75 teachers/forms.py:894
 #: teachers/registration_forms.py:349 templates/logic/register_student.html:979
 #: templates/logic/teacher_profile.html:1617
 msgid "О себе"
@@ -892,15 +891,15 @@ msgstr "O'qitish tajribangiz, metodikangiz, yutuqlaringiz haqida gapiring..."
 msgid "Минимум 50 символов"
 msgstr "Kamida 50 ta belgi"
 
-#: teachers/forms.py:89 teachers/forms.py:523 teachers/forms.py:875
-#: teachers/forms.py:1018 teachers/registration_forms.py:304
+#: teachers/forms.py:89 teachers/forms.py:543 teachers/forms.py:895
+#: teachers/forms.py:1038 teachers/registration_forms.py:304
 #: templates/logic/student_profile.html:919
 #: templates/logic/students_list.html:1169
 #: templates/logic/teacher_profile.html:1678
 msgid "Уровень образования"
 msgstr "Ta'lim darajasi"
 
-#: teachers/forms.py:98 teachers/forms.py:876
+#: teachers/forms.py:98 teachers/forms.py:896
 #: teachers/registration_forms.py:314 templates/logic/student_detail.html:1707
 #: templates/logic/teacher_profile.html:1683
 msgid "Учебное заведение"
@@ -910,21 +909,21 @@ msgstr "Ta'lim muassasasi"
 msgid "Название университета/института"
 msgstr "Universitet/institut nomi"
 
-#: teachers/forms.py:108 teachers/forms.py:877
+#: teachers/forms.py:108 teachers/forms.py:897
 #: teachers/registration_forms.py:325 templates/logic/teacher_profile.html:1689
 msgid "Специализация"
 msgstr "Mutaxassislik"
 
-#: teachers/forms.py:111 teachers/forms.py:847
+#: teachers/forms.py:111 teachers/forms.py:867
 msgid "Ваша специальность"
 msgstr "Sizning mutaxassisligingiz"
 
-#: teachers/forms.py:119 teachers/forms.py:878
+#: teachers/forms.py:119 teachers/forms.py:898
 #: teachers/registration_forms.py:337
 msgid "Опыт преподавания (лет)"
 msgstr "O'qitish tajribasi (yil)"
 
-#: teachers/forms.py:132 teachers/forms.py:805
+#: teachers/forms.py:132 teachers/forms.py:825
 #: teachers/registration_forms.py:100 templates/logic/teacher_profile.html:1705
 msgid "Языки преподавания"
 msgstr "Dars beriladigan tillar"
@@ -933,8 +932,8 @@ msgstr "Dars beriladigan tillar"
 msgid "Выберите один или несколько языков"
 msgstr "Bir yoki bir nechta tilni tanlang"
 
-#: teachers/forms.py:140 teachers/forms.py:490 teachers/forms.py:879
-#: teachers/forms.py:1020 teachers/models.py:205
+#: teachers/forms.py:140 teachers/forms.py:510 teachers/forms.py:899
+#: teachers/forms.py:1040 teachers/models.py:205
 #: teachers/registration_forms.py:418 templates/logic/home.html:2058
 #: templates/logic/student_profile.html:935
 #: templates/logic/students_list.html:1139
@@ -942,11 +941,11 @@ msgstr "Bir yoki bir nechta tilni tanlang"
 msgid "Город"
 msgstr "Shahar"
 
-#: teachers/forms.py:144 teachers/forms.py:494
+#: teachers/forms.py:144 teachers/forms.py:514
 msgid "Выберите город"
 msgstr "Shaharni tanlang"
 
-#: teachers/forms.py:150 teachers/forms.py:880
+#: teachers/forms.py:150 teachers/forms.py:900
 #: teachers/registration_forms.py:429 templates/logic/home.html:2073
 #: templates/logic/students_list.html:1154
 #: templates/logic/teacher_detail.html:2662
@@ -955,8 +954,8 @@ msgstr "Shaharni tanlang"
 msgid "Формат обучения"
 msgstr "Ta'lim formati"
 
-#: teachers/forms.py:160 teachers/forms.py:580 teachers/forms.py:881
-#: teachers/forms.py:1024 templates/logic/teacher_profile.html:1810
+#: teachers/forms.py:160 teachers/forms.py:600 teachers/forms.py:901
+#: teachers/forms.py:1044 templates/logic/teacher_profile.html:1810
 msgid "Telegram"
 msgstr "Telegram"
 
@@ -964,93 +963,93 @@ msgstr "Telegram"
 msgid "@username или номер телефона"
 msgstr "@username yoki telefon raqami"
 
-#: teachers/forms.py:170 teachers/forms.py:591 teachers/forms.py:882
-#: teachers/forms.py:1025 templates/logic/teacher_profile.html:1816
+#: teachers/forms.py:170 teachers/forms.py:611 teachers/forms.py:902
+#: teachers/forms.py:1045 templates/logic/teacher_profile.html:1816
 msgid "WhatsApp"
 msgstr "WhatsApp"
 
-#: teachers/forms.py:180 teachers/forms.py:883
+#: teachers/forms.py:180 teachers/forms.py:903
 msgid "Доступен с"
 msgstr "Mavjudlik boshlanishi"
 
-#: teachers/forms.py:190 teachers/forms.py:884
+#: teachers/forms.py:190 teachers/forms.py:904
 msgid "Доступен до"
 msgstr "Mavjudlik tugashi"
 
-#: teachers/forms.py:200 teachers/forms.py:601 teachers/forms.py:810
-#: teachers/forms.py:954 teachers/models.py:1097
+#: teachers/forms.py:200 teachers/forms.py:621 teachers/forms.py:830
+#: teachers/forms.py:974 teachers/models.py:1097
 #: teachers/registration_forms.py:394
 #: templates/booking/teacher_calendar.html:231
 msgid "Понедельник"
 msgstr "Dushanba"
 
-#: teachers/forms.py:201 teachers/forms.py:602 teachers/forms.py:811
-#: teachers/forms.py:955 teachers/models.py:1097
+#: teachers/forms.py:201 teachers/forms.py:622 teachers/forms.py:831
+#: teachers/forms.py:975 teachers/models.py:1097
 #: teachers/registration_forms.py:395
 #: templates/booking/teacher_calendar.html:231
 msgid "Вторник"
 msgstr "Seshanba"
 
-#: teachers/forms.py:202 teachers/forms.py:603 teachers/forms.py:812
-#: teachers/forms.py:956 teachers/models.py:1097
+#: teachers/forms.py:202 teachers/forms.py:623 teachers/forms.py:832
+#: teachers/forms.py:976 teachers/models.py:1097
 #: teachers/registration_forms.py:396
 #: templates/booking/teacher_calendar.html:232
 msgid "Среда"
 msgstr "Chorshanba"
 
-#: teachers/forms.py:203 teachers/forms.py:604 teachers/forms.py:813
-#: teachers/forms.py:957 teachers/models.py:1098
+#: teachers/forms.py:203 teachers/forms.py:624 teachers/forms.py:833
+#: teachers/forms.py:977 teachers/models.py:1098
 #: teachers/registration_forms.py:397
 #: templates/booking/teacher_calendar.html:232
 msgid "Четверг"
 msgstr "Payshanba"
 
-#: teachers/forms.py:204 teachers/forms.py:605 teachers/forms.py:814
-#: teachers/forms.py:958 teachers/models.py:1098
+#: teachers/forms.py:204 teachers/forms.py:625 teachers/forms.py:834
+#: teachers/forms.py:978 teachers/models.py:1098
 #: teachers/registration_forms.py:398
 #: templates/booking/teacher_calendar.html:233
 msgid "Пятница"
 msgstr "Juma"
 
-#: teachers/forms.py:205 teachers/forms.py:606 teachers/forms.py:815
-#: teachers/forms.py:959 teachers/models.py:1098
+#: teachers/forms.py:205 teachers/forms.py:626 teachers/forms.py:835
+#: teachers/forms.py:979 teachers/models.py:1098
 #: teachers/registration_forms.py:399
 #: templates/booking/teacher_calendar.html:233
 msgid "Суббота"
 msgstr "Shanba"
 
-#: teachers/forms.py:206 teachers/forms.py:607 teachers/forms.py:816
-#: teachers/forms.py:960 teachers/models.py:1099
+#: teachers/forms.py:206 teachers/forms.py:627 teachers/forms.py:836
+#: teachers/forms.py:980 teachers/models.py:1099
 #: teachers/registration_forms.py:400
 #: templates/booking/teacher_calendar.html:234
 msgid "Воскресенье"
 msgstr "Yakshanba"
 
-#: teachers/forms.py:209 teachers/forms.py:819
+#: teachers/forms.py:209 teachers/forms.py:839
 msgid "Рабочие дни"
 msgstr "Ish kunlari"
 
-#: teachers/forms.py:218 teachers/forms.py:619
+#: teachers/forms.py:218 teachers/forms.py:639
 msgid "Я принимаю условия использования и политику конфиденциальности"
 msgstr "Foydalanish shartlari va maxfiylik siyosatini qabul qilaman"
 
-#: teachers/forms.py:237 teachers/forms.py:419 teachers/forms.py:638
+#: teachers/forms.py:237 teachers/forms.py:420 teachers/forms.py:658
 #: templates/registration/base_wizard.html:169
 #: templates/registration/step2_account_security.html:89
 msgid "Введите пароль"
 msgstr "Parolni kiriting"
 
-#: teachers/forms.py:241 teachers/forms.py:642
+#: teachers/forms.py:241 teachers/forms.py:662
 #: teachers/registration_forms.py:217
 msgid "Повторите пароль"
 msgstr "Parolni takrorlang"
 
-#: teachers/forms.py:247 teachers/forms.py:648 teachers/forms.py:1129
+#: teachers/forms.py:247 teachers/forms.py:668 teachers/forms.py:1149
 #: teachers/registration_forms.py:269
 msgid "Этот email уже используется"
 msgstr "Bu email allaqachon ishlatilmoqda"
 
-#: teachers/forms.py:253 teachers/forms.py:654 teachers/forms.py:1140
+#: teachers/forms.py:253 teachers/forms.py:674 teachers/forms.py:1160
 msgid "Этот номер телефона уже используется"
 msgstr "Bu telefon raqami allaqachon ishlatilmoqda"
 
@@ -1068,27 +1067,27 @@ msgstr "Kamida bitta o'qitish tilini tanlang"
 msgid "Предмет %(number)d"
 msgstr "Fan %(number)d"
 
-#: teachers/forms.py:320 teachers/forms.py:780
+#: teachers/forms.py:320 teachers/forms.py:800
 #: teachers/registration_forms.py:625
 msgid "Выберите предмет"
 msgstr "Fanni tanlang"
 
-#: teachers/forms.py:327 teachers/forms.py:748
+#: teachers/forms.py:327 teachers/forms.py:768
 #: teachers/registration_forms.py:632 templates/logic/home.html:2088
 msgid "Цена за час (сум)"
 msgstr "Soatiga narx (so'm)"
 
-#: teachers/forms.py:338 teachers/forms.py:749 teachers/models.py:1296
+#: teachers/forms.py:338 teachers/forms.py:769 teachers/models.py:1296
 msgid "Бесплатное пробное занятие"
 msgstr "Bepul sinov darsi"
 
-#: teachers/forms.py:346 teachers/forms.py:752 teachers/models.py:122
+#: teachers/forms.py:346 teachers/forms.py:772 teachers/models.py:122
 #: templates/billing/homework_create.html:42
 #: templates/billing/tariff_form.html:72
 msgid "Описание"
 msgstr "Tavsif"
 
-#: teachers/forms.py:350 teachers/forms.py:743
+#: teachers/forms.py:350 teachers/forms.py:763
 msgid "Дополнительная информация о преподавании этого предмета"
 msgstr "Ushbu fanni o'qitish haqida qo'shimcha ma'lumot"
 
@@ -1121,27 +1120,35 @@ msgstr "Tashkilot/muassasa"
 msgid "Файл сертификата"
 msgstr "Sertifikat fayli"
 
-#: teachers/forms.py:416 teachers/registration_forms.py:204
+#: teachers/forms.py:407
+msgid "Email или имя пользователя"
+msgstr "Email yoki foydalanuvchi nomi"
+
+#: teachers/forms.py:410
+msgid "email или имя пользователя"
+msgstr "email yoki foydalanuvchi nomi"
+
+#: teachers/forms.py:417 teachers/registration_forms.py:204
 msgid "Пароль"
 msgstr "Parol"
 
-#: teachers/forms.py:427
+#: teachers/forms.py:428
 msgid "Запомнить меня"
 msgstr "Meni eslab qolish"
 
-#: teachers/forms.py:500
+#: teachers/forms.py:520
 msgid "Предметы, которые хочу изучать"
 msgstr "O'rganmoqchi bo'lgan fanlar"
 
-#: teachers/forms.py:504 teachers/forms.py:1214
+#: teachers/forms.py:524 teachers/forms.py:1234
 msgid "Выберите один или несколько предметов"
 msgstr "Bir yoki bir nechta fanni tanlang"
 
-#: teachers/forms.py:509
+#: teachers/forms.py:529
 msgid "Расскажите о ваших целях"
 msgstr "Maqsadlaringiz haqida gapiring"
 
-#: teachers/forms.py:512
+#: teachers/forms.py:532
 msgid ""
 "Например: Хочу подготовиться к экзаменам, улучшить знания по математике, "
 "изучить английский с нуля..."
@@ -1149,178 +1156,178 @@ msgstr ""
 "Masalan: Imtihonlarga tayyorlanmoqchiman, matematika bo'yicha bilimlarimni "
 "yaxshilamoqchiman, ingliz tilini noldan o'rganmoqchiman..."
 
-#: teachers/forms.py:515
+#: teachers/forms.py:535
 msgid ""
 "Минимум 20 символов - это поможет учителям лучше понять ваши потребности"
 msgstr ""
 "Kamida 20 ta belgi - bu o'qituvchilarga ehtiyojlaringizni yaxshiroq "
 "tushunishga yordam beradi"
 
-#: teachers/forms.py:532 teachers/forms.py:1019
+#: teachers/forms.py:552 teachers/forms.py:1039
 #: templates/logic/student_profile.html:927
 msgid "Школа/Университет"
 msgstr "Maktab/Universitet"
 
-#: teachers/forms.py:535
+#: teachers/forms.py:555
 msgid "Название вашей школы или университета"
 msgstr "Maktabingiz yoki universitetingiz nomi"
 
-#: teachers/forms.py:542 teachers/models.py:1412
+#: teachers/forms.py:562 teachers/models.py:1412
 msgid "Предпочитаемый формат обучения"
 msgstr "Afzal ko'rilgan o'qitish formati"
 
-#: teachers/forms.py:553 teachers/forms.py:1022 teachers/models.py:1394
+#: teachers/forms.py:573 teachers/forms.py:1042 teachers/models.py:1394
 msgid "Минимальный бюджет (сум/час)"
 msgstr "Minimal byudjet (so'm/soat)"
 
-#: teachers/forms.py:560 teachers/forms.py:1028
+#: teachers/forms.py:580 teachers/forms.py:1048
 msgid "Минимальная цена, которую готовы платить"
 msgstr "To'lashga tayyor bo'lgan minimal narx"
 
-#: teachers/forms.py:567 teachers/forms.py:1023 teachers/models.py:1404
+#: teachers/forms.py:587 teachers/forms.py:1043 teachers/models.py:1404
 msgid "Максимальный бюджет (сум/час)"
 msgstr "Maksimal byudjet (so'm/soat)"
 
-#: teachers/forms.py:574 teachers/forms.py:1029
+#: teachers/forms.py:594 teachers/forms.py:1049
 msgid "Максимальная цена, которую готовы платить"
 msgstr "To'lashga tayyor bo'lgan maksimal narx"
 
-#: teachers/forms.py:583 teachers/forms.py:1008
+#: teachers/forms.py:603 teachers/forms.py:1028
 msgid "@username или +998901234567"
 msgstr "@username yoki +998901234567"
 
-#: teachers/forms.py:585
+#: teachers/forms.py:605
 msgid "Укажите ваш Telegram для удобной связи с учителями"
 msgstr "O'qituvchilar bilan qulay aloqa uchun Telegram'ingizni ko'rsating"
 
-#: teachers/forms.py:596
+#: teachers/forms.py:616
 msgid "Укажите номер WhatsApp для связи"
 msgstr "Aloqa uchun WhatsApp raqamingizni ko'rsating"
 
-#: teachers/forms.py:610 teachers/forms.py:963
+#: teachers/forms.py:630 teachers/forms.py:983
 msgid "Доступные дни для занятий"
 msgstr "Dars uchun mavjud kunlar"
 
-#: teachers/forms.py:614
+#: teachers/forms.py:634
 msgid "Выберите удобные дни для занятий"
 msgstr "Darslar uchun qulay kunlarni tanlang"
 
-#: teachers/forms.py:660 teachers/forms.py:1220
+#: teachers/forms.py:680 teachers/forms.py:1240
 msgid "Выберите хотя бы один предмет"
 msgstr "Kamida bitta fanni tanlang"
 
-#: teachers/forms.py:662 teachers/forms.py:1222
+#: teachers/forms.py:682 teachers/forms.py:1242
 msgid "Можно выбрать максимум 10 предметов"
 msgstr "Maksimal 10 ta fanni tanlash mumkin"
 
-#: teachers/forms.py:671 teachers/forms.py:1051
+#: teachers/forms.py:691 teachers/forms.py:1071
 #: templates/logic/register_student.html:1484
 msgid "Максимальный бюджет должен быть больше минимального"
 msgstr "Maksimal byudjet minimaldan katta bo'lishi kerak"
 
-#: teachers/forms.py:750
+#: teachers/forms.py:770
 msgid "Длительность пробного"
 msgstr "Sinov darsi davomiyligi"
 
-#: teachers/forms.py:751
+#: teachers/forms.py:771
 msgid "Цена пробного (сум)"
 msgstr "Sinov darsi narxi (so'm)"
 
-#: teachers/forms.py:755
+#: teachers/forms.py:775
 msgid "Заполняется, только если пробный платный"
 msgstr "Faqat sinov darsi pullik bo'lsa to'ldiriladi"
 
-#: teachers/forms.py:776
+#: teachers/forms.py:796
 msgid "Укажите цену за час для выбранного предмета"
 msgstr "Tanlangan fan uchun soatlik narxni kiriting"
 
-#: teachers/forms.py:787
+#: teachers/forms.py:807
 msgid "Укажите цену пробного урока (или сделайте его бесплатным)."
 msgstr "Sinov darsi narxini kiriting (yoki bepul qiling)."
 
-#: teachers/forms.py:838
+#: teachers/forms.py:858
 msgid "Расскажите о своем опыте преподавания..."
 msgstr "O'qitish tajribangiz haqida gapiring..."
 
-#: teachers/forms.py:843
+#: teachers/forms.py:863
 msgid "Название университета"
 msgstr "Universitet nomi"
 
-#: teachers/forms.py:936 templates/logic/student_profile.html:849
+#: teachers/forms.py:956 templates/logic/student_profile.html:849
 msgid "Интересующие предметы"
 msgstr "Qiziqtiruvchi fanlar"
 
-#: teachers/forms.py:945
+#: teachers/forms.py:965
 msgid "Предметы для изучения"
 msgstr "O'rganish uchun fanlar"
 
-#: teachers/forms.py:949
+#: teachers/forms.py:969
 msgid "Выберите предметы, которые хотите изучать"
 msgstr "O'rganmoqchi bo'lgan fanlarni tanlang"
 
-#: teachers/forms.py:982
+#: teachers/forms.py:1002
 msgid "Краткое описание..."
 msgstr "Qisqacha tavsif..."
 
-#: teachers/forms.py:987
+#: teachers/forms.py:1007
 msgid "Расскажите о своих целях обучения..."
 msgstr "O'qish maqsadlaringiz haqida gapiring..."
 
-#: teachers/forms.py:992
+#: teachers/forms.py:1012
 msgid "Название школы/университета"
 msgstr "Maktab/universitet nomi"
 
-#: teachers/forms.py:1016 teachers/models.py:1379
+#: teachers/forms.py:1036 teachers/models.py:1379
 msgid "Краткое описание"
 msgstr "Qisqacha tavsif"
 
-#: teachers/forms.py:1017
+#: teachers/forms.py:1037
 msgid "Подробное описание целей"
 msgstr "Maqsadlarning batafsil tavsifi"
 
-#: teachers/forms.py:1021
+#: teachers/forms.py:1041
 msgid "Предпочитаемый формат"
 msgstr "Afzal ko'rilgan format"
 
-#: teachers/forms.py:1030
+#: teachers/forms.py:1050
 msgid "Ваш Telegram username или номер телефона"
 msgstr "Telegram username yoki telefon raqamingiz"
 
-#: teachers/forms.py:1031
+#: teachers/forms.py:1051
 msgid "Номер WhatsApp для связи"
 msgstr "Aloqa uchun WhatsApp raqami"
 
-#: teachers/forms.py:1085 teachers/forms.py:1193
+#: teachers/forms.py:1105 teachers/forms.py:1213
 msgid "Ваше имя"
 msgstr "Ismingiz"
 
-#: teachers/forms.py:1089 teachers/forms.py:1203
+#: teachers/forms.py:1109 teachers/forms.py:1223
 msgid "Ваша фамилия"
 msgstr "Familiyangiz"
 
-#: teachers/forms.py:1153
+#: teachers/forms.py:1173
 msgid "Введите ваше сообщение..."
 msgstr "Xabaringizni kiriting..."
 
-#: teachers/forms.py:1160 teachers/models.py:1567
+#: teachers/forms.py:1180 teachers/models.py:1567
 #: templates/booking/teacher_calendar.html:109
 #: templates/notifications/detail.html:526
 msgid "Сообщение"
 msgstr "Xabar"
 
-#: teachers/forms.py:1173 teachers/views.py:2425
+#: teachers/forms.py:1193 teachers/views.py:2425
 msgid "Сообщение не может быть пустым"
 msgstr "Xabar bo'sh bo'lishi mumkin emas"
 
-#: teachers/forms.py:1175
+#: teachers/forms.py:1195
 msgid "Сообщение слишком короткое"
 msgstr "Xabar juda qisqa"
 
-#: teachers/forms.py:1177
+#: teachers/forms.py:1197
 msgid "Сообщение слишком длинное (максимум 2000 символов)"
 msgstr "Xabar juda uzun (ko'pi bilan 2000 ta belgi)"
 
-#: teachers/forms.py:1210
+#: teachers/forms.py:1230
 msgid "Какие предметы хотите изучать?"
 msgstr "Qaysi fanlarni o'rganmoqchisiz?"
 
@@ -2877,7 +2884,7 @@ msgstr "Iltimos, ro'yxatdan o'tishni yakunlang"
 
 #: teachers/registration_wizard.py:614 teachers/video_views.py:63
 #: teachers/video_views.py:139 teachers/video_views.py:188
-#: teachers/views.py:1378 teachers/views.py:1612 teachers/views.py:2003
+#: teachers/views.py:1372 teachers/views.py:1612 teachers/views.py:2003
 msgid "Профиль учителя не найден"
 msgstr "O'qituvchi profili topilmadi"
 
@@ -2918,24 +2925,24 @@ msgid "Слишком много попыток входа. Подождите 1
 msgstr ""
 "Kirishga urinishlar juda ko'p. 10 daqiqa kuting va qaytadan urinib ko'ring."
 
-#: teachers/views.py:1110
+#: teachers/views.py:1103
 #, python-format
 msgid "Добро пожаловать, %(name)s!"
 msgstr "Xush kelibsiz, %(name)s!"
 
-#: teachers/views.py:1120
-msgid "Неверный email или пароль"
-msgstr "Email yoki parol noto'g'ri"
+#: teachers/views.py:1113
+msgid "Неверный email/имя пользователя или пароль"
+msgstr "Email/foydalanuvchi nomi yoki parol noto'g'ri"
 
-#: teachers/views.py:1136
+#: teachers/views.py:1129
 msgid "Вы успешно вышли из системы"
 msgstr "Tizimdan chiqdingiz"
 
-#: teachers/views.py:1250
+#: teachers/views.py:1243
 msgid "Слишком много регистраций с этого IP. Попробуйте позже."
 msgstr "Bu IP manzildan juda ko'p ro'yxatdan o'tildi. Keyinroq urinib ko'ring."
 
-#: teachers/views.py:1260
+#: teachers/views.py:1253
 msgid ""
 "Регистрация прошла успешно! Мы подобрали учителей, которые точно вам "
 "подойдут."
@@ -2943,66 +2950,66 @@ msgstr ""
 "Ro'yxatdan muvaffaqiyatli o'tdingiz! Sizga mos keladigan o'qituvchilarni "
 "tanladik."
 
-#: teachers/views.py:1336 teachers/views.py:1816
+#: teachers/views.py:1330 teachers/views.py:1816
 msgid "Завершите регистрацию учителя"
 msgstr "O'qituvchi sifatida ro'yxatdan o'tishni yakunlang"
 
-#: teachers/views.py:1430 teachers/views.py:1499
+#: teachers/views.py:1424 teachers/views.py:1493
 msgid "Профиль успешно обновлен!"
 msgstr "Profil yangilandi!"
 
-#: teachers/views.py:1436 teachers/views.py:1439
+#: teachers/views.py:1430 teachers/views.py:1433
 #, python-format
 msgid "Ошибка в поле %(field)s: %(errors)s"
 msgstr "%(field)s maydonida xatolik: %(errors)s"
 
-#: teachers/views.py:1441
+#: teachers/views.py:1435
 msgid "Проверьте правильность заполнения предметов"
 msgstr "Fanlar to'g'ri to'ldirilganini tekshiring"
 
-#: teachers/views.py:1476
+#: teachers/views.py:1470
 msgid "Предмет успешно удален"
 msgstr "Fan o'chirildi"
 
-#: teachers/views.py:1478
+#: teachers/views.py:1472
 msgid "Предмет не найден"
 msgstr "Fan topilmadi"
 
-#: teachers/views.py:1502
+#: teachers/views.py:1496
 msgid "Пожалуйста, исправьте ошибки в форме"
 msgstr "Iltimos, formadagi xatolarni to'g'rilang"
 
-#: teachers/views.py:1521
+#: teachers/views.py:1515
 msgid "Неверный запрос"
 msgstr "Noto'g'ri so'rov"
 
-#: teachers/views.py:1532
+#: teachers/views.py:1526
 msgid "активен"
 msgstr "faol"
 
-#: teachers/views.py:1532
+#: teachers/views.py:1526
 msgid "деактивирован"
 msgstr "o'chirilgan"
 
-#: teachers/views.py:1533
+#: teachers/views.py:1527
 #, python-format
 msgid "Ваш профиль %(status)s в поиске"
 msgstr "Sizning profilingiz qidiruvda %(status)s"
 
-#: teachers/views.py:1538
+#: teachers/views.py:1532
 #, python-format
 msgid "Профиль %(status)s"
 msgstr "Profil %(status)s"
 
-#: teachers/views.py:1541
+#: teachers/views.py:1535
 msgid "Профиль не найден"
 msgstr "Profil topilmadi"
 
-#: teachers/views.py:1548 teachers/views.py:1604 teachers/views.py:1631
+#: teachers/views.py:1542 teachers/views.py:1604 teachers/views.py:1631
 msgid "Неверный метод"
 msgstr "Noto'g'ri usul"
 
-#: teachers/views.py:1551 teachers/views.py:1607 teachers/views.py:1634
+#: teachers/views.py:1545 teachers/views.py:1607 teachers/views.py:1634
 #: teachers/views.py:1651 teachers/views.py:1663 teachers/views.py:1686
 #: teachers/views.py:1750
 msgid "Доступ запрещен"

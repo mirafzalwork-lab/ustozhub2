@@ -1086,20 +1086,13 @@ def login_view(request):
 
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
             remember_me = form.cleaned_data.get('remember_me')
-            
-            user = authenticate(username=username, password=password)
-            
-            if user is None:
-                # Поле формы называется "Email", но мы поддерживаем и username для
-                # совместимости. Пытаемся найти пользователя по email (case-insensitive).
-                try:
-                    user_obj = User.objects.get(email__iexact=username)
-                    user = authenticate(username=user_obj.username, password=password)
-                except (User.DoesNotExist, User.MultipleObjectsReturned):
-                    pass
+
+            # Форма принимает email ИЛИ username (любой регистр) и сама
+            # резолвит идентификатор в пользователя при валидации
+            # (LoginForm.clean_username), поэтому здесь берём уже
+            # аутентифицированного пользователя из формы.
+            user = form.get_user()
 
             if user is not None:
                 login(request, user, backend='django.contrib.auth.backends.ModelBackend')
@@ -1117,7 +1110,7 @@ def login_view(request):
                 # user_type). Дашборд сам редиректит на онбординг, если профиля нет.
                 return redirect('dashboard')
             else:
-                messages.error(request, _('Неверный email или пароль'))
+                messages.error(request, _('Неверный email/имя пользователя или пароль'))
     else:
         form = LoginForm()
     

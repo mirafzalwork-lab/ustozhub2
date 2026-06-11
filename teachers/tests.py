@@ -11,6 +11,7 @@ from teachers.models import (
     TelegramUser, TeacherProfile, StudentProfile,
     City, Subject, SubjectCategory,
 )
+from billing.tests import SIMPLE_STATIC_STORAGES
 
 User = get_user_model()
 
@@ -382,3 +383,65 @@ class TelegramMarkdownEscapeTest(TestCase):
         from telegram_bot.notification_service import build_notification_text
         # Не падаем на пустых/None значениях.
         self.assertEqual(build_notification_text('', ''), '**\n\n')
+
+
+# =====================================================================
+# Вход по username ИЛИ email (учителя без Google-аккаунта)
+# =====================================================================
+@override_settings(STORAGES=SIMPLE_STATIC_STORAGES)
+class LoginByUsernameOrEmailTest(TestCase):
+    """Учителя, зарегистрированные без Google, входят по username+пароль.
+    Форма должна принимать и email, и username, в любом регистре."""
+
+    def setUp(self):
+        self.url = reverse('login')
+        self.user = User.objects.create_user(
+            username='Ustoz_42', email='Ustoz.42@Mail.com',
+            password='Secret!2026', user_type='teacher',
+        )
+
+    def _logged_in(self, response, client):
+        return '_auth_user_id' in client.session
+
+    def test_login_by_username(self):
+        c = Client()
+        r = c.post(self.url, {'username': 'Ustoz_42', 'password': 'Secret!2026'})
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(self._logged_in(r, c))
+
+    def test_login_by_username_case_insensitive(self):
+        c = Client()
+        r = c.post(self.url, {'username': 'ustoz_42', 'password': 'Secret!2026'})
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(self._logged_in(r, c))
+
+    def test_login_by_email(self):
+        c = Client()
+        r = c.post(self.url, {'username': 'Ustoz.42@mail.com', 'password': 'Secret!2026'})
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(self._logged_in(r, c))
+
+    def test_login_by_email_case_insensitive(self):
+        c = Client()
+        r = c.post(self.url, {'username': 'USTOZ.42@MAIL.COM', 'password': 'Secret!2026'})
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(self._logged_in(r, c))
+
+    def test_wrong_password_rejected(self):
+        c = Client()
+        r = c.post(self.url, {'username': 'Ustoz_42', 'password': 'nope'})
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(self._logged_in(r, c))
+
+    def test_unknown_identifier_rejected(self):
+        c = Client()
+        r = c.post(self.url, {'username': 'no_such_user', 'password': 'whatever'})
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(self._logged_in(r, c))
+
+    def test_login_widget_is_text_not_email(self):
+        # <input type=email> заблокировал бы ввод username в браузере.
+        from teachers.forms import LoginForm
+        html = str(LoginForm()['username'])
+        self.assertIn('type="text"', html)
+        self.assertNotIn('type="email"', html)
