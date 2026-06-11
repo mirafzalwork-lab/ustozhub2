@@ -104,7 +104,9 @@ class LeadDomainTest(LeadsBaseTestCase):
         self.assertEqual(result[1]['status'], leads.LEAD_WARM)
 
         counts = leads.count_teacher_leads(self.teacher)
-        self.assertEqual(counts, {'hot': 1, 'warm': 1, 'total': 2})
+        # 'new' — непросмотренные лиды; учитель ни разу не открывал раздел
+        # (leads_seen_at=None) → новыми считаются все.
+        self.assertEqual(counts, {'hot': 1, 'warm': 1, 'total': 2, 'new': 2})
 
     def test_get_teacher_leads_excludes_opted_out(self):
         Favorite.objects.create(student=self.student_user, teacher=self.teacher)
@@ -263,7 +265,8 @@ class PotentialStudentsPageTest(LeadsBaseTestCase):
         self.client.login(username='t1', password='pass12345!')
         resp = self.client.get(reverse('potential_students'))
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.context['counts'], {'hot': 1, 'warm': 1, 'total': 2})
+        self.assertEqual(resp.context['counts'],
+                         {'hot': 1, 'warm': 1, 'total': 2, 'new': 2})
         self.assertEqual(len(resp.context['items']), 2)
         # горячий лид первым
         self.assertEqual(resp.context['items'][0]['status'], leads.LEAD_HOT)

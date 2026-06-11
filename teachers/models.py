@@ -327,6 +327,11 @@ class TeacherProfile(models.Model):
     # Даты
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # Watermark «просмотрено» для раздела «Потенциальные ученики» (лиды):
+    # момент, когда учитель последний раз открывал список. Лид считается новым,
+    # если его интерес (since) свежее этой метки. Индикатор новых лидов на кнопке
+    # гаснет после открытия раздела и снова загорается при новом интересе.
+    leads_seen_at = models.DateTimeField(null=True, blank=True)
     MODERATION_STATUS = [
         ('pending', _('На модерации')),
         ('approved', _('Одобрено')),

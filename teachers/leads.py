@@ -186,26 +186,52 @@ def get_teacher_leads(teacher_profile):
     return hot_list + warm_list
 
 
+def _count_new(leads, seen_at):
+    """Сколько лидов проявили интерес ПОЗЖЕ метки просмотра seen_at.
+
+    seen_at=None (учитель ни разу не открывал раздел) → все лиды новые.
+    """
+    if seen_at is None:
+        return len(leads)
+    return sum(1 for l in leads if l['since'] and l['since'] > seen_at)
+
+
+def _lead_counts(leads, seen_at):
+    hot = sum(1 for l in leads if l['status'] == LEAD_HOT)
+    warm = sum(1 for l in leads if l['status'] == LEAD_WARM)
+    return {'hot': hot, 'warm': warm, 'total': hot + warm,
+            'new': _count_new(leads, seen_at)}
+
+
 def count_teacher_leads(teacher_profile, leads=None):
-    """Счётчики для бейджей: {'hot': n, 'warm': n, 'total': n}.
+    """Счётчики для бейджей: {'hot', 'warm', 'total', 'new'}.
+
+    'new' — число непросмотренных лидов (интерес свежее leads_seen_at) для
+    индикатора на кнопке; гаснет после открытия раздела (watermark сдвигается),
+    загорается снова при новом интересе.
 
     leads — уже загруженный get_teacher_leads(...) (чтобы не грузить все лиды
     второй раз на той же странице). Без него — кэш 60с: бейдж дёргается на
     каждый показ профиля учителя, а get_teacher_leads загружает ВСЕ trial-брони
-    и избранное без лимита (аудит 2026-06-10 M7).
+    и избранное без лимита (аудит 2026-06-10 M7). 'new' и 'total' считаются за
+    ОДИН проход get_teacher_leads и кэшируются вместе; кэш сбрасывается при
+    изменении источников лидов (signals) и при сдвиге watermark (открытие
+    раздела), поэтому отдельного кэша под индикатор не нужно.
     """
-    if leads is None:
-        from django.core.cache import cache
-        cache_key = f'teacher_lead_counts_{teacher_profile.pk}'
-        cached = cache.get(cache_key)
-        if cached is not None:
-            return cached
-        leads = get_teacher_leads(teacher_profile)
-        hot = sum(1 for l in leads if l['status'] == LEAD_HOT)
-        warm = sum(1 for l in leads if l['status'] == LEAD_WARM)
-        counts = {'hot': hot, 'warm': warm, 'total': hot + warm}
-        cache.set(cache_key, counts, 60)
-        return counts
-    hot = sum(1 for l in leads if l['status'] == LEAD_HOT)
-    warm = sum(1 for l in leads if l['status'] == LEAD_WARM)
-    return {'hot': hot, 'warm': warm, 'total': hot + warm}
+    seen_at = teacher_profile.leads_seen_at
+    if leads is not None:
+        return _lead_counts(leads, seen_at)
+    from django.core.cache import cache
+    cache_key = f'teacher_lead_counts_{teacher_profile.pk}'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+    counts = _lead_counts(get_teacher_leads(teacher_profile), seen_at)
+    cache.set(cache_key, counts, 60)
+    return counts
+
+
+def count_new_teacher_leads(teacher_profile, leads=None):
+    """Число НОВЫХ (непросмотренных) лидов для индикатора. Тонкая обёртка над
+    count_teacher_leads — единый источник и единый кэш-ключ."""
+    return count_teacher_leads(teacher_profile, leads=leads)['new']

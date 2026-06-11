@@ -1537,6 +1537,10 @@
                     {% if lead_counts.total %}
                         <span style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;margin-left:6px;border-radius:11px;background:#fff;color:#EA580C;font-size:12px;font-weight:700;line-height:1;">{{ lead_counts.total }}</span>
                     {% endif %}
+                    {% if lead_new_count %}
+                        {# Индикатор новых (непросмотренных) заинтересованных учеников: гаснет после открытия раздела, загорается снова при новом интересе. #}
+                        <span title="{% blocktrans count n=lead_new_count %}{{ n }} новый заинтересованный ученик{% plural %}{{ n }} новых заинтересованных учеников{% endblocktrans %}" style="position:absolute;top:-6px;right:-6px;display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#EF4444;color:#fff;font-size:11px;font-weight:700;line-height:1;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3);">{{ lead_new_count }}</span>
+                    {% endif %}
                 </a>
                 <a href="{% url 'home' %}" class="btn btn-secondary">
                     <i class="fas fa-eye"></i> {% trans 'Посмотреть как видят ученики' %}

@@ -959,3 +959,92 @@ class TeacherProfilePendingBookingTests(TestCase):
         r = self.client.get(reverse('profile'))
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, '/my/bookings/')  # ссылка «Ответить →» валидна
+
+
+@override_settings(STORAGES=SIMPLE_STATIC_STORAGES)
+class InterestedStudentsNotificationTests(TestCase):
+    """«Заинтересованные ученики»: уведомление учителю о новом интересе и
+    индикатор новых (непросмотренных) лидов на кнопке (watermark leads_seen_at).
+    """
+
+    def setUp(self):
+        self.teacher, self.subject = _make_teacher_with_subject('int_t')
+        self.teacher.is_active = True
+        self.teacher.moderation_status = 'approved'
+        self.teacher.save()
+        self.student = _make_student_with_balance('int_s', balance=Decimal('0'))
+
+    def _favorite(self, student):
+        self.client.force_login(student)
+        return self.client.post(
+            reverse('toggle_favorite_teacher', args=[self.teacher.id]))
+
+    def test_favorite_creates_teacher_notification(self):
+        from teachers.models import Notification
+        r = self._favorite(self.student)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.json()['favorited'])
+        n = Notification.objects.filter(
+            target_user=self.teacher.user,
+            title__icontains='заинтересованный').first()
+        self.assertIsNotNone(n)
+        self.assertEqual(n.target, 'specific_user')
+
+    def test_unfavorite_does_not_create_second_notification(self):
+        from teachers.models import Notification
+        self._favorite(self.student)                 # добавил
+        self._favorite(self.student)                 # тогл выкл — favorited=False
+        cnt = Notification.objects.filter(
+            target_user=self.teacher.user,
+            title__icontains='заинтересованный').count()
+        self.assertEqual(cnt, 1)                     # без дублей
+
+    def test_new_lead_indicator_appears_and_clears(self):
+        from teachers.models import TeacherProfile
+        from teachers.leads import count_new_teacher_leads
+
+        # 0) изначально новых лидов нет
+        self.assertEqual(count_new_teacher_leads(self.teacher), 0)
+
+        # 1) ученик добавил в избранное → новый лид появился
+        self._favorite(self.student)
+        tp = TeacherProfile.objects.get(pk=self.teacher.pk)
+        self.assertEqual(count_new_teacher_leads(tp), 1)
+
+        # 2) учитель открыл раздел → watermark двинулся, индикатор погас
+        self.client.force_login(self.teacher.user)
+        r = self.client.get(reverse('potential_students'))
+        self.assertEqual(r.status_code, 200)
+        tp = TeacherProfile.objects.get(pk=self.teacher.pk)
+        self.assertIsNotNone(tp.leads_seen_at)
+        self.assertEqual(count_new_teacher_leads(tp), 0)
+
+        # 3) новый ученик проявил интерес → индикатор загорелся снова
+        student2 = _make_student_with_balance('int_s2', balance=Decimal('0'))
+        self._favorite(student2)
+        tp = TeacherProfile.objects.get(pk=self.teacher.pk)
+        self.assertEqual(count_new_teacher_leads(tp), 1)
+
+    def test_opening_section_with_no_new_leaves_watermark_untouched(self):
+        # Нет новых лидов → раздел не должен делать лишнюю запись leads_seen_at.
+        from teachers.models import TeacherProfile
+        self.client.force_login(self.teacher.user)
+        self.client.get(reverse('potential_students'))
+        tp = TeacherProfile.objects.get(pk=self.teacher.pk)
+        self.assertIsNone(tp.leads_seen_at)
+
+    def test_opted_out_student_favorite_does_not_notify(self):
+        # Ученик сказал «не интересно» (opt-out) — он скрыт из лидов и индикатора,
+        # уведомление о его избранном было бы фантомным → не шлём.
+        from teachers.models import Notification, LeadOptOut
+        from teachers.leads import count_new_teacher_leads
+        LeadOptOut.objects.create(student=self.student, teacher=self.teacher)
+        self._favorite(self.student)
+        n = Notification.objects.filter(
+            target_user=self.teacher.user,
+            title__icontains='заинтересованный').count()
+        self.assertEqual(n, 0)
+        # И индикатор такого лида не считает (consistency).
+        from teachers.models import TeacherProfile
+        tp = TeacherProfile.objects.get(pk=self.teacher.pk)
+        self.assertEqual(count_new_teacher_leads(tp), 0)

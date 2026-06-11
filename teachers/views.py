@@ -1311,14 +1311,18 @@ def profile_view(request):
                 if first_booking_checklist else 0
             )
 
-            # Счётчики лидов (ученики, проявившие интерес) — для бейджа на кнопке
+            # Счётчики лидов (ученики, проявившие интерес) — для бейджа на кнопке.
+            # 'new' — новые (непросмотренные) лиды для индикатора-точки; считается
+            # тем же проходом, без второй небаунженной загрузки лидов (аудит M7).
             from .leads import count_teacher_leads
             lead_counts = count_teacher_leads(teacher_profile)
+            lead_new_count = lead_counts['new']
 
             return render(request, 'logic/teacher_profile.html', {
                 'teacher': teacher_profile,
                 'views_stats': views_stats,
                 'lead_counts': lead_counts,
+                'lead_new_count': lead_new_count,
                 'activity_7d': activity_7d,
                 'activity_30d': activity_30d,
                 'activity_all': activity_all,
@@ -1553,7 +1557,51 @@ def toggle_favorite_teacher(request, teacher_id):
     if not created:
         fav.delete()
         return JsonResponse({'success': True, 'favorited': False})
+
+    # Новый заинтересованный ученик — уведомляем учителя (in-app + дубль на
+    # email/Telegram через сигнал push_notification_realtime). Срабатывает только
+    # на переходе «нет избранного → есть» (created=True), поэтому повторные
+    # тоглы не плодят дубли. Если ученик ранее сказал «не интересно» (opt-out),
+    # он скрыт из раздела «Потенциальные ученики» и из индикатора — уведомление
+    # о нём было бы фантомным, поэтому пропускаем.
+    from .leads import is_opted_out
+    if not is_opted_out(teacher, request.user):
+        _notify_teacher_new_interest(teacher, request.user)
+
     return JsonResponse({'success': True, 'favorited': True})
+
+
+def _notify_teacher_new_interest(teacher, student_user):
+    """Уведомление учителю о новом заинтересованном ученике (никогда не роняет
+    основной поток — добавление в избранное важнее уведомления)."""
+    try:
+        student_name = student_user.get_full_name() or student_user.username
+        try:
+            action_url = reverse('potential_students')
+        except Exception:
+            action_url = ''
+        Notification.objects.create(
+            title='Новый заинтересованный ученик',
+            # short_text — CharField(300); имя (first+last до ~300) могло бы
+            # переполнить колонку, обрезаем как делает _notify в tasks.py.
+            short_text=f'{student_name} добавил(а) вас в избранное.'[:300],
+            full_text=(
+                f'Ученик {student_name} добавил(а) вас в избранное. '
+                f'Откройте раздел «Потенциальные ученики», чтобы написать первым.'
+            ),
+            target='specific_user',
+            target_user=teacher.user,
+            is_active=True,
+            priority=6,
+            category=Notification.Category.GENERAL,
+            action_url=action_url,
+        )
+    except Exception:
+        logger.warning(
+            'new-interest notify failed teacher=%s student=%s',
+            getattr(teacher, 'pk', None), getattr(student_user, 'pk', None),
+            exc_info=True,
+        )
 
 
 @login_required
@@ -1649,6 +1697,17 @@ def potential_students(request):
 
     all_leads = get_teacher_leads(teacher_profile)
     counts = count_teacher_leads(teacher_profile, leads=all_leads)
+
+    # Открытие раздела = «просмотрено»: двигаем watermark, чтобы индикатор новых
+    # лидов на кнопке погас. Пишем только при наличии новых (избегаем лишней
+    # записи на каждый показ страницы) и сбрасываем кэш счётчиков ('new' живёт
+    # в той же записи, что и total).
+    if counts['new'] > 0:
+        from django.utils import timezone
+        from django.core.cache import cache
+        teacher_profile.leads_seen_at = timezone.now()
+        teacher_profile.save(update_fields=['leads_seen_at'])
+        cache.delete(f'teacher_lead_counts_{teacher_profile.pk}')
 
     status_filter = request.GET.get('status')
     if status_filter in (LEAD_HOT, LEAD_WARM):

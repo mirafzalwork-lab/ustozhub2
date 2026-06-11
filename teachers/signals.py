@@ -380,6 +380,7 @@ def push_notification_realtime(sender, instance, created, **kwargs):
 # лидов: избранное (warm) и trial-брони (hot).
 
 def _invalidate_lead_counts(teacher_id):
+    # Сбрасывает и total, и 'new' (индикатор новых лидов) — они в одной записи.
     cache.delete(f'teacher_lead_counts_{teacher_id}')
 
 
