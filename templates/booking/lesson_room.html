@@ -101,6 +101,21 @@
         background: #3B82F6; color: #fff; font-size: 14px; font-weight: 600;
     }
 
+    /* Плашка «здоровья» урока: проблемы с микрофоном или связью + быстрый
+       чистый реконнект (с освобождением устройства). Не фатально — поверх видео. */
+    #lr-health {
+        display: none; align-items: center; flex-wrap: wrap; gap: 10px;
+        margin-top: 10px; padding: 10px 14px;
+        background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 10px;
+        font-size: 13px; color: #92400E;
+    }
+    #lr-health .lr-health-msg { display: inline-flex; align-items: center; gap: 8px; flex: 1 1 240px; }
+    #lr-health .lr-health-msg i { color: #D97706; }
+    #lr-health button { border: 0; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+    #lr-health #lr-health-btn { padding: 7px 14px; background: #D97706; color: #fff; }
+    #lr-health #lr-health-btn:hover { background: #B45309; }
+    #lr-health #lr-health-dismiss { padding: 4px 10px; background: transparent; color: #92400E; font-size: 18px; line-height: 1; }
+
     /* Материалы урока */
     .lr-files {
         margin-top: 14px;
@@ -178,6 +193,16 @@
             </span>
         </div>
         <div id="jitsi-container"></div>
+        <div id="lr-health" role="alert">
+            <span class="lr-health-msg">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span id="lr-health-text"></span>
+            </span>
+            <button type="button" id="lr-health-btn">
+                <i class="fa-solid fa-rotate-right"></i> {% trans "Переподключиться" %}
+            </button>
+            <button type="button" id="lr-health-dismiss" aria-label="{% trans 'Скрыть' %}">×</button>
+        </div>
         <div id="lr-reload">
             <button type="button" onclick="window.location.reload()">
                 <i class="fa-solid fa-rotate-right"></i> {% trans "Переподключиться" %}
@@ -362,11 +387,68 @@
         } catch (e) { setPresence(false); }
     });
 
-    // ---- Обработка фатальных ошибок конференции ----
+    // ---- Плашка «здоровья» урока + чистое переподключение ----
+    // Главная причина «после перезахода микрофон не работает»: при выходе старый
+    // аудио-трек не освобождается, и повторный getUserMedia получает занятое
+    // устройство. Лечим чистым реконнектом: api.dispose() освобождает микрофон/
+    // камеру, затем полная перезагрузка страницы с нуля.
+    const healthEl = document.getElementById('lr-health');
+    const healthText = document.getElementById('lr-health-text');
+    const healthBtn = document.getElementById('lr-health-btn');
+    const healthDismiss = document.getElementById('lr-health-dismiss');
+    let healthCategory = null;   // 'mic' | 'conn' — чтобы прятать плашку по нужному сигналу
+    let reconnecting = false;
+
+    function showHealth(category, msg) {
+        healthCategory = category;
+        if (healthText) healthText.textContent = msg;
+        if (healthEl) healthEl.style.display = 'flex';
+    }
+    function hideHealth() {
+        healthCategory = null;
+        if (healthEl) healthEl.style.display = 'none';
+    }
+    function cleanReconnect() {
+        if (reconnecting) return;
+        reconnecting = true;
+        reportLeave();                       // зафиксировать присутствие до выхода
+        try { api.dispose(); } catch (e) { /* освобождаем устройства */ }
+        // даём браузеру ~0.6с отпустить микрофон/камеру перед повторным захватом
+        setTimeout(function () { window.location.reload(); }, 600);
+    }
+    if (healthBtn) healthBtn.addEventListener('click', cleanReconnect);
+    if (healthDismiss) healthDismiss.addEventListener('click', hideHealth);
+
+    const txtMicDead = "{% filter escapejs %}{% trans 'Ваш микрофон перестал передавать звук. Нажмите «Переподключиться» — это переподключит устройство.' %}{% endfilter %}";
+    const txtConn = "{% filter escapejs %}{% trans 'Проблема со связью. Если звук или видео пропали — переподключитесь.' %}{% endfilter %}";
+    const txtOffline = "{% filter escapejs %}{% trans 'Интернет пропал. Ждём восстановления соединения…' %}{% endfilter %}";
+
+    // ---- Детект «мёртвого» микрофона (сервер шлёт при enableNoAudioDetection) ----
+    api.addEventListener('noAudioInput', function () {
+        showHealth('mic', txtMicDead);
+    });
+    // Когда пользователь сам размьютился/звук вернулся — убираем плашку про микрофон.
+    api.addEventListener('audioMuteStatusChanged', function (e) {
+        if (e && e.muted === false && healthCategory === 'mic') hideHealth();
+    });
+
+    // ---- Потеря интернета на стороне клиента ----
+    window.addEventListener('offline', function () { showHealth('conn', txtOffline); });
+    window.addEventListener('online', function () { if (healthCategory === 'conn') hideHealth(); });
+
+    // ---- Обработка ошибок конференции ----
     api.addEventListener('errorOccurred', function (e) {
         try {
             if (e && e.error && e.error.isFatal) {
+                // Фатально — встроенный модуль не починить, нужен полный reload.
                 if (reloadBox) reloadBox.style.display = 'block';
+            } else if (e && e.error) {
+                // Не фатально: показываем мягкую плашку только для сетевых ошибок,
+                // чтобы не шуметь на безобидных событиях.
+                const name = ((e.error.name || e.error.type || '') + '');
+                if (/conn|ice|network|offline|membersOnly/i.test(name)) {
+                    showHealth('conn', txtConn);
+                }
             }
         } catch (err) { /* no-op */ }
     });

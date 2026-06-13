@@ -226,15 +226,38 @@ class TeacherSubjectInline(admin.TabularInline):
 
 
 # --- TeacherProfile ---
+class HasVideoFilter(admin.SimpleListFilter):
+    """Фильтр в админке: загрузил ли учитель видео-визитку."""
+    title = 'Видео-визитка'
+    parameter_name = 'has_video'
+
+    def lookups(self, request, model_admin):
+        return (('yes', 'Есть видео'), ('no', 'Нет видео'))
+
+    def queryset(self, request, queryset):
+        if self.value() == 'yes':
+            return queryset.exclude(video_url__isnull=True).exclude(video_url='')
+        if self.value() == 'no':
+            return queryset.filter(Q(video_url__isnull=True) | Q(video_url=''))
+        return queryset
+
+
 @admin.register(TeacherProfile)
 class TeacherProfileAdmin(admin.ModelAdmin):
     inlines = [TeacherSubjectInline]
-    list_display = ("user", "education_level", "teaching_languages", "experience_years", "city", "teaching_format",
+    list_display = ("user", "video_link", "education_level", "teaching_languages", "experience_years", "city", "teaching_format",
                     "rating", "total_reviews", "total_students", "moderation_status", "is_featured", "ranking_score", "is_active")
-    list_filter = ("education_level", "teaching_format", "moderation_status", "is_featured", "is_active", "city")
+    list_filter = (HasVideoFilter, "education_level", "teaching_format", "moderation_status", "is_featured", "is_active", "city")
     search_fields = ("user__username", "user__first_name", "user__last_name", "specialization", "university")
     list_editable = ("is_featured",)
     actions = ['approve_teachers', 'reject_teachers', 'recalculate_rankings']
+
+    @admin.display(description='Видео-визитка')
+    def video_link(self, obj):
+        """Ссылка на загруженное учителем видео (открывается в новой вкладке)."""
+        if obj.video_url:
+            return format_html('<a href="{}" target="_blank" rel="noopener">▶ Смотреть</a>', obj.video_url)
+        return '—'
     
     def save_model(self, request, obj, form, change):
         """Переопределяем сохранение для установки модератора"""

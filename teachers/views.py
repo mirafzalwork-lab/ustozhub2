@@ -629,6 +629,14 @@ def admin_dashboard(request):
     # ========== ПОСЛЕДНИЕ РЕГИСТРАЦИИ ==========
     recent_teachers = TeacherProfile.objects.select_related('user', 'city').order_by('-created_at')[:8]
     recent_students = StudentProfile.objects.select_related('user', 'city').order_by('-created_at')[:8]
+
+    # ========== ВИДЕО-ВИЗИТКИ УЧИТЕЛЕЙ ==========
+    # Учителя, загрузившие видео-визитку — последние сверху.
+    teachers_with_video_qs = TeacherProfile.objects.exclude(
+        video_url__isnull=True
+    ).exclude(video_url='').select_related('user').order_by('-updated_at')
+    teachers_with_video_count = teachers_with_video_qs.count()
+    teachers_with_video = teachers_with_video_qs[:15]
     
     # ========== СТАТИСТИКА ПО СТРАНИЦАМ ==========
     page_stats = ViewCounter.objects.filter(month=current_month).values('page').annotate(
@@ -704,6 +712,8 @@ def admin_dashboard(request):
         'recent_messages': recent_messages,
         'recent_teachers': recent_teachers,
         'recent_students': recent_students,
+        'teachers_with_video': teachers_with_video,
+        'teachers_with_video_count': teachers_with_video_count,
         'page_stats': page_stats,
         'top_subjects': top_subjects,
     
@@ -726,7 +736,8 @@ def admin_dashboard(request):
     # Материализуем queryset'ы (списки), чтобы в кэш легли конкретные данные,
     # а не ленивые запросы; затем кэшируем сводку на 45с.
     for _k in ('pending_teachers_list', 'recent_messages', 'recent_teachers',
-               'recent_students', 'recent_tx', 'page_stats', 'top_subjects'):
+               'recent_students', 'recent_tx', 'page_stats', 'top_subjects',
+               'teachers_with_video'):
         if _k in context:
             context[_k] = list(context[_k])
     _cache.set('admin_dashboard_ctx', context, 45)

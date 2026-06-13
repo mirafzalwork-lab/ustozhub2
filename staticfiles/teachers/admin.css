@@ -36,11 +36,12 @@ body {
     width: 40px;
     height: 40px;
     border-radius: 8px;
+    margin-left: 10px;
 }
 
 .sidebar-logo-text h2 {
     color: #fff;
-    font-size: 20px;
+    font-size: 28px;
     font-weight: 700;
 }
 
@@ -841,5 +842,61 @@ body {
     
     .order-details {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ===== Мобильная навигация админки: гамбургер + выезжающий сайдбар ===== */
+.sidebar-toggle { display: none; }
+.admin-backdrop { display: none; }
+
+@media (max-width: 768px) {
+    /* Сайдбар выезжает по тапу гамбургера, а не «исчезает навсегда» */
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        z-index: 1001;
+    }
+    .sidebar.open {
+        transform: translateX(0);
+        box-shadow: 2px 0 16px rgba(0, 0, 0, 0.25);
+    }
+
+    .topbar-left {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .sidebar-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        margin-right: 8px;
+        border: none;
+        border-radius: 8px;
+        background: #f3f4f6;
+        color: #1a1a1a;
+        font-size: 18px;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+    .sidebar-toggle:active { background: #e5e7eb; }
+
+    .admin-backdrop.show {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+    }
+
+    /* Широкие таблицы скроллятся по горизонтали, а не ломают вёрстку */
+    .users-table,
+    .data-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
     }
 }
