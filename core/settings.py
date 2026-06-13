@@ -253,6 +253,11 @@ if not DEBUG:
     # Django стоит за Nginx — без этого request.is_secure() возвращает False
     # и SECURE_SSL_REDIRECT уходит в бесконечный редирект.
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # Gunicorn слушает unix-сокет, поэтому REMOTE_ADDR пустой. django-ratelimit
+    # по умолчанию берёт IP из REMOTE_ADDR и падает с ImproperlyConfigured
+    # (→ 500 на POST /login/, /register/). Берём реальный IP из X-Real-IP,
+    # который Nginx ВСЕГДА перезаписывает в $remote_addr (клиент подделать не может).
+    RATELIMIT_IP_META_KEY = 'HTTP_X_REAL_IP'
 else:
     # Development settings
     SESSION_COOKIE_SECURE = False
