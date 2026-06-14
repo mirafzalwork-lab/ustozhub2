@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: UstozHub 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-13 11:47+0500\n"
+"POT-Creation-Date: 2026-06-13 12:12+0500\n"
 "Language-Team: English\n"
 "Language: en\n"
 "MIME-Version: 1.0\n"
@@ -588,11 +588,11 @@ msgstr "Plan updated."
 msgid "Тариф удалён."
 msgstr "Plan deleted."
 
-#: billing/views.py:144 teachers/views.py:3089
+#: billing/views.py:144 teachers/views.py:3100
 msgid "включён"
 msgstr "enabled"
 
-#: billing/views.py:144 teachers/views.py:3089
+#: billing/views.py:144 teachers/views.py:3100
 msgid "выключен"
 msgstr "disabled"
 
@@ -1133,7 +1133,7 @@ msgstr "Password"
 msgid "Запомнить меня"
 msgstr "Remember me"
 
-#: teachers/forms.py:436 teachers/views.py:1113
+#: teachers/forms.py:436 teachers/views.py:1124
 msgid "Неверный email/имя пользователя или пароль"
 msgstr "Incorrect email/username or password"
 
@@ -1315,7 +1315,7 @@ msgstr "Type your message..."
 msgid "Сообщение"
 msgstr "Message"
 
-#: teachers/forms.py:1198 teachers/views.py:2425
+#: teachers/forms.py:1198 teachers/views.py:2436
 msgid "Сообщение не может быть пустым"
 msgstr "Message can't be empty"
 
@@ -2879,7 +2879,7 @@ msgstr "Please finish your registration"
 
 #: teachers/registration_wizard.py:614 teachers/video_views.py:63
 #: teachers/video_views.py:139 teachers/video_views.py:188
-#: teachers/views.py:1372 teachers/views.py:1612 teachers/views.py:2003
+#: teachers/views.py:1383 teachers/views.py:1623 teachers/views.py:2014
 msgid "Профиль учителя не найден"
 msgstr "Teacher profile not found"
 
@@ -2915,124 +2915,124 @@ msgstr "Video not found"
 msgid "У вас нет доступа к админ панели"
 msgstr "You don't have access to the admin panel"
 
-#: teachers/views.py:1084
+#: teachers/views.py:1095
 msgid "Слишком много попыток входа. Подождите 10 минут и попробуйте снова."
 msgstr "Too many login attempts. Please wait 10 minutes and try again."
 
-#: teachers/views.py:1103
+#: teachers/views.py:1114
 #, python-format
 msgid "Добро пожаловать, %(name)s!"
 msgstr "Welcome, %(name)s!"
 
-#: teachers/views.py:1129
+#: teachers/views.py:1140
 msgid "Вы успешно вышли из системы"
 msgstr "You've been logged out"
 
-#: teachers/views.py:1243
+#: teachers/views.py:1254
 msgid "Слишком много регистраций с этого IP. Попробуйте позже."
 msgstr "Too many sign-ups from this IP. Please try again later."
 
-#: teachers/views.py:1253
+#: teachers/views.py:1264
 msgid ""
 "Регистрация прошла успешно! Мы подобрали учителей, которые точно вам "
 "подойдут."
 msgstr ""
 "You're all signed up! We've matched you with teachers who are a great fit."
 
-#: teachers/views.py:1330 teachers/views.py:1816
+#: teachers/views.py:1341 teachers/views.py:1827
 msgid "Завершите регистрацию учителя"
 msgstr "Finish your teacher registration"
 
-#: teachers/views.py:1424 teachers/views.py:1493
+#: teachers/views.py:1435 teachers/views.py:1504
 msgid "Профиль успешно обновлен!"
 msgstr "Profile updated!"
 
-#: teachers/views.py:1430 teachers/views.py:1433
+#: teachers/views.py:1441 teachers/views.py:1444
 #, python-format
 msgid "Ошибка в поле %(field)s: %(errors)s"
 msgstr "Error in %(field)s: %(errors)s"
 
-#: teachers/views.py:1435
+#: teachers/views.py:1446
 msgid "Проверьте правильность заполнения предметов"
 msgstr "Please double-check your subjects"
 
-#: teachers/views.py:1470
+#: teachers/views.py:1481
 msgid "Предмет успешно удален"
 msgstr "Subject deleted"
 
-#: teachers/views.py:1472
+#: teachers/views.py:1483
 msgid "Предмет не найден"
 msgstr "Subject not found"
 
-#: teachers/views.py:1496
+#: teachers/views.py:1507
 msgid "Пожалуйста, исправьте ошибки в форме"
 msgstr "Please fix the errors in the form"
 
-#: teachers/views.py:1515
+#: teachers/views.py:1526
 msgid "Неверный запрос"
 msgstr "Invalid request"
 
-#: teachers/views.py:1526
+#: teachers/views.py:1537
 msgid "активен"
 msgstr "active"
 
-#: teachers/views.py:1526
+#: teachers/views.py:1537
 msgid "деактивирован"
 msgstr "deactivated"
 
-#: teachers/views.py:1527
+#: teachers/views.py:1538
 #, python-format
 msgid "Ваш профиль %(status)s в поиске"
 msgstr "Your profile is %(status)s in search"
 
-#: teachers/views.py:1532
+#: teachers/views.py:1543
 #, python-format
 msgid "Профиль %(status)s"
 msgstr "Profile %(status)s"
 
-#: teachers/views.py:1535
+#: teachers/views.py:1546
 msgid "Профиль не найден"
 msgstr "Profile not found"
 
-#: teachers/views.py:1542 teachers/views.py:1604 teachers/views.py:1631
+#: teachers/views.py:1553 teachers/views.py:1615 teachers/views.py:1642
 msgid "Неверный метод"
 msgstr "Invalid method"
 
-#: teachers/views.py:1545 teachers/views.py:1607 teachers/views.py:1634
-#: teachers/views.py:1651 teachers/views.py:1663 teachers/views.py:1686
-#: teachers/views.py:1750
+#: teachers/views.py:1556 teachers/views.py:1618 teachers/views.py:1645
+#: teachers/views.py:1662 teachers/views.py:1674 teachers/views.py:1697
+#: teachers/views.py:1761
 msgid "Доступ запрещен"
 msgstr "Access denied"
 
-#: teachers/views.py:1756 teachers/views.py:1833
+#: teachers/views.py:1767 teachers/views.py:1844
 msgid "Заполните профиль ученика"
 msgstr "Complete your student profile"
 
-#: teachers/views.py:1929
+#: teachers/views.py:1940
 msgid "Сообщение отправлено!"
 msgstr "Message sent!"
 
-#: teachers/views.py:1932
+#: teachers/views.py:1943
 msgid "Ошибка при отправке сообщения"
 msgstr "Couldn't send the message"
 
-#: teachers/views.py:1946
+#: teachers/views.py:1957
 msgid "Переписка не найдена или доступ запрещен"
 msgstr "Conversation not found or access denied"
 
-#: teachers/views.py:1962
+#: teachers/views.py:1973
 msgid "Вы не можете писать себе"
 msgstr "You can't message yourself"
 
-#: teachers/views.py:1971
+#: teachers/views.py:1982
 msgid "Завершите регистрацию учителя, чтобы писать сообщения"
 msgstr "Finish your teacher registration to send messages"
 
-#: teachers/views.py:1977
+#: teachers/views.py:1988
 msgid "Вы можете писать только ученикам"
 msgstr "You can only message students"
 
-#: teachers/views.py:1990
+#: teachers/views.py:2001
 msgid ""
 "Написать можно только ученикам, которые добавили вас в избранное или "
 "забронировали пробный урок."
@@ -3040,21 +3040,21 @@ msgstr ""
 "You can only message students who've added you to favorites or booked a "
 "trial lesson."
 
-#: teachers/views.py:1997
+#: teachers/views.py:2008
 msgid "Вы можете писать только учителям"
 msgstr "You can only message teachers"
 
-#: teachers/views.py:2030 teachers/views.py:2125
+#: teachers/views.py:2041 teachers/views.py:2136
 msgid "Только POST запросы"
 msgstr "POST requests only"
 
-#: teachers/views.py:2043
+#: teachers/views.py:2054
 #, fuzzy
 #| msgid "Слишком много попыток входа. Подождите 10 минут и попробуйте снова."
 msgid "Слишком много сообщений. Подождите немного."
 msgstr "Too many login attempts. Please wait 10 minutes and try again."
 
-#: teachers/views.py:2054
+#: teachers/views.py:2065
 msgid ""
 "Вы уже отправили первое сообщение. Дождитесь ответа ученика, чтобы "
 "продолжить переписку."
@@ -3062,57 +3062,57 @@ msgstr ""
 "You've already sent the first message. Wait for the student to reply before "
 "continuing."
 
-#: teachers/views.py:2115
+#: teachers/views.py:2126
 msgid "Произошла ошибка при отправке сообщения"
 msgstr "Something went wrong while sending the message"
 
 # ========== JAVASCRIPT MESSAGES ==========
-#: teachers/views.py:2153 templates/billing/student_dashboard.html:394
+#: teachers/views.py:2164 templates/billing/student_dashboard.html:394
 #: templates/logic/teacher_detail.html:2746
 #: templates/notifications/detail.html:625
 #: templates/notifications/list.html:479
 msgid "Произошла ошибка"
 msgstr "An error occurred"
 
-#: teachers/views.py:2163
+#: teachers/views.py:2174
 msgid "Неверный метод запроса"
 msgstr "Invalid request method"
 
-#: teachers/views.py:2175
+#: teachers/views.py:2186
 msgid "Переписка удалена"
 msgstr "Conversation deleted"
 
-#: teachers/views.py:2180
+#: teachers/views.py:2191
 msgid "Ошибка при удалении переписки"
 msgstr "Couldn't delete the conversation"
 
-#: teachers/views.py:2272
+#: teachers/views.py:2283
 msgid "Ошибка поиска предметов"
 msgstr "Couldn't search subjects"
 
-#: teachers/views.py:2329
+#: teachers/views.py:2340
 msgid "Категория не найдена"
 msgstr "Category not found"
 
-#: teachers/views.py:2430
+#: teachers/views.py:2441
 msgid "Сообщение слишком длинное (максимум 4000 символов)"
 msgstr "Message is too long (4000 characters max)"
 
-#: teachers/views.py:2448
+#: teachers/views.py:2459
 msgid "Нет пользователей для отправки сообщения"
 msgstr "No users to send the message to"
 
-#: teachers/views.py:2467
+#: teachers/views.py:2478
 #, python-format
 msgid "Ошибка сервиса отправки: %(err)s"
 msgstr "Delivery service error: %(err)s"
 
-#: teachers/views.py:2470
+#: teachers/views.py:2481
 #, python-format
 msgid "Сообщение успешно отправлено %(count)s пользователям"
 msgstr "Message sent to %(count)s users"
 
-#: teachers/views.py:2473
+#: teachers/views.py:2484
 #, python-format
 msgid ""
 "Не удалось отправить %(count)s пользователям (возможно, заблокировали бота "
@@ -3121,25 +3121,25 @@ msgstr ""
 "Couldn't deliver to %(count)s users (they may have blocked the bot or "
 "deleted the chat)"
 
-#: teachers/views.py:2476
+#: teachers/views.py:2487
 #, python-format
 msgid "Ошибка при отправке сообщений: %(err)s"
 msgstr "Couldn't send messages: %(err)s"
 
-#: teachers/views.py:2492
+#: teachers/views.py:2503
 msgid "Необходимо выбрать пользователя и ввести сообщение"
 msgstr "Select a user and enter a message"
 
-#: teachers/views.py:2498
+#: teachers/views.py:2509
 msgid "Пользователь не активировал бота"
 msgstr "The user hasn't activated the bot"
 
-#: teachers/views.py:2513
+#: teachers/views.py:2524
 #, python-format
 msgid "Сообщение отправлено пользователю %(name)s"
 msgstr "Message sent to %(name)s"
 
-#: teachers/views.py:2515
+#: teachers/views.py:2526
 #, python-format
 msgid ""
 "Не удалось отправить сообщение пользователю %(name)s (возможно, заблокировал "
@@ -3148,70 +3148,70 @@ msgstr ""
 "Couldn't send the message to %(name)s (they may have blocked the bot or "
 "deleted the chat)"
 
-#: teachers/views.py:2518
+#: teachers/views.py:2529
 #, python-format
 msgid "Ошибка: %(err)s"
 msgstr "Error: %(err)s"
 
-#: teachers/views.py:2564
+#: teachers/views.py:2575
 msgid "Можно писать только от имени участников беседы."
 msgstr "You can only write as a participant of the conversation."
 
-#: teachers/views.py:2579
+#: teachers/views.py:2590
 #, python-format
 msgid "Сообщение отправлено от имени %(name)s"
 msgstr "Message sent as %(name)s"
 
-#: teachers/views.py:2687
+#: teachers/views.py:2698
 msgid "У вас нет доступа к этому уведомлению."
 msgstr "You don't have access to this notification."
 
-#: teachers/views.py:2727
+#: teachers/views.py:2738
 msgid "Нет доступа"
 msgstr "Access denied"
 
-#: teachers/views.py:2908
+#: teachers/views.py:2919
 msgid "Добро пожаловать! Мы подберём для вас подходящих учителей."
 msgstr "Welcome! We'll match you with the right teachers."
 
-#: teachers/views.py:2944
+#: teachers/views.py:2955
 msgid "У вас уже есть профиль"
 msgstr "You already have a profile"
 
-#: teachers/views.py:3038
+#: teachers/views.py:3049
 msgid "Выберите корректный период (утро/вечер)."
 msgstr "Choose a valid time of day (morning/evening)."
 
-#: teachers/views.py:3040
+#: teachers/views.py:3051
 msgid "Выберите корректный язык."
 msgstr "Choose a valid language."
 
-#: teachers/views.py:3042
+#: teachers/views.py:3053
 msgid "Текст сообщения не может быть пустым."
 msgstr "The message can't be empty."
 
-#: teachers/views.py:3044
+#: teachers/views.py:3055
 msgid "Текст слишком длинный (максимум 4000 символов)."
 msgstr "The text is too long (4000 characters max)."
 
-#: teachers/views.py:3056
+#: teachers/views.py:3067
 msgid "Шаблон обновлён."
 msgstr "Template updated."
 
-#: teachers/views.py:3056
+#: teachers/views.py:3067
 msgid "Шаблон создан."
 msgstr "Template created."
 
-#: teachers/views.py:3076
+#: teachers/views.py:3087
 msgid "Шаблон удалён."
 msgstr "Template deleted."
 
-#: teachers/views.py:3089
+#: teachers/views.py:3100
 #, python-format
 msgid "Шаблон %(state)s."
 msgstr "Template %(state)s."
 
-#: teachers/views.py:3109
+#: teachers/views.py:3120
 msgid ""
 "Ваш аккаунт не привязан к Telegram-боту — привяжите его, чтобы получать "
 "тестовые сообщения."
@@ -3219,11 +3219,11 @@ msgstr ""
 "Your account isn't linked to the Telegram bot — link it to receive test "
 "messages."
 
-#: teachers/views.py:3122
+#: teachers/views.py:3133
 msgid "Тестовое сообщение отправлено вам в Telegram."
 msgstr "A test message has been sent to you on Telegram."
 
-#: teachers/views.py:3124
+#: teachers/views.py:3135
 msgid "Не удалось отправить тестовое сообщение."
 msgstr "Couldn't send the test message."
 
@@ -4486,7 +4486,7 @@ msgstr "Delete this plan?"
 
 #: templates/billing/tariffs_list.html:79
 #: templates/billing/tariffs_list.html:81
-#: templates/booking/lesson_room.html:521
+#: templates/booking/lesson_room.html:606
 #: templates/booking/teacher_calendar.html:116
 #: templates/logic/conversation_detail.html:1026
 #: templates/logic/conversation_detail.html:1027
@@ -5289,7 +5289,7 @@ msgid "Материалы урока"
 msgstr "Lesson materials"
 
 #: templates/booking/lesson_room.html:217
-#: templates/booking/lesson_room.html:516
+#: templates/booking/lesson_room.html:601
 msgid "Загрузить файл"
 msgstr "Upload file"
 
@@ -5374,26 +5374,7 @@ msgstr "The lesson isn't confirmed yet"
 msgid "Комната станет доступной после подтверждения брони учителем."
 msgstr "The room becomes available once the teacher confirms the booking."
 
-#: templates/booking/lesson_room.html:306
-msgid ""
-"Не удалось загрузить видео-модуль. Проверьте интернет и попробуйте "
-"переподключиться."
-msgstr ""
-"Failed to load the video module. Check your internet and try to reconnect."
-
-#: templates/booking/lesson_room.html:352
-msgid "время вышло"
-msgstr "time is up"
-
-#: templates/booking/lesson_room.html:370
-msgid "на связи"
-msgstr "online"
-
-#: templates/booking/lesson_room.html:371
-msgid "Ожидаем"
-msgstr "Waiting"
-
-#: templates/booking/lesson_room.html:422
+#: templates/booking/lesson_room.html:309
 msgid ""
 "Ваш микрофон перестал передавать звук. Нажмите «Переподключиться» — это "
 "переподключит устройство."
@@ -5401,32 +5382,61 @@ msgstr ""
 "Your microphone stopped transmitting sound. Click “Reconnect” — this will "
 "reconnect the device."
 
-#: templates/booking/lesson_room.html:423
+#: templates/booking/lesson_room.html:310
 msgid "Проблема со связью. Если звук или видео пропали — переподключитесь."
 msgstr "Connection problem. If the audio or video dropped — reconnect."
 
-#: templates/booking/lesson_room.html:424
+#: templates/booking/lesson_room.html:311
 msgid "Интернет пропал. Ждём восстановления соединения…"
 msgstr "Internet connection lost. Waiting for it to be restored…"
 
-#: templates/booking/lesson_room.html:515
+#: templates/booking/lesson_room.html:312
+msgid "Связь прервалась — восстанавливаем подключение…"
+msgstr "Connection lost — restoring the connection…"
+
+#: templates/booking/lesson_room.html:313
+msgid ""
+"Не удаётся восстановить соединение. Проверьте интернет и обновите страницу."
+msgstr ""
+"Can’t restore the connection. Check your internet and reload the page."
+
+#: templates/booking/lesson_room.html:353
+msgid ""
+"Не удалось загрузить видео-модуль. Проверьте интернет и попробуйте "
+"переподключиться."
+msgstr ""
+"Failed to load the video module. Check your internet and try to reconnect."
+
+#: templates/booking/lesson_room.html:364
+msgid "время вышло"
+msgstr "time is up"
+
+#: templates/booking/lesson_room.html:380
+msgid "на связи"
+msgstr "online"
+
+#: templates/booking/lesson_room.html:381
+msgid "Ожидаем"
+msgstr "Waiting"
+
+#: templates/booking/lesson_room.html:600
 #: templates/booking/my_bookings.html:351
 msgid "Загрузка…"
 msgstr "Loading…"
 
-#: templates/booking/lesson_room.html:517
+#: templates/booking/lesson_room.html:602
 msgid "Удалить этот файл?"
 msgstr "Delete this file?"
 
-#: templates/booking/lesson_room.html:518
+#: templates/booking/lesson_room.html:603
 msgid "Файл слишком большой (максимум 25 МБ)."
 msgstr "The file is too large (maximum 25 MB)."
 
-#: templates/booking/lesson_room.html:519
+#: templates/booking/lesson_room.html:604
 msgid "Недопустимый формат файла."
 msgstr "Invalid file format."
 
-#: templates/booking/lesson_room.html:520
+#: templates/booking/lesson_room.html:605
 msgid "Не удалось загрузить файл. Попробуйте ещё раз."
 msgstr "Failed to upload the file. Please try again."
 

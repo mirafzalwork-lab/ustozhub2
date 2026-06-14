@@ -294,11 +294,58 @@
 <script src="https://{{ jitsi_domain }}/external_api.js"></script>
 <script>
 (function () {
+    'use strict';
     const domain = "{{ jitsi_domain|escapejs }}";
     const room = "{{ jitsi_room|escapejs }}";
+    const displayName = "{{ display_name|escapejs }}";
     const endAt = new Date("{{ booking.slot.end_at|date:'c' }}");
+    const attUrl = "{% url 'lesson_attendance_api' booking.id %}";
+    const csrf = "{{ csrf_token }}";
+    const back = "{% url 'my_bookings_page' %}";
     const container = document.getElementById('jitsi-container');
     const reloadBox = document.getElementById('lr-reload');
+
+    // Понятные пользователю сообщения — никаких технических кодов ошибок.
+    const txtMicDead = "{% filter escapejs %}{% trans 'Ваш микрофон перестал передавать звук. Нажмите «Переподключиться» — это переподключит устройство.' %}{% endfilter %}";
+    const txtConn = "{% filter escapejs %}{% trans 'Проблема со связью. Если звук или видео пропали — переподключитесь.' %}{% endfilter %}";
+    const txtOffline = "{% filter escapejs %}{% trans 'Интернет пропал. Ждём восстановления соединения…' %}{% endfilter %}";
+    const txtReconnecting = "{% filter escapejs %}{% trans 'Связь прервалась — восстанавливаем подключение…' %}{% endfilter %}";
+    const txtGiveUp = "{% filter escapejs %}{% trans 'Не удаётся восстановить соединение. Проверьте интернет и обновите страницу.' %}{% endfilter %}";
+
+    // ---- Лёгкое логирование критических событий (для диагностики) ----
+    function rtLog(event, detail) {
+        try { console.info('[lesson-room]', event, (detail != null ? detail : '')); } catch (e) {}
+    }
+
+    // ================== Шина реального времени (event-driven) ==================
+    // P2P-сообщения между участниками идут по уже открытому WebRTC data-каналу
+    // конференции Jitsi. Это НЕ нагружает наш сервер (0 запросов), доставляется
+    // мгновенно и масштабируется без серверной инфраструктуры. «Догон» состояния
+    // для тех, кто только вошёл/переподключился — разовым GET (см. onReady).
+    const rtHandlers = {};
+    const readyCbs = [];
+    let api = null;
+
+    window.lessonRT = {
+        on: function (type, fn) { (rtHandlers[type] = rtHandlers[type] || []).push(fn); return this; },
+        onReady: function (fn) { readyCbs.push(fn); return this; },
+        send: function (type, payload) {
+            try {
+                if (api) api.executeCommand('sendEndpointTextMessage', '',
+                    JSON.stringify({ __lr: type, p: payload || {} }));
+            } catch (e) { /* канала нет — синхронизируемся при ресинке */ }
+        },
+        log: rtLog,
+    };
+    function dispatchRT(type, payload, sender) {
+        (rtHandlers[type] || []).forEach(function (fn) {
+            try { fn(payload, sender); } catch (e) { rtLog('rt_handler_error', String(e)); }
+        });
+    }
+    function fireReady(reason) {
+        rtLog('resync', reason || '');
+        readyCbs.forEach(function (fn) { try { fn(reason); } catch (e) {} });
+    }
 
     function showLoadError() {
         if (container) {
@@ -307,41 +354,6 @@
         }
         if (reloadBox) reloadBox.style.display = 'block';
     }
-
-    if (!container || typeof JitsiMeetExternalAPI === 'undefined') {
-        showLoadError();
-        return;
-    }
-
-    const api = new JitsiMeetExternalAPI(domain, {
-        roomName: room,
-        parentNode: container,
-        width: '100%',
-        height: '100%',
-        userInfo: { displayName: "{{ display_name|escapejs }}" },
-        configOverwrite: {
-            prejoinPageEnabled: true,
-            disableDeepLinking: true,
-            startWithAudioMuted: false,
-            startWithVideoMuted: false,
-            // Безопасность: запрещаем приглашать посторонних из комнаты урока —
-            // ссылка должна оставаться только между учителем и учеником.
-            disableInviteFunctions: true,
-        },
-        interfaceConfigOverwrite: {
-            SHOW_JITSI_WATERMARK: false,
-            SHOW_WATERMARK_FOR_GUESTS: false,
-            DEFAULT_BACKGROUND: '#0b0b0f',
-            DISABLE_FOCUS_INDICATOR: false,
-            TOOLBAR_BUTTONS: [
-                'microphone', 'camera', 'desktop', 'chat', 'raisehand',
-                // Интерактивная доска (Excalidraw) и совместный текстовый редактор
-                // — встроенные инструменты Jitsi для совместной работы с материалами.
-                'whiteboard', 'etherpad',
-                'tileview', 'fullscreen', 'settings', 'hangup',
-            ],
-        },
-    });
 
     // ---- Таймер: сколько осталось до конца урока ----
     const timerEl = document.getElementById('lr-timer');
@@ -360,8 +372,6 @@
         timerEl.textContent = (h > 0 ? pad(h) + ':' : '') + pad(m) + ':' + pad(s);
         timerEl.classList.toggle('is-ending', left <= 300); // последние 5 минут — красным
     }
-    tickTimer();
-    setInterval(tickTimer, 1000);
 
     // ---- Индикатор присутствия второй стороны ----
     const presenceEl = document.getElementById('lr-presence');
@@ -378,27 +388,13 @@
                 : (txtWaiting + ' ' + otherName + '…');
         }
     }
-    api.addEventListener('participantJoined', function () { setPresence(true); });
-    api.addEventListener('participantLeft', function () {
-        // Если в комнате не осталось других участников — снова «ожидаем».
-        try {
-            const n = api.getNumberOfParticipants ? api.getNumberOfParticipants() : 0;
-            setPresence(n > 1);
-        } catch (e) { setPresence(false); }
-    });
 
-    // ---- Плашка «здоровья» урока + чистое переподключение ----
-    // Главная причина «после перезахода микрофон не работает»: при выходе старый
-    // аудио-трек не освобождается, и повторный getUserMedia получает занятое
-    // устройство. Лечим чистым реконнектом: api.dispose() освобождает микрофон/
-    // камеру, затем полная перезагрузка страницы с нуля.
+    // ---- Плашка «здоровья»: понятные сообщения вместо технических ошибок ----
     const healthEl = document.getElementById('lr-health');
     const healthText = document.getElementById('lr-health-text');
     const healthBtn = document.getElementById('lr-health-btn');
     const healthDismiss = document.getElementById('lr-health-dismiss');
-    let healthCategory = null;   // 'mic' | 'conn' — чтобы прятать плашку по нужному сигналу
-    let reconnecting = false;
-
+    let healthCategory = null;   // 'mic' | 'conn'
     function showHealth(category, msg) {
         healthCategory = category;
         if (healthText) healthText.textContent = msg;
@@ -408,58 +404,10 @@
         healthCategory = null;
         if (healthEl) healthEl.style.display = 'none';
     }
-    function cleanReconnect() {
-        if (reconnecting) return;
-        reconnecting = true;
-        reportLeave();                       // зафиксировать присутствие до выхода
-        try { api.dispose(); } catch (e) { /* освобождаем устройства */ }
-        // даём браузеру ~0.6с отпустить микрофон/камеру перед повторным захватом
-        setTimeout(function () { window.location.reload(); }, 600);
-    }
-    if (healthBtn) healthBtn.addEventListener('click', cleanReconnect);
-    if (healthDismiss) healthDismiss.addEventListener('click', hideHealth);
 
-    const txtMicDead = "{% filter escapejs %}{% trans 'Ваш микрофон перестал передавать звук. Нажмите «Переподключиться» — это переподключит устройство.' %}{% endfilter %}";
-    const txtConn = "{% filter escapejs %}{% trans 'Проблема со связью. Если звук или видео пропали — переподключитесь.' %}{% endfilter %}";
-    const txtOffline = "{% filter escapejs %}{% trans 'Интернет пропал. Ждём восстановления соединения…' %}{% endfilter %}";
-
-    // ---- Детект «мёртвого» микрофона (сервер шлёт при enableNoAudioDetection) ----
-    api.addEventListener('noAudioInput', function () {
-        showHealth('mic', txtMicDead);
-    });
-    // Когда пользователь сам размьютился/звук вернулся — убираем плашку про микрофон.
-    api.addEventListener('audioMuteStatusChanged', function (e) {
-        if (e && e.muted === false && healthCategory === 'mic') hideHealth();
-    });
-
-    // ---- Потеря интернета на стороне клиента ----
-    window.addEventListener('offline', function () { showHealth('conn', txtOffline); });
-    window.addEventListener('online', function () { if (healthCategory === 'conn') hideHealth(); });
-
-    // ---- Обработка ошибок конференции ----
-    api.addEventListener('errorOccurred', function (e) {
-        try {
-            if (e && e.error && e.error.isFatal) {
-                // Фатально — встроенный модуль не починить, нужен полный reload.
-                if (reloadBox) reloadBox.style.display = 'block';
-            } else if (e && e.error) {
-                // Не фатально: показываем мягкую плашку только для сетевых ошибок,
-                // чтобы не шуметь на безобидных событиях.
-                const name = ((e.error.name || e.error.type || '') + '');
-                if (/conn|ice|network|offline|membersOnly/i.test(name)) {
-                    showHealth('conn', txtConn);
-                }
-            }
-        } catch (err) { /* no-op */ }
-    });
-
-    // ---- Учёт реального присутствия (без polling: только вход/выход) ----
-    // navigator.sendBeacon — fire-and-forget, не блокирует и переживает закрытие
-    // вкладки. ≈2 запроса на участника за урок.
-    const attUrl = "{% url 'lesson_attendance_api' booking.id %}";
-    const csrf = "{{ csrf_token }}";
+    // ---- Учёт реального присутствия (event-driven, без polling) ----
+    // navigator.sendBeacon — fire-and-forget, переживает закрытие вкладки.
     let joinedAt = null;
-
     function report(event, seconds) {
         try {
             const data = new FormData();
@@ -476,19 +424,156 @@
         }
     }
 
-    api.addEventListener('videoConferenceJoined', function () {
+    // ================== Соединение + авто-восстановление ==================
+    // Переподключение делается НА МЕСТЕ, без перезагрузки страницы: dispose()
+    // освобождает микрофон/камеру (это и есть лечение «мёртвого» микрофона после
+    // перезахода), затем конференция монтируется заново. На авто-реконнекте
+    // пропускаем pre-join, чтобы восстановление шло без участия пользователя.
+    let connState = 'init';   // init | connecting | live | recovering
+    let reconnecting = false;
+    let attempts = 0;
+    let recoverTimer = null;
+    const MAX_ATTEMPTS = 5;
+
+    function buildOptions(autoJoin) {
+        return {
+            roomName: room,
+            parentNode: container,
+            width: '100%',
+            height: '100%',
+            userInfo: { displayName: displayName },
+            configOverwrite: {
+                // На авто-реконнекте pre-join не показываем — входим сразу.
+                prejoinPageEnabled: !autoJoin,
+                disableDeepLinking: true,
+                startWithAudioMuted: false,
+                startWithVideoMuted: false,
+                // Безопасность: запрещаем приглашать посторонних из комнаты урока.
+                disableInviteFunctions: true,
+            },
+            interfaceConfigOverwrite: {
+                SHOW_JITSI_WATERMARK: false,
+                SHOW_WATERMARK_FOR_GUESTS: false,
+                DEFAULT_BACKGROUND: '#0b0b0f',
+                DISABLE_FOCUS_INDICATOR: false,
+                TOOLBAR_BUTTONS: [
+                    'microphone', 'camera', 'desktop', 'chat', 'raisehand',
+                    // Интерактивная доска (Excalidraw) и совместный редактор.
+                    'whiteboard', 'etherpad',
+                    'tileview', 'fullscreen', 'settings', 'hangup',
+                ],
+            },
+        };
+    }
+
+    function onError(e) {
+        try {
+            if (e && e.error && e.error.isFatal) {
+                // Фатально — чиним автоматически переподключением на месте.
+                rtLog('fatal_error', (e.error.name || e.error.type || ''));
+                reconnect('fatal:' + (e.error.name || e.error.type || ''));
+            } else if (e && e.error) {
+                // Не фатально: мягкая плашка только для сетевых ошибок.
+                const name = ((e.error.name || e.error.type || '') + '');
+                if (/conn|ice|network|offline|membersOnly/i.test(name)) showHealth('conn', txtConn);
+            }
+        } catch (err) { /* no-op */ }
+    }
+
+    function onConferenceLive() {
+        connState = 'live';
+        attempts = 0;
+        reconnecting = false;
+        if (reloadBox) reloadBox.style.display = 'none';
+        if (healthCategory === 'conn') hideHealth();
         joinedAt = Date.now();
         report('join');
+        fireReady('joined');   // ← ресинк материалов и состояния комнаты при входе
+    }
+
+    function mountJitsi(autoJoin) {
+        if (!container || typeof JitsiMeetExternalAPI === 'undefined') { showLoadError(); return; }
+        connState = 'connecting';
+        api = new JitsiMeetExternalAPI(domain, buildOptions(!!autoJoin));
+
+        api.addEventListener('videoConferenceJoined', onConferenceLive);
+        api.addEventListener('videoConferenceLeft', reportLeave);
+        api.addEventListener('participantJoined', function () { setPresence(true); });
+        api.addEventListener('participantLeft', function () {
+            // Если в комнате не осталось других участников — снова «ожидаем».
+            try {
+                const n = api && api.getNumberOfParticipants ? api.getNumberOfParticipants() : 0;
+                setPresence(n > 1);
+            } catch (e) { setPresence(false); }
+        });
+        // Входящие P2P-сообщения шины реального времени (по data-каналу).
+        api.addEventListener('endpointTextMessageReceived', function (e) {
+            try {
+                const d = (e && e.data) || {};
+                const txt = d.text || (d.eventData && d.eventData.text);
+                if (!txt) return;
+                const msg = JSON.parse(txt);
+                if (!msg || !msg.__lr) return;
+                const sender = (d.senderInfo && (d.senderInfo.id || d.senderInfo.participantId || d.senderInfo.jid)) || '';
+                dispatchRT(msg.__lr, msg.p || {}, sender);
+            } catch (err) { /* не наше сообщение — игнорируем */ }
+        });
+        // Диагностика устройств: «мёртвый» микрофон (enableNoAudioDetection на сервере).
+        api.addEventListener('noAudioInput', function () { showHealth('mic', txtMicDead); rtLog('no_audio_input'); });
+        api.addEventListener('audioMuteStatusChanged', function (e) {
+            if (e && e.muted === false && healthCategory === 'mic') hideHealth();
+        });
+        api.addEventListener('errorOccurred', onError);
+        api.addEventListener('readyToClose', function () { reportLeave(); window.location.href = back; });
+    }
+
+    function teardownJitsi() {
+        if (recoverTimer) { clearTimeout(recoverTimer); recoverTimer = null; }
+        try { if (api) api.dispose(); } catch (e) { /* освобождаем микрофон/камеру */ }
+        api = null;
+        if (container) container.innerHTML = '';
+    }
+
+    // Переподключение на месте с экспоненциальной паузой и ограничением попыток,
+    // чтобы при недоступности сервера не штурмовать его бесконечно.
+    function reconnect(reason) {
+        if (reconnecting) return;
+        if (attempts >= MAX_ATTEMPTS) {
+            rtLog('reconnect_giveup', reason);
+            showHealth('conn', txtGiveUp);
+            if (reloadBox) reloadBox.style.display = 'block';
+            return;
+        }
+        reconnecting = true;
+        attempts++;
+        connState = 'recovering';
+        rtLog('reconnect', reason + ' #' + attempts);
+        showHealth('conn', txtReconnecting);
+        reportLeave();
+        teardownJitsi();
+        const delay = Math.min(700 * Math.pow(2, attempts - 1), 12000);
+        recoverTimer = setTimeout(function () {
+            reconnecting = false;
+            mountJitsi(true);   // авто-вход без pre-join
+        }, delay);
+    }
+
+    if (healthBtn) healthBtn.addEventListener('click', function () { attempts = 0; reconnect('manual'); });
+    if (healthDismiss) healthDismiss.addEventListener('click', hideHealth);
+
+    // ---- Сетевые события браузера: мгновенная реакция на обрыв/возврат сети ----
+    window.addEventListener('offline', function () { rtLog('net_offline'); showHealth('conn', txtOffline); });
+    window.addEventListener('online', function () {
+        rtLog('net_online');
+        if (connState !== 'live') { attempts = 0; reconnect('back-online'); }
+        else { if (healthCategory === 'conn') hideHealth(); fireReady('online'); }
     });
-    api.addEventListener('videoConferenceLeft', reportLeave);
     window.addEventListener('pagehide', reportLeave);
 
-    // По завершению — возвращаем к списку уроков
-    const back = "{% url 'my_bookings_page' %}";
-    api.addEventListener('readyToClose', function () {
-        reportLeave();
-        window.location.href = back;
-    });
+    // ---- Старт ----
+    tickTimer();
+    setInterval(tickTimer, 1000);
+    mountJitsi(false);   // первый вход — с pre-join (проверка устройств)
 })();
 </script>
 
@@ -623,6 +708,8 @@
             const saveData = await save.json();
             if (!save.ok) { showError(saveData.error || i18n.failed); return; }
             await loadList();
+            // Мгновенно оповещаем второго участника по data-каналу (без сервера).
+            if (window.lessonRT) window.lessonRT.send('file_changed');
         } catch (e) {
             showError(i18n.failed);
         } finally {
@@ -645,12 +732,25 @@
                 method: 'POST',
                 headers: { 'X-CSRFToken': csrf },
             });
-            if (r.ok) await loadList();
-            else showError(i18n.failed);
+            if (r.ok) {
+                await loadList();
+                if (window.lessonRT) window.lessonRT.send('file_changed');
+            } else showError(i18n.failed);
         } catch (err) { showError(i18n.failed); }
     });
 
+    // ---- Синхронизация в реальном времени (event-driven, без polling) ----
     loadList();
+    if (window.lessonRT) {
+        // Пришло событие об изменении материалов у другого участника — подтянуть список.
+        window.lessonRT.on('file_changed', loadList);
+        // При каждом (пере)входе/возврате сети — полный ресинк материалов.
+        window.lessonRT.onReady(loadList);
+    }
+    // Возврат на вкладку (фокус) — догоняем состояние, что могли пропустить.
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') loadList();
+    });
 })();
 </script>
 {% endif %}
