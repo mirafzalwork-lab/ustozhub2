@@ -133,8 +133,8 @@ function initCharCounter() {
         const count = this.value.length;
         charCount.textContent = count;
         
-        // Change color based on limits
-        if (count < 100) {
+        // Change color based on limits (минимум 40 — синхронно с сервером)
+        if (count < 40) {
             charCount.style.color = '#ef4444';
         } else if (count > 1000) {
             charCount.style.color = '#ef4444';
@@ -280,8 +280,8 @@ function initFormValidation() {
         const bioField = form.querySelector('textarea[name$="bio"]');
         if (bioField && bioField.value) {
             const length = bioField.value.trim().length;
-            if (length < 100) {
-                showError(bioField, `${t('bioShort', 'Описание слишком короткое. Минимум 100 символов')} (${t('now', 'сейчас')}: ${length})`);
+            if (length < 40) {
+                showError(bioField, `${t('bioShort', 'Описание слишком короткое. Минимум 40 символов')} (${t('now', 'сейчас')}: ${length})`);
                 isValid = false;
             } else if (length > 1000) {
                 showError(bioField, `${t('bioLong', 'Описание слишком длинное. Максимум 1000 символов')} (${t('now', 'сейчас')}: ${length})`);

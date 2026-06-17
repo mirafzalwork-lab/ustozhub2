@@ -4,7 +4,7 @@
 {% load static %}
 {% load i18n %}
 
-{% block title %}Регистрация учителя - {{ step_title }}{% endblock %}
+{% block title %}{% trans 'Регистрация учителя' %} - {{ step_title }}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/registration.css' %}">
@@ -21,10 +21,10 @@
                     <div class="progress-fill" style="width: {{ progress_percentage }}%"></div>
                 </div>
                 <div class="progress-text">
-                    Шаг {{ current_step }} из {{ total_steps }}
+                    {% blocktrans with step=current_step total=total_steps %}Шаг {{ step }} из {{ total }}{% endblocktrans %}
                     {% if has_draft %}
-                        <span class="draft-indicator" title="Прогресс автоматически сохраняется — можно вернуться позже">
-                            · черновик сохранён
+                        <span class="draft-indicator" title="{% trans 'Прогресс автоматически сохраняется — можно вернуться позже' %}">
+                            · {% trans 'черновик сохранён' %}
                         </span>
                     {% endif %}
                 </div>
@@ -59,13 +59,13 @@
             {% if has_draft and wizard.steps.current == 'basic_profile' %}
             <div class="draft-notice">
                 <i class="fas fa-circle-info"></i>
-                <span>Мы восстановили ваш черновик. <strong>Фото профиля</strong> в целях безопасности не сохраняется — при желании загрузите его заново.</span>
+                <span>{% blocktrans %}Мы восстановили ваш черновик. <strong>Фото профиля</strong> в целях безопасности не сохраняется — при желании загрузите его заново.{% endblocktrans %}</span>
             </div>
             {% endif %}
             {% if has_draft and wizard.steps.current == 'account_security' %}
             <div class="draft-notice">
                 <i class="fas fa-circle-info"></i>
-                <span>В целях безопасности <strong>пароль</strong> не сохраняется в черновике — введите его заново.</span>
+                <span>{% blocktrans %}В целях безопасности <strong>пароль</strong> не сохраняется в черновике — введите его заново.{% endblocktrans %}</span>
             </div>
             {% endif %}
 
@@ -116,22 +116,22 @@
                             <line x1="19" y1="12" x2="5" y2="12"></line>
                             <polyline points="12 19 5 12 12 5"></polyline>
                         </svg>
-                        Назад
+                        {% trans 'Назад' %}
                     </button>
                     {% else %}
-                    <a href="{% url 'home' %}" class="btn btn-secondary">Отмена</a>
+                    <a href="{% url 'home' %}" class="btn btn-secondary">{% trans 'Отмена' %}</a>
                     {% endif %}
 
                     {% if is_last_step %}
                     <button type="submit" class="btn btn-primary">
-                        Завершить регистрацию
+                        {% trans 'Завершить регистрацию' %}
                         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="20 6 9 17 4 12"></polyline>
                         </svg>
                     </button>
                     {% else %}
                     <button type="submit" class="btn btn-primary">
-                        Далее
+                        {% trans 'Далее' %}
                         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="5" y1="12" x2="19" y2="12"></line>
                             <polyline points="12 5 19 12 12 19"></polyline>
@@ -150,7 +150,7 @@
                     <line x1="12" y1="16" x2="12" y2="12"></line>
                     <line x1="12" y1="8" x2="12.01" y2="8"></line>
                 </svg>
-                Все поля обязательны для заполнения, если не указано иное.
+                {% trans 'Поля, отмеченные звёздочкой (*), обязательны. Остальные можно заполнить позже.' %}
             </p>
         </div>
 
@@ -176,7 +176,7 @@ window.REG_I18N = {
     email: "{% filter escapejs %}{% trans 'Введите корректный email адрес' %}{% endfilter %}",
     phone: "{% filter escapejs %}{% trans 'Введите корректный номер телефона в формате +998 XX XXX XX XX' %}{% endfilter %}",
     pwMismatch: "{% filter escapejs %}{% trans 'Пароли не совпадают' %}{% endfilter %}",
-    bioShort: "{% filter escapejs %}{% trans 'Описание слишком короткое. Минимум 100 символов' %}{% endfilter %}",
+    bioShort: "{% filter escapejs %}{% trans 'Описание слишком короткое. Минимум 40 символов' %}{% endfilter %}",
     bioLong: "{% filter escapejs %}{% trans 'Описание слишком длинное. Максимум 1000 символов' %}{% endfilter %}",
     now: "{% filter escapejs %}{% trans 'сейчас' %}{% endfilter %}",
     timeRange: "{% filter escapejs %}{% trans 'Время окончания должно быть позже времени начала' %}{% endfilter %}",

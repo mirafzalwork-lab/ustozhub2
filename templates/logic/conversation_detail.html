@@ -1227,8 +1227,8 @@
                                   new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
         if (diffDays === 0) return I18N.today;
         if (diffDays === 1) return I18N.yesterday;
-        var months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
-        return d.getDate() + ' ' + months[d.getMonth()];
+        // Локализованный месяц по языку интерфейса (вместо захардкоженного русского).
+        return d.toLocaleDateString(document.documentElement.lang || undefined, { day: 'numeric', month: 'long' });
     }
 
     function ensureDaySeparator(iso) {
