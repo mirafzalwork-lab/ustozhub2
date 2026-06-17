@@ -267,12 +267,10 @@ def home(request):
     # Рекомендуемые показываются дополнительно в слайдере сверху, но также присутствуют
     # в общей сетке — в обычном порядке, без приоритета наверху.
     # Учителя без TeacherSubject не имеют ни цен, ни предметов — показывать бесполезно.
-    # is_featured исключаем: они уже показаны в слайдере «Рекомендуемые» сверху,
-    # чтобы один и тот же учитель не дублировался на странице.
     teachers = TeacherProfile.objects.filter(
         is_active=True, moderation_status='approved',
         teachersubject__isnull=False,
-    ).exclude(is_featured=True).select_related(
+    ).select_related(
         'user', 'city'
     ).prefetch_related(
         'subjects', 'teachersubject_set__subject', 'reviews'
@@ -382,6 +380,11 @@ def home(request):
         subject_id, city_id, teaching_format, min_price, max_price,
         min_rating, min_experience, search_query, suggest
     ])
+    # Featured показываем в слайдере «Рекомендуемые» сверху; в основном гриде
+    # прячем их ТОЛЬКО на чистой главной (без поиска/фильтров), чтобы не было
+    # дублей слайдер+список. При поиске/фильтрации featured участвуют в выдаче.
+    if not _has_filters:
+        teachers = teachers.exclude(is_featured=True)
     _shuffled = False
     if sort_by == 'recommended' and not _has_filters:
         now_ts = int(timezone.now().timestamp())
