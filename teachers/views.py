@@ -267,10 +267,12 @@ def home(request):
     # Рекомендуемые показываются дополнительно в слайдере сверху, но также присутствуют
     # в общей сетке — в обычном порядке, без приоритета наверху.
     # Учителя без TeacherSubject не имеют ни цен, ни предметов — показывать бесполезно.
+    # is_featured исключаем: они уже показаны в слайдере «Рекомендуемые» сверху,
+    # чтобы один и тот же учитель не дублировался на странице.
     teachers = TeacherProfile.objects.filter(
         is_active=True, moderation_status='approved',
         teachersubject__isnull=False,
-    ).select_related(
+    ).exclude(is_featured=True).select_related(
         'user', 'city'
     ).prefetch_related(
         'subjects', 'teachersubject_set__subject', 'reviews'
@@ -517,10 +519,77 @@ def home(request):
         }
         cache.set('home_platform_stats', platform_stats, 600)
 
+    # Избранные учителя текущего ученика (для ♥ на карточках)
+    favorite_teacher_ids = set()
+    if request.user.is_authenticated and getattr(request.user, 'user_type', None) == 'student':
+        favorite_teacher_ids = set(
+            Favorite.objects.filter(student=request.user).values_list('teacher_id', flat=True)
+        )
+
+    # Активные фильтры в виде чипсов (param — ключ GET для удаления)
+    _subj_names = {str(s.id): s.name for s in all_subjects}
+    _city_names = {str(c.id): c.name for c in all_cities}
+    _format_names = {k: v for k, v in TeacherProfile.TEACHING_FORMATS}
+    active_filters = []
+    if search_query:
+        active_filters.append({'param': 'search', 'label': '«%s»' % search_query})
+    if subject_id and subject_id in _subj_names:
+        active_filters.append({'param': 'subject', 'label': _subj_names[subject_id]})
+    if city_id and city_id in _city_names:
+        active_filters.append({'param': 'city', 'label': _city_names[city_id]})
+    if teaching_format and teaching_format in _format_names:
+        active_filters.append({'param': 'format', 'label': _format_names[teaching_format]})
+    if min_price:
+        active_filters.append({'param': 'min_price', 'label': _('от %(p)s сум') % {'p': min_price}})
+    if max_price:
+        active_filters.append({'param': 'max_price', 'label': _('до %(p)s сум') % {'p': max_price}})
+    if min_rating:
+        active_filters.append({'param': 'min_rating', 'label': _('от %(r)s★') % {'r': min_rating}})
+    if min_experience:
+        active_filters.append({'param': 'min_experience', 'label': _('опыт от %(y)s лет') % {'y': min_experience}})
+
+    # Контентные секции лендинга (только на «чистой» главной — без поиска/фильтров)
+    popular_subjects = []
+    home_reviews = []
+    platform_extra = {}
+    if not active_filters:
+        popular_subjects = cache.get('home_popular_subjects')
+        if popular_subjects is None:
+            popular_subjects = list(
+                Subject.objects.filter(is_active=True).annotate(
+                    n=Count('teacherprofile', filter=Q(
+                        teacherprofile__is_active=True,
+                        teacherprofile__moderation_status='approved',
+                    ), distinct=True)
+                ).filter(n__gt=0).order_by('-n')[:8]
+            )
+            cache.set('home_popular_subjects', popular_subjects, 600)
+
+        home_reviews = list(
+            Review.objects.filter(is_verified=True, rating__gte=4)
+            .exclude(comment='')
+            .select_related('student', 'teacher__user', 'subject')
+            .order_by('-created_at')[:6]
+        )
+
+        platform_extra = cache.get('home_platform_extra')
+        if platform_extra is None:
+            _agg = Review.objects.aggregate(avg=Avg('rating'), cnt=Count('id'))
+            platform_extra = {
+                'reviews_total': _agg['cnt'] or 0,
+                'avg_rating': round(_agg['avg'], 1) if _agg['avg'] else None,
+            }
+            cache.set('home_platform_extra', platform_extra, 600)
+
     context = {
         'teachers': teachers_page,
         'featured_teachers': featured_teachers,
         'total_teachers': paginator.count,
+        'favorite_teacher_ids': favorite_teacher_ids,
+        'active_filters': active_filters,
+        'popular_subjects': popular_subjects,
+        'home_reviews': home_reviews,
+        'platform_extra': platform_extra,
         'platform_stats': platform_stats,
         'subjects': all_subjects,
         'cities': all_cities,

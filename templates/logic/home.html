@@ -41,117 +41,12 @@
     }
 
     /* ============================================
-       📱 ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК - ОПТИМИЗИРОВАННЫЙ
-       ============================================ */
-    .tabs-container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 20px 20px 0;
-    }
-
-    .tabs-wrapper {
-        display: flex;
-        justify-content: center;
-        gap: 12px;
-        background: white;
-        padding: 12px;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(10, 37, 64, 0.06);
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-    }
-
-    .tabs-wrapper::-webkit-scrollbar {
-        display: none;
-    }
-
-    .tab-button {
-        flex: 0 0 auto;
-        min-width: clamp(120px, 30vw, 180px);
-        padding: 12px 24px;
-        background: white;
-        border: 2px solid #e0e0e0;
-        border-radius: 8px;
-        font-size: 15px;
-        font-weight: 600;
-        color: #666;
-        cursor: pointer;
-        transition: all var(--transition-speed);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        white-space: nowrap;
-    }
-
-    .tab-button:hover {
-        border-color: var(--primary-color);
-        color: var(--primary-color);
-        transform: translateY(-2px);
-    }
-
-    .tab-button.active {
-        background: var(--primary-color);
-        border-color: var(--primary-color);
-        color: white;
-        box-shadow: 0 4px 12px rgba(10, 37, 64, 0.2);
-    }
-
-    .tab-button i {
-        font-size: 18px;
-    }
-
-    @media (max-width: 480px) {
-        .tabs-wrapper {
-            gap: 8px;
-            padding: 10px;
-        }
-        .tab-button {
-            min-width: auto;
-            padding: 10px 14px;
-            font-size: 14px;
-        }
-    }
-
-    /* ============================================
        📄 ОСНОВНОЙ КОНТЕЙНЕР СТРАНИЦЫ
        ============================================ */
     .page-container {
         max-width: 1400px;
         margin: 0 auto;
         padding: 10px 20px;
-    }
-
-    .page-header {
-        text-align: center;
-        margin-bottom: 24px;
-        padding: 16px 0;
-        border-bottom: 1px solid rgba(10, 37, 64, 0.08);
-    }
-
-    .page-title {
-        font-size: 20px;
-        font-weight: 600;
-        color: var(--primary-color);
-        margin-bottom: 6px;
-        line-height: 1.3;
-    }
-
-    .page-subtitle {
-        font-size: 13px;
-        color: #666;
-        margin-bottom: 4px;
-        font-weight: 500;
-    }
-
-    .page-description {
-        font-size: 12px;
-        color: #888;
-        max-width: 100%;
-        margin: 0;
-        line-height: 1.4;
-        opacity: 0.9;
     }
 
     /* ============================================
@@ -221,34 +116,6 @@
 
     .global-search-btn:hover {
         background: var(--primary-hover);
-        transform: translateY(-1px);
-    }
-
-    .quick-search {
-        display: flex;
-        justify-content: center;
-        gap: 6px;
-        flex-wrap: wrap;
-        margin: 0 auto 12px;
-        padding: 0 10px;
-        box-sizing: border-box;
-    }
-
-    .quick-search-btn {
-        border: 1px solid rgba(10, 37, 64, 0.12);
-        background: white;
-        color: var(--primary-color);
-        border-radius: 999px;
-        padding: 5px 11px;
-        font-size: 11px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background var(--transition-speed), transform var(--transition-speed), border-color var(--transition-speed);
-    }
-
-    .quick-search-btn:hover {
-        background: rgba(10, 37, 64, 0.04);
-        border-color: rgba(10, 37, 64, 0.22);
         transform: translateY(-1px);
     }
 
@@ -372,7 +239,6 @@
         color: var(--accent-color);
     }
 
-    .filter-search-input,
     .filter-select {
         width: 100%;
         padding: 10px 12px;
@@ -383,7 +249,6 @@
         transition: all var(--transition-speed);
     }
 
-    .filter-search-input:focus,
     .filter-select:focus {
         outline: none;
         border-color: var(--accent-color);
@@ -485,6 +350,117 @@
         font-weight: 700;
     }
 
+    /* Тулбар сортировки */
+    .sort-dropdown {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .sort-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6B7280;
+        white-space: nowrap;
+    }
+    .sort-label i { color: var(--accent-color, #3B82F6); margin-right: 2px; }
+    #sortSelect {
+        padding: 8px 12px;
+        border: 1px solid rgba(10,37,64,0.14);
+        border-radius: 8px;
+        font-size: 13px;
+        background: white;
+        color: #333;
+        cursor: pointer;
+        transition: border-color .2s, box-shadow .2s;
+    }
+    #sortSelect:hover { border-color: var(--accent-color, #3B82F6); }
+    #sortSelect:focus { outline: none; border-color: var(--accent-color, #3B82F6); box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+
+    /* Чипсы активных фильтров */
+    .active-filters {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin: -6px 0 18px;
+    }
+    .active-filters-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6B7280;
+    }
+    .filter-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(59,130,246,0.25);
+        background: #eff6ff;
+        color: #1e40af;
+        font-size: 12.5px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background .2s, border-color .2s, transform .15s;
+    }
+    .filter-chip:hover { background: #dbeafe; transform: translateY(-1px); }
+    .filter-chip i { font-size: 11px; opacity: .8; }
+    .filter-chip--reset {
+        background: #fff;
+        border-color: rgba(10,37,64,0.14);
+        color: #6B7280;
+    }
+    .filter-chip--reset:hover { background: #f9fafb; color: var(--primary-color); }
+
+    /* Кнопка «в избранное» */
+    .fav-btn {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        z-index: 2;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 1px solid #eef0f3;
+        background: rgba(255,255,255,0.92);
+        backdrop-filter: blur(4px);
+        color: #cbd5e1;
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(10,37,64,0.10);
+        transition: transform .18s cubic-bezier(0.16,1,0.3,1), color .18s, box-shadow .18s;
+    }
+    .fav-btn:hover { transform: scale(1.12); color: #f43f5e; box-shadow: 0 4px 14px rgba(244,63,94,0.22); }
+    .fav-btn.is-fav { color: #f43f5e; }
+    .fav-btn.fav-pop { animation: favPop .35s ease; }
+    @keyframes favPop { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+
+    /* Skeleton-заглушки каталога */
+    .skeleton-card {
+        background: #fff;
+        border-radius: 14px;
+        padding: 18px;
+        border: 1px solid #f0f0f0;
+        box-shadow: 0 2px 12px rgba(10,37,64,0.06);
+    }
+    .skeleton-line { border-radius: 8px; background: #eef1f5; height: 14px; margin-bottom: 10px; }
+    .sk-head { display: flex; gap: 14px; align-items: center; margin-bottom: 16px; }
+    .sk-avatar { width: 76px; height: 76px; border-radius: 50%; background: #eef1f5; flex-shrink: 0; }
+    .skeleton-shimmer { position: relative; overflow: hidden; }
+    .skeleton-shimmer::after {
+        content: "";
+        position: absolute; inset: 0;
+        transform: translateX(-100%);
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent);
+        animation: skShimmer 1.2s infinite;
+    }
+    @keyframes skShimmer { 100% { transform: translateX(100%); } }
+    @media (prefers-reduced-motion: reduce) { .skeleton-shimmer::after, .fav-btn.fav-pop { animation: none; } }
+
     .teachers-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -500,11 +476,11 @@
        ============================================ */
     .teacher-card {
         background: white;
-        border-radius: 12px;
+        border-radius: 14px;
         padding: 18px;
         box-shadow: 0 2px 12px rgba(10, 37, 64, 0.08);
         border: 1px solid #f0f0f0;
-        transition: all var(--transition-speed);
+        transition: transform .25s cubic-bezier(0.16,1,0.3,1), box-shadow .25s ease, border-color .25s ease;
         cursor: pointer;
         display: flex;
         flex-direction: column;
@@ -513,14 +489,37 @@
         gap: 12px;
     }
 
+    /* Акцентная полоска сверху — проявляется при наведении */
+    .teacher-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--accent-color, #3B82F6), var(--primary-color, #0A2540));
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform .3s cubic-bezier(0.16,1,0.3,1);
+    }
+
     .teacher-card:hover {
-        transform: translateY(-3px);
+        transform: translateY(-4px);
         box-shadow: 0 6px 20px rgba(10, 37, 64, 0.12);
+        border-color: var(--accent-color, #3B82F6);
+    }
+
+    .teacher-card:hover::before {
+        transform: scaleX(1);
     }
 
     .teacher-card.featured {
         border-color: #10b981;
         box-shadow: 0 2px 12px rgba(16, 185, 129, 0.12);
+    }
+
+    .teacher-card.featured::before {
+        background: linear-gradient(90deg, var(--success-color, #10b981), var(--accent-color, #3B82F6));
     }
 
     .teacher-card.featured:hover {
@@ -611,15 +610,6 @@
         max-width: 100%;
     }
 
-    .meta-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        align-items: center;
-        max-width: 100%;
-        overflow: hidden;
-    }
-
     .meta-label {
         color: #6b7280;
         font-weight: 600;
@@ -662,6 +652,69 @@
 
     .rating-count {
         color: #6B7280;
+    }
+
+    .teacher-rating--new {
+        color: #6B7280;
+        font-size: 13px;
+        font-weight: 500;
+    }
+    .teacher-rating--new i {
+        color: #CBD5E1;
+    }
+
+    .verified-check {
+        color: var(--accent-color, #3B82F6);
+        font-size: 15px;
+        flex-shrink: 0;
+    }
+
+    /* Строка бейджей: формат урока + «рекомендуемый» */
+    .teacher-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+    }
+
+    .format-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 10px;
+        border-radius: 14px;
+        font-size: 10px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .format-badge i { font-size: 10px; }
+    .format-online  { background: #dcfce7; color: #166534; }
+    .format-offline { background: #fef3c7; color: #92400e; }
+    .format-both    { background: #e0e7ff; color: #3730a3; }
+
+    /* Строка фактов: ученики · стаж · город */
+    .teacher-facts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        padding-top: 10px;
+        margin-top: 2px;
+        border-top: 1px dashed #eef0f3;
+    }
+    .teacher-facts .fact {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12.5px;
+        color: #4B5563;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+    .teacher-facts .fact i {
+        color: var(--accent-color, #3B82F6);
+        font-size: 13px;
+        width: 14px;
+        text-align: center;
     }
 
     .subject-tag {
@@ -965,10 +1018,6 @@
 
     /* === TABLET (1024px и меньше) === */
     @media (max-width: 1024px) {
-        .tabs-container {
-            padding: 16px 12px 0;
-        }
-
         .page-container {
             padding: 24px 16px;
         }
@@ -1020,52 +1069,13 @@
             height: 68px;
             font-size: 24px;
         }
-
-        .tab-button {
-            min-width: 140px;
-            padding: 10px 20px;
-            font-size: 14px;
-        }
     }
 
     /* === MOBILE (768px и меньше) === */
     @media (max-width: 768px) {
-        .tabs-container {
-            padding: 12px 8px 0;
-        }
-
-        .tabs-wrapper {
-            padding: 8px;
-            gap: 8px;
-        }
-
-        .tab-button {
-            min-width: 130px;
-            padding: 9px 16px;
-            font-size: 13px;
-        }
-
-        .tab-button i {
-            font-size: 16px;
-        }
-
         .page-container {
             padding: 16px 8px;
             overflow-x: hidden;
-        }
-
-        .page-header {
-            margin-bottom: 16px;
-            padding: 12px 0;
-        }
-
-        .page-title {
-            font-size: 18px;
-            margin-bottom: 6px;
-        }
-
-        .page-description {
-            font-size: 11px;
         }
 
         .mobile-filters-toggle {
@@ -1094,7 +1104,6 @@
             margin-bottom: 8px;
         }
 
-        .filter-search-input,
         .filter-select {
             padding: 9px 10px;
             font-size: 13px;
@@ -1164,41 +1173,8 @@
 
     /* === SMALL MOBILE (480px и меньше) === */
     @media (max-width: 480px) {
-        .tabs-container {
-            padding: 10px 6px 0;
-        }
-
-        .tabs-wrapper {
-            padding: 6px;
-            gap: 6px;
-        }
-
-        .tab-button {
-            min-width: auto;
-            padding: 8px 12px;
-            font-size: 12px;
-            flex: 1;
-        }
-
-        .tab-button span {
-            display: none;
-        }
-
-        .tab-button i {
-            font-size: 18px;
-            margin: 0;
-        }
-
         .page-container {
             padding: 16px 8px;
-        }
-
-        .page-title {
-            font-size: 16px;
-        }
-
-        .page-description {
-            font-size: 10px;
         }
 
         .mobile-filters-toggle {
@@ -1287,14 +1263,6 @@
             padding: 10px 4px;
         }
 
-        .tab-button {
-            padding: 7px 10px;
-        }
-
-        .tab-button i {
-            font-size: 16px;
-        }
-
         .teachers-grid {
             gap: 12px;
         }
@@ -1343,7 +1311,6 @@
     @media (hover: none) and (pointer: coarse) {
         .teacher-card:hover,
         .contact-btn:hover,
-        .tab-button:hover,
         .page-link:hover,
         .apply-filters-btn:hover {
             transform: none;
@@ -1359,10 +1326,6 @@
             transform: scale(0.95);
         }
 
-        .tab-button:active:not(.active) {
-            transform: scale(0.97);
-        }
-
         .page-link:active:not(.current) {
             transform: scale(0.95);
         }
@@ -1372,7 +1335,6 @@
        🖨️ PRINT STYLES
        ============================================ */
     @media print {
-        .tabs-container,
         .mobile-filters-toggle,
         .filters-sidebar,
         .filters-backdrop,
@@ -1406,18 +1368,13 @@
         }
     }
 
-    .tab-button:focus-visible,
     .contact-btn:focus-visible,
     .page-link:focus-visible,
-    .filter-search-input:focus-visible,
     .filter-select:focus-visible {
         outline: 3px solid var(--accent-color);
         outline-offset: 2px;
     }
 </style>
-
-
-<!-- ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК - UPDATED v2.0 -->
 
 <div class="page-container home-page">
     {% if not user.is_authenticated and not search_query %}
@@ -1494,18 +1451,6 @@
                 {% if suggest %}<input type="hidden" name="suggest" value="{{ suggest }}">{% endif %}
             </div>
         </form>
-    </div>
-
-    <!-- QUICK SEARCH BUTTONS -->
-    <div class="quick-search" aria-label="{% trans 'Быстрый поиск' %}">
-        <button type="button" class="quick-search-btn" data-quick-search="English">English</button>
-        <button type="button" class="quick-search-btn" data-quick-search="Математика">Математика</button>
-        <button type="button" class="quick-search-btn" data-quick-search="Arab tili">Arab tili</button>
-        <button type="button" class="quick-search-btn" data-quick-search="русский язык">русский язык</button>
-        <button type="button" class="quick-search-btn" data-quick-search="Biologiya">Biologiya</button>
-        <button type="button" class="quick-search-btn" data-quick-search="история">История</button>
-
-
     </div>
 
     {% if featured_teachers %}
@@ -1881,7 +1826,7 @@
                             <div class="hero-avatar-wrap">
                                 <div class="hero-avatar">
                                     {% if teacher.user.avatar %}
-                                        <img src="{{ teacher.user.avatar.url }}" alt="{{ teacher.user.get_full_name }}">
+                                        <img src="{{ teacher.user.avatar.url }}" alt="{{ teacher.user.get_full_name }}" loading="lazy" decoding="async">
                                     {% else %}
                                         {{ teacher.user.first_name.0|default:"У" }}{{ teacher.user.last_name.0|default:"" }}
                                     {% endif %}
@@ -2020,6 +1965,120 @@
     </script>
     {% endif %}
 
+    <style>
+        /* ===== Контентные секции лендинга ===== */
+        .landing-section { max-width: 1100px; margin: 36px auto; padding: 0 4px; }
+        .landing-title { font-size: 24px; font-weight: 800; color: var(--primary-color,#0A2540); text-align: center; margin: 0 0 6px; letter-spacing: -0.4px; }
+        .landing-sub { text-align: center; color: #6B7280; font-size: 14px; margin: 0 0 22px; }
+
+        /* ===== Универсальная горизонтальная карусель (предметы + отзывы) ===== */
+        .hcar { position: relative; }
+        .hcar-track {
+            display: flex;
+            gap: 14px;
+            overflow-x: auto;
+            scroll-snap-type: x proximity;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding: 4px 2px 10px;
+        }
+        .hcar-track::-webkit-scrollbar { display: none; }
+        .hcar-track.is-dragging { scroll-behavior: auto; cursor: grabbing; }
+        .hcar-track > * { flex: 0 0 auto; scroll-snap-align: start; }
+        .hcar-arrow {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 40px; height: 40px; border-radius: 50%;
+            background: #fff; color: #0A2540; border: 1px solid rgba(10,37,64,0.12);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 4; box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+            transition: transform .2s, background .2s, color .2s, opacity .2s;
+        }
+        .hcar-arrow:hover { background: #0A2540; color: #fff; transform: translateY(-50%) scale(1.08); }
+        .hcar-arrow-prev { left: -8px; }
+        .hcar-arrow-next { right: -8px; }
+        .hcar-arrow.is-hidden { opacity: 0; pointer-events: none; }
+        /* Плавное «затухание» у краёв ряда — подсказка, что есть прокрутка */
+        .hcar::before, .hcar::after {
+            content: ""; position: absolute; top: 0; bottom: 10px; width: 36px; z-index: 3; pointer-events: none;
+            transition: opacity .2s;
+        }
+        .hcar::before { left: 0; background: linear-gradient(90deg, var(--bg-secondary,#F9FAFB), rgba(249,250,251,0)); }
+        .hcar::after  { right: 0; background: linear-gradient(270deg, var(--bg-secondary,#F9FAFB), rgba(249,250,251,0)); }
+        .hcar.at-start::before { opacity: 0; }
+        .hcar.at-end::after { opacity: 0; }
+
+        /* Плитка предмета */
+        .subject-tile {
+            width: 158px;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            padding: 20px 12px; border-radius: 16px; background: #fff;
+            border: 1px solid #eef0f3; box-shadow: 0 2px 10px rgba(10,37,64,0.05);
+            text-decoration: none;
+            transition: transform .18s cubic-bezier(.16,1,.3,1), box-shadow .18s, border-color .18s;
+        }
+        .subject-tile:hover { transform: translateY(-4px); box-shadow: 0 10px 24px -10px rgba(10,37,64,0.22); border-color: var(--accent-color,#3B82F6); }
+        .subject-tile-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff; background: linear-gradient(135deg,#3B82F6,#6366F1); }
+        .subject-tile:nth-child(4n+2) .subject-tile-icon { background: linear-gradient(135deg,#10B981,#059669); }
+        .subject-tile:nth-child(4n+3) .subject-tile-icon { background: linear-gradient(135deg,#F59E0B,#D97706); }
+        .subject-tile:nth-child(4n+4) .subject-tile-icon { background: linear-gradient(135deg,#EC4899,#DB2777); }
+        .subject-tile-name { font-size: 14px; font-weight: 700; color: var(--primary-color,#0A2540); text-align: center; line-height: 1.25; }
+        .subject-tile-count { font-size: 12px; color: #6B7280; }
+
+        /* Как это работает */
+        .hiw-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+        .hiw-step { position: relative; background: #fff; border: 1px solid #eef0f3; border-radius: 16px; padding: 26px 20px; text-align: center; }
+        .hiw-num { position: absolute; top: 14px; right: 16px; font-size: 30px; font-weight: 800; color: #eff2f7; line-height: 1; }
+        .hiw-icon { width: 56px; height: 56px; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; font-size: 24px; color: var(--accent-color,#3B82F6); background: #eff6ff; margin-bottom: 14px; }
+        .hiw-step h3 { font-size: 16px; font-weight: 700; color: var(--primary-color,#0A2540); margin: 0 0 8px; }
+        .hiw-step p { font-size: 13.5px; color: #4B5563; line-height: 1.5; margin: 0; }
+
+        /* Отзывы */
+        .review-card { width: 330px; margin: 0; background: #fff; border: 1px solid #eef0f3; border-radius: 16px; padding: 20px; box-shadow: 0 2px 10px rgba(10,37,64,0.05); display: flex; flex-direction: column; gap: 12px; }
+        .review-stars { color: #FCD34D; font-size: 13px; display: flex; gap: 2px; }
+        .review-stars .far { color: #E5E7EB; }
+        .review-text { margin: 0; font-size: 14px; line-height: 1.6; color: #374151; font-style: italic; }
+        .review-author { font-size: 13px; color: #6B7280; }
+        .review-author-name { font-weight: 700; color: var(--primary-color,#0A2540); font-style: normal; }
+        .review-subject { color: #6B7280; }
+
+        @media (max-width: 900px) {
+            .hiw-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 640px) {
+            .hcar-arrow { display: none; }
+            .hcar::before, .hcar::after { width: 22px; }
+            .subject-tile { width: 134px; padding: 16px 10px; }
+            .review-card { width: 280px; }
+        }
+        @media (max-width: 560px) {
+            .landing-title { font-size: 20px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .hcar-track { scroll-behavior: auto; }
+        }
+    </style>
+
+    {% if popular_subjects %}
+    <section class="landing-section pop-subjects" aria-label="{% trans 'Популярные предметы' %}">
+        <h2 class="landing-title">{% trans 'Популярные предметы' %}</h2>
+        <p class="landing-sub">{% trans 'Выберите направление и найдите репетитора' %}</p>
+        <div class="hcar at-start">
+            <button type="button" class="hcar-arrow hcar-arrow-prev is-hidden" aria-label="{% trans 'Назад' %}"><i class="fas fa-chevron-left"></i></button>
+            <div class="hcar-track">
+                {% for s in popular_subjects %}
+                <a class="subject-tile" href="?subject={{ s.id }}">
+                    <span class="subject-tile-icon"><i class="fas fa-book-open"></i></span>
+                    <span class="subject-tile-name">{{ s.name }}</span>
+                    <span class="subject-tile-count">{{ s.n }} {% trans 'учит.' %}</span>
+                </a>
+                {% endfor %}
+            </div>
+            <button type="button" class="hcar-arrow hcar-arrow-next" aria-label="{% trans 'Вперёд' %}"><i class="fas fa-chevron-right"></i></button>
+        </div>
+    </section>
+    {% endif %}
+
     <!-- КНОПКА ФИЛЬТРОВ ДЛЯ МОБИЛЬНЫХ -->
     <button class="mobile-filters-toggle" onclick="toggleFilters()">
         <i class="fas fa-filter"></i> {% trans 'Фильтры' %}
@@ -2154,7 +2213,8 @@
                     {% if total_teachers == 1 %}{% trans 'учитель' %}{% elif total_teachers < 5 %}{% trans 'учителя' %}{% else %}{% trans 'учителей' %}{% endif %}
                 </span>
                 <div class="sort-dropdown">
-                    <select id="sortSelect" onchange="applySort(this.value)" style="padding: 8px 12px; border: 1px solid rgba(10,37,64,0.14); border-radius: 8px; font-size: 13px; background: white; color: #333; cursor: pointer;">
+                    <span class="sort-label"><i class="fas fa-arrow-down-wide-short"></i> {% trans 'Сортировка:' %}</span>
+                    <select id="sortSelect" onchange="applySort(this.value)">
                         {% for value, label in sort_options %}
                             <option value="{{ value }}" {% if sort_by == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
@@ -2162,16 +2222,40 @@
                 </div>
             </div>
 
+            {% if active_filters %}
+            <div class="active-filters" aria-label="{% trans 'Активные фильтры' %}">
+                <span class="active-filters-label">{% trans 'Фильтры:' %}</span>
+                {% for f in active_filters %}
+                    <button type="button" class="filter-chip" data-remove-param="{{ f.param }}" title="{% trans 'Убрать фильтр' %}">
+                        <span>{{ f.label }}</span> <i class="fas fa-xmark"></i>
+                    </button>
+                {% endfor %}
+                <a href="{% url 'home' %}" class="filter-chip filter-chip--reset">
+                    <i class="fas fa-rotate-left"></i> {% trans 'Сбросить всё' %}
+                </a>
+            </div>
+            {% endif %}
+
             {% if teachers %}
                 <div class="teachers-grid" id="teachers">
                     {% for teacher in teachers %}
-                        <div class="teacher-card{% if teacher.is_featured %} featured{% endif %}">
+                        <div class="teacher-card reveal{% if teacher.is_featured %} featured{% endif %}" style="transition-delay: {% widthratio forloop.counter0 1 40 %}ms;">
                             <a class="card-stretch-link" href="{% url 'teacher_detail' teacher.id %}"
                                aria-label="{{ teacher.user.get_full_name|default:teacher.user.username }}"></a>
+                            {% if user.user_type != 'teacher' %}
+                            <button type="button"
+                                    class="fav-btn{% if teacher.id in favorite_teacher_ids %} is-fav{% endif %}"
+                                    data-fav-teacher="{{ teacher.id }}"
+                                    data-fav-url="{% url 'toggle_favorite_teacher' teacher.id %}"
+                                    aria-label="{% trans 'В избранное' %}"
+                                    aria-pressed="{% if teacher.id in favorite_teacher_ids %}true{% else %}false{% endif %}">
+                                <i class="fas fa-heart"></i>
+                            </button>
+                            {% endif %}
                             <div class="teacher-card-head">
                                 <div class="teacher-avatar">
                                     {% if teacher.user.avatar %}
-                                        <img src="{{ teacher.user.avatar.url }}" alt="{{ teacher.user.get_full_name }}">
+                                        <img src="{{ teacher.user.avatar.url }}" alt="{{ teacher.user.get_full_name }}" loading="lazy" decoding="async">
                                     {% else %}
                                         {{ teacher.user.first_name.0|default:"У" }}{{ teacher.user.last_name.0|default:"" }}
                                     {% endif %}
@@ -2182,13 +2266,39 @@
                                         <h3 class="teacher-name">
                                             {{ teacher.user.get_full_name|default:teacher.user.username }}
                                         </h3>
+                                        {% if teacher.is_verified %}
+                                            <i class="fas fa-circle-check verified-check" title="{% trans 'Проверенный профиль' %}" aria-label="{% trans 'Проверенный профиль' %}"></i>
+                                        {% endif %}
                                     </div>
-                                    
-                                    {% if teacher.is_featured %}
-                                        <span class="recommended-badge">
-                                            <i class="fas fa-check-circle"></i> {% trans 'Рекомендуемый учитель' %}
-                                        </span>
+
+                                    {% if teacher.total_reviews > 0 %}
+                                        <div class="teacher-rating" aria-label="{% trans 'Рейтинг' %}">
+                                            <i class="fas fa-star rating-star"></i>
+                                            <span class="rating-value">{{ teacher.rating|floatformat:1 }}</span>
+                                            <span class="rating-count">({{ teacher.total_reviews }})</span>
+                                        </div>
+                                    {% else %}
+                                        <div class="teacher-rating teacher-rating--new">
+                                            <i class="fas fa-star"></i> <span>{% trans 'Новый учитель' %}</span>
+                                        </div>
                                     {% endif %}
+
+                                    <div class="teacher-badges">
+                                        <span class="format-badge format-{{ teacher.teaching_format }}">
+                                            {% if teacher.teaching_format == 'online' %}
+                                                <i class="fas fa-globe"></i> {% trans 'Онлайн' %}
+                                            {% elif teacher.teaching_format == 'offline' %}
+                                                <i class="fas fa-location-dot"></i> {% trans 'Очно' %}
+                                            {% else %}
+                                                <i class="fas fa-globe"></i> {% trans 'Онлайн и очно' %}
+                                            {% endif %}
+                                        </span>
+                                        {% if teacher.is_featured %}
+                                            <span class="recommended-badge">
+                                                <i class="fas fa-check-circle"></i> {% trans 'Рекомендуемый учитель' %}
+                                            </span>
+                                        {% endif %}
+                                    </div>
 
                                     <div class="teacher-subjects">
                                         <span class="meta-label">
@@ -2220,6 +2330,20 @@
                                     </div>
                                 </div>
                             </div>
+
+                            {% if teacher.total_students or teacher.experience_years or teacher.city %}
+                            <div class="teacher-facts">
+                                {% if teacher.total_students %}
+                                    <span class="fact"><i class="fas fa-user-graduate"></i> {{ teacher.total_students }} {% trans 'учеников' %}</span>
+                                {% endif %}
+                                {% if teacher.experience_years %}
+                                    <span class="fact"><i class="fas fa-briefcase"></i> {{ teacher.experience_years }} {% trans 'г. опыта' %}</span>
+                                {% endif %}
+                                {% if teacher.city %}
+                                    <span class="fact"><i class="fas fa-location-dot"></i> {{ teacher.city.name }}</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
 
                             <div class="teacher-description" data-description-wrap>
                                 <span class="description-text" id="desc-{{ teacher.id }}" data-full-text="{{ teacher.bio|default:'Нет описания' }}">
@@ -2306,6 +2430,65 @@
             {% endif %}
         </section>
     </div>
+
+    {% if not active_filters %}
+    <section class="landing-section how-it-works" aria-label="{% trans 'Как это работает' %}">
+        <h2 class="landing-title">{% trans 'Как это работает' %}</h2>
+        <p class="landing-sub">{% trans 'Всего три шага до первого урока' %}</p>
+        <div class="hiw-grid">
+            <div class="hiw-step">
+                <span class="hiw-num">1</span>
+                <span class="hiw-icon"><i class="fas fa-magnifying-glass"></i></span>
+                <h3>{% trans 'Найдите учителя' %}</h3>
+                <p>{% trans 'Фильтры по предмету, цене и формату помогут выбрать подходящего репетитора.' %}</p>
+            </div>
+            <div class="hiw-step">
+                <span class="hiw-num">2</span>
+                <span class="hiw-icon"><i class="fas fa-calendar-check"></i></span>
+                <h3>{% trans 'Забронируйте урок' %}</h3>
+                <p>{% trans 'Выберите удобное время и оплатите — деньги под защитой до проведения урока.' %}</p>
+            </div>
+            <div class="hiw-step">
+                <span class="hiw-num">3</span>
+                <span class="hiw-icon"><i class="fas fa-video"></i></span>
+                <h3>{% trans 'Учитесь онлайн' %}</h3>
+                <p>{% trans 'Урок проходит в видеокомнате прямо на платформе — ничего не нужно устанавливать.' %}</p>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    {% if home_reviews %}
+    <section class="landing-section reviews-section" aria-label="{% trans 'Отзывы учеников' %}">
+        <h2 class="landing-title">{% trans 'Что говорят ученики' %}</h2>
+        {% if platform_extra.avg_rating %}
+        <p class="landing-sub">
+            <i class="fas fa-star" style="color:#FCD34D"></i>
+            {{ platform_extra.avg_rating }} · {{ platform_extra.reviews_total }} {% trans 'отзывов' %}
+        </p>
+        {% endif %}
+        <div class="hcar at-start">
+            <button type="button" class="hcar-arrow hcar-arrow-prev is-hidden" aria-label="{% trans 'Назад' %}"><i class="fas fa-chevron-left"></i></button>
+            <div class="hcar-track">
+                {% for r in home_reviews %}
+                <figure class="review-card">
+                    <div class="review-stars" aria-label="{{ r.rating }}/5">
+                        {% for i in "12345"|make_list %}
+                            <i class="fa{% if forloop.counter <= r.rating %}s{% else %}r{% endif %} fa-star"></i>
+                        {% endfor %}
+                    </div>
+                    <blockquote class="review-text">{{ r.comment|truncatechars:160 }}</blockquote>
+                    <figcaption class="review-author">
+                        <span class="review-author-name">{{ r.student.get_full_name|default:r.student.username }}</span>
+                        {% if r.subject %}<span class="review-subject">· {{ r.subject.name }}</span>{% endif %}
+                    </figcaption>
+                </figure>
+                {% endfor %}
+            </div>
+            <button type="button" class="hcar-arrow hcar-arrow-next" aria-label="{% trans 'Вперёд' %}"><i class="fas fa-chevron-right"></i></button>
+        </div>
+    </section>
+    {% endif %}
 </div>
 
 <script>
@@ -2476,18 +2659,189 @@
         {% endif %}
     }
 
-    // ========== QUICK SEARCH BUTTONS ==========
-    (function initQuickSearch() {
-        const form = document.querySelector('.global-search-form');
-        const input = document.querySelector('.global-search-input');
-        if (!form || !input) return;
+    // ========== SKELETON-ЗАГРУЗКА КАТАЛОГА ==========
+    function showCatalogSkeleton() {
+        const grid = document.getElementById('teachers');
+        if (!grid) return;
+        const card =
+            '<div class="skeleton-card skeleton-shimmer">' +
+              '<div class="sk-head"><div class="sk-avatar"></div>' +
+                '<div style="flex:1">' +
+                  '<div class="skeleton-line" style="width:70%"></div>' +
+                  '<div class="skeleton-line" style="width:40%"></div>' +
+                  '<div class="skeleton-line" style="width:55%"></div>' +
+                '</div>' +
+              '</div>' +
+              '<div class="skeleton-line" style="width:100%"></div>' +
+              '<div class="skeleton-line" style="width:90%"></div>' +
+              '<div class="skeleton-line" style="width:60%"></div>' +
+            '</div>';
+        const n = Math.min(grid.children.length || 6, 8) || 6;
+        grid.innerHTML = new Array(n).fill(card).join('');
+    }
 
-        document.querySelectorAll('[data-quick-search]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const value = btn.getAttribute('data-quick-search') || '';
-                input.value = value;
-                form.submit();
+    // Скелетоны при пагинации, отправке фильтров и сбросе
+    document.querySelectorAll('.pagination .page-link[href]').forEach(function (a) {
+        a.addEventListener('click', showCatalogSkeleton);
+    });
+    (function () {
+        const ff = document.getElementById('filtersForm');
+        if (ff) ff.addEventListener('submit', showCatalogSkeleton);
+    })();
+    document.querySelectorAll('.filter-chip--reset').forEach(function (a) {
+        a.addEventListener('click', showCatalogSkeleton);
+    });
+    document.querySelectorAll('.subject-tile').forEach(function (a) {
+        a.addEventListener('click', showCatalogSkeleton);
+    });
+
+    // ========== УДАЛЕНИЕ ФИЛЬТРА ПО ЧИПСУ ==========
+    document.querySelectorAll('.filter-chip[data-remove-param]').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            const param = chip.getAttribute('data-remove-param');
+            const url = new URL(window.location.href);
+            url.searchParams.delete(param);
+            url.searchParams.delete('page');
+            showCatalogSkeleton();
+            window.location.href = url.toString();
+        });
+    });
+
+    // ========== ИЗБРАННОЕ (♥) ==========
+    (function initFavorites() {
+        const CSRF = '{{ csrf_token }}';
+        const IS_AUTH = {{ user.is_authenticated|yesno:"true,false" }};
+        const IS_STUDENT = {% if user.is_authenticated and user.user_type == 'student' %}true{% else %}false{% endif %};
+        const LOGIN_URL = '{% url "login" %}';
+        document.querySelectorAll('.fav-btn[data-fav-url]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!IS_AUTH) {
+                    window.location.href = LOGIN_URL + '?next=' + encodeURIComponent(window.location.pathname + window.location.search);
+                    return;
+                }
+                if (!IS_STUDENT) { return; }
+                const url = btn.getAttribute('data-fav-url');
+                btn.disabled = true;
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+                })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (data && data.success) {
+                            const fav = !!data.favorited;
+                            btn.classList.toggle('is-fav', fav);
+                            btn.setAttribute('aria-pressed', fav ? 'true' : 'false');
+                            if (fav) { btn.classList.remove('fav-pop'); void btn.offsetWidth; btn.classList.add('fav-pop'); }
+                        }
+                    })
+                    .catch(function () {})
+                    .finally(function () { btn.disabled = false; });
             });
+        });
+    })();
+
+    // ========== ГОРИЗОНТАЛЬНЫЕ КАРУСЕЛИ (.hcar): предметы + отзывы ==========
+    (function initCarousels() {
+        const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const STEP_MS = 3500;
+
+        document.querySelectorAll('.hcar').forEach(function (carousel) {
+            const track = carousel.querySelector('.hcar-track');
+            if (!track) return;
+            const prev = carousel.querySelector('.hcar-arrow-prev');
+            const next = carousel.querySelector('.hcar-arrow-next');
+            let timer = null;
+
+            function maxScroll() { return track.scrollWidth - track.clientWidth; }
+            function itemStep() {
+                const item = track.firstElementChild;
+                if (!item) return 200;
+                const gap = parseInt(getComputedStyle(track).columnGap || getComputedStyle(track).gap || '14', 10) || 14;
+                return item.offsetWidth + gap;
+            }
+            function scrollByPage(dir) {
+                const amount = Math.max(itemStep() * 2, track.clientWidth * 0.7);
+                track.scrollBy({ left: dir * amount, behavior: reduce ? 'auto' : 'smooth' });
+            }
+            function updateUI() {
+                const max = maxScroll();
+                const x = track.scrollLeft;
+                const scrollable = max > 2;
+                carousel.classList.toggle('at-start', x <= 1);
+                carousel.classList.toggle('at-end', x >= max - 1);
+                if (prev) prev.classList.toggle('is-hidden', !scrollable || x <= 1);
+                if (next) next.classList.toggle('is-hidden', !scrollable || x >= max - 1);
+            }
+
+            // ----- авто-прокрутка -----
+            function autoTick() {
+                const max = maxScroll();
+                if (max <= 2) return;
+                if (track.scrollLeft >= max - 1) {
+                    track.scrollTo({ left: 0, behavior: reduce ? 'auto' : 'smooth' });
+                } else {
+                    scrollByPage(1);
+                }
+            }
+            function startAuto() {
+                if (reduce) return;
+                stopAuto();
+                if (maxScroll() <= 2) return;
+                timer = setInterval(autoTick, STEP_MS);
+            }
+            function stopAuto() { if (timer) { clearInterval(timer); timer = null; } }
+
+            // ----- управление -----
+            if (prev) prev.addEventListener('click', function () { stopAuto(); scrollByPage(-1); });
+            if (next) next.addEventListener('click', function () { stopAuto(); scrollByPage(1); });
+            track.addEventListener('scroll', function () { window.requestAnimationFrame(updateUI); }, { passive: true });
+            window.addEventListener('resize', updateUI);
+
+            // ----- drag мышью (тач — нативный скролл) -----
+            let down = false, startX = 0, startLeft = 0, moved = false;
+            track.addEventListener('pointerdown', function (e) {
+                stopAuto();
+                if (e.pointerType !== 'mouse' || e.button !== 0) return;
+                down = true; moved = false; startX = e.clientX; startLeft = track.scrollLeft;
+            });
+            track.addEventListener('pointermove', function (e) {
+                if (!down) return;
+                const dx = e.clientX - startX;
+                if (Math.abs(dx) > 4) { moved = true; track.classList.add('is-dragging'); e.preventDefault(); }
+                if (moved) { track.scrollLeft = startLeft - dx; }
+            });
+            function endDrag() {
+                if (!down) return;
+                down = false; track.classList.remove('is-dragging');
+                if (moved) {
+                    // подавляем «клик» по элементу после перетаскивания (и навигацию, и скелетон)
+                    const kill = function (ev) { ev.preventDefault(); ev.stopPropagation(); };
+                    track.addEventListener('click', kill, { capture: true, once: true });
+                    setTimeout(function () { track.removeEventListener('click', kill, { capture: true }); }, 0);
+                }
+            }
+            track.addEventListener('pointerup', endDrag);
+            track.addEventListener('pointercancel', endDrag);
+
+            // ----- пауза/возобновление -----
+            carousel.addEventListener('mouseenter', stopAuto);
+            carousel.addEventListener('mouseleave', startAuto);
+            carousel.addEventListener('focusin', stopAuto);
+            carousel.addEventListener('touchstart', stopAuto, { passive: true });
+            carousel.addEventListener('touchend', startAuto, { passive: true });
+
+            updateUI();
+            setTimeout(updateUI, 300);
+            if ('IntersectionObserver' in window) {
+                new IntersectionObserver(function (entries) {
+                    entries.forEach(function (en) { en.isIntersecting ? startAuto() : stopAuto(); });
+                }, { threshold: 0.3 }).observe(carousel);
+            } else {
+                startAuto();
+            }
         });
     })();
 </script>
