@@ -203,7 +203,7 @@
                 // Урок ещё не скоро — показываем неактивную подсказку, когда откроется вход,
                 // чтобы пользователь не искал «как зайти».
                 const lead = cfg.joinLeadMinutes || 10;
-                const hint = (i18n.opensSoon || 'Вход откроется за %(n)s мин до начала').replace('%(n)s', lead);
+                const hint = (i18n.opensSoon || 'Вход откроется за {n} мин до начала').replace('{n}', lead);
                 buttons.push(`<span class="bk-btn join is-disabled" title="${escapeHtml(hint)}" aria-disabled="true">
                     <i class="fa-regular fa-clock"></i> ${escapeHtml(hint)}
                 </span>`);
@@ -623,7 +623,7 @@
         } else if (action === 'cancel') {
             const res = await modal({
                 title: i18n.cancelTitle,
-                text: i18n.confirmCancel,
+                text: i18n.confirmCancel + (i18n.cancelPolicy ? ' ' + i18n.cancelPolicy : ''),
                 okText: i18n.cancel,
                 okClass: 'danger',
             });

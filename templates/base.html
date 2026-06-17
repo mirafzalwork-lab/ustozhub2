@@ -1472,11 +1472,6 @@
                                 </a>
                             {% endif %}
 
-                            <a href="{% url 'conversations_list' %}" class="dropdown-item">
-                                <i class="fas fa-comment-dots text-success"></i>
-                                <span>{% trans 'Чат онлайн' %}</span>
-                            </a>
-
                             <a href="{% url 'profile_edit' %}" class="dropdown-item">
                                 <i class="fas fa-cog"></i>
                                 <span>{% trans 'Настройки' %}</span>
@@ -2131,13 +2126,13 @@
                 }
                 else if (data.type === 'new_message') {
                     var p = data.payload || {};
-                    showToast('new_message', p.sender_name || 'Новое сообщение', p.preview || '', p.conversation_id ? '/messages/' + p.conversation_id + '/' : null);
+                    showToast('new_message', p.sender_name || "{% filter escapejs %}{% trans 'Новое сообщение' %}{% endfilter %}", p.preview || '', p.conversation_id ? '/messages/' + p.conversation_id + '/' : null);
                     // Fetch fresh badge counts
                     fetchBadges();
                 }
                 else if (data.type === 'new_notification') {
                     var p = data.payload || {};
-                    showToast('new_notification', p.title || 'Уведомление', p.short_text || '', p.id ? '/notifications/' + p.id + '/' : null);
+                    showToast('new_notification', p.title || "{% filter escapejs %}{% trans 'Уведомление' %}{% endfilter %}", p.short_text || '', p.id ? '/notifications/' + p.id + '/' : null);
                     fetchBadges();
                 }
             };
