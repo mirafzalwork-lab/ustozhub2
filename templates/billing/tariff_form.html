@@ -68,6 +68,12 @@
       {% if form.price_per_month.errors %}<div class="errors">{{ form.price_per_month.errors }}</div>{% endif %}
     </div>
 
+    <div class="preview" id="tariff-preview" hidden>
+      <div>{% trans 'Всего уроков за срок' %}: <b id="tp-lessons">—</b></div>
+      <div>{% trans 'Итого к оплате за весь срок' %}: <b id="tp-total">—</b> {% trans 'сум' %}</div>
+      <div>≈ {% trans 'цена за один урок' %}: <b id="tp-perlesson">—</b> {% trans 'сум' %}</div>
+    </div>
+
     <div class="form-row">
       <label for="{{ form.description.id_for_label }}">{% trans 'Описание' %}</label>
       {{ form.description }}
@@ -91,4 +97,37 @@
     </div>
   </form>
 </div>
+
+<script>
+(function () {
+    // Живой расчёт по формулам модели: total_lessons = уроки/нед × 4 × мес,
+    // итого = цена/мес × мес, цена за урок = итого / уроки.
+    var lpw = document.getElementById('{{ form.lessons_per_week.id_for_label }}');
+    var dm = document.getElementById('{{ form.duration_months.id_for_label }}');
+    var ppm = document.getElementById('{{ form.price_per_month.id_for_label }}');
+    var box = document.getElementById('tariff-preview');
+    var elL = document.getElementById('tp-lessons');
+    var elT = document.getElementById('tp-total');
+    var elP = document.getElementById('tp-perlesson');
+    if (!box) return;
+    function num(el) { return el ? (parseFloat(String(el.value).replace(/\s/g, '')) || 0) : 0; }
+    function fmt(n) { return Math.round(n).toLocaleString('ru-RU'); }
+    function upd() {
+        var lessons = num(lpw) * 4 * num(dm);
+        var total = num(ppm) * num(dm);
+        if (lessons > 0 && total > 0) {
+            box.hidden = false;
+            elL.textContent = lessons;
+            elT.textContent = fmt(total);
+            elP.textContent = fmt(total / lessons);
+        } else {
+            box.hidden = true;
+        }
+    }
+    [lpw, dm, ppm].forEach(function (el) {
+        if (el) { el.addEventListener('input', upd); el.addEventListener('change', upd); }
+    });
+    upd();
+})();
+</script>
 {% endblock %}

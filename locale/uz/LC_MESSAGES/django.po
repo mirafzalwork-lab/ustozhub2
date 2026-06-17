@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: UstozHub 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-17 18:05+0500\n"
+"POT-Creation-Date: 2026-06-17 18:14+0500\n"
 "Language-Team: Uzbek\n"
 "Language: uz\n"
 "MIME-Version: 1.0\n"
@@ -1081,7 +1081,7 @@ msgstr "Bepul sinov darsi"
 
 #: teachers/forms.py:346 teachers/forms.py:777 teachers/models.py:122
 #: templates/billing/homework_create.html:42
-#: templates/billing/tariff_form.html:72
+#: templates/billing/tariff_form.html:78
 msgid "Описание"
 msgstr "Tavsif"
 
@@ -2899,7 +2899,8 @@ msgstr "Sertifikatlar va video"
 
 #: teachers/registration_wizard.py:318
 msgid "Расскажите о себе. Эта информация будет видна ученикам."
-msgstr "O'zingiz haqingizda gapirib bering. Bu ma'lumot o'quvchilarga ko'rinadi."
+msgstr ""
+"O'zingiz haqingizda gapirib bering. Bu ma'lumot o'quvchilarga ko'rinadi."
 
 #: teachers/registration_wizard.py:319
 msgid "Создайте учетные данные для входа в систему."
@@ -2919,7 +2920,8 @@ msgstr "Qaysi fanlarni va qancha narxda o'qitasiz?"
 
 #: teachers/registration_wizard.py:323
 msgid "Загрузите сертификаты и короткое видео о себе (всё необязательно)."
-msgstr "Sertifikatlar va o'zingiz haqingizda qisqa video yuklang (hammasi ixtiyoriy)."
+msgstr ""
+"Sertifikatlar va o'zingiz haqingizda qisqa video yuklang (hammasi ixtiyoriy)."
 
 #: teachers/registration_wizard.py:410
 msgid "Регистрация завершена! Ваш профиль отправлен на модерацию."
@@ -3477,7 +3479,7 @@ msgid "Условия использования"
 msgstr "Foydalanish shartlari"
 
 #: templates/base.html:2261 templates/billing/homework_create.html:60
-#: templates/billing/tariff_form.html:90
+#: templates/billing/tariff_form.html:96
 #: templates/booking/book_teacher.html:309
 #: templates/booking/my_bookings.html:327
 #: templates/booking/my_bookings.html:376
@@ -3493,6 +3495,7 @@ msgstr "Bekor qilish"
 
 #: templates/base.html:2262 templates/billing/learning_requests.html:40
 #: templates/billing/learning_requests.html:43
+#: templates/billing/teacher_dashboard.html:229
 #: templates/booking/my_bookings.html:359
 msgid "Подтвердить"
 msgstr "Tasdiqlash"
@@ -3627,6 +3630,7 @@ msgstr "oy"
 #: templates/billing/subscription_pay.html:31
 #: templates/billing/subscription_pay.html:34
 #: templates/billing/subscription_pay.html:52
+#: templates/billing/tariff_form.html:73 templates/billing/tariff_form.html:74
 #: templates/billing/teacher_subscribers.html:94
 #: templates/billing/topup_request.html:136
 #: templates/billing/topup_request.html:173
@@ -3827,7 +3831,7 @@ msgid "Пересмотреть оценку"
 msgstr "Bahoni qayta ko'rish"
 
 #: templates/billing/homework_detail.html:136
-#: templates/billing/tariff_form.html:88
+#: templates/billing/tariff_form.html:94
 #: templates/booking/teacher_calendar.html:120
 #: templates/logic/_profile_edit_enhancements.html:216
 msgid "Сохранить"
@@ -3983,7 +3987,9 @@ msgstr "Progress"
 msgid ""
 "Ваши деньги за ещё не проведённые уроки. Хранятся под защитой и возвращаются "
 "при отмене."
-msgstr "Hali o'tilmagan darslar uchun pulingiz. Himoyada saqlanadi va bekor qilinganda qaytariladi."
+msgstr ""
+"Hali o'tilmagan darslar uchun pulingiz. Himoyada saqlanadi va bekor "
+"qilinganda qaytariladi."
 
 #: templates/billing/my_subscriptions.html:113
 msgid "Зарезервировано за будущие уроки"
@@ -4096,7 +4102,9 @@ msgstr "Bekor qilingan darslar"
 msgid ""
 "Итоговая сумма может быть чуть меньше, если урок начинался в ближайшие 24 "
 "часа."
-msgstr "Yakuniy summa biroz kamroq bo'lishi mumkin, agar dars keyingi 24 soat ichida boshlanadigan bo'lsa."
+msgstr ""
+"Yakuniy summa biroz kamroq bo'lishi mumkin, agar dars keyingi 24 soat ichida "
+"boshlanadigan bo'lsa."
 
 #: templates/billing/my_subscriptions.html:241
 msgid "срок оплаты истёк"
@@ -4530,15 +4538,27 @@ msgstr "1 oylik narx, so'm"
 msgid "Минимум 10 000 сум."
 msgstr "Kamida 10 000 so'm."
 
-#: templates/billing/tariff_form.html:78
+#: templates/billing/tariff_form.html:72
+msgid "Всего уроков за срок"
+msgstr "Muddat uchun jami darslar"
+
+#: templates/billing/tariff_form.html:73
+msgid "Итого к оплате за весь срок"
+msgstr "Butun muddat uchun jami to'lov"
+
+#: templates/billing/tariff_form.html:74
+msgid "цена за один урок"
+msgstr "bitta dars narxi"
+
+#: templates/billing/tariff_form.html:84
 msgid "Помечать как «Рекомендованный»"
 msgstr "«Tavsiya etilgan» deb belgilash"
 
-#: templates/billing/tariff_form.html:83
+#: templates/billing/tariff_form.html:89
 msgid "Активный (доступен для покупки)"
 msgstr "Faol (sotib olish mumkin)"
 
-#: templates/billing/tariff_form.html:88 templates/billing/tariffs_list.html:47
+#: templates/billing/tariff_form.html:94 templates/billing/tariffs_list.html:47
 #: templates/billing/tariffs_list.html:91
 msgid "Создать тариф"
 msgstr "Tarif yaratish"
@@ -4683,7 +4703,9 @@ msgstr "Yaratish"
 msgid ""
 "Цена за разовый урок и пробный задаются в профиле (раздел «Предметы»), "
 "абонементы — в «Тарифах»."
-msgstr "Bitta dars va sinov darsi narxi profilda («Fanlar» bo'limida), abonementlar — «Tariflar»da belgilanadi."
+msgstr ""
+"Bitta dars va sinov darsi narxi profilda («Fanlar» bo'limida), abonementlar "
+"— «Tariflar»da belgilanadi."
 
 #: templates/billing/teacher_dashboard.html:141
 msgid "На балансе"
@@ -4731,7 +4753,9 @@ msgstr "Oy"
 msgid ""
 "Деньги за проведённые уроки, которые платформа удерживает до окончания "
 "периода проверки. Затем они переходят на ваш баланс."
-msgstr "O'tilgan darslar uchun pul — platforma uni tekshiruv tugaguncha ushlab turadi. So'ng balansingizga o'tadi."
+msgstr ""
+"O'tilgan darslar uchun pul — platforma uni tekshiruv tugaguncha ushlab "
+"turadi. So'ng balansingizga o'tadi."
 
 #: templates/billing/teacher_dashboard.html:175
 msgid "В эскроу"
@@ -4754,7 +4778,10 @@ msgid ""
 "За неявку ученика урок засчитывается (деньги остаются у вас). За вашу неявку "
 "оплата возвращается ученику. Несколько неявок подряд могут ограничить показ "
 "профиля."
-msgstr "O'quvchi kelmasa, dars hisoblanadi (pul sizda qoladi). Siz kelmasangiz, to'lov o'quvchiga qaytariladi. Ketma-ket bir nechta kelmaslik profil ko'rsatilishini cheklashi mumkin."
+msgstr ""
+"O'quvchi kelmasa, dars hisoblanadi (pul sizda qoladi). Siz kelmasangiz, "
+"to'lov o'quvchiga qaytariladi. Ketma-ket bir nechta kelmaslik profil "
+"ko'rsatilishini cheklashi mumkin."
 
 #: templates/billing/teacher_dashboard.html:195
 msgid "Расписание на сегодня"
@@ -4768,10 +4795,10 @@ msgstr "Bugun darslar yo'q"
 msgid "Требуют подтверждения"
 msgstr "Tasdiqlash kerak"
 
-#: templates/billing/teacher_dashboard.html:229
-#: templates/email/notification.html:29
-msgid "Открыть"
-msgstr "Ochish"
+#: templates/billing/teacher_dashboard.html:227
+#: templates/booking/book_teacher.html:229
+msgid "пробный"
+msgstr "sinov"
 
 #: templates/billing/teacher_dashboard.html:237
 msgid "ДЗ ожидают проверки"
@@ -4944,7 +4971,9 @@ msgstr ""
 msgid ""
 "Оплатите картой онлайн (мгновенное зачисление) или переводом на карту с "
 "подтверждением в Telegram."
-msgstr "Karta orqali onlayn to'lang (darhol hisoblanadi) yoki Telegram'da tasdiqlash bilan kartaga o'tkazing."
+msgstr ""
+"Karta orqali onlayn to'lang (darhol hisoblanadi) yoki Telegram'da tasdiqlash "
+"bilan kartaga o'tkazing."
 
 #: templates/billing/topup_request.html:125
 msgid "Текущий баланс"
@@ -5069,7 +5098,10 @@ msgid ""
 "При переводе на карту вручную зачисление в течение <b>%(hours)s ч</b> в "
 "рабочее время (9:00–22:00). Оплата картой онлайн зачисляется мгновенно. Вы "
 "получите уведомление в системе и Telegram."
-msgstr "Kartaga qo'lda o'tkazishda hisoblash ish vaqtida (9:00–22:00) <b>%(hours)s soat</b> ichida amalga oshadi. Karta orqali onlayn to'lov darhol hisoblanadi. Tizimda va Telegram'da bildirishnoma olasiz."
+msgstr ""
+"Kartaga qo'lda o'tkazishda hisoblash ish vaqtida (9:00–22:00) <b>%(hours)s "
+"soat</b> ichida amalga oshadi. Karta orqali onlayn to'lov darhol "
+"hisoblanadi. Tizimda va Telegram'da bildirishnoma olasiz."
 
 #: templates/billing/topup_request.html:295
 msgid "Скопировано"
@@ -5103,7 +5135,9 @@ msgstr "To'lov qayta ishlanmoqda"
 msgid ""
 "Если оплата прошла, средства появятся на балансе в течение нескольких минут. "
 "Статус обновляется автоматически."
-msgstr "Agar to'lov o'tgan bo'lsa, mablag' bir necha daqiqada balansda paydo bo'ladi. Holat avtomatik yangilanadi."
+msgstr ""
+"Agar to'lov o'tgan bo'lsa, mablag' bir necha daqiqada balansda paydo "
+"bo'ladi. Holat avtomatik yangilanadi."
 
 #: templates/billing/topup_return.html:61
 msgid "Продолжить"
@@ -5252,10 +5286,6 @@ msgstr "— tanlang —"
 #: templates/booking/book_teacher.html:229
 msgid "пробный бесплатно"
 msgstr "sinov bepul"
-
-#: templates/booking/book_teacher.html:229
-msgid "пробный"
-msgstr "sinov"
 
 #: templates/booking/book_teacher.html:242
 msgid "Это пробный урок"
@@ -6084,6 +6114,10 @@ msgstr "bloklangan"
 #: templates/booking/teacher_calendar.html:271
 msgid "Нет слотов в этом периоде."
 msgstr "Bu davrda slotlar yo'q."
+
+#: templates/email/notification.html:29
+msgid "Открыть"
+msgstr "Ochish"
 
 #: templates/email/notification.html:38
 msgid ""
@@ -8102,7 +8136,9 @@ msgstr "Vaqt tanlash"
 msgid ""
 "Сейчас нет свободных окон. Ниже — обычные часы занятий; загляните позже или "
 "напишите учителю."
-msgstr "Hozircha bo'sh vaqt yo'q. Quyida — odatdagi dars soatlari; keyinroq qarang yoki o'qituvchiga yozing."
+msgstr ""
+"Hozircha bo'sh vaqt yo'q. Quyida — odatdagi dars soatlari; keyinroq qarang "
+"yoki o'qituvchiga yozing."
 
 #: templates/logic/teacher_detail.html:2438
 #: templates/registration/step3_education.html:7
@@ -8573,13 +8609,17 @@ msgstr "qoralama saqlandi"
 msgid ""
 "Мы восстановили ваш черновик. <strong>Фото профиля</strong> в целях "
 "безопасности не сохраняется — при желании загрузите его заново."
-msgstr "Qoralamangiz tiklandi. <strong>Profil rasmi</strong> xavfsizlik uchun saqlanmaydi — istasangiz qaytadan yuklang."
+msgstr ""
+"Qoralamangiz tiklandi. <strong>Profil rasmi</strong> xavfsizlik uchun "
+"saqlanmaydi — istasangiz qaytadan yuklang."
 
 #: templates/registration/base_wizard.html:68
 msgid ""
 "В целях безопасности <strong>пароль</strong> не сохраняется в черновике — "
 "введите его заново."
-msgstr "Xavfsizlik uchun <strong>parol</strong> qoralamada saqlanmaydi — uni qaytadan kiriting."
+msgstr ""
+"Xavfsizlik uchun <strong>parol</strong> qoralamada saqlanmaydi — uni "
+"qaytadan kiriting."
 
 #: templates/registration/base_wizard.html:127
 msgid "Завершить регистрацию"
@@ -8589,7 +8629,9 @@ msgstr "Ro'yxatdan o'tishni yakunlash"
 msgid ""
 "Поля, отмеченные звёздочкой (*), обязательны. Остальные можно заполнить "
 "позже."
-msgstr "Yulduzcha (*) bilan belgilangan maydonlar majburiy. Qolganlarini keyinroq to'ldirish mumkin."
+msgstr ""
+"Yulduzcha (*) bilan belgilangan maydonlar majburiy. Qolganlarini keyinroq "
+"to'ldirish mumkin."
 
 #: templates/registration/base_wizard.html:167
 msgid "Пожалуйста, выберите файл JPG, JPEG или PNG"

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: UstozHub 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-17 18:05+0500\n"
+"POT-Creation-Date: 2026-06-17 18:14+0500\n"
 "Language-Team: English\n"
 "Language: en\n"
 "MIME-Version: 1.0\n"
@@ -1078,7 +1078,7 @@ msgstr "Free Trial Lesson"
 
 #: teachers/forms.py:346 teachers/forms.py:777 teachers/models.py:122
 #: templates/billing/homework_create.html:42
-#: templates/billing/tariff_form.html:72
+#: templates/billing/tariff_form.html:78
 msgid "Описание"
 msgstr "Description"
 
@@ -2910,7 +2910,8 @@ msgstr "Which subjects do you teach and at what price?"
 
 #: teachers/registration_wizard.py:323
 msgid "Загрузите сертификаты и короткое видео о себе (всё необязательно)."
-msgstr "Upload certificates and a short intro video about yourself (all optional)."
+msgstr ""
+"Upload certificates and a short intro video about yourself (all optional)."
 
 #: teachers/registration_wizard.py:410
 msgid "Регистрация завершена! Ваш профиль отправлен на модерацию."
@@ -3465,7 +3466,7 @@ msgid "Условия использования"
 msgstr "Terms of Use"
 
 #: templates/base.html:2261 templates/billing/homework_create.html:60
-#: templates/billing/tariff_form.html:90
+#: templates/billing/tariff_form.html:96
 #: templates/booking/book_teacher.html:309
 #: templates/booking/my_bookings.html:327
 #: templates/booking/my_bookings.html:376
@@ -3481,6 +3482,7 @@ msgstr "Cancel"
 
 #: templates/base.html:2262 templates/billing/learning_requests.html:40
 #: templates/billing/learning_requests.html:43
+#: templates/billing/teacher_dashboard.html:229
 #: templates/booking/my_bookings.html:359
 msgid "Подтвердить"
 msgstr "Confirm"
@@ -3615,6 +3617,7 @@ msgstr "mo"
 #: templates/billing/subscription_pay.html:31
 #: templates/billing/subscription_pay.html:34
 #: templates/billing/subscription_pay.html:52
+#: templates/billing/tariff_form.html:73 templates/billing/tariff_form.html:74
 #: templates/billing/teacher_subscribers.html:94
 #: templates/billing/topup_request.html:136
 #: templates/billing/topup_request.html:173
@@ -3816,7 +3819,7 @@ msgid "Пересмотреть оценку"
 msgstr "Revise grade"
 
 #: templates/billing/homework_detail.html:136
-#: templates/billing/tariff_form.html:88
+#: templates/billing/tariff_form.html:94
 #: templates/booking/teacher_calendar.html:120
 #: templates/logic/_profile_edit_enhancements.html:216
 msgid "Сохранить"
@@ -3968,7 +3971,9 @@ msgstr "Progress"
 msgid ""
 "Ваши деньги за ещё не проведённые уроки. Хранятся под защитой и возвращаются "
 "при отмене."
-msgstr "Your money for lessons not yet held. Kept protected and refunded on cancellation."
+msgstr ""
+"Your money for lessons not yet held. Kept protected and refunded on "
+"cancellation."
 
 #: templates/billing/my_subscriptions.html:113
 msgid "Зарезервировано за будущие уроки"
@@ -4082,7 +4087,9 @@ msgstr "Lessons cancelled"
 msgid ""
 "Итоговая сумма может быть чуть меньше, если урок начинался в ближайшие 24 "
 "часа."
-msgstr "The final amount may be slightly lower if a lesson was due to start within the next 24 hours."
+msgstr ""
+"The final amount may be slightly lower if a lesson was due to start within "
+"the next 24 hours."
 
 #: templates/billing/my_subscriptions.html:241
 msgid "срок оплаты истёк"
@@ -4512,15 +4519,27 @@ msgstr "Price per month (UZS)"
 msgid "Минимум 10 000 сум."
 msgstr "Minimum 10,000 UZS."
 
-#: templates/billing/tariff_form.html:78
+#: templates/billing/tariff_form.html:72
+msgid "Всего уроков за срок"
+msgstr "Total lessons for the term"
+
+#: templates/billing/tariff_form.html:73
+msgid "Итого к оплате за весь срок"
+msgstr "Total to pay for the whole term"
+
+#: templates/billing/tariff_form.html:74
+msgid "цена за один урок"
+msgstr "price per lesson"
+
+#: templates/billing/tariff_form.html:84
 msgid "Помечать как «Рекомендованный»"
 msgstr "Mark as «Recommended»"
 
-#: templates/billing/tariff_form.html:83
+#: templates/billing/tariff_form.html:89
 msgid "Активный (доступен для покупки)"
 msgstr "Active (available for purchase)"
 
-#: templates/billing/tariff_form.html:88 templates/billing/tariffs_list.html:47
+#: templates/billing/tariff_form.html:94 templates/billing/tariffs_list.html:47
 #: templates/billing/tariffs_list.html:91
 msgid "Создать тариф"
 msgstr "Create plan"
@@ -4662,7 +4681,9 @@ msgstr "Create"
 msgid ""
 "Цена за разовый урок и пробный задаются в профиле (раздел «Предметы»), "
 "абонементы — в «Тарифах»."
-msgstr "Single-lesson and trial prices are set in your profile (the “Subjects” section); subscriptions — in “Tariffs”."
+msgstr ""
+"Single-lesson and trial prices are set in your profile (the “Subjects” "
+"section); subscriptions — in “Tariffs”."
 
 #: templates/billing/teacher_dashboard.html:141
 msgid "На балансе"
@@ -4710,7 +4731,9 @@ msgstr "Month"
 msgid ""
 "Деньги за проведённые уроки, которые платформа удерживает до окончания "
 "периода проверки. Затем они переходят на ваш баланс."
-msgstr "Money for completed lessons that the platform holds until the review period ends. Then it moves to your balance."
+msgstr ""
+"Money for completed lessons that the platform holds until the review period "
+"ends. Then it moves to your balance."
 
 #: templates/billing/teacher_dashboard.html:175
 msgid "В эскроу"
@@ -4733,7 +4756,10 @@ msgid ""
 "За неявку ученика урок засчитывается (деньги остаются у вас). За вашу неявку "
 "оплата возвращается ученику. Несколько неявок подряд могут ограничить показ "
 "профиля."
-msgstr "If a student doesn't show up, the lesson counts (you keep the money). If you don't show up, the payment is refunded to the student. Several no-shows in a row may limit your profile's visibility."
+msgstr ""
+"If a student doesn't show up, the lesson counts (you keep the money). If you "
+"don't show up, the payment is refunded to the student. Several no-shows in a "
+"row may limit your profile's visibility."
 
 #: templates/billing/teacher_dashboard.html:195
 msgid "Расписание на сегодня"
@@ -4747,10 +4773,10 @@ msgstr "No lessons today"
 msgid "Требуют подтверждения"
 msgstr "Need confirmation"
 
-#: templates/billing/teacher_dashboard.html:229
-#: templates/email/notification.html:29
-msgid "Открыть"
-msgstr "Open"
+#: templates/billing/teacher_dashboard.html:227
+#: templates/booking/book_teacher.html:229
+msgid "пробный"
+msgstr "trial"
 
 #: templates/billing/teacher_dashboard.html:237
 msgid "ДЗ ожидают проверки"
@@ -4922,7 +4948,9 @@ msgstr "Create plans so students can buy a subscription from you."
 msgid ""
 "Оплатите картой онлайн (мгновенное зачисление) или переводом на карту с "
 "подтверждением в Telegram."
-msgstr "Pay online by card (instant) or by card transfer with confirmation in Telegram."
+msgstr ""
+"Pay online by card (instant) or by card transfer with confirmation in "
+"Telegram."
 
 #: templates/billing/topup_request.html:125
 msgid "Текущий баланс"
@@ -5047,7 +5075,10 @@ msgid ""
 "При переводе на карту вручную зачисление в течение <b>%(hours)s ч</b> в "
 "рабочее время (9:00–22:00). Оплата картой онлайн зачисляется мгновенно. Вы "
 "получите уведомление в системе и Telegram."
-msgstr "For manual card transfers, crediting takes up to <b>%(hours)s h</b> during working hours (9:00–22:00). Online card payments are credited instantly. You'll get a notification in the system and Telegram."
+msgstr ""
+"For manual card transfers, crediting takes up to <b>%(hours)s h</b> during "
+"working hours (9:00–22:00). Online card payments are credited instantly. "
+"You'll get a notification in the system and Telegram."
 
 #: templates/billing/topup_request.html:295
 msgid "Скопировано"
@@ -5081,7 +5112,9 @@ msgstr "Payment is processing"
 msgid ""
 "Если оплата прошла, средства появятся на балансе в течение нескольких минут. "
 "Статус обновляется автоматически."
-msgstr "If the payment went through, funds will appear on your balance within a few minutes. The status updates automatically."
+msgstr ""
+"If the payment went through, funds will appear on your balance within a few "
+"minutes. The status updates automatically."
 
 #: templates/billing/topup_return.html:61
 msgid "Продолжить"
@@ -5229,10 +5262,6 @@ msgstr "— select —"
 #: templates/booking/book_teacher.html:229
 msgid "пробный бесплатно"
 msgstr "trial free"
-
-#: templates/booking/book_teacher.html:229
-msgid "пробный"
-msgstr "trial"
 
 #: templates/booking/book_teacher.html:242
 msgid "Это пробный урок"
@@ -6058,6 +6087,10 @@ msgstr "blocked"
 #: templates/booking/teacher_calendar.html:271
 msgid "Нет слотов в этом периоде."
 msgstr "No slots in this period."
+
+#: templates/email/notification.html:29
+msgid "Открыть"
+msgstr "Open"
 
 #: templates/email/notification.html:38
 msgid ""
@@ -8050,7 +8083,9 @@ msgstr "Choose time"
 msgid ""
 "Сейчас нет свободных окон. Ниже — обычные часы занятий; загляните позже или "
 "напишите учителю."
-msgstr "No free slots right now. Below are the usual lesson hours; check back later or message the teacher."
+msgstr ""
+"No free slots right now. Below are the usual lesson hours; check back later "
+"or message the teacher."
 
 #: templates/logic/teacher_detail.html:2438
 #: templates/registration/step3_education.html:7
@@ -8518,13 +8553,17 @@ msgstr "draft saved"
 msgid ""
 "Мы восстановили ваш черновик. <strong>Фото профиля</strong> в целях "
 "безопасности не сохраняется — при желании загрузите его заново."
-msgstr "We restored your draft. The <strong>profile photo</strong> isn't saved for security — upload it again if you like."
+msgstr ""
+"We restored your draft. The <strong>profile photo</strong> isn't saved for "
+"security — upload it again if you like."
 
 #: templates/registration/base_wizard.html:68
 msgid ""
 "В целях безопасности <strong>пароль</strong> не сохраняется в черновике — "
 "введите его заново."
-msgstr "For security, the <strong>password</strong> isn't saved in the draft — please enter it again."
+msgstr ""
+"For security, the <strong>password</strong> isn't saved in the draft — "
+"please enter it again."
 
 #: templates/registration/base_wizard.html:127
 msgid "Завершить регистрацию"
@@ -8534,7 +8573,9 @@ msgstr "Finish registration"
 msgid ""
 "Поля, отмеченные звёздочкой (*), обязательны. Остальные можно заполнить "
 "позже."
-msgstr "Fields marked with an asterisk (*) are required. The rest can be filled in later."
+msgstr ""
+"Fields marked with an asterisk (*) are required. The rest can be filled in "
+"later."
 
 #: templates/registration/base_wizard.html:167
 msgid "Пожалуйста, выберите файл JPG, JPEG или PNG"
