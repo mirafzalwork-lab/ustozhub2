@@ -675,7 +675,7 @@
 
     .description-text {
         display: block;
-        white-space: pre-wrap;
+        white-space: pre-line;
     }
 
     .show-more-btn {
@@ -2226,9 +2226,7 @@
                             {% endif %}
 
                             <div class="teacher-description" data-description-wrap>
-                                <span class="description-text" id="desc-{{ teacher.id }}" data-full-text="{{ teacher.bio|default:'Нет описания' }}">
-                                    {{ teacher.bio|default:"Нет описания"|truncatechars:150 }}
-                                </span>
+                                <span class="description-text" id="desc-{{ teacher.id }}" data-full-text="{{ teacher.bio|default:'Нет описания' }}">{{ teacher.bio|default:"Нет описания"|truncatechars:150 }}</span>
                                 {% if teacher.bio|length > 150 %}
                                     <button type="button" class="show-more-btn" data-toggle-description data-teacher-id="{{ teacher.id }}" aria-expanded="false">
                                         <i class="fas fa-chevron-down"></i> {% trans 'Показать больше' %}
