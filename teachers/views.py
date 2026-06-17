@@ -1073,6 +1073,16 @@ def detail(request, id):
         # Предмет для кнопки «Продолжить обучение» (ещё не подписан по нему).
         continue_subject_id = next(iter(completed_trial_subject_ids), None)
 
+    # Ближайшее реально свободное окно (а не шаблон недели) — чтобы ученик ещё
+    # на профиле видел доступность до перехода на страницу бронирования.
+    next_free_slot = (
+        teacher.time_slots
+        .filter(status='free', start_at__gte=timezone.now())
+        .order_by('start_at')
+        .values_list('start_at', flat=True)
+        .first()
+    )
+
     context = {
         'teacher': teacher,
         'reviews': reviews,
@@ -1080,6 +1090,7 @@ def detail(request, id):
         'rating_distribution': rating_distribution,
         'is_favorite': is_favorite,
         'similar_teachers': similar_teachers,
+        'next_free_slot': next_free_slot,
         'can_view_contacts': can_view_contacts,
         'show_auth_prompt': show_auth_prompt,
         'active_tariffs': active_tariffs,

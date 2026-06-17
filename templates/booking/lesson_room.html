@@ -272,6 +272,26 @@
                 <i class="fa-regular fa-clock"></i>
                 <h2>{% trans "Комната ещё закрыта" %}</h2>
                 <p>{% blocktrans %}Вы сможете войти за {{ join_lead }} минут до начала урока{% endblocktrans %} — {{ open_from|date:"d.m.Y H:i" }}.</p>
+                <p id="lrCountdown" data-open-at="{{ open_from|date:'c' }}"
+                   style="font-size:22px;font-weight:700;color:#1E3A8A;font-variant-numeric:tabular-nums;margin-top:6px;"></p>
+                <script>
+                (function () {
+                    var el = document.getElementById('lrCountdown');
+                    if (!el) return;
+                    var openAt = new Date(el.getAttribute('data-open-at')).getTime();
+                    var LABEL = "{% filter escapejs %}{% trans 'До открытия' %}{% endfilter %}";
+                    var p = function (n) { return String(n).padStart(2, '0'); };
+                    function tick() {
+                        var left = openAt - Date.now();
+                        if (left <= 0) { location.reload(); return; }   // окно открылось — входим
+                        if (left > 86400000) { el.textContent = ''; return; }  // >24ч: хватит абсолютной даты выше
+                        var s = Math.floor(left / 1000);
+                        el.textContent = LABEL + ': ' + p(Math.floor(s / 3600)) + ':' + p(Math.floor(s % 3600 / 60)) + ':' + p(s % 60);
+                    }
+                    tick();
+                    setInterval(tick, 1000);
+                })();
+                </script>
             {% elif state == 'too_late' %}
                 <i class="fa-regular fa-circle-check"></i>
                 <h2>{% trans "Урок завершён" %}</h2>

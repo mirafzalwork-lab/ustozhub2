@@ -553,6 +553,9 @@ JITSI_ROOM_PREFIX = os.environ.get('JITSI_ROOM_PREFIX', 'UstozHub')
 # За сколько минут до начала открывается комната и активируется кнопка
 # «Присоединиться к уроку» (ТЗ §1 — 10 минут).
 LESSON_JOIN_LEAD_MINUTES = int(os.environ.get('LESSON_JOIN_LEAD_MINUTES', '10'))
+# Сколько минут после конца урока комната ещё доступна (на случай обрыва связи).
+# Единый источник: и серверная проверка (lesson_room/attendance), и кнопка в UI.
+LESSON_JOIN_GRACE_MINUTES = int(os.environ.get('LESSON_JOIN_GRACE_MINUTES', '30'))
 # Через сколько минут после начала урока ученик может САМ отметить неявку
 # преподавателя (если тот объективно не подключался к нашей видеокомнате) и
 # сразу получить возврат — не дожидаясь Celery settle_after_end (end_at+30).

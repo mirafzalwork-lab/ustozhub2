@@ -2252,7 +2252,7 @@
                                     <button class="contact-btn" onclick="handleMessageClick({{ teacher.user.id }})">
                                         <i class="fas fa-comment"></i> {% trans 'Написать' %}
                                     </button>
-                                    <a class="book-btn" href="{% url 'teacher_detail' teacher.id %}">
+                                    <a class="book-btn" href="{% url 'book_teacher_page' teacher.id %}">
                                         {% trans 'Забронировать' %}
                                     </a>
                                 </div>

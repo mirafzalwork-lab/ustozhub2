@@ -62,6 +62,10 @@
     const $cdSec = document.getElementById('book-countdown-sec');
     const $cdFill = document.getElementById('book-countdown-fill');
     const $countdown = document.getElementById('book-countdown');
+    const $cdLabel = document.getElementById('book-countdown-label');
+    const $cdTime = document.getElementById('book-countdown-time');
+    const $cdUntil = document.getElementById('book-countdown-until');
+    const $cdBar = document.getElementById('book-countdown-bar');
     const $confirmedWhen = document.getElementById('book-confirmed-when');
     const $confirmedReply = document.getElementById('book-confirmed-reply');
     const $confirmedMeeting = document.getElementById('book-confirmed-meeting');
@@ -261,9 +265,33 @@
     }
 
     function tickCountdown() {
-        if (!watcherDeadline || !$cdMin || !$cdSec) return;
+        if (!watcherDeadline || !$countdown) return;
         const remainingMs = Math.max(watcherDeadline - Date.now(), 0);
         const totalSec = Math.floor(remainingMs / 1000);
+
+        // Дальняя бронь (>90 мин до дедлайна): тикающий ММ:СС бессмысленен —
+        // показываем абсолютный дедлайн «подтвердит до DD.MM HH:MM».
+        if (totalSec > 90 * 60) {
+            if ($cdLabel && $countdown.dataset.labelUntil) $cdLabel.textContent = $countdown.dataset.labelUntil;
+            if ($cdTime) $cdTime.hidden = true;
+            if ($cdBar) $cdBar.hidden = true;
+            if ($cdUntil) {
+                $cdUntil.hidden = false;
+                const loc = document.documentElement.lang || undefined;
+                $cdUntil.textContent = new Date(watcherDeadline).toLocaleString(loc, {
+                    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+                });
+            }
+            $countdown.classList.remove('is-urgent');
+            return;
+        }
+
+        // Ближняя бронь: обычный тикающий таймер ММ:СС.
+        if ($cdLabel && $countdown.dataset.labelSoon) $cdLabel.textContent = $countdown.dataset.labelSoon;
+        if ($cdTime) $cdTime.hidden = false;
+        if ($cdBar) $cdBar.hidden = false;
+        if ($cdUntil) $cdUntil.hidden = true;
+        if (!$cdMin || !$cdSec) return;
         const m = Math.floor(totalSec / 60);
         const s = totalSec % 60;
         $cdMin.textContent = String(m).padStart(2, '0');
@@ -272,11 +300,9 @@
             const pct = Math.max((remainingMs / watcherTotalMs) * 100, 0);
             $cdFill.style.width = pct + '%';
         }
-        if ($countdown) {
-            // Урон → красный когда осталось <2 мин (или <20% времени)
-            const urgent = totalSec <= 120 || (watcherTotalMs && remainingMs / watcherTotalMs < 0.2);
-            $countdown.classList.toggle('is-urgent', urgent);
-        }
+        // Срочно → красный когда осталось <2 мин (или <20% времени)
+        const urgent = totalSec <= 120 || (watcherTotalMs && remainingMs / watcherTotalMs < 0.2);
+        $countdown.classList.toggle('is-urgent', urgent);
         if (remainingMs <= 0) {
             // Локальный таймер закончился — показываем expired (сервер уже сам освободит слот)
             handleExpired();

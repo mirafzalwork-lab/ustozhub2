@@ -1207,7 +1207,7 @@ def my_bookings_page(request):
         # Окно активности кнопки «Войти в урок» — должно совпадать с серверным
         # окном в lesson_room/lesson_attendance_api (−lead … +grace).
         'join_lead_minutes': getattr(settings, 'LESSON_JOIN_LEAD_MINUTES', 10),
-        'join_grace_minutes': 30,
+        'join_grace_minutes': getattr(settings, 'LESSON_JOIN_GRACE_MINUTES', 30),
     })
 
 
@@ -1343,8 +1343,9 @@ def lesson_room(request, booking_id):
 
     now = timezone.now()
     lead = getattr(settings, 'LESSON_JOIN_LEAD_MINUTES', 10)
+    grace = getattr(settings, 'LESSON_JOIN_GRACE_MINUTES', 30)
     open_from = booking.slot.start_at - timedelta(minutes=lead)
-    open_until = booking.slot.end_at + timedelta(minutes=30)
+    open_until = booking.slot.end_at + timedelta(minutes=grace)
 
     state = 'ok'
     if booking.status != 'confirmed':
@@ -1422,10 +1423,11 @@ def lesson_attendance_api(request, booking_id):
     from datetime import timedelta
     now = timezone.now()
     lead = getattr(settings, 'LESSON_JOIN_LEAD_MINUTES', 10)
+    grace = getattr(settings, 'LESSON_JOIN_GRACE_MINUTES', 30)
     if booking.status != 'confirmed':
         return _json_error('Урок не подтверждён', status=409)
     if not (booking.slot.start_at - timedelta(minutes=lead) <= now
-            <= booking.slot.end_at + timedelta(minutes=30)):
+            <= booking.slot.end_at + timedelta(minutes=grace)):
         return _json_error('Вне окна урока', status=409)
 
     event = (request.POST.get('event') or '').strip()

@@ -114,6 +114,9 @@
         font-size: 30px; font-weight: 700; color: #1E3A8A;
         font-variant-numeric: tabular-nums; line-height: 1; margin-bottom: 10px;
     }
+    .book-countdown__until {
+        font-size: 22px; font-weight: 700; color: #1E3A8A; line-height: 1.2; margin-bottom: 10px;
+    }
     .book-countdown__bar {
         height: 4px; background: #DBEAFE; border-radius: 4px; overflow: hidden;
     }
@@ -256,12 +259,15 @@
                     <h4>{% trans "Заявка отправлена!" %}</h4>
                     <p class="book-success__lead" id="book-success-when">—</p>
 
-                    <div class="book-countdown" id="book-countdown">
-                        <div class="book-countdown__label">{% trans 'Учитель ответит через' %}</div>
-                        <div class="book-countdown__time">
+                    <div class="book-countdown" id="book-countdown"
+                         data-label-soon="{% trans 'Учитель ответит через' %}"
+                         data-label-until="{% trans 'Учитель подтвердит до' %}">
+                        <div class="book-countdown__label" id="book-countdown-label">{% trans 'Учитель ответит через' %}</div>
+                        <div class="book-countdown__time" id="book-countdown-time">
                             <span id="book-countdown-min">--</span>:<span id="book-countdown-sec">--</span>
                         </div>
-                        <div class="book-countdown__bar"><div class="book-countdown__fill" id="book-countdown-fill"></div></div>
+                        <div class="book-countdown__until" id="book-countdown-until" hidden>—</div>
+                        <div class="book-countdown__bar" id="book-countdown-bar"><div class="book-countdown__fill" id="book-countdown-fill"></div></div>
                     </div>
 
                     <p class="book-success__note">

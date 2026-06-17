@@ -201,6 +201,11 @@
         animation: bk-pulse 2s ease-in-out infinite;
     }
     .bk-btn.join:hover { filter: brightness(1.05); }
+    .bk-btn.join.is-disabled {
+        background: #eef2f7; color: #64748b; cursor: default;
+        animation: none; font-weight: 600;
+    }
+    .bk-btn.join.is-disabled:hover { filter: none; }
     @keyframes bk-pulse {
         0%,100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, .35); }
         50% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
@@ -360,6 +365,8 @@ window.UstozMyBookings = {
         rejectReason: "{% filter escapejs %}{% trans 'Причина отклонения (необязательно):' %}{% endfilter %}",
         confirmCancel: "{% filter escapejs %}{% trans 'Отменить это бронирование?' %}{% endfilter %}",
         joinLesson: "{% filter escapejs %}{% trans 'Войти в урок' %}{% endfilter %}",
+        opensSoon: "{% filter escapejs %}{% trans 'Кнопка входа появится за %(n)s мин до начала' %}{% endfilter %}",
+        opensIn: "{% filter escapejs %}{% trans 'Войти можно будет' %}{% endfilter %}",
         setLink: "{% filter escapejs %}{% trans 'Добавить ссылку' %}{% endfilter %}",
         editLink: "{% filter escapejs %}{% trans 'Изменить ссылку' %}{% endfilter %}",
         askMeetingUrl: "{% filter escapejs %}{% trans 'Ссылка на встречу (Meet/Zoom). Оставьте пустым — создадим видео-комнату автоматически:' %}{% endfilter %}",

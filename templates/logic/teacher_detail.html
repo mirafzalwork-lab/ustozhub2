@@ -2378,6 +2378,23 @@
                     <i class="fas fa-calendar-day"></i>
                     {% trans 'Расписание по дням' %}
                 </h2>
+                <style>
+                    .next-slot-banner { display:flex; align-items:center; flex-wrap:wrap; gap:10px; padding:12px 16px; border-radius:12px; font-size:14px; font-weight:600; margin-bottom:16px; }
+                    .next-slot-banner.has-slot { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
+                    .next-slot-banner.no-slot { background:#f8fafc; color:#475569; border:1px solid #e2e8f0; font-weight:500; }
+                    .next-slot-banner .next-slot-cta { margin-left:auto; background:#10B981; color:#fff; text-decoration:none; padding:7px 16px; border-radius:8px; font-size:13px; white-space:nowrap; }
+                    .next-slot-banner .next-slot-cta:hover { background:#059669; }
+                </style>
+                <div class="next-slot-banner {% if next_free_slot %}has-slot{% else %}no-slot{% endif %}">
+                    {% if next_free_slot %}
+                        <i class="fas fa-circle-check"></i>
+                        <span>{% trans 'Ближайшее свободное время' %}: <strong>{{ next_free_slot|date:"d.m, H:i" }}</strong></span>
+                        <a href="{% url 'book_teacher_page' teacher.id %}" class="next-slot-cta">{% trans 'Выбрать время' %}</a>
+                    {% else %}
+                        <i class="fas fa-circle-info"></i>
+                        <span>{% trans 'Сейчас нет свободных окон. Ниже — обычные часы занятий; загляните позже или напишите учителю.' %}</span>
+                    {% endif %}
+                </div>
                 <div class="schedule-grid">
                     {% for day_label, intervals in teacher.get_schedule_display_short %}
                         {% if intervals %}
