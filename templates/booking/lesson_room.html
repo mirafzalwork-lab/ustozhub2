@@ -332,9 +332,23 @@
     const txtReconnecting = "{% filter escapejs %}{% trans 'Связь прервалась — восстанавливаем подключение…' %}{% endfilter %}";
     const txtGiveUp = "{% filter escapejs %}{% trans 'Не удаётся восстановить соединение. Проверьте интернет и обновите страницу.' %}{% endfilter %}";
 
-    // ---- Лёгкое логирование критических событий (для диагностики) ----
+    // ---- Логирование критических событий (консоль + редкий beacon) ----
+    const diagUrl = "{% url 'lesson_diag_api' booking.id %}";
     function rtLog(event, detail) {
         try { console.info('[lesson-room]', event, (detail != null ? detail : '')); } catch (e) {}
+    }
+    // diag() — для НЕЧАСТЫХ критических событий: пишет в консоль и шлёт beacon на
+    // сервер (fire-and-forget) для разбора инцидентов. НЕ вызывать на частых
+    // событиях (resync и т.п.), чтобы не создавать лишних запросов.
+    function diag(event, detail) {
+        rtLog(event, detail);
+        try {
+            const data = new FormData();
+            data.append('event', String(event).slice(0, 40));
+            if (detail != null) data.append('detail', String(detail).slice(0, 200));
+            data.append('csrfmiddlewaretoken', csrf);
+            navigator.sendBeacon(diagUrl, data);
+        } catch (e) { /* не критично */ }
     }
 
     // ================== Шина реального времени (event-driven) ==================
@@ -356,6 +370,7 @@
             } catch (e) { /* канала нет — синхронизируемся при ресинке */ }
         },
         log: rtLog,
+        diag: diag,
     };
     function dispatchRT(type, payload, sender) {
         (rtHandlers[type] || []).forEach(function (fn) {
@@ -373,6 +388,7 @@
                 '{% filter escapejs %}{% trans "Не удалось загрузить видео-модуль. Проверьте интернет и попробуйте переподключиться." %}{% endfilter %}</div>';
         }
         if (reloadBox) reloadBox.style.display = 'block';
+        diag('load_error', domain);
     }
 
     // ---- Таймер: сколько осталось до конца урока ----
@@ -490,7 +506,7 @@
         try {
             if (e && e.error && e.error.isFatal) {
                 // Фатально — чиним автоматически переподключением на месте.
-                rtLog('fatal_error', (e.error.name || e.error.type || ''));
+                diag('fatal_error', (e.error.name || e.error.type || ''));
                 reconnect('fatal:' + (e.error.name || e.error.type || ''));
             } else if (e && e.error) {
                 // Не фатально: мягкая плашка только для сетевых ошибок.
@@ -539,7 +555,7 @@
             } catch (err) { /* не наше сообщение — игнорируем */ }
         });
         // Диагностика устройств: «мёртвый» микрофон (enableNoAudioDetection на сервере).
-        api.addEventListener('noAudioInput', function () { showHealth('mic', txtMicDead); rtLog('no_audio_input'); });
+        api.addEventListener('noAudioInput', function () { showHealth('mic', txtMicDead); diag('no_audio_input'); });
         api.addEventListener('audioMuteStatusChanged', function (e) {
             if (e && e.muted === false && healthCategory === 'mic') hideHealth();
         });
@@ -559,7 +575,7 @@
     function reconnect(reason) {
         if (reconnecting) return;
         if (attempts >= MAX_ATTEMPTS) {
-            rtLog('reconnect_giveup', reason);
+            diag('reconnect_giveup', reason);
             showHealth('conn', txtGiveUp);
             if (reloadBox) reloadBox.style.display = 'block';
             return;
@@ -567,7 +583,7 @@
         reconnecting = true;
         attempts++;
         connState = 'recovering';
-        rtLog('reconnect', reason + ' #' + attempts);
+        diag('reconnect', reason + ' #' + attempts);
         showHealth('conn', txtReconnecting);
         reportLeave();
         teardownJitsi();
@@ -582,9 +598,9 @@
     if (healthDismiss) healthDismiss.addEventListener('click', hideHealth);
 
     // ---- Сетевые события браузера: мгновенная реакция на обрыв/возврат сети ----
-    window.addEventListener('offline', function () { rtLog('net_offline'); showHealth('conn', txtOffline); });
+    window.addEventListener('offline', function () { diag('net_offline'); showHealth('conn', txtOffline); });
     window.addEventListener('online', function () {
-        rtLog('net_online');
+        diag('net_online');
         if (connState !== 'live') { attempts = 0; reconnect('back-online'); }
         else { if (healthCategory === 'conn') hideHealth(); fireReady('online'); }
     });
@@ -686,6 +702,43 @@
         uploadLabel.classList.toggle('is-busy', busy);
         uploadText.textContent = busy ? i18n.uploading : i18n.upload;
     }
+    function setUploadProgress(frac) {
+        if (!uploadText) return;
+        const pct = Math.max(0, Math.min(100, Math.round(frac * 100)));
+        uploadText.textContent = i18n.uploading + ' ' + pct + '%';
+    }
+
+    // Прямой PUT в хранилище через XHR: даёт прогресс и авто-ретрай на сетевых
+    // сбоях/5xx (3 попытки, backoff). 4xx не ретраим — это ошибка запроса.
+    function putWithRetry(url, file, onProgress) {
+        const MAX = 3;
+        function once(n) {
+            return new Promise(function (resolve, reject) {
+                const xhr = new XMLHttpRequest();
+                xhr.open('PUT', url, true);
+                xhr.setRequestHeader('Content-Type', file.type);
+                xhr.timeout = 180000;
+                if (xhr.upload && onProgress) {
+                    xhr.upload.onprogress = function (e) {
+                        if (e.lengthComputable) onProgress(e.loaded / e.total);
+                    };
+                }
+                const retryOrFail = function (err) {
+                    if (n < MAX) setTimeout(function () { once(n + 1).then(resolve, reject); }, 700 * n);
+                    else reject(err);
+                };
+                xhr.onload = function () {
+                    if (xhr.status >= 200 && xhr.status < 300) resolve();
+                    else if (xhr.status >= 500) retryOrFail(new Error('http_' + xhr.status));
+                    else reject(new Error('http_' + xhr.status));
+                };
+                xhr.onerror = function () { retryOrFail(new Error('network')); };
+                xhr.ontimeout = function () { retryOrFail(new Error('timeout')); };
+                xhr.send(file);
+            });
+        }
+        return once(1);
+    }
 
     async function upload(file) {
         showError('');
@@ -705,13 +758,15 @@
             const presData = await pres.json();
             if (!pres.ok) { showError(presData.error || i18n.failed); return; }
 
-            // 2) прямой PUT в хранилище
-            const put = await fetch(presData.upload_url, {
-                method: 'PUT',
-                headers: { 'Content-Type': file.type },
-                body: file,
-            });
-            if (!put.ok) { showError(i18n.failed); return; }
+            // 2) прямой PUT в хранилище — прогресс + авто-ретрай
+            try {
+                await putWithRetry(presData.upload_url, file, setUploadProgress);
+            } catch (e) {
+                if (window.lessonRT) window.lessonRT.diag('upload_failed', (e && e.message) || 'put');
+                showError(i18n.failed);
+                return;
+            }
+            setUploadProgress(1);
 
             // 3) сохраняем метаданные
             const save = await fetch(urls.save, {
@@ -731,6 +786,7 @@
             // Мгновенно оповещаем второго участника по data-каналу (без сервера).
             if (window.lessonRT) window.lessonRT.send('file_changed');
         } catch (e) {
+            if (window.lessonRT) window.lessonRT.diag('upload_failed', (e && e.message) || 'flow');
             showError(i18n.failed);
         } finally {
             setBusy(false);

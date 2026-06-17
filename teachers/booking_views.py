@@ -1443,6 +1443,49 @@ def lesson_attendance_api(request, booking_id):
     return JsonResponse({'ok': True})
 
 
+# Логгер диагностики комнаты урока. Пишем в обычный лог (greppable по booking_id),
+# без отдельной таблицы/миграции — это телеметрия связи, а не аудит-журнал денег.
+_diag_logger = logging.getLogger('lesson.diag')
+
+# Белый список технических событий клиента (защита от мусора/инъекций в лог).
+_DIAG_EVENTS = {
+    'reconnect', 'reconnect_giveup', 'fatal_error', 'no_audio_input',
+    'net_offline', 'net_online', 'upload_failed', 'load_error',
+}
+
+
+@authenticated_required
+@require_http_methods(['POST'])
+def lesson_diag_api(request, booking_id):
+    """Диагностика комнаты урока: редкие критические события связи/устройств.
+
+    Через navigator.sendBeacon, только на нечастые события (переподключение,
+    фатальная ошибка, мёртвый микрофон, провал загрузки файла). Нагрузки не
+    создаёт; пишет в лог 'lesson.diag' для разбора инцидентов по booking_id.
+    Body (form): event=<whitelisted>, detail=<str, опц.>.
+    """
+    booking = get_object_or_404(
+        Booking.objects.select_related('slot__teacher'), pk=booking_id,
+    )
+    user = request.user
+    tp = getattr(user, 'teacher_profile', None)
+    is_teacher = bool(tp and booking.slot.teacher_id == tp.pk)
+    is_student = (booking.student_id == user.pk)
+    if not (is_teacher or is_student):
+        return _json_error('Доступ запрещён', status=403)
+
+    event = (request.POST.get('event') or '').strip()[:40]
+    if event not in _DIAG_EVENTS:
+        # Тихо игнорируем неизвестные коды — beacon не должен шуметь ошибками.
+        return JsonResponse({'ok': True})
+    detail = (request.POST.get('detail') or '').strip()[:200]
+    _diag_logger.info(
+        'booking=%s role=%s event=%s detail=%s',
+        booking.pk, ('teacher' if is_teacher else 'student'), event, detail,
+    )
+    return JsonResponse({'ok': True})
+
+
 @authenticated_required
 def leave_review(request, booking_id):
     """

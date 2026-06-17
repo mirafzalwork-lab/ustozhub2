@@ -190,14 +190,18 @@
     function renderActions(b) {
         const buttons = [];
 
-        if (b.status === 'confirmed' && b.meeting_url) {
+        if (b.status === 'confirmed' && (b.lesson_room_url || b.meeting_url)) {
             if (isJoinable(b)) {
-                const href = (b.meeting_is_jitsi && b.lesson_room_url) ? b.lesson_room_url : b.meeting_url;
+                // Всегда ведём в комнату урока (как на дашборде): там файлы, доска и
+                // учёт присутствия. Сервер (lesson_room) сам решит — встроить наш
+                // Jitsi или редиректнуть на внешнюю ссылку (Zoom и т.п.).
+                const href = b.lesson_room_url || b.meeting_url;
                 buttons.push(`<a class="bk-btn join" href="${href}" target="_blank" rel="noopener">
                     <i class="fa-solid fa-video"></i> ${i18n.joinLesson}
                 </a>`);
             } else if (!isPast(b)) {
-                // Урок ещё не скоро — показываем неактивную подсказку, когда откроется вход.
+                // Урок ещё не скоро — показываем неактивную подсказку, когда откроется вход,
+                // чтобы пользователь не искал «как зайти».
                 const lead = cfg.joinLeadMinutes || 10;
                 const hint = (i18n.opensSoon || 'Вход откроется за %(n)s мин до начала').replace('%(n)s', lead);
                 buttons.push(`<span class="bk-btn join is-disabled" title="${escapeHtml(hint)}" aria-disabled="true">

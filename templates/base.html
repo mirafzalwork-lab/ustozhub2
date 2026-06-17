@@ -5,6 +5,8 @@
 <html lang="{{ LANGUAGE_CODE }}">
 <head>
     <meta charset="UTF-8">
+    {% comment %} Без JS reveal-элементы должны быть сразу видимы {% endcomment %}
+    <noscript><style>.reveal{opacity:1 !important;transform:none !important;}</style></noscript>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="{% block meta_description %}UstozHub — платформа №1 в Узбекистане для поиска квалифицированных репетиторов. Онлайн-уроки, проверенные преподаватели, удобное бронирование.{% endblock %}">
     <title>{% block title %}UstozHub — найти репетитора в Узбекистане{% endblock %}</title>
@@ -222,6 +224,9 @@
             /* Типографика */
             --font-base: 'Inter', sans-serif;
             --font-heading: 'Inter', sans-serif;
+
+            /* Полупрозрачный фон навбара при скролле (glassmorphism) */
+            --navbar-blur-bg: rgba(255, 255, 255, 0.72);
         }
 
         * {
@@ -259,6 +264,10 @@
 
         .navbar.scrolled {
             box-shadow: var(--shadow-lg);
+            background: var(--navbar-blur-bg);
+            -webkit-backdrop-filter: saturate(180%) blur(14px);
+            backdrop-filter: saturate(180%) blur(14px);
+            border-bottom: 1px solid var(--border-light);
         }
 
         .nav-container {
@@ -390,6 +399,50 @@
         .nav-btn-outline:hover {
             border-color: var(--primary-color);
             color: var(--primary-color);
+        }
+
+        /* ========== СКЕЛЕТОНЫ ЗАГРУЗКИ ========== */
+        .skeleton {
+            position: relative;
+            overflow: hidden;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+        }
+        .skeleton::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            transform: translateX(-100%);
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.45),
+                transparent
+            );
+            animation: skeleton-shimmer 1.4s infinite;
+        }
+        .skeleton-text { height: 12px; margin: 6px 0; }
+        .skeleton-title { height: 18px; width: 60%; margin: 8px 0; }
+        .skeleton-avatar { width: 48px; height: 48px; border-radius: 50%; }
+        @keyframes skeleton-shimmer {
+            100% { transform: translateX(100%); }
+        }
+
+        /* ========== ПОЯВЛЕНИЕ КОНТЕНТА ПРИ СКРОЛЛЕ ========== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(18px);
+            transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+                        transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity, transform;
+        }
+        .reveal.is-visible {
+            opacity: 1;
+            transform: none;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .reveal { opacity: 1; transform: none; transition: none; }
+            .skeleton::after { animation: none; }
         }
 
         /* Messages Icon Button - Always Visible */
@@ -1703,6 +1756,33 @@
 
     <!-- JavaScript -->
     <script>
+        // Появление элементов .reveal при попадании в зону видимости
+        (function () {
+            var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            function activateReveal() {
+                var nodes = document.querySelectorAll('.reveal');
+                if (!nodes.length) return;
+                if (reduced || !('IntersectionObserver' in window)) {
+                    nodes.forEach(function (n) { n.classList.add('is-visible'); });
+                    return;
+                }
+                var io = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry) {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('is-visible');
+                            io.unobserve(entry.target);
+                        }
+                    });
+                }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+                nodes.forEach(function (n) { io.observe(n); });
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', activateReveal);
+            } else {
+                activateReveal();
+            }
+        })();
+
         // Navbar scroll behavior
         let lastScrollTop = 0;
         const navbar = document.getElementById('navbar');

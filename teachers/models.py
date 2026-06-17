@@ -2914,10 +2914,21 @@ class Booking(models.Model):
 
     def is_jitsi_meeting(self):
         """True, если meeting_url ведёт на наш Jitsi (встраиваем в комнату).
-        Кастомные внешние ссылки (Zoom и т.п.) открываем напрямую."""
+        Кастомные внешние ссылки (Zoom и т.п.) открываем напрямую.
+
+        Распознаём по имени комнаты, а не только по текущему JITSI_BASE_URL:
+        после переезда Jitsi на новый домен старые авто-ссылки (например
+        meet.jit.si/UstozHub-<uuid>) всё равно остаются нашими — комната
+        встраивается уже на актуальном домене. Внешние Zoom/Meet-ссылки имени
+        комнаты не содержат, поэтому ведут напрямую."""
         from django.conf import settings
+        if not self.meeting_url:
+            return False
         base = (getattr(settings, 'JITSI_BASE_URL', '') or '').rstrip('/')
-        return bool(self.meeting_url) and bool(base) and self.meeting_url.startswith(base)
+        if base and self.meeting_url.startswith(base):
+            return True
+        # Авто-комната этой брони, размещённая на прежнем Jitsi-домене.
+        return self.meeting_url.rstrip('/').endswith('/' + self.jitsi_room_name())
 
     def confirm(self, teacher_reply=''):
         """Учитель подтверждает: status→confirmed, slot→booked, hold снимается.
