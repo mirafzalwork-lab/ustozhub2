@@ -109,7 +109,9 @@
                 <div class="progress-bar"><div class="fill" style="width: {{ s.progress_percent }}%;"></div></div>
               </div>
               <div class="meta" style="margin-top: 12px;">
-                <i class="fas fa-wallet"></i> {% trans 'В эскроу' %}: <b>{{ s.escrow_balance|floatformat:0|intcomma }} {% trans 'сум' %}</b><br>
+                <i class="fas fa-shield-halved" title="{% trans 'Ваши деньги за ещё не проведённые уроки. Хранятся под защитой и возвращаются при отмене.' %}"></i>
+                {% trans 'Зарезервировано за будущие уроки' %}: <b>{{ s.escrow_balance|floatformat:0|intcomma }} {% trans 'сум' %}</b>
+                <small style="color:#94A3B8;">({% trans 'вернётся при отмене' %})</small><br>
                 <i class="fas fa-money-bill"></i> {% trans 'Выплачено учителю' %}: <b>{{ s.teacher_earned_so_far|floatformat:0|intcomma }} {% trans 'сум' %}</b>
                 <small style="color:#94A3B8;">({{ s.lessons_paid_out }} {% trans 'уроков' %})</small>
               </div>
@@ -216,7 +218,8 @@
           var remaining = b.dataset.remaining;
           form.action = b.dataset.cancelUrl;
           summary.innerHTML = '<b>{% filter escapejs %}{% trans "Возврат на баланс" %}{% endfilter %}:</b> ~' + escrow + ' {% filter escapejs %}{% trans "сум" %}{% endfilter %}<br>' +
-                              '<b>{% filter escapejs %}{% trans "Отменено уроков" %}{% endfilter %}:</b> ' + remaining;
+                              '<b>{% filter escapejs %}{% trans "Отменено уроков" %}{% endfilter %}:</b> ' + remaining +
+                              '<br><small style="color:#94A3B8;">{% filter escapejs %}{% trans "Итоговая сумма может быть чуть меньше, если урок начинался в ближайшие 24 часа." %}{% endfilter %}</small>';
           modal.hidden = false;
         });
       });

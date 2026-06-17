@@ -38,10 +38,22 @@
     <h1>{% trans 'Оплата не прошла' %}</h1>
     <p>{% trans 'Платёж был отклонён или отменён. Попробуйте ещё раз.' %}</p>
   {% else %}
-    <div class="pay-icon wait"><i class="fas fa-hourglass-half"></i></div>
+    <div class="pay-icon wait"><i class="fas fa-hourglass-half fa-spin"></i></div>
     <h1>{% trans 'Платёж обрабатывается' %}</h1>
-    <p>{% trans 'Если оплата прошла, средства появятся на балансе в течение нескольких минут. Можно обновить страницу.' %}</p>
+    <p>{% trans 'Если оплата прошла, средства появятся на балансе в течение нескольких минут. Статус обновляется автоматически.' %}</p>
     {% if wallet %}<div class="pay-balance">{{ wallet.balance|floatformat:0|intcomma }} {{ wallet.currency|default:'UZS' }}</div>{% endif %}
+    <script>
+    (function () {
+        // Авто-обновление статуса (callback Multicard асинхронный): перезагружаем
+        // страницу каждые 7 с, но не более ~2.5 мин, чтобы не крутить вечно.
+        var k = 'topupPollN';
+        var n = parseInt(sessionStorage.getItem(k) || '0', 10);
+        if (n < 20) {
+            sessionStorage.setItem(k, n + 1);
+            setTimeout(function () { location.reload(); }, 7000);
+        }
+    })();
+    </script>
   {% endif %}
 
   <div class="pay-actions">

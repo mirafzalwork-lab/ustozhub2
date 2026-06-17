@@ -179,6 +179,7 @@ def wallet_topup_request(request):
         'next_url': next_url,
         'multicard_enabled': getattr(settings, 'MULTICARD_ENABLED', False),
         'min_topup': getattr(settings, 'MULTICARD_MIN_TOPUP', 1000),
+        'max_topup': getattr(settings, 'MULTICARD_MAX_TOPUP', None),
         'topup_configured': bool(getattr(settings, 'TOPUP_CARD_NUMBER', '')),
         'card_number': getattr(settings, 'TOPUP_CARD_NUMBER', ''),
         'card_holder': getattr(settings, 'TOPUP_CARD_HOLDER', ''),
@@ -1704,7 +1705,25 @@ def teacher_dashboard(request):
         .order_by('-created_at')[:5]
     )
 
+    # Чеклист готовности профиля к приёму учеников: предмет(+цена), свободные
+    # слоты, тариф. Пока не выполнено — учитель «видим, но не бронируем».
+    readiness = {
+        'subjects': teacher.teachersubject_set.exists(),
+        'slots': teacher.time_slots.filter(status='free', start_at__gte=now).exists(),
+        'tariff': teacher.tariffs.filter(is_active=True).exists(),
+    }
+    readiness['done'] = all(readiness.values())
+
+    # Неявки — прозрачность «почему за урок не пришли деньги».
+    noshow_student = Booking.objects.filter(
+        slot__teacher=teacher, status='no_show_student').count()
+    noshow_teacher = Booking.objects.filter(
+        slot__teacher=teacher, status='no_show_teacher').count()
+
     return render(request, 'billing/teacher_dashboard.html', {
+        'readiness': readiness,
+        'noshow_student': noshow_student,
+        'noshow_teacher': noshow_teacher,
         'teacher': teacher,
         'wallet': wallet,
         'today_lessons': today_lessons,

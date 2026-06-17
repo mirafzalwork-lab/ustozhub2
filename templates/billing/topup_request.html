@@ -117,7 +117,7 @@
 <div class="topup-page">
   <div class="topup-header">
     <h1><i class="fas fa-credit-card"></i> {% trans 'Пополнить кошелёк' %}</h1>
-    <p class="subtitle">{% trans 'Перевод на карту с подтверждением в Telegram. Зачисление обычно в течение' %} {{ processing_hours }} {% trans 'часов в рабочее время.' %}</p>
+    <p class="subtitle">{% trans 'Оплатите картой онлайн (мгновенное зачисление) или переводом на карту с подтверждением в Telegram.' %}</p>
   </div>
 
   <div class="balance-card">
@@ -168,6 +168,9 @@
                  placeholder="{{ min_topup }}"
                  style="width:100%; border:none; outline:none; background:transparent; font-size:18px; font-weight:600; color:#0A2540; font-variant-numeric:tabular-nums;">
         </div>
+      </div>
+      <div style="font-size:12px; color:#94A3B8; margin:6px 2px 0;">
+        {% trans 'Сумма' %}: {% trans 'от' %} {{ min_topup|intcomma }}{% if max_topup %} {% trans 'до' %} {{ max_topup|intcomma }}{% endif %} {% trans 'сум' %}
       </div>
       <button type="submit" class="tg-btn" style="background:linear-gradient(135deg,#059669,#10B981); box-shadow:0 4px 14px rgba(5,150,105,.28);">
         <i class="fas fa-credit-card"></i>
@@ -259,12 +262,14 @@
   </div>
   {% endif %}
 
+  {% if topup_configured %}
   <div class="eta-strip">
     <i class="fas fa-clock"></i>
     <div>
-      {% blocktrans with hours=processing_hours %}Зачисление в течение <b>{{ hours }} ч</b> в рабочее время (9:00–22:00). Вы получите уведомление в системе и Telegram.{% endblocktrans %}
+      {% blocktrans with hours=processing_hours %}При переводе на карту вручную зачисление в течение <b>{{ hours }} ч</b> в рабочее время (9:00–22:00). Оплата картой онлайн зачисляется мгновенно. Вы получите уведомление в системе и Telegram.{% endblocktrans %}
     </div>
   </div>
+  {% endif %}
 
   {% if next_url %}
     <a href="{{ next_url }}" class="back-link">← {% trans 'Назад' %}</a>
