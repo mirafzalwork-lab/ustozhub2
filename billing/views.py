@@ -1239,6 +1239,14 @@ def teacher_homework_create(request):
                         homework=hw, file=f, filename=f.name,
                         file_size=f.size, mime_type=getattr(f, 'content_type', '') or '',
                     )
+                from django.urls import reverse
+                SubscriptionService._notify(
+                    sub.student,
+                    _('Новое домашнее задание'),
+                    _('Учитель задал вам ДЗ: «%(t)s».') % {'t': hw.title},
+                    url=reverse('homework_detail', args=[hw.id]),
+                    category='general',
+                )
                 messages.success(request, _('Задание «%(title)s» назначено ученику.') % {'title': hw.title})
                 return redirect('teacher_homework_list')
     else:
@@ -1331,6 +1339,15 @@ def _handle_student_submit(request, homework, submission):
             )
         homework.status = Homework.Status.SUBMITTED
         homework.save(update_fields=['status', 'updated_at'])
+        from django.urls import reverse
+        SubscriptionService._notify(
+            homework.teacher.user,
+            _('Ученик сдал ДЗ'),
+            _('%(name)s отправил(а) работу «%(t)s» на проверку.') % {
+                'name': request.user.get_full_name() or request.user.username, 't': homework.title},
+            url=reverse('homework_detail', args=[homework.id]),
+            category='general',
+        )
         messages.success(request, _('Работа отправлена учителю.'))
     return redirect('homework_detail', hw_id=homework.id)
 
@@ -1357,12 +1374,19 @@ def _handle_teacher_grade(request, homework, submission):
     # Анти-обход контактов: комментарий оценки — приватный канал учитель→ученик.
     from teachers.contact_filter import mask_for_pair
     feedback, _w = mask_for_pair(homework.student, homework.teacher, feedback)
+    from django.urls import reverse
+    _hw_url = reverse('homework_detail', args=[homework.id])
     if decision == HomeworkGradeForm.DECISION_RETURN:
         homework.status = Homework.Status.RETURNED
         homework.save(update_fields=['status', 'updated_at'])
         submission.feedback = feedback
         submission.grade = None
         submission.save(update_fields=['feedback', 'grade', 'updated_at'])
+        SubscriptionService._notify(
+            homework.student, _('ДЗ возвращено на доработку'),
+            feedback or _('Учитель вернул задание «%(t)s» на доработку.') % {'t': homework.title},
+            url=_hw_url, category='general',
+        )
         messages.success(request, _('Работа возвращена ученику на доработку.'))
     else:
         from django.utils import timezone
@@ -1372,6 +1396,11 @@ def _handle_teacher_grade(request, homework, submission):
         submission.save(update_fields=['grade', 'feedback', 'graded_at', 'updated_at'])
         homework.status = Homework.Status.GRADED
         homework.save(update_fields=['status', 'updated_at'])
+        SubscriptionService._notify(
+            homework.student, _('ДЗ проверено'),
+            _('Задание «%(t)s» проверено. Оценка: %(g)s.') % {'t': homework.title, 'g': submission.grade},
+            url=_hw_url, category='general',
+        )
         messages.success(request, _('Оценка %(grade)s проставлена.') % {'grade': submission.grade})
     return redirect('homework_detail', hw_id=homework.id)
 

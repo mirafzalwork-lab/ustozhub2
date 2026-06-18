@@ -196,7 +196,9 @@
                 // учёт присутствия. Сервер (lesson_room) сам решит — встроить наш
                 // Jitsi или редиректнуть на внешнюю ссылку (Zoom и т.п.).
                 const href = b.lesson_room_url || b.meeting_url;
-                buttons.push(`<a class="bk-btn join" href="${href}" target="_blank" rel="noopener">
+                // Тот же таб: урок (наша комната) не отрывается от контекста,
+                // не плодятся вкладки. Внешнюю ссылку комната откроет сама.
+                buttons.push(`<a class="bk-btn join" href="${href}">
                     <i class="fa-solid fa-video"></i> ${i18n.joinLesson}
                 </a>`);
             } else if (!isPast(b)) {

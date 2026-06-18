@@ -192,6 +192,23 @@
                 <span id="lr-presence-text">{% blocktrans %}Ожидаем {{ other_name }}…{% endblocktrans %}</span>
             </span>
         </div>
+        <div class="lr-hint" id="lrHint" style="display:none; align-items:flex-start; gap:10px; margin-bottom:10px; padding:11px 14px; background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px; font-size:13px; color:#1E3A8A;">
+            <i class="fa-solid fa-circle-info" style="margin-top:2px;"></i>
+            <span style="flex:1;">{% trans 'Нажмите «Присоединиться» и разрешите доступ к камере и микрофону. Материалы урока — ниже под видео; доска, демонстрация экрана и чат — в нижней панели видеоокна.' %}</span>
+            <button type="button" id="lrHintClose" aria-label="{% trans 'Скрыть' %}" style="border:0; background:transparent; color:#1E3A8A; font-size:18px; line-height:1; cursor:pointer;">×</button>
+        </div>
+        <script>
+        (function () {
+            var h = document.getElementById('lrHint'); if (!h) return;
+            try { if (localStorage.getItem('lrHintDismissed') !== '1') h.style.display = 'flex'; }
+            catch (e) { h.style.display = 'flex'; }
+            var b = document.getElementById('lrHintClose');
+            if (b) b.addEventListener('click', function () {
+                h.style.display = 'none';
+                try { localStorage.setItem('lrHintDismissed', '1'); } catch (e) {}
+            });
+        })();
+        </script>
         <div id="jitsi-container"></div>
         <div id="lr-health" role="alert">
             <span class="lr-health-msg">
