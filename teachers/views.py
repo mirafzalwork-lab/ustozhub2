@@ -2348,7 +2348,7 @@ def subjects_autocomplete(request):
             teachers_count = subject.get_teachers_count()
             results.append({
                 'id': subject.id,
-                'name': subject.name,
+                'name': subject.get_display_name(),
                 'description': subject.description[:100] if subject.description else '',
                 'category': subject.category.name if subject.category else 'Без категории',
                 'category_color': subject.category.color if subject.category else '#999999',

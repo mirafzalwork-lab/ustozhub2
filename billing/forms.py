@@ -67,6 +67,8 @@ class TariffForm(forms.ModelForm):
             self.fields['subject'].queryset = Subject.objects.filter(
                 pk__in=allowed_subject_ids
             )
+            # Локализованное имя предмета в выпадающем списке
+            self.fields['subject'].label_from_instance = lambda obj: obj.get_display_name()
 
     def clean_price_per_month(self):
         price = self.cleaned_data.get('price_per_month')

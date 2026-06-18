@@ -2342,8 +2342,8 @@
                             </span>
                         {% endif %}
                     {% endif %}
-                        <h3 style="margin: 4px 0 4px; font-size: 17px; color: #0A2540;">{{ t.name|default:t.subject.name }}</h3>
-                        <div style="color: #64748B; font-size: 13px; margin-bottom: 14px;">{{ t.subject.name }}</div>
+                        <h3 style="margin: 4px 0 4px; font-size: 17px; color: #0A2540;">{{ t.name|default:t.subject.get_display_name }}</h3>
+                        <div style="color: #64748B; font-size: 13px; margin-bottom: 14px;">{{ t.subject.get_display_name }}</div>
                         <div style="font-size: 24px; font-weight: 700; color: #0A2540;">
                             {{ t.total_price|floatformat:0|intcomma }} <span style="font-size:13px; color:#64748B; font-weight:400;">сум{% if t.duration_months != 1 %} / {{ t.duration_months }} мес.{% endif %}</span>
                         </div>
@@ -2516,7 +2516,7 @@
                                     <div class="reviewer-details">
                                         <div class="reviewer-name">{{ review.student.get_full_name|default:review.student.username }}</div>
                                         <div class="review-meta">
-                                            {{ review.created_at|date:"d.m.Y" }} • {{ review.subject.name|default:_('Общий отзыв') }}
+                                            {{ review.created_at|date:"d.m.Y" }} • {{ review.subject.get_display_name|default:_('Общий отзыв') }}
                                         </div>
                                     </div>
                                 </div>

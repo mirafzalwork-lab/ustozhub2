@@ -2358,7 +2358,7 @@
                     <blockquote class="review-text">{{ r.comment|truncatechars:160 }}</blockquote>
                     <figcaption class="review-author">
                         <span class="review-author-name">{{ r.student.get_full_name|default:r.student.username }}</span>
-                        {% if r.subject %}<span class="review-subject">· {{ r.subject.name }}</span>{% endif %}
+                        {% if r.subject %}<span class="review-subject">· {{ r.subject.get_display_name }}</span>{% endif %}
                     </figcaption>
                 </figure>
                 {% endfor %}

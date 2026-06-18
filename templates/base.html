@@ -300,6 +300,39 @@
             position: relative;
         }
 
+        /* Автоподсказки поиска */
+        .nav-suggest {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid var(--border-color, #e2e8f0);
+            border-radius: 12px;
+            box-shadow: 0 12px 30px rgba(10,37,64,0.14);
+            overflow: hidden;
+            z-index: 1200;
+            max-height: 360px;
+            overflow-y: auto;
+        }
+        .nav-suggest-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            cursor: pointer;
+            text-decoration: none;
+            color: var(--text-primary, #0f172a);
+            font-size: 14px;
+        }
+        .nav-suggest-item:hover, .nav-suggest-item.is-active {
+            background: #f1f5f9;
+        }
+        .nav-suggest-item i { color: #3B82F6; width: 18px; text-align: center; }
+        .nav-suggest-item .ns-name { flex: 1; font-weight: 500; }
+        .nav-suggest-item .ns-count { color: #94a3b8; font-size: 12px; white-space: nowrap; }
+        .nav-suggest-empty { padding: 12px 14px; color: #94a3b8; font-size: 13px; }
+
         .search-input {
             width: 100%;
             padding: 10px 45px 10px var(--spacing-md);
@@ -1336,12 +1369,15 @@
             </a>
 
             <!-- Search Bar (Desktop) — доступен на всех страницах, не только на главной -->
-            <form class="nav-search" role="search" action="{% url 'home' %}" method="get">
+            <form class="nav-search" role="search" action="{% url 'home' %}" method="get"
+                  data-suggest-url="{% url 'subjects_autocomplete' %}">
                 <input type="search" name="search" id="navSearchInput" class="search-input"
                        placeholder="{% trans 'Поиск преподавателей, предметов…' %}"
                        value="{{ request.GET.search|default:'' }}"
+                       autocomplete="off"
                        aria-label="{% trans 'Поиск преподавателей' %}">
                 <i class="fas fa-search search-icon" aria-hidden="true"></i>
+                <div class="nav-suggest" id="navSuggest" hidden></div>
             </form>
 
             <!-- Actions -->
@@ -2320,6 +2356,70 @@
             if (form.dataset.submitting === '1') { e.preventDefault(); return; }
             window.lockSubmit(form, e.submitter);
         }, false);
+    </script>
+
+    <script>
+    // ===== Автоподсказки поиска (предметы) =====
+    (function () {
+        var form = document.querySelector('.nav-search[data-suggest-url]');
+        if (!form) return;
+        var input = form.querySelector('#navSearchInput');
+        var box = form.querySelector('#navSuggest');
+        var url = form.getAttribute('data-suggest-url');
+        var homeAction = form.getAttribute('action');
+        var tCount = "{% filter escapejs %}{% trans 'учит.' %}{% endfilter %}";
+        var tEmpty = "{% filter escapejs %}{% trans 'Ничего не найдено' %}{% endfilter %}";
+        var timer = null, items = [], active = -1;
+
+        function hide() { box.hidden = true; box.innerHTML = ''; active = -1; }
+        function go(id) { window.location.href = homeAction + '?subject=' + id; }
+
+        function render(results) {
+            items = results || []; active = -1;
+            if (!items.length) {
+                box.innerHTML = '<div class="nav-suggest-empty"></div>';
+                box.firstChild.textContent = tEmpty; box.hidden = false; return;
+            }
+            box.innerHTML = '';
+            items.forEach(function (r, i) {
+                var a = document.createElement('a');
+                a.className = 'nav-suggest-item'; a.href = 'javascript:void(0)'; a.dataset.idx = i;
+                var ic = document.createElement('i'); ic.className = r.icon || 'fas fa-book';
+                var nm = document.createElement('span'); nm.className = 'ns-name'; nm.textContent = r.name;
+                var ct = document.createElement('span'); ct.className = 'ns-count'; ct.textContent = (r.teachers_count || 0) + ' ' + tCount;
+                a.appendChild(ic); a.appendChild(nm); a.appendChild(ct);
+                a.addEventListener('mousedown', function (e) { e.preventDefault(); go(r.id); });
+                box.appendChild(a);
+            });
+            box.hidden = false;
+        }
+
+        function fetchSuggest(q) {
+            fetch(url + '?q=' + encodeURIComponent(q), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function (r) { return r.json(); })
+                .then(function (d) { if (input.value.trim() === q) render(d.results || []); })
+                .catch(function () {});
+        }
+
+        input.addEventListener('input', function () {
+            var q = input.value.trim();
+            if (timer) clearTimeout(timer);
+            if (q.length < 2) { hide(); return; }
+            timer = setTimeout(function () { fetchSuggest(q); }, 200);
+        });
+        input.addEventListener('keydown', function (e) {
+            if (box.hidden) return;
+            var els = box.querySelectorAll('.nav-suggest-item');
+            if (!els.length) return;
+            if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(active + 1, els.length - 1); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(active - 1, 0); }
+            else if (e.key === 'Enter') { if (active >= 0 && items[active]) { e.preventDefault(); go(items[active].id); } return; }
+            else if (e.key === 'Escape') { hide(); return; }
+            else return;
+            els.forEach(function (el, i) { el.classList.toggle('is-active', i === active); });
+        });
+        document.addEventListener('click', function (e) { if (!form.contains(e.target)) hide(); });
+    })();
     </script>
 
     {% block extra_js %}{% endblock %}
