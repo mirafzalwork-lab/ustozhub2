@@ -1730,7 +1730,7 @@
                                 <h3 class="hero-name">{{ teacher.user.get_full_name|default:teacher.user.username }}</h3>
                                 <div class="hero-subjects">
                                     {% for ts in ts_list|slice:":3" %}
-                                        <span class="hero-subject-tag">{{ ts.subject.name }}</span>
+                                        <span class="hero-subject-tag">{{ ts.subject.get_display_name }}</span>
                                     {% endfor %}
                                 </div>
                                 {% if teacher.bio %}
@@ -1949,7 +1949,7 @@
                 {% for s in popular_subjects %}
                 <a class="subject-tile" href="?subject={{ s.id }}">
                     <span class="subject-tile-icon"><i class="fas fa-book-open"></i></span>
-                    <span class="subject-tile-name">{{ s.name }}</span>
+                    <span class="subject-tile-name">{{ s.get_display_name }}</span>
                     <span class="subject-tile-count">{{ s.n }} {% trans 'учит.' %}</span>
                 </a>
                 {% endfor %}
@@ -1985,7 +1985,7 @@
                         <option value="">{% trans 'Все предметы' %}</option>
                         {% for subject in subjects %}
                             <option value="{{ subject.id }}" {% if selected_subject == subject.id|stringformat:"s" %}selected{% endif %}>
-                                {{ subject.name }}
+                                {{ subject.get_display_name }}
                             </option>
                         {% endfor %}
                     </select>
@@ -2185,7 +2185,7 @@
                                             <i class="fas fa-book"></i> {% trans 'Предметы:' %}
                                         </span>
                                         {% for ts in teacher.teachersubject_set.all|slice:":3" %}
-                                            <span class="subject-tag">{{ ts.subject.name }}</span>
+                                            <span class="subject-tag">{{ ts.subject.get_display_name }}</span>
                                         {% endfor %}
                                         {% with subj_total=teacher.teachersubject_set.all|length %}
                                             {% if subj_total > 3 %}

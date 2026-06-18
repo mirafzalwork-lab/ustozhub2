@@ -155,6 +155,9 @@ class Subject(models.Model):
         verbose_name=_('Категория')
     )
     name = models.CharField(max_length=100, unique=True)
+    # Локализованные названия (опциональны). Пусто → fallback на name.
+    name_uz = models.CharField(max_length=100, blank=True, default='', verbose_name=_('Название (узбекский)'))
+    name_en = models.CharField(max_length=100, blank=True, default='', verbose_name=_('Название (английский)'))
     description = models.TextField(blank=True)
     icon = models.CharField(max_length=50, blank=True, help_text=_("CSS класс иконки"))
     is_active = models.BooleanField(default=True)
@@ -181,8 +184,20 @@ class Subject(models.Model):
     def __str__(self):
         return self.name
 
+    def get_display_name(self):
+        """Название на языке интерфейса с fallback на базовое name."""
+        from django.utils.translation import get_language
+        lang = (get_language() or 'ru')[:2]
+        if lang == 'uz' and self.name_uz:
+            return self.name_uz
+        if lang == 'en' and self.name_en:
+            return self.name_en
+        return self.name
+
     def save(self, *args, **kwargs):
-        self.search_text = normalize_search_text(self.name, self.description)
+        # search_text включает все языковые варианты — поиск работает на любом языке.
+        self.search_text = normalize_search_text(
+            self.name, self.name_uz, self.name_en, self.description)
         super().save(*args, **kwargs)
 
     def get_teachers_count(self):

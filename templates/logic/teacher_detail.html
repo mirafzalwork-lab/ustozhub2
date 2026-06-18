@@ -2282,7 +2282,7 @@
                                     <i class="fas fa-book-open"></i>
                                 </div>
                                 <div style="flex: 1; min-width: 0;">
-                                    <div class="subject-name">{{ ts.subject.name }}</div>
+                                    <div class="subject-name">{{ ts.subject.get_display_name }}</div>
                                     {% if ts.description %}
                                         <div class="subject-description">
                                             {{ ts.description|truncatewords:15 }}
@@ -2621,7 +2621,7 @@
                                 <i class="trial-emoji fas fa-gift" aria-hidden="true"></i>
                                 <span class="trial-text">
                                     <span class="trial-headline">{% trans 'Бесплатный пробный урок' %}</span>
-                                    <span class="trial-sub">{{ trial_ts.trial_duration_minutes|default:60 }} {% trans 'мин' %} · {{ trial_ts.subject.name }}</span>
+                                    <span class="trial-sub">{{ trial_ts.trial_duration_minutes|default:60 }} {% trans 'мин' %} · {{ trial_ts.subject.get_display_name }}</span>
                                 </span>
                             </a>
                             <a href="{% url 'book_teacher_page' teacher_id=teacher.id %}" class="btn-secondary-soft">
@@ -2634,7 +2634,7 @@
                                 <i class="trial-emoji fas fa-gem" aria-hidden="true"></i>
                                 <span class="trial-text">
                                     <span class="trial-headline">{% trans 'Пробный урок' %} — {{ trial_ts.trial_price|floatformat:0|intcomma }} {% trans 'сум' %}</span>
-                                    <span class="trial-sub">{{ trial_ts.trial_duration_minutes|default:60 }} {% trans 'мин' %} · {{ trial_ts.subject.name }}</span>
+                                    <span class="trial-sub">{{ trial_ts.trial_duration_minutes|default:60 }} {% trans 'мин' %} · {{ trial_ts.subject.get_display_name }}</span>
                                 </span>
                             </a>
                             <a href="{% url 'book_teacher_page' teacher_id=teacher.id %}" class="btn-secondary-soft">

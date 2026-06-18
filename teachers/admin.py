@@ -102,7 +102,8 @@ class SubjectAdminEnhanced(admin.ModelAdmin):
     
     fieldsets = (
         ('Основная информация', {
-            'fields': ('name', 'category', 'description')
+            'fields': ('name', 'name_uz', 'name_en', 'category', 'description'),
+            'description': 'name_uz / name_en — переводы названия (пусто = показывается name)'
         }),
         ('Настройки', {
             'fields': ('icon', 'is_popular', 'is_active'),

@@ -530,7 +530,7 @@ def home(request):
         )
 
     # Активные фильтры в виде чипсов (param — ключ GET для удаления)
-    _subj_names = {str(s.id): s.name for s in all_subjects}
+    _subj_names = {str(s.id): s.get_display_name() for s in all_subjects}
     _city_names = {str(c.id): c.name for c in all_cities}
     _format_names = {k: v for k, v in TeacherProfile.TEACHING_FORMATS}
     active_filters = []
