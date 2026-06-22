@@ -344,67 +344,33 @@ def _send_reminder_for_booking(booking, kind):
                 except Exception as e:
                     logger.warning(f'reminder email failed for {recipient_user.email}: {e}')
 
-            # In-app Notification (signal автоматически WS push на клиента)
+            # In-app Notification (signal автоматически делает WS push + email +
+            # Telegram через мост push_notification_realtime). action_url=room_url
+            # превращается в Telegram в кнопку «🎥 Войти в урок».
             try:
-                short = subject_line
-                full = f'{short}.\n\nУчитель: {teacher_user.get_full_name() or teacher_user.username}\n' \
+                subj_part = f' · {ctx["subject_name"]}' if ctx.get('subject_name') else ''
+                short = f'{subject_line} — {ctx["start_at"]}{subj_part}'
+                full = f'{subject_line}.\n\nУчитель: {teacher_user.get_full_name() or teacher_user.username}\n' \
                        f'Ученик: {student_user.get_full_name() or student_user.username}\n' \
-                       f'Когда: {ctx["start_at"]}'
+                       f'Когда: {ctx["start_at"]} ({slot.duration_minutes} мин)'
                 if room_url:
                     full += f'\n\nСсылка на урок: {room_url}'
                 Notification.objects.create(
                     title=subject_line,
-                    short_text=short,
+                    short_text=short[:300],
                     full_text=full,
                     target='specific_user',
                     target_user=recipient_user,
                     priority=8,
                     is_active=True,
                     category=Notification.Category.REMINDER,
+                    action_url=room_url or '',
                 )
                 channels_used.append(f'in_app:{role}')
             except Exception as e:
                 logger.warning(f'reminder in-app failed for {recipient_user.pk}: {e}')
 
-            # Telegram (если пользователь привязал аккаунт и не отключил уведомления)
-            try:
-                if _send_telegram_reminder(recipient_user, subject_line, ctx):
-                    channels_used.append(f'telegram:{role}')
-            except Exception as e:
-                logger.warning(f'reminder telegram failed for {recipient_user.pk}: {e}')
-
     return channels_used
-
-
-def _send_telegram_reminder(recipient_user, subject_line, ctx) -> bool:
-    """Шлёт напоминание в Telegram привязанному пользователю. Возвращает True при успехе.
-
-    Не зависит от настройки SMTP — нужен только запущенный бот и привязка.
-    """
-    from html import escape
-    from .models import TelegramUser
-    from .admin_telegram_service import admin_telegram_service
-
-    tg = TelegramUser.objects.filter(
-        user=recipient_user, started_bot=True, notifications_enabled=True,
-    ).first()
-    if not tg:
-        return False
-
-    lines = [f'⏰ <b>{escape(subject_line)}</b>', '']
-    if ctx.get('subject_name'):
-        lines.append(f'📚 {escape(ctx["subject_name"])}')
-    lines.append(f'👤 {escape(ctx["teacher_name"])} ↔ {escape(ctx["student_name"])}')
-    lines.append(f'🕒 {escape(ctx["start_at"])} ({ctx["duration_minutes"]} мин)')
-    if ctx.get('meeting_url'):
-        lines.append(f'🎥 {escape(ctx["meeting_url"])}')
-    lines.append('')
-    lines.append(f'{escape(ctx["site_url"])}{ctx["bookings_url"]}')
-    text = '\n'.join(lines)
-
-    return admin_telegram_service.send_message_simple(
-        telegram_id=tg.telegram_id, text=text, parse_mode='HTML',
-    )
 
 
 @shared_task(name='teachers.mark_completed_lessons')
@@ -707,3 +673,52 @@ def cleanup_old_inapp_notifications(days: int = 90) -> dict:
     if updated:
         logger.info('cleanup_old_inapp_notifications: deactivated %s', updated)
     return {'deactivated': updated}
+
+
+@shared_task(name='teachers.replenish_teacher_slots')
+def replenish_teacher_slots(weeks: int = 4, slot_minutes: int = 60) -> dict:
+    """Поддерживает «скользящее окно» свободных слотов у активных учителей.
+
+    Слоты нарезаются однократно при регистрации (registration_wizard.done →
+    generate_slots_from_template на 4 недели). Без периодического пополнения
+    окно «протухает»: через ~4 недели у учителя кончаются будущие слоты и
+    календарь бронирования становится пустым, хотя weekly_schedule заполнен.
+
+    Эта задача раз в сутки докручивает окно до `weeks` недель вперёд по
+    ЛИЧНОМУ расписанию каждого учителя. generate_slots_from_template
+    идемпотентна: прошлое и уже существующие/пересекающиеся слоты
+    пропускаются — создаются только недостающие будущие free-слоты.
+    Расписание учителя НЕ перезаписывается; учителя без weekly_schedule
+    пропускаются.
+    """
+    from .models import TeacherProfile
+
+    teachers = (
+        TeacherProfile.objects
+        .filter(is_active=True, moderation_status='approved')
+        .iterator()
+    )
+
+    created_total = 0
+    teachers_touched = 0
+    for teacher in teachers:
+        try:
+            res = teacher.generate_slots_from_template(
+                weeks=weeks, slot_minutes=slot_minutes,
+            )
+        except Exception as e:
+            logger.error(
+                'replenish_teacher_slots: failed for teacher %s: %s',
+                teacher.pk, e, exc_info=True,
+            )
+            continue
+        if res['created']:
+            created_total += res['created']
+            teachers_touched += 1
+
+    if created_total:
+        logger.info(
+            'replenish_teacher_slots: created %s slots for %s teachers',
+            created_total, teachers_touched,
+        )
+    return {'created': created_total, 'teachers': teachers_touched}

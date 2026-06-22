@@ -2691,6 +2691,37 @@ class TimeSlot(models.Model):
         return self.start_at < other_end and other_start < self.end_at
 
 
+def _merge_intervals(intervals):
+    """Слить пересекающиеся/смежные интервалы [(start, end), ...] → непересекающиеся."""
+    if not intervals:
+        return []
+    intervals = sorted(intervals, key=lambda iv: iv[0])
+    merged = [intervals[0]]
+    for start, end in intervals[1:]:
+        last_start, last_end = merged[-1]
+        if start <= last_end:
+            merged[-1] = (last_start, max(last_end, end))
+        else:
+            merged.append((start, end))
+    return merged
+
+
+def _overlap_seconds(a, b):
+    """Сумма пересечений двух наборов НЕпересекающихся интервалов (в секундах)."""
+    total = 0.0
+    i = j = 0
+    while i < len(a) and j < len(b):
+        lo = max(a[i][0], b[j][0])
+        hi = min(a[i][1], b[j][1])
+        if hi > lo:
+            total += (hi - lo).total_seconds()
+        if a[i][1] < b[j][1]:
+            i += 1
+        else:
+            j += 1
+    return total
+
+
 class Booking(models.Model):
     """
     Заявка ученика на конкретный TimeSlot.
@@ -2793,15 +2824,19 @@ class Booking(models.Model):
     ended_at = models.DateTimeField(null=True, blank=True)
 
     # Присутствие: когда каждая сторона РЕАЛЬНО подключилась к видео-конференции
-    # (событие Jitsi videoConferenceJoined, а не просто открытие страницы).
-    # Используется, чтобы НЕ платить учителю за урок, на который он не пришёл
-    # (см. settle_after_end / mark_completed_lessons).
+    # (событие Jitsi videoConferenceJoined, а не просто открытие страницы) и когда
+    # вышла. joined_at — ПЕРВЫЙ вход, left_at — ПОСЛЕДНИЙ выход; точные интервалы
+    # каждого захода лежат в LessonAttendanceSession (источник истины).
     teacher_joined_at = models.DateTimeField(null=True, blank=True)
+    teacher_left_at = models.DateTimeField(null=True, blank=True)
     student_joined_at = models.DateTimeField(null=True, blank=True)
-    # Фактически проведённые в звонке секунды (накапливаются по событию выхода).
-    # Для прозрачности и разбора споров; жёстко выплату не блокируют.
-    teacher_present_seconds = models.PositiveIntegerField(default=0)
-    student_present_seconds = models.PositiveIntegerField(default=0)
+    student_left_at = models.DateTimeField(null=True, blank=True)
+    # Денормализованная витрина из LessonAttendanceSession: фактически проведённые
+    # секунды каждой стороны и время их ОДНОВРЕМЕННОГО присутствия (overlap).
+    # overlap — основной анти-фрод критерий завершения урока (см. settle_after_end).
+    teacher_duration_seconds = models.PositiveIntegerField(default=0)
+    student_duration_seconds = models.PositiveIntegerField(default=0)
+    overlap_duration_seconds = models.PositiveIntegerField(default=0)
 
     # Неявка ученика «прощена» (ТЗ §6): одна из первых N неявок за окно.
     # True → урок возвращается ученику: НЕ списывается из пакета, учителю НЕ
@@ -2944,6 +2979,41 @@ class Booking(models.Model):
             return True
         # Авто-комната этой брони, размещённая на прежнем Jitsi-домене.
         return self.meeting_url.rstrip('/').endswith('/' + self.jitsi_room_name())
+
+    @property
+    def join_opens_at(self):
+        """Момент открытия входа в комнату урока (−LESSON_JOIN_LEAD_MINUTES).
+
+        Единый источник правды для окна входа: его используют и lesson_room
+        (booking_views), и кнопки «Войти» на дашбордах/в списках. Раньше окно
+        считалось в нескольких местах по-разному — кнопки и реальный доступ
+        расходились.
+        """
+        from datetime import timedelta
+        from django.conf import settings
+        lead = getattr(settings, 'LESSON_JOIN_LEAD_MINUTES', 10)
+        return self.slot.start_at - timedelta(minutes=lead)
+
+    @property
+    def join_closes_at(self):
+        """Момент закрытия комнаты урока (+LESSON_JOIN_GRACE_MINUTES)."""
+        from datetime import timedelta
+        from django.conf import settings
+        grace = getattr(settings, 'LESSON_JOIN_GRACE_MINUTES', 30)
+        return self.slot.end_at + timedelta(minutes=grace)
+
+    @property
+    def is_join_window_open(self):
+        """True, если прямо сейчас можно войти в комнату (статус + окно времени).
+
+        Используется в шаблонах дашбордов: показывать активную кнопку «Войти»
+        только когда вход реально открыт, иначе — «Откроется в …». Кнопка-обманка
+        (всегда активная, ведущая на «Комната ещё закрыта») этим убирается.
+        """
+        from django.utils import timezone
+        if self.status != 'confirmed':
+            return False
+        return self.join_opens_at <= timezone.now() <= self.join_closes_at
 
     def confirm(self, teacher_reply=''):
         """Учитель подтверждает: status→confirmed, slot→booked, hold снимается.
@@ -3267,18 +3337,21 @@ class Booking(models.Model):
             logger.warning('request_review failed for booking %s', self.pk, exc_info=True)
 
     def record_join(self, *, is_teacher: bool):
-        """Фиксирует факт входа стороны в комнату урока (для учёта присутствия).
+        """Фиксирует вход стороны в комнату: открывает новый интервал присутствия.
 
-        Идемпотентно: первое значение не перезаписывается.
+        Открывает LessonAttendanceSession(role, joined_at=now) — реальный заход,
+        возможны несколько за урок (реконнекты). teacher_joined_at/student_joined_at
+        хранят ПЕРВЫЙ вход (idempotent). Если предыдущая сессия осталась открытой
+        (не дошёл leave) — закрываем её этим же now, чтобы не было двух открытых.
 
-        Race-safe: берём select_for_update на брони — общая точка сериализации с
+        Race-safe: select_for_update на брони — общая точка сериализации с
         student_report_teacher_no_show/settle_after_end. Без лока запись входа
         могла «просочиться» уже ПОСЛЕ того, как бронь отрасчётана как неявка
-        учителя (ученик увидел teacher_joined_at=None, оформил возврат, а join
-        записался следом — деньги ушли пришедшему учителю). Запись входа имеет
-        смысл только пока урок confirmed.
+        учителя. Запись входа имеет смысл только пока урок confirmed.
         """
         from django.db import transaction
+        role = (LessonAttendanceSession.ROLE_TEACHER if is_teacher
+                else LessonAttendanceSession.ROLE_STUDENT)
         now = timezone.now()
         with transaction.atomic():
             locked = type(self).objects.select_for_update().get(pk=self.pk)
@@ -3286,103 +3359,186 @@ class Booking(models.Model):
                 # Урок уже отменён/отрасчётан — вход фиксировать поздно и опасно.
                 self.refresh_from_db()
                 return
+            # Закрываем «висящие» открытые сессии этой роли (не пришёл leave).
+            LessonAttendanceSession.objects.filter(
+                booking_id=self.pk, role=role, left_at__isnull=True,
+            ).update(left_at=now)
+            LessonAttendanceSession.objects.create(
+                booking_id=self.pk, role=role, joined_at=now,
+            )
+            first_field = 'teacher_joined_at' if is_teacher else 'student_joined_at'
             updates = {}
-            if is_teacher and locked.teacher_joined_at is None:
-                updates['teacher_joined_at'] = now
-            if (not is_teacher) and locked.student_joined_at is None:
-                updates['student_joined_at'] = now
-            if not updates:
-                return
-            if locked.started_at is None:
-                updates['started_at'] = now
-            updates['updated_at'] = now
-            type(self).objects.filter(pk=self.pk).update(**updates)
-            for field, value in updates.items():
-                setattr(self, field, value)
+            if getattr(locked, first_field) is None:
+                updates[first_field] = now
+                if locked.started_at is None:
+                    updates['started_at'] = now
+            if updates:
+                updates['updated_at'] = now
+                type(self).objects.filter(pk=self.pk).update(**updates)
+                for field, value in updates.items():
+                    setattr(self, field, value)
         LessonEvent.log(
             self, 'join_teacher' if is_teacher else 'join_student',
             actor='teacher' if is_teacher else 'student',
         )
 
-    def add_presence_seconds(self, *, is_teacher: bool, seconds: int):
-        """Накопить фактические секунды присутствия (по событию выхода из звонка).
+    def record_leave(self, *, is_teacher: bool):
+        """Фиксирует выход стороны: закрывает её последнюю открытую сессию.
 
-        Клампим до разумного потолка (длительность урока + 30 мин), чтобы
-        подделанное значение не раздуло метрику. Race-safe через F().
+        Сервер авторитетно ставит left_at=now (клиентским секундам не доверяем).
+        Обновляет teacher_left_at/student_left_at (последний выход) и пересчитывает
+        витрину длительностей/overlap для живой прозрачности и разбора споров.
         """
-        from django.db.models import F
-        try:
-            seconds = int(seconds)
-        except (TypeError, ValueError):
-            return
-        if seconds <= 0:
-            return
-        cap = self.slot.duration_minutes * 60 + 1800
-        seconds = min(seconds, cap)
-        field = 'teacher_present_seconds' if is_teacher else 'student_present_seconds'
-        type(self).objects.filter(pk=self.pk).update(**{field: F(field) + seconds})
+        from django.db import transaction
+        role = (LessonAttendanceSession.ROLE_TEACHER if is_teacher
+                else LessonAttendanceSession.ROLE_STUDENT)
+        now = timezone.now()
+        with transaction.atomic():
+            sess = (
+                LessonAttendanceSession.objects
+                .select_for_update()
+                .filter(booking_id=self.pk, role=role, left_at__isnull=True)
+                .order_by('-joined_at')
+                .first()
+            )
+            if sess is not None:
+                sess.left_at = now
+                sess.save(update_fields=['left_at'])
+            last_field = 'teacher_left_at' if is_teacher else 'student_left_at'
+            type(self).objects.filter(pk=self.pk).update(
+                **{last_field: now, 'updated_at': now}
+            )
+        self.refresh_from_db()
+        tdur, sdur, overlap = self.compute_attendance(now=now)
+        type(self).objects.filter(pk=self.pk).update(
+            teacher_duration_seconds=tdur,
+            student_duration_seconds=sdur,
+            overlap_duration_seconds=overlap,
+        )
+
+    def compute_attendance(self, now=None):
+        """(teacher_seconds, student_seconds, overlap_seconds) из сессий присутствия.
+
+        Открытые (без left_at) сессии клампятся к end_at+grace — забытый leave при
+        краше вкладки не должен раздувать время. Интервалы внутри роли мерджатся,
+        чтобы пересекающиеся reconnect-сессии не считались дважды. overlap — сумма
+        пересечений интервалов учителя и ученика (реальное «вместе в комнате»).
+        """
+        from datetime import timedelta
+        from django.conf import settings
+        now = now or timezone.now()
+        grace = getattr(settings, 'LESSON_JOIN_GRACE_MINUTES', 30)
+        cap = min(now, self.slot.end_at + timedelta(minutes=grace))
+
+        def role_intervals(role):
+            out = []
+            for s in self.attendance_sessions.filter(role=role):
+                start = s.joined_at
+                end = min(s.left_at or cap, cap)
+                if end > start:
+                    out.append((start, end))
+            return _merge_intervals(out)
+
+        t = role_intervals(LessonAttendanceSession.ROLE_TEACHER)
+        s = role_intervals(LessonAttendanceSession.ROLE_STUDENT)
+        tdur = int(sum((e - b).total_seconds() for b, e in t))
+        sdur = int(sum((e - b).total_seconds() for b, e in s))
+        overlap = int(_overlap_seconds(t, s))
+        return tdur, sdur, overlap
 
     def settle_after_end(self) -> str:
         """Решает судьбу confirmed-урока после end_at на основе присутствия.
 
         Для урока в нашем Jitsi (присутствие отслеживается):
-          * никто не подключился               → not_held (ТЗ §8: возврат ученику,
-            никому не начисляется);
-          * учитель не подключился             → no_show_teacher (ТЗ §7: возврат);
-          * учитель был, ученик не подключился → no_show_student (ТЗ §6). Первые
-            STUDENT_NO_SHOW_FORGIVE_LIMIT неявок за окно «прощаются»
+        Решение принимается не по факту «зашёл/не зашёл», а по реальному времени
+        присутствия. required = lesson_seconds * LESSON_MIN_PRESENCE_RATIO (40%):
+          * ни учитель, ни ученик не набрали required        → not_held (ТЗ §8);
+          * учитель < required                               → no_show_teacher (ТЗ §7);
+          * ученик < required (учитель ок)                   → no_show_student (ТЗ §6).
+            Первые STUDENT_NO_SHOW_FORGIVE_LIMIT неявок за окно «прощаются»
             (no_show_forgiven=True: урок возвращается ученику, оплаты нет);
             начиная с (N+1)-й — урок засчитан учителю, ученик теряет урок;
-          * оба подключились                   → completed.
+          * оба ок, но overlap < required                    → not_held (анти-фрод §5:
+            были в комнате, но НЕ одновременно достаточно долго — урока не было);
+          * оба ок и overlap >= required                     → completed.
 
         Для внешних ссылок (Zoom и т.п.) сигнала о присутствии нет → completed
         по времени (прежнее поведение, чтобы не штрафовать учителя ложно).
 
         Возвращает итоговый статус-строку.
         """
+        from django.conf import settings
         from django.db import transaction
         with transaction.atomic():
             locked = type(self).objects.select_for_update().get(pk=self.pk)
             if locked.status != 'confirmed':
                 return locked.status
             if locked.is_jitsi_meeting():
-                teacher_absent = locked.teacher_joined_at is None
-                student_absent = locked.student_joined_at is None
                 now = timezone.now()
-                if teacher_absent and student_absent:
+                tdur, sdur, overlap = locked.compute_attendance(now=now)
+                lesson_seconds = max(1, locked.slot.duration_minutes * 60)
+                ratio = getattr(settings, 'LESSON_MIN_PRESENCE_RATIO', 0.4)
+                required = lesson_seconds * ratio
+                teacher_ok = tdur >= required
+                student_ok = sdur >= required
+                overlap_ok = overlap >= required
+
+                # Сохраняем витрину присутствия в той же транзакции, что и статус —
+                # источник для разбора споров и админки.
+                locked.teacher_duration_seconds = tdur
+                locked.student_duration_seconds = sdur
+                locked.overlap_duration_seconds = overlap
+                locked.ended_at = now
+                attendance_fields = [
+                    'teacher_duration_seconds', 'student_duration_seconds',
+                    'overlap_duration_seconds', 'ended_at',
+                ]
+
+                def _finish(status, fields=()):
+                    locked.status = status
+                    locked.save(update_fields=['status', 'updated_at',
+                                               *attendance_fields, *fields])
+                    self.refresh_from_db()
+
+                if not teacher_ok and not student_ok:
                     # ТЗ §8 — не состоялся: деньги остаются в эскроу (вернутся
                     # ученику), урок не списывается и не учитывается в квоте.
-                    locked.status = 'not_held'
-                    locked.ended_at = now
-                    locked.save(update_fields=['status', 'ended_at', 'updated_at'])
-                    self.refresh_from_db()
+                    _finish('not_held')
                     LessonEvent.log(self, 'settle_not_held')
                     return 'not_held'
-                if teacher_absent:
-                    locked.status = 'no_show_teacher'
-                    locked.ended_at = now
-                    locked.save(update_fields=['status', 'ended_at', 'updated_at'])
-                    self.refresh_from_db()
+                if not teacher_ok:
+                    _finish('no_show_teacher')
                     LessonEvent.log(self, 'settle_no_show_teacher')
                     return 'no_show_teacher'
-                if student_absent:
+                if not student_ok:
                     # ТЗ §6: «прощаем» неявку, только если это урок пакета —
                     # у пакета есть что «вернуть». Пробные/разовые не прощаем.
                     forgiven = bool(locked.subscription_id) and \
                         type(self).should_forgive_student_no_show(locked.student_id, now)
-                    locked.status = 'no_show_student'
                     locked.no_show_forgiven = forgiven
-                    locked.ended_at = now
-                    locked.save(update_fields=[
-                        'status', 'no_show_forgiven', 'ended_at', 'updated_at',
-                    ])
-                    self.refresh_from_db()
+                    _finish('no_show_student', fields=['no_show_forgiven'])
                     LessonEvent.log(
                         self,
                         'no_show_forgiven' if forgiven else 'no_show_consumed',
                     )
                     return 'no_show_student'
-        # Учитель присутствовал (или присутствие не отслеживается) — завершаем штатно.
+                if not overlap_ok:
+                    # Анти-фрод §5: обе стороны набрали время по отдельности, но
+                    # были в комнате не одновременно (мало overlap) — реального
+                    # урока не было. Не платим учителю, деньги вернутся ученику.
+                    _finish('not_held')
+                    LessonEvent.log(self, 'settle_low_overlap')
+                    return 'not_held'
+                # Все три порога взяты — урок реально проведён.
+                _finish('completed')
+                LessonEvent.log(self, 'settle_completed')
+                try:
+                    self.request_review()
+                except Exception:
+                    logger.warning('request_review failed for booking %s',
+                                   self.pk, exc_info=True)
+                return 'completed'
+        # Внешняя ссылка (присутствие не отслеживается) — завершаем по времени.
         self.mark_completed()
         return self.status
 
@@ -3500,6 +3656,41 @@ class LessonReminderSent(models.Model):
         return f'{self.booking_id} • {self.kind} • {self.sent_at:%Y-%m-%d %H:%M}'
 
 
+class LessonAttendanceSession(models.Model):
+    """Один интервал присутствия стороны в видеокомнате (join→leave).
+
+    Источник истины для подсчёта реальной длительности и overlap (одновременного
+    присутствия). Денормализованные скаляры на Booking (teacher_duration_seconds,
+    overlap_duration_seconds и т.п.) пересчитываются из этих сессий. Возможны
+    несколько сессий на роль за урок (реконнекты); left_at=None — сторона ещё в
+    комнате (или не дошёл leave-beacon — клампится к end_at+grace при подсчёте).
+    """
+    ROLE_TEACHER = 'teacher'
+    ROLE_STUDENT = 'student'
+    ROLE_CHOICES = [
+        (ROLE_TEACHER, _('Учитель')),
+        (ROLE_STUDENT, _('Ученик')),
+    ]
+
+    booking = models.ForeignKey(
+        Booking, on_delete=models.CASCADE, related_name='attendance_sessions',
+    )
+    role = models.CharField(max_length=8, choices=ROLE_CHOICES, db_index=True)
+    joined_at = models.DateTimeField()
+    left_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('Сессия присутствия')
+        verbose_name_plural = _('Сессии присутствия')
+        ordering = ['joined_at']
+        indexes = [
+            models.Index(fields=['booking', 'role']),
+        ]
+
+    def __str__(self):
+        return f'{self.booking_id} • {self.role} • {self.joined_at:%H:%M}'
+
+
 class LessonEvent(models.Model):
     """Журнал событий урока (ТЗ §11: «все действия фиксируются в журнале»).
 
@@ -3515,6 +3706,7 @@ class LessonEvent(models.Model):
         ('no_show_forgiven', _('Неявка ученика прощена')),
         ('no_show_consumed', _('Неявка ученика — урок списан')),
         ('settle_not_held', _('Урок не состоялся')),
+        ('settle_low_overlap', _('Урок не подтверждён: мало одновременного присутствия')),
         ('warning_sent', _('Отправлено предупреждение')),
         ('payout', _('Выплата учителю')),
         ('refund', _('Возврат ученику')),

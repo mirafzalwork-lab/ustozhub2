@@ -46,8 +46,9 @@
       </div>
       <div class="ad-meta">
         <i class="fas fa-video"></i> {% trans 'Присутствие' %}:
-        {% trans 'учитель' %} <b>{% widthratio d.booking.teacher_present_seconds 60 1 %} {% trans 'мин' %}</b>,
-        {% trans 'ученик' %} <b>{% widthratio d.booking.student_present_seconds 60 1 %} {% trans 'мин' %}</b>
+        {% trans 'учитель' %} <b>{% widthratio d.booking.teacher_duration_seconds 60 1 %} {% trans 'мин' %}</b>,
+        {% trans 'ученик' %} <b>{% widthratio d.booking.student_duration_seconds 60 1 %} {% trans 'мин' %}</b>,
+        {% trans 'вместе' %} <b>{% widthratio d.booking.overlap_duration_seconds 60 1 %} {% trans 'мин' %}</b>
         {% if not d.booking.teacher_joined_at %} · <span style="color:#B91C1C">{% trans 'учитель не подключался' %}</span>{% endif %}
       </div>
       <div class="ad-reason">{{ d.reason }}</div>

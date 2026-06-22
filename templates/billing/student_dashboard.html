@@ -85,6 +85,7 @@
 </style>
 
 <div class="sdb">
+  {% include 'partials/telegram_connect_banner.html' %}
   <h1 class="greet">
     {% if recent_trials_to_convert %}{% with top=recent_trials_to_convert.0 %}
       {% trans 'Привет' %}, {{ request.user.first_name|default:request.user.username }}!
@@ -256,7 +257,11 @@
                 {% if b.subscription %}<small style="color:#94A3B8;">· подписка</small>{% endif %}
               </div>
               <div class="actions">
-                {% if b.meeting_url %}<a href="{% url 'lesson_room' b.id %}"><i class="fas fa-video"></i> {% trans 'Войти' %}</a>{% endif %}
+                {% if b.is_join_window_open %}
+                  <a href="{% url 'lesson_room' b.id %}"><i class="fas fa-video"></i> {% trans 'Войти' %}</a>
+                {% elif b.meeting_url %}
+                  <span style="color:#94A3B8; font-size:13px;"><i class="far fa-clock"></i> {% blocktrans with t=b.join_opens_at|date:"d M, H:i" %}Вход с {{ t }}{% endblocktrans %}</span>
+                {% endif %}
               </div>
             </div>
           {% endfor %}

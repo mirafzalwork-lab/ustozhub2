@@ -25,6 +25,7 @@ import django
 django.setup()
 
 from teachers.models import TelegramUser
+from telegram_bot.account_link import consume_connect_token, link_telegram_to_user
 from django.conf import settings
 from asgiref.sync import sync_to_async
 
@@ -60,7 +61,25 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.info(f"Новый пользователь зарегистрирован: {user.id} (@{user.username})")
         else:
             logger.info(f"Пользователь вернулся: {user.id} (@{user.username})")
-        
+
+        # Deep-link привязка к аккаунту сайта: /start <token>.
+        # Токен сгенерирован баннером «Подключить бота» на дашборде.
+        linked = False
+        token = context.args[0] if getattr(context, 'args', None) else None
+        if token:
+            try:
+                site_user_id = await sync_to_async(consume_connect_token)(token)
+                if site_user_id:
+                    linked = await sync_to_async(link_telegram_to_user)(
+                        telegram_user, site_user_id
+                    )
+                    if linked:
+                        logger.info(
+                            f"Telegram {user.id} привязан к пользователю сайта {site_user_id}"
+                        )
+            except Exception as e:
+                logger.error(f"Ошибка привязки по токену: {e}")
+
         # Создаем кнопку с WebApp
         webapp_url = settings.TELEGRAM_WEBAPP_URL
         keyboard = [
@@ -80,7 +99,9 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         # Приветственное сообщение
+        link_line = "✅ Аккаунт привязан — уведомления о уроках теперь придут сюда.\n\n" if linked else ""
         welcome_text = (
+            f"{link_line}"
             f"👋 Привет, {user.first_name}!\n\n"
             f"Добро пожаловать в **TeacherHub** — платформу для поиска учителей и учеников!\n\n"
             f"🎓 **Что вы можете сделать:**\n"

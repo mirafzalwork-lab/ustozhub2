@@ -126,6 +126,7 @@ TEMPLATES = [
                 'teachers.context_processors.user_conversations_count',  # Счётчик активных переписок
                 'teachers.context_processors.unread_notifications_count',  # Счётчик непрочитанных уведомлений
                 'teachers.context_processors.admin_nav_badges',  # Бейджи админ-навигации (staff)
+                'teachers.context_processors.telegram_links',  # Ссылки на Telegram канал/бот (футер и т.д.)
             ],
         },
     },
@@ -403,7 +404,13 @@ PLATFORM_COMMISSION_RATE = Decimal(os.environ.get('PLATFORM_COMMISSION_RATE', '0
 
 # Окно в часах между end_at урока и автоматическим payout учителю.
 # В это окно ученик может открыть dispute и заморозить выплату.
-PAYOUT_GRACE_HOURS = int(os.environ.get('PAYOUT_GRACE_HOURS', '24'))
+PAYOUT_GRACE_HOURS = int(os.environ.get('PAYOUT_GRACE_HOURS', '6'))
+
+# Доля длительности урока, которую КАЖДАЯ сторона и их одновременное присутствие
+# (overlap) должны реально провести в видеокомнате, чтобы урок засчитался
+# проведённым. Основной анти-фрод критерий: «зашёл на пару секунд» / «были в
+# комнате не одновременно» не должны давать completed (см. Booking.settle_after_end).
+LESSON_MIN_PRESENCE_RATIO = float(os.environ.get('LESSON_MIN_PRESENCE_RATIO', '0.4'))
 
 # Минимальная сумма для запроса вывода средств учителем.
 MIN_WITHDRAWAL_AMOUNT = Decimal(os.environ.get('MIN_WITHDRAWAL_AMOUNT', '100000.00'))
@@ -447,6 +454,13 @@ PLATFORM_ACCOUNT_USERNAME = os.environ.get('PLATFORM_ACCOUNT_USERNAME', '__platf
 
 # Токен вашего Telegram бота (получите от @BotFather)
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+
+# Публичные точки входа в Telegram (используются в футере, баннерах, онбординге).
+# Username без @. URL собираем здесь, чтобы шаблоны не хардкодили ссылки.
+TELEGRAM_BOT_USERNAME = os.environ.get('TELEGRAM_BOT_USERNAME', 'ustozhub_bot')
+TELEGRAM_BOT_URL = f"https://t.me/{TELEGRAM_BOT_USERNAME}"
+TELEGRAM_CHANNEL_USERNAME = os.environ.get('TELEGRAM_CHANNEL_USERNAME', 'UstozHubUz')
+TELEGRAM_CHANNEL_URL = f"https://t.me/{TELEGRAM_CHANNEL_USERNAME}"
 
 # URL вашего сайта (для кнопок и WebApp)
 SITE_URL = os.environ.get('SITE_URL', 'https://ustozhubedu.uz')
@@ -546,6 +560,17 @@ WIZARD_DRAFT_TTL_DAYS = 14
 JITSI_BASE_URL = os.environ.get('JITSI_BASE_URL', 'https://meet.jit.si').rstrip('/')
 # Префикс имени комнаты — чтобы комнаты не путались с чужими на публичном сервере.
 JITSI_ROOM_PREFIX = os.environ.get('JITSI_ROOM_PREFIX', 'UstozHub')
+
+# Прод работает на self-hosted Jitsi (meet.ustozhubedu.uz). Публичный meet.jit.si
+# — это лобби, membersOnly-ошибки и посторонние по угаданному имени комнаты, т.е.
+# «видео плохо работает». Если на не-DEBUG окружении переменная окружения слетела
+# и мы откатились на публичный сервер — громко предупреждаем в лог, а не молчим.
+if not DEBUG and JITSI_BASE_URL == 'https://meet.jit.si':
+    import logging as _logging
+    _logging.getLogger('django').warning(
+        'JITSI_BASE_URL не задан в окружении — используется публичный meet.jit.si. '
+        'Уроки могут работать нестабильно (лобби/membersOnly). Проверьте .env на сервере.'
+    )
 
 # =============================================================================
 # 🎓 LESSON LIFECYCLE (ТЗ: проведение уроков)

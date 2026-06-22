@@ -1493,7 +1493,9 @@ def student_dashboard(request):
     # Ближайшие уроки (confirmed, в будущем, в ближайшие 7 дней)
     upcoming = (
         Booking.objects
-        .filter(student=request.user, status='confirmed', slot__start_at__gte=now,
+        # end_at >= now (а не start_at), чтобы уже идущий урок оставался в списке
+        # с живой кнопкой «Войти», а не пропадал сразу после начала.
+        .filter(student=request.user, status='confirmed', slot__end_at__gte=now,
                 slot__start_at__lte=week_end)
         .select_related('slot__teacher__user', 'subject', 'subscription')
         .order_by('slot__start_at')[:5]
@@ -1616,7 +1618,11 @@ def student_dashboard(request):
         if len(recent_trials_to_convert) >= 3:
             break
 
+    from telegram_bot.account_link import is_connected, bot_connect_url
+    tg_connected = is_connected(request.user)
     return render(request, 'billing/student_dashboard.html', {
+        'telegram_connected': tg_connected,
+        'telegram_connect_url': '' if tg_connected else bot_connect_url(request.user.pk),
         'wallet': wallet,
         'upcoming': upcoming,
         'lessons_today': lessons_today,
@@ -1749,7 +1755,11 @@ def teacher_dashboard(request):
     noshow_teacher = Booking.objects.filter(
         slot__teacher=teacher, status='no_show_teacher').count()
 
+    from telegram_bot.account_link import is_connected, bot_connect_url
+    tg_connected = is_connected(request.user)
     return render(request, 'billing/teacher_dashboard.html', {
+        'telegram_connected': tg_connected,
+        'telegram_connect_url': '' if tg_connected else bot_connect_url(request.user.pk),
         'readiness': readiness,
         'noshow_student': noshow_student,
         'noshow_teacher': noshow_teacher,

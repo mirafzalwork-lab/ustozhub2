@@ -1343,9 +1343,10 @@ def lesson_room(request, booking_id):
 
     now = timezone.now()
     lead = getattr(settings, 'LESSON_JOIN_LEAD_MINUTES', 10)
-    grace = getattr(settings, 'LESSON_JOIN_GRACE_MINUTES', 30)
-    open_from = booking.slot.start_at - timedelta(minutes=lead)
-    open_until = booking.slot.end_at + timedelta(minutes=grace)
+    # Окно входа — из единого источника (Booking.join_opens_at/closes_at), чтобы
+    # кнопки «Войти» на дашбордах и реальный доступ к комнате не расходились.
+    open_from = booking.join_opens_at
+    open_until = booking.join_closes_at
 
     state = 'ok'
     if booking.status != 'confirmed':
@@ -1401,9 +1402,9 @@ def lesson_attendance_api(request, booking_id):
     вход/выход из конференции (≈2 запроса на участника за урок).
     Body (form): event='join'|'leave', seconds=<int> (для leave).
 
-    'join'  → фиксируем РЕАЛЬНОЕ подключение стороны (это и есть сигнал, по
-              которому решается выплата в settle_after_end).
-    'leave' → накапливаем фактические секунды присутствия (для прозрачности).
+    'join'  → открываем интервал присутствия стороны (LessonAttendanceSession).
+    'leave' → закрываем интервал; по сумме интервалов и overlap settle_after_end
+              решает исход урока (completed / no_show / not_held).
     """
     booking = get_object_or_404(
         Booking.objects.select_related('slot__teacher'), pk=booking_id,
@@ -1437,7 +1438,12 @@ def lesson_attendance_api(request, booking_id):
         except Exception:
             logger.warning('record_join failed for booking %s', booking.pk, exc_info=True)
     elif event == 'leave':
-        booking.add_presence_seconds(is_teacher=is_teacher, seconds=request.POST.get('seconds', 0))
+        # seconds от клиента больше не используем — сервер авторитетно закрывает
+        # интервал присутствия (LessonAttendanceSession) по своему времени.
+        try:
+            booking.record_leave(is_teacher=is_teacher)
+        except Exception:
+            logger.warning('record_leave failed for booking %s', booking.pk, exc_info=True)
     else:
         return _json_error('Неизвестное событие', status=400)
     return JsonResponse({'ok': True})
@@ -1627,6 +1633,9 @@ def _notify_student_about_decision(booking: Booking, decision: str):
             'status': booking.status,
             'decision': decision,
             'meeting_url': booking.meeting_url or '',
+            # Ведём в нашу комнату урока (учёт присутствия/спор/доска), а не на
+            # сырой Jitsi: иначе вход мимо beacon → возможна ложная неявка.
+            'lesson_room_url': reverse('lesson_room', args=[booking.id]) if booking.meeting_url else '',
             'teacher_reply': booking.teacher_reply or '',
         })
     except Exception as e:

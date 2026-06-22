@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: UstozHub 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-18 10:59+0500\n"
+"POT-Creation-Date: 2026-06-22 14:34+0500\n"
 "Language-Team: Uzbek\n"
 "Language: uz\n"
 "MIME-Version: 1.0\n"
@@ -142,7 +142,7 @@ msgstr "Tuzatish (hisobga olish)"
 msgid "Покупка подписки"
 msgstr "Obuna sotib olish"
 
-#: billing/models.py:90 templates/billing/teacher_dashboard.html:270
+#: billing/models.py:90 templates/billing/teacher_dashboard.html:275
 #: templates/billing/withdrawals_list.html:6
 #: templates/billing/withdrawals_list.html:68
 msgid "Вывод средств"
@@ -386,7 +386,7 @@ msgstr "Takroriy submitlarda bitta Subscription bo'lishini kafolatlaydi."
 msgid "Подписка"
 msgstr "Obuna"
 
-#: billing/models.py:450 templates/billing/student_dashboard.html:219
+#: billing/models.py:450 templates/billing/student_dashboard.html:220
 msgid "Подписки"
 msgstr "Obunalar"
 
@@ -470,7 +470,7 @@ msgstr "Uy vazifasi"
 
 #: billing/models.py:798 templates/billing/homework_teacher_list.html:4
 #: templates/billing/homework_teacher_list.html:12
-#: templates/billing/student_dashboard.html:270
+#: templates/billing/student_dashboard.html:275
 #: templates/billing/teacher_student_progress.html:108
 #: templates/logic/student_profile.html:806
 #: templates/logic/teacher_profile.html:1527
@@ -860,11 +860,11 @@ msgstr "Avval o'qituvchi profilini to'ldiring."
 msgid "Учитель не найден"
 msgstr "O'qituvchi topilmadi"
 
-#: teachers/booking_views.py:1505
+#: teachers/booking_views.py:1506
 msgid "Оставить отзыв можно только после завершения урока."
 msgstr "Sharhni faqat dars tugagandan keyin qoldirish mumkin."
 
-#: teachers/booking_views.py:1542
+#: teachers/booking_views.py:1543
 msgid "Спасибо! Ваш отзыв сохранён."
 msgstr "Rahmat! Sharhingiz saqlandi."
 
@@ -1770,7 +1770,7 @@ msgstr "Yozishma"
 msgid "Переписки"
 msgstr "Yozishmalar"
 
-#: teachers/models.py:1583 templates/base.html:1448 templates/base.html:1609
+#: teachers/models.py:1583 templates/base.html:1465 templates/base.html:1626
 #: templates/logic/conversations_list.html:5
 #: templates/logic/conversations_list.html:525
 msgid "Сообщения"
@@ -1930,7 +1930,7 @@ msgstr "Yuborildi"
 msgid "Отменено"
 msgstr "Bekor qilindi"
 
-#: teachers/models.py:1895 templates/base.html:2168
+#: teachers/models.py:1895 templates/base.html:2190
 msgid "Новое сообщение"
 msgstr "Yangi xabar"
 
@@ -2036,7 +2036,7 @@ msgid "Пропущено"
 msgstr "O'tkazib yuborildi"
 
 #: teachers/models.py:2042 teachers/models.py:2316 teachers/models.py:2530
-#: templates/base.html:2174 templates/logic/_profile_edit_enhancements.html:405
+#: templates/base.html:2196 templates/logic/_profile_edit_enhancements.html:405
 msgid "Уведомление"
 msgstr "Bildirishnoma"
 
@@ -2210,7 +2210,7 @@ msgstr "Umumiy"
 msgid "Бронирование"
 msgstr "Bron"
 
-#: teachers/models.py:2271 teachers/models.py:3568
+#: teachers/models.py:2271 teachers/models.py:3603
 #: templates/booking/lesson_room.html:4
 msgid "Урок"
 msgstr "Dars"
@@ -2243,7 +2243,7 @@ msgstr "Ogohlantirish"
 msgid "Определяет иконку уведомления в интерфейсе"
 msgstr "Interfeysda bildirishnoma belgisini belgilaydi"
 
-#: teachers/models.py:2317 templates/base.html:1440 templates/base.html:1618
+#: teachers/models.py:2317 templates/base.html:1457 templates/base.html:1635
 #: templates/notifications/detail.html:6
 #: templates/notifications/detail.html:465 templates/notifications/list.html:6
 #: templates/notifications/list.html:363
@@ -2383,8 +2383,8 @@ msgstr "Vaqt oraliqlari"
 msgid "Подтверждено"
 msgstr "Tasdiqlandi"
 
-#: teachers/models.py:2702 templates/billing/student_dashboard.html:117
-#: templates/billing/student_dashboard.html:119
+#: teachers/models.py:2702 templates/billing/student_dashboard.html:118
+#: templates/billing/student_dashboard.html:120
 msgid "Завершён"
 msgstr "Yakunlandi"
 
@@ -2447,79 +2447,79 @@ msgstr ""
 "Bron qilish paytidagi pulli sinov darsi narxi snapshoti. NULL = bepul yoki "
 "sinov darsi emas."
 
-#: teachers/models.py:3467
+#: teachers/models.py:3502
 msgid "За 24 часа"
 msgstr "24 soat oldin"
 
-#: teachers/models.py:3468
+#: teachers/models.py:3503
 msgid "За 3 часа"
 msgstr "3 soat oldin"
 
-#: teachers/models.py:3469
+#: teachers/models.py:3504
 msgid "За 10 минут"
 msgstr "10 daqiqa oldin"
 
-#: teachers/models.py:3482
+#: teachers/models.py:3517
 msgid "Каналы через запятую: email,in_app,telegram"
 msgstr "Kanallar vergul bilan ajratilgan: email,in_app,telegram"
 
-#: teachers/models.py:3511
+#: teachers/models.py:3546
 msgid "Учитель подключился"
 msgstr "O'qituvchi qo'shildi"
 
-#: teachers/models.py:3512
+#: teachers/models.py:3547
 msgid "Ученик подключился"
 msgstr "O'quvchi qo'shildi"
 
-#: teachers/models.py:3513
+#: teachers/models.py:3548
 msgid "Урок проведён"
 msgstr "Dars o'tkazildi"
 
-#: teachers/models.py:3514
+#: teachers/models.py:3549
 msgid "Неявка учителя"
 msgstr "O'qituvchi kelmadi"
 
-#: teachers/models.py:3515
+#: teachers/models.py:3550
 msgid "Неявка ученика прощена"
 msgstr "O'quvchining kelmasligi kechirildi"
 
-#: teachers/models.py:3516
+#: teachers/models.py:3551
 msgid "Неявка ученика — урок списан"
 msgstr "O'quvchi kelmadi — dars hisobdan yechildi"
 
-#: teachers/models.py:3517
+#: teachers/models.py:3552
 msgid "Урок не состоялся"
 msgstr "Dars bo'lib o'tmadi"
 
-#: teachers/models.py:3518
+#: teachers/models.py:3553
 msgid "Отправлено предупреждение"
 msgstr "Ogohlantirish yuborildi"
 
-#: teachers/models.py:3519
+#: teachers/models.py:3554
 msgid "Выплата учителю"
 msgstr "O'qituvchiga to'lov"
 
-#: teachers/models.py:3520
+#: teachers/models.py:3555
 msgid "Возврат ученику"
 msgstr "O'quvchiga qaytarish"
 
-#: teachers/models.py:3534
+#: teachers/models.py:3569
 msgid "Событие урока"
 msgstr "Dars hodisasi"
 
-#: teachers/models.py:3535
+#: teachers/models.py:3570
 msgid "События уроков"
 msgstr "Dars hodisalari"
 
-#: teachers/models.py:3574
+#: teachers/models.py:3609
 msgid "Кто загрузил"
 msgstr "Kim yukladi"
 
-#: teachers/models.py:3585
+#: teachers/models.py:3620
 msgid "Файл урока"
 msgstr "Dars fayli"
 
-#: teachers/models.py:3586
+#: teachers/models.py:3621
 msgid "Файлы урока"
 msgstr "Dars fayllari"
 
@@ -3190,7 +3190,7 @@ msgid "Произошла ошибка при отправке сообщени�
 msgstr "Xabarni yuborishda xatolik yuz berdi"
 
 # ========== JAVASCRIPT MESSAGES ==========
-#: teachers/views.py:2247 templates/billing/student_dashboard.html:394
+#: teachers/views.py:2247 templates/billing/student_dashboard.html:399
 #: templates/logic/teacher_detail.html:2763
 #: templates/notifications/detail.html:625
 #: templates/notifications/list.html:479
@@ -3365,7 +3365,7 @@ msgstr ""
 msgid "На главную"
 msgstr "Bosh sahifa"
 
-#: templates/admin/_mobile_nav.html:17 templates/base.html:1546
+#: templates/admin/_mobile_nav.html:17 templates/base.html:1563
 msgid "Меню"
 msgstr "Menyu"
 
@@ -3374,151 +3374,156 @@ msgstr "Menyu"
 msgid "Add %(name)s"
 msgstr "%(name)s qo'shish"
 
-#: templates/base.html:1362
+#: templates/base.html:1379
 msgid "Перейти к контенту"
 msgstr "Kontentga o'tish"
 
-#: templates/base.html:1376
+#: templates/base.html:1393
 msgid "Поиск преподавателей, предметов…"
 msgstr "O'qituvchilar, fanlar qidirish…"
 
-#: templates/base.html:1379
+#: templates/base.html:1396
 msgid "Поиск преподавателей"
 msgstr "O'qituvchilarni qidirish"
 
-#: templates/base.html:1480 templates/base.html:1601 templates/base.html:1715
+#: templates/base.html:1497 templates/base.html:1618 templates/base.html:1732
 msgid "Кабинет"
 msgstr "Kabinet"
 
-#: templates/base.html:1485 templates/base.html:1605
-#: templates/billing/student_dashboard.html:334
+#: templates/base.html:1502 templates/base.html:1622
+#: templates/billing/student_dashboard.html:339
 #: templates/logic/student_profile.html:5
 #: templates/logic/teacher_profile.html:6
 msgid "Мой профиль"
 msgstr "Mening profilim"
 
-#: templates/base.html:1491 templates/base.html:1631
-#: templates/billing/teacher_dashboard.html:261
+#: templates/base.html:1508 templates/base.html:1648
+#: templates/billing/teacher_dashboard.html:266
 #: templates/booking/teacher_calendar.html:4
 msgid "Календарь"
 msgstr "Kalendar"
 
-#: templates/base.html:1495 templates/base.html:1635
+#: templates/base.html:1512 templates/base.html:1652
 #: templates/booking/my_bookings.html:301
 #: templates/logic/teacher_profile.html:1533
 #: templates/logic/teacher_profile.html:1582
 msgid "Заявки и уроки"
 msgstr "So'rovlar va darslar"
 
-#: templates/base.html:1499 templates/base.html:1639
+#: templates/base.html:1516 templates/base.html:1656
 #: templates/billing/learning_requests.html:5
 #: templates/billing/learning_requests.html:23
 msgid "Заявки на обучение"
 msgstr "O'qish so'rovlari"
 
-#: templates/base.html:1504 templates/booking/my_bookings.html:4
+#: templates/base.html:1521 templates/booking/my_bookings.html:4
 #: templates/booking/my_bookings.html:303
 msgid "Мои бронирования"
 msgstr "Mening bronlarim"
 
-#: templates/base.html:1508 templates/base.html:1645
+#: templates/base.html:1525 templates/base.html:1662
 msgid "Избранное"
 msgstr "Sevimlilar"
 
-#: templates/base.html:1514 templates/base.html:1656
+#: templates/base.html:1531 templates/base.html:1673
 msgid "Настройки"
 msgstr "Sozlamalar"
 
-#: templates/base.html:1523 templates/base.html:1663
+#: templates/base.html:1540 templates/base.html:1680
 #: templates/logic/student_profile.html:819
 #: templates/logic/teacher_profile.html:1555
 msgid "Выйти"
 msgstr "Chiqish"
 
-#: templates/base.html:1532 templates/base.html:1669 templates/base.html:1766
-#: templates/billing/student_dashboard.html:259 templates/logic/login.html:419
+#: templates/base.html:1549 templates/base.html:1686 templates/base.html:1788
+#: templates/billing/student_dashboard.html:261
+#: templates/billing/teacher_dashboard.html:209 templates/logic/login.html:419
 #: templates/logic/student_detail.html:1869
 msgid "Войти"
 msgstr "Kirish"
 
-#: templates/base.html:1536 templates/base.html:1673
+#: templates/base.html:1553 templates/base.html:1690
 #: templates/logic/student_detail.html:1872
 msgid "Регистрация"
 msgstr "Ro'yxatdan o'tish"
 
-#: templates/base.html:1557
+#: templates/base.html:1574
 msgid "Поиск..."
 msgstr "Qidiruv..."
 
-#: templates/base.html:1651 templates/base.html:1677 templates/base.html:1771
+#: templates/base.html:1668 templates/base.html:1694 templates/base.html:1793
 #: templates/logic/home.html:1317
 msgid "Стать учителем"
 msgstr "O'qituvchi bo'lish"
 
-#: templates/base.html:1712
+#: templates/base.html:1729
 msgid "Основная навигация"
 msgstr "Asosiy navigatsiya"
 
-#: templates/base.html:1719 templates/logic/students_list.html:1076
+#: templates/base.html:1736 templates/logic/students_list.html:1076
 #: templates/logic/teacher_detail.html:2086
 msgid "Учителя"
 msgstr "O'qituvchilar"
 
-#: templates/base.html:1723 templates/logic/teacher_detail.html:2658
+#: templates/base.html:1740 templates/logic/teacher_detail.html:2658
 msgid "Чат"
 msgstr "Chat"
 
-#: templates/base.html:1728
+#: templates/base.html:1745
 msgid "Профиль"
 msgstr "Profil"
 
-#: templates/base.html:1758
+#: templates/base.html:1775
 msgid "Платформа №1 для поиска квалифицированных преподавателей в Узбекистане."
 msgstr "O'zbekistonda malakali o'qituvchilarni topish uchun №1 platforma."
 
-#: templates/base.html:1763
+#: templates/base.html:1779
+msgid "Наш Telegram-канал"
+msgstr "Telegram kanalimiz"
+
+#: templates/base.html:1785
 msgid "Ученикам"
 msgstr "O'quvchilarga"
 
-#: templates/base.html:1764 templates/billing/my_subscriptions.html:288
-#: templates/billing/student_dashboard.html:218
+#: templates/base.html:1786 templates/billing/my_subscriptions.html:288
+#: templates/billing/student_dashboard.html:219
 #: templates/billing/student_progress.html:140
 #: templates/booking/my_bookings.html:415
 #: templates/logic/conversations_list.html:598
 msgid "Найти учителя"
 msgstr "O'qituvchi topish"
 
-#: templates/base.html:1765 templates/logic/login.html:436
+#: templates/base.html:1787 templates/logic/login.html:436
 msgid "Зарегистрироваться"
 msgstr "Ro'yxatdan o'tish"
 
-#: templates/base.html:1770
+#: templates/base.html:1792
 msgid "Учителям"
 msgstr "O'qituvchilarga"
 
-#: templates/base.html:1772
+#: templates/base.html:1794
 msgid "Войти в кабинет"
 msgstr "Kabinetga kirish"
 
-#: templates/base.html:1776 templates/logic/teacher_profile.html:1461
+#: templates/base.html:1798 templates/logic/teacher_profile.html:1461
 msgid "Поддержка"
 msgstr "Yordam"
 
-#: templates/base.html:1783
+#: templates/base.html:1805
 msgid "Все права защищены."
 msgstr "Barcha huquqlar himoyalangan."
 
-#: templates/base.html:1785 templates/legal/privacy.html:4
+#: templates/base.html:1807 templates/legal/privacy.html:4
 #: templates/legal/privacy.html:22
 msgid "Политика конфиденциальности"
 msgstr "Maxfiylik siyosati"
 
-#: templates/base.html:1786 templates/legal/terms.html:4
+#: templates/base.html:1808 templates/legal/terms.html:4
 #: templates/legal/terms.html:20
 msgid "Условия использования"
 msgstr "Foydalanish shartlari"
 
-#: templates/base.html:2292 templates/billing/homework_create.html:60
+#: templates/base.html:2314 templates/billing/homework_create.html:60
 #: templates/billing/tariff_form.html:96
 #: templates/booking/book_teacher.html:309
 #: templates/booking/my_bookings.html:327
@@ -3533,27 +3538,27 @@ msgstr "Foydalanish shartlari"
 msgid "Отмена"
 msgstr "Bekor qilish"
 
-#: templates/base.html:2293 templates/billing/learning_requests.html:40
+#: templates/base.html:2315 templates/billing/learning_requests.html:40
 #: templates/billing/learning_requests.html:43
-#: templates/billing/teacher_dashboard.html:229
+#: templates/billing/teacher_dashboard.html:234
 #: templates/booking/my_bookings.html:359
 msgid "Подтвердить"
 msgstr "Tasdiqlash"
 
-#: templates/base.html:2343
+#: templates/base.html:2365
 msgid "Подождите…"
 msgstr "Kuting…"
 
-#: templates/base.html:2373 templates/logic/home.html:1953
+#: templates/base.html:2395 templates/logic/home.html:1953
 msgid "учит."
 msgstr "o'qit."
 
-#: templates/base.html:2374
+#: templates/base.html:2396
 msgid "Ничего не найдено"
 msgstr "Hech narsa topilmadi"
 
 #: templates/billing/_wallet_card.html:60
-#: templates/billing/student_dashboard.html:214
+#: templates/billing/student_dashboard.html:215
 #: templates/billing/subscription_pay.html:34
 msgid "Баланс кошелька"
 msgstr "Hamyon balansi"
@@ -3641,7 +3646,7 @@ msgid "Споров нет."
 msgstr "Nizolar yo'q."
 
 #: templates/billing/continue_learning.html:5
-#: templates/billing/student_dashboard.html:142
+#: templates/billing/student_dashboard.html:143
 #: templates/logic/teacher_detail.html:2603
 msgid "Продолжить обучение"
 msgstr "O'qishni davom ettirish"
@@ -3663,7 +3668,7 @@ msgstr "dars/hafta"
 #: templates/billing/continue_learning.html:41
 #: templates/billing/continue_learning.html:51
 #: templates/billing/learning_requests.html:31
-#: templates/billing/student_dashboard.html:131
+#: templates/billing/student_dashboard.html:132
 #: templates/billing/subscription_pay.html:30
 msgid "мес"
 msgstr "oy"
@@ -3821,7 +3826,7 @@ msgstr "uchun"
 #: templates/billing/homework_student_list.html:28
 #: templates/billing/homework_teacher_list.html:53
 #: templates/billing/my_subscriptions.html:77
-#: templates/billing/student_dashboard.html:313
+#: templates/billing/student_dashboard.html:318
 #: templates/billing/teacher_subscribers.html:83
 #: templates/billing/topup_request.html:173
 #: templates/logic/student_suggestions.html:326
@@ -3970,7 +3975,7 @@ msgstr "Yangi o'qish so'rovlari yo'q."
 
 #: templates/billing/my_subscriptions.html:5
 #: templates/billing/my_subscriptions.html:39
-#: templates/billing/student_dashboard.html:299
+#: templates/billing/student_dashboard.html:304
 #: templates/logic/student_profile.html:803
 msgid "Мои подписки"
 msgstr "Mening obunalarim"
@@ -4053,7 +4058,7 @@ msgstr "O'qituvchiga to'langan"
 
 #: templates/billing/my_subscriptions.html:116
 #: templates/billing/my_subscriptions.html:267
-#: templates/billing/student_dashboard.html:312
+#: templates/billing/student_dashboard.html:317
 #: templates/billing/student_progress.html:123
 #: templates/billing/teacher_subscribers.html:177
 #: templates/logic/teacher_detail.html:2353
@@ -4193,141 +4198,147 @@ msgstr "O'qishni boshlash uchun o'qituvchi toping va tarif tanlang."
 msgid "Личный кабинет ученика"
 msgstr "O'quvchi kabineti"
 
-#: templates/billing/student_dashboard.html:90
-#: templates/billing/student_dashboard.html:93
+#: templates/billing/student_dashboard.html:91
+#: templates/billing/student_dashboard.html:94
 msgid "Привет"
 msgstr "Salom"
 
-#: templates/billing/student_dashboard.html:91
+#: templates/billing/student_dashboard.html:92
 #, python-format
 msgid "Готовы продолжить занятия с %(tutor)s?"
 msgstr "%(tutor)s bilan darslarni davom ettirishga tayyormisiz?"
 
-#: templates/billing/student_dashboard.html:94
+#: templates/billing/student_dashboard.html:95
 msgid "Что нового на сегодня"
 msgstr "Bugun nima yangilik"
 
-#: templates/billing/student_dashboard.html:103
-#: templates/billing/student_dashboard.html:138
-#: templates/billing/student_dashboard.html:143
+#: templates/billing/student_dashboard.html:104
+#: templates/billing/student_dashboard.html:139
+#: templates/billing/student_dashboard.html:144
 msgid "Убрать"
 msgstr "Olib tashlash"
 
-#: templates/billing/student_dashboard.html:109
+#: templates/billing/student_dashboard.html:110
 msgid "Вы прошли пробный с"
 msgstr "Sinov darsini o'tdingiz:"
 
-#: templates/billing/student_dashboard.html:115
+#: templates/billing/student_dashboard.html:116
 msgid "Только что завершён"
 msgstr "Hozirgina tugadi"
 
-#: templates/billing/student_dashboard.html:117
+#: templates/billing/student_dashboard.html:118
 msgid "ч. назад"
 msgstr "soat oldin"
 
-#: templates/billing/student_dashboard.html:119
+#: templates/billing/student_dashboard.html:120
 msgid "дн. назад"
 msgstr "kun oldin"
 
-#: templates/billing/student_dashboard.html:121
+#: templates/billing/student_dashboard.html:122
 msgid "Готовы продолжить занятия?"
 msgstr "Darslarni davom ettirishga tayyormisiz?"
 
-#: templates/billing/student_dashboard.html:126
+#: templates/billing/student_dashboard.html:127
 msgid "Подписаться и продолжить"
 msgstr "Obuna bo'lish va davom etish"
 
-#: templates/billing/student_dashboard.html:131
+#: templates/billing/student_dashboard.html:132
 msgid "нед"
 msgstr "hafta"
 
-#: templates/billing/student_dashboard.html:137
+#: templates/billing/student_dashboard.html:138
 msgid "Попробовать другого учителя"
 msgstr "Boshqa o'qituvchini sinab ko'rish"
 
-#: templates/billing/student_dashboard.html:217
+#: templates/billing/student_dashboard.html:218
 #: templates/booking/book_teacher.html:347
 msgid "Пополнить баланс"
 msgstr "Balansni to'ldirish"
 
-#: templates/billing/student_dashboard.html:224
+#: templates/billing/student_dashboard.html:225
 msgid "Сводка"
 msgstr "Xulosa"
 
-#: templates/billing/student_dashboard.html:228
+#: templates/billing/student_dashboard.html:229
 msgid "Уроков"
 msgstr "Darslar"
 
-#: templates/billing/student_dashboard.html:232
+#: templates/billing/student_dashboard.html:233
 msgid "Часов"
 msgstr "Soat"
 
-#: templates/billing/student_dashboard.html:236
+#: templates/billing/student_dashboard.html:237
 msgid "Avg ДЗ"
 msgstr "O'rtacha uy vazifasi"
 
-#: templates/billing/student_dashboard.html:246
+#: templates/billing/student_dashboard.html:247
 msgid "Ближайшие уроки"
 msgstr "Yaqin darslar"
 
-#: templates/billing/student_dashboard.html:264
+# ========== LOGIN PAGE ==========
+#: templates/billing/student_dashboard.html:263
+#, python-format
+msgid "Вход с %(t)s"
+msgstr "Kirish %(t)s dan"
+
+#: templates/billing/student_dashboard.html:269
 msgid "Уроков в ближайшие 7 дней нет"
 msgstr "Keyingi 7 kunda darslar yo'q"
 
-#: templates/billing/student_dashboard.html:271
-#: templates/billing/student_dashboard.html:300
-#: templates/billing/teacher_dashboard.html:238
+#: templates/billing/student_dashboard.html:276
+#: templates/billing/student_dashboard.html:305
+#: templates/billing/teacher_dashboard.html:243
 msgid "все →"
 msgstr "barchasi →"
 
-#: templates/billing/student_dashboard.html:280
+#: templates/billing/student_dashboard.html:285
 msgid "Сдать"
 msgstr "Topshirish"
 
-#: templates/billing/student_dashboard.html:289
-#: templates/billing/teacher_dashboard.html:248
+#: templates/billing/student_dashboard.html:294
+#: templates/billing/teacher_dashboard.html:253
 msgid "На проверке"
 msgstr "Tekshiruvda"
 
-#: templates/billing/student_dashboard.html:293
+#: templates/billing/student_dashboard.html:298
 msgid "Активных заданий нет"
 msgstr "Faol vazifalar yo'q"
 
-#: templates/billing/student_dashboard.html:319
+#: templates/billing/student_dashboard.html:324
 msgid "Активных подписок нет"
 msgstr "Faol obunalar yo'q"
 
-#: templates/billing/student_dashboard.html:319
+#: templates/billing/student_dashboard.html:324
 msgid "найти учителя"
 msgstr "o'qituvchi topish"
 
-#: templates/billing/student_dashboard.html:326
-#: templates/billing/teacher_dashboard.html:259
+#: templates/billing/student_dashboard.html:331
+#: templates/billing/teacher_dashboard.html:264
 msgid "Быстро"
 msgstr "Tez harakatlar"
 
-#: templates/billing/student_dashboard.html:328
+#: templates/billing/student_dashboard.html:333
 #: templates/billing/student_progress.html:4
 #: templates/billing/student_progress.html:44
 #: templates/logic/student_profile.html:809
 msgid "Мой прогресс"
 msgstr "Mening progressim"
 
-#: templates/billing/student_dashboard.html:331
+#: templates/billing/student_dashboard.html:336
 msgid "Все домашние задания"
 msgstr "Barcha uy vazifalari"
 
-#: templates/billing/student_dashboard.html:339
-#: templates/billing/teacher_dashboard.html:290
+#: templates/billing/student_dashboard.html:344
+#: templates/billing/teacher_dashboard.html:295
 msgid "Последние транзакции"
 msgstr "So'nggi tranzaksiyalar"
 
-#: templates/billing/student_dashboard.html:353
-#: templates/billing/teacher_dashboard.html:304
+#: templates/billing/student_dashboard.html:358
+#: templates/billing/teacher_dashboard.html:309
 msgid "Пока пусто"
 msgstr "Hozircha bo'sh"
 
-#: templates/billing/student_dashboard.html:390
+#: templates/billing/student_dashboard.html:395
 msgid "Не удалось убрать предложение"
 msgstr "Taklifni olib tashlab bo'lmadi"
 
@@ -4612,7 +4623,7 @@ msgid "Создать тариф"
 msgstr "Tarif yaratish"
 
 #: templates/billing/tariffs_list.html:5 templates/billing/tariffs_list.html:44
-#: templates/billing/teacher_dashboard.html:267
+#: templates/billing/teacher_dashboard.html:272
 #: templates/logic/teacher_profile.html:1521
 msgid "Мои тарифы"
 msgstr "Mening tariflarim"
@@ -4678,19 +4689,19 @@ msgstr ""
 msgid "Личный кабинет учителя"
 msgstr "O'qituvchi kabineti"
 
-#: templates/billing/teacher_dashboard.html:73
+#: templates/billing/teacher_dashboard.html:74
 msgid "Здравствуйте"
 msgstr "Assalomu alaykum"
 
-#: templates/billing/teacher_dashboard.html:74
+#: templates/billing/teacher_dashboard.html:75
 msgid "Сводка на сегодня"
 msgstr "Bugungi xulosa"
 
-#: templates/billing/teacher_dashboard.html:85
+#: templates/billing/teacher_dashboard.html:86
 msgid "Профиль отклонён модерацией"
 msgstr "Profil moderatsiyada rad etildi"
 
-#: templates/billing/teacher_dashboard.html:86
+#: templates/billing/teacher_dashboard.html:87
 msgid ""
 "Пока профиль не одобрен, он не виден ученикам в поиске. Проверьте данные и "
 "обновите профиль либо свяжитесь с поддержкой."
@@ -4699,16 +4710,16 @@ msgstr ""
 "Ma'lumotlarni tekshirib, profilni yangilang yoki qo'llab-quvvatlash "
 "xizmatiga murojaat qiling."
 
-#: templates/billing/teacher_dashboard.html:88
+#: templates/billing/teacher_dashboard.html:89
 #: templates/logic/student_suggestions.html:399
 msgid "Открыть профиль"
 msgstr "Profilni ochish"
 
-#: templates/billing/teacher_dashboard.html:96
+#: templates/billing/teacher_dashboard.html:97
 msgid "Профиль на модерации"
 msgstr "Profil moderatsiyada"
 
-#: templates/billing/teacher_dashboard.html:97
+#: templates/billing/teacher_dashboard.html:98
 msgid ""
 "Обычно проверка занимает до 24 часов. Пока профиль не одобрен, ученики не "
 "видят вас в поиске и не могут забронировать уроки. Заполните профиль и "
@@ -4718,36 +4729,36 @@ msgstr ""
 "o'quvchilar sizni qidiruvda ko'ra olmaydi va darslarni band qila olmaydi. "
 "Profil va jadvalni to'liq to'ldiring — bu tasdiqlashni tezlashtiradi."
 
-#: templates/billing/teacher_dashboard.html:117
+#: templates/billing/teacher_dashboard.html:118
 msgid "Чтобы ученики могли вас забронировать, осталось:"
 msgstr "O'quvchilar sizni bron qilishi uchun qoldi:"
 
-#: templates/billing/teacher_dashboard.html:121
+#: templates/billing/teacher_dashboard.html:122
 msgid "Добавить предмет и цену за урок"
 msgstr "Fan va dars narxini qo'shish"
 
-#: templates/billing/teacher_dashboard.html:122
+#: templates/billing/teacher_dashboard.html:123
 msgid "Добавить"
 msgstr "Qo'shish"
 
-#: templates/billing/teacher_dashboard.html:126
+#: templates/billing/teacher_dashboard.html:127
 msgid "Выставить свободное время в календаре"
 msgstr "Kalendarda bo'sh vaqt belgilash"
 
-#: templates/billing/teacher_dashboard.html:127
+#: templates/billing/teacher_dashboard.html:128
 #: templates/logic/teacher_profile.html:1579
 msgid "Открыть календарь"
 msgstr "Kalendarni ochish"
 
-#: templates/billing/teacher_dashboard.html:131
+#: templates/billing/teacher_dashboard.html:132
 msgid "Создать тариф-абонемент"
 msgstr "Tarif-abonement yaratish"
 
-#: templates/billing/teacher_dashboard.html:132
+#: templates/billing/teacher_dashboard.html:133
 msgid "Создать"
 msgstr "Yaratish"
 
-#: templates/billing/teacher_dashboard.html:135
+#: templates/billing/teacher_dashboard.html:136
 msgid ""
 "Цена за разовый урок и пробный задаются в профиле (раздел «Предметы»), "
 "абонементы — в «Тарифах»."
@@ -4755,33 +4766,33 @@ msgstr ""
 "Bitta dars va sinov darsi narxi profilda («Fanlar» bo'limida), abonementlar "
 "— «Tariflar»da belgilanadi."
 
-#: templates/billing/teacher_dashboard.html:141
+#: templates/billing/teacher_dashboard.html:142
 msgid "На балансе"
 msgstr "Balansda"
 
-#: templates/billing/teacher_dashboard.html:144
+#: templates/billing/teacher_dashboard.html:145
 #: templates/billing/withdrawals_list.html:87
 #: templates/billing/withdrawals_list.html:133
 msgid "Вывести"
 msgstr "Yechib olish"
 
-#: templates/billing/teacher_dashboard.html:148
+#: templates/billing/teacher_dashboard.html:149
 msgid "Активных учеников"
 msgstr "Faol o'quvchilar"
 
-#: templates/billing/teacher_dashboard.html:151
+#: templates/billing/teacher_dashboard.html:152
 msgid "Список"
 msgstr "Ro'yxat"
 
-#: templates/billing/teacher_dashboard.html:155
+#: templates/billing/teacher_dashboard.html:156
 msgid "Уроков на неделе"
 msgstr "Haftalik darslar"
 
-#: templates/billing/teacher_dashboard.html:157
+#: templates/billing/teacher_dashboard.html:158
 msgid "из них сегодня"
 msgstr "shundan bugun"
 
-#: templates/billing/teacher_dashboard.html:163
+#: templates/billing/teacher_dashboard.html:164
 #: templates/booking/my_bookings.html:416
 #: templates/booking/my_bookings.html:418
 #: templates/logic/conversation_detail.html:1043
@@ -4789,15 +4800,15 @@ msgstr "shundan bugun"
 msgid "Сегодня"
 msgstr "Bugun"
 
-#: templates/billing/teacher_dashboard.html:167
+#: templates/billing/teacher_dashboard.html:168
 msgid "Неделя"
 msgstr "Hafta"
 
-#: templates/billing/teacher_dashboard.html:171
+#: templates/billing/teacher_dashboard.html:172
 msgid "Месяц"
 msgstr "Oy"
 
-#: templates/billing/teacher_dashboard.html:174
+#: templates/billing/teacher_dashboard.html:175
 msgid ""
 "Деньги за проведённые уроки, которые платформа удерживает до окончания "
 "периода проверки. Затем они переходят на ваш баланс."
@@ -4805,23 +4816,23 @@ msgstr ""
 "O'tilgan darslar uchun pul — platforma uni tekshiruv tugaguncha ushlab "
 "turadi. So'ng balansingizga o'tadi."
 
-#: templates/billing/teacher_dashboard.html:175
+#: templates/billing/teacher_dashboard.html:176
 msgid "В эскроу"
 msgstr "Eskrouda"
 
-#: templates/billing/teacher_dashboard.html:184
+#: templates/billing/teacher_dashboard.html:185
 msgid "Неявки"
 msgstr "Kelmaganlar"
 
-#: templates/billing/teacher_dashboard.html:185
+#: templates/billing/teacher_dashboard.html:186
 msgid "ученик не пришёл"
 msgstr "o'quvchi kelmadi"
 
-#: templates/billing/teacher_dashboard.html:185
+#: templates/billing/teacher_dashboard.html:186
 msgid "вы не пришли"
 msgstr "siz kelmadingiz"
 
-#: templates/billing/teacher_dashboard.html:186
+#: templates/billing/teacher_dashboard.html:187
 msgid ""
 "За неявку ученика урок засчитывается (деньги остаются у вас). За вашу неявку "
 "оплата возвращается ученику. Несколько неявок подряд могут ограничить показ "
@@ -4831,52 +4842,61 @@ msgstr ""
 "to'lov o'quvchiga qaytariladi. Ketma-ket bir nechta kelmaslik profil "
 "ko'rsatilishini cheklashi mumkin."
 
-#: templates/billing/teacher_dashboard.html:195
+#: templates/billing/teacher_dashboard.html:196
 msgid "Расписание на сегодня"
 msgstr "Bugungi jadval"
 
-#: templates/billing/teacher_dashboard.html:212
+#: templates/billing/teacher_dashboard.html:211
+msgid "Вход открывается незадолго до начала"
+msgstr "Kirish dars boshlanishidan biroz oldin ochiladi"
+
+#: templates/billing/teacher_dashboard.html:211
+#, python-format
+msgid "с %(t)s"
+msgstr "%(t)s dan"
+
+#: templates/billing/teacher_dashboard.html:217
 msgid "Сегодня уроков нет"
 msgstr "Bugun darslar yo'q"
 
-#: templates/billing/teacher_dashboard.html:219
+#: templates/billing/teacher_dashboard.html:224
 msgid "Требуют подтверждения"
 msgstr "Tasdiqlash kerak"
 
-#: templates/billing/teacher_dashboard.html:227
+#: templates/billing/teacher_dashboard.html:232
 #: templates/booking/book_teacher.html:229
 msgid "пробный"
 msgstr "sinov"
 
-#: templates/billing/teacher_dashboard.html:237
+#: templates/billing/teacher_dashboard.html:242
 msgid "ДЗ ожидают проверки"
 msgstr "Tekshirilishi kutilayotgan uy vazifalari"
 
-#: templates/billing/teacher_dashboard.html:252
+#: templates/billing/teacher_dashboard.html:257
 msgid "Все ДЗ проверены"
 msgstr "Barcha uy vazifalari tekshirilgan"
 
-#: templates/billing/teacher_dashboard.html:264
+#: templates/billing/teacher_dashboard.html:269
 msgid "Создать ДЗ"
 msgstr "Uy vazifasi yaratish"
 
-#: templates/billing/teacher_dashboard.html:273
+#: templates/billing/teacher_dashboard.html:278
 #: templates/logic/potential_students.html:4
 #: templates/logic/potential_students.html:9
 #: templates/logic/teacher_profile.html:1536
 msgid "Потенциальные ученики"
 msgstr "Qiziqqan o'quvchilar"
 
-#: templates/billing/teacher_dashboard.html:276
+#: templates/billing/teacher_dashboard.html:281
 #: templates/logic/teacher_profile.html:1549
 msgid "Посмотреть других преподавателей"
 msgstr "Boshqa o'qituvchilarni ko'rish"
 
-#: templates/billing/teacher_dashboard.html:281
+#: templates/billing/teacher_dashboard.html:286
 msgid "Заработок всего"
 msgstr "Jami daromad"
 
-#: templates/billing/teacher_dashboard.html:286
+#: templates/billing/teacher_dashboard.html:291
 msgid "выплачено за всё время"
 msgstr "butun davr uchun to'langan"
 
@@ -5537,10 +5557,14 @@ msgid ""
 "Нажмите «Присоединиться» и разрешите доступ к камере и микрофону. Материалы "
 "урока — ниже под видео; доска, демонстрация экрана и чат — в нижней панели "
 "видеоокна."
-msgstr "«Qo'shilish» tugmasini bosing va kamera hamda mikrofonga ruxsat bering. Dars materiallari — video ostida; doska, ekranni ulashish va chat — video oynaning pastki panelida."
+msgstr ""
+"«Qo'shilish» tugmasini bosing va kamera hamda mikrofonga ruxsat bering. Dars "
+"materiallari — video ostida; doska, ekranni ulashish va chat — video "
+"oynaning pastki panelida."
 
 #: templates/booking/lesson_room.html:198
 #: templates/booking/lesson_room.html:221 templates/logic/home.html:2469
+#: templates/partials/telegram_connect_banner.html:16
 msgid "Скрыть"
 msgstr "Yashirish"
 
@@ -7991,6 +8015,19 @@ msgstr ""
 msgid "Перейти в каталог"
 msgstr "Katalogga o'tish"
 
+#: templates/logic/student_suggestions.html:450
+msgid "Подпишитесь на наш Telegram-канал"
+msgstr "Telegram kanalimizga obuna bo'ling"
+
+#: templates/logic/student_suggestions.html:451
+msgid ""
+"Новые учителя, акции и полезные советы по обучению — первыми у нас в канале."
+msgstr "Yangi o'qituvchilar, aksiyalar va foydali maslahatlar — birinchi bo'lib kanalimizda."
+
+#: templates/logic/student_suggestions.html:454
+msgid "Подписаться"
+msgstr "Obuna bo'lish"
+
 # ========== STUDENTS LIST PAGE ==========
 #: templates/logic/students_list.html:1088
 msgid "Ученики ищут учителей"
@@ -8650,6 +8687,20 @@ msgstr "Sizda hali bildirishnomalar yo'q"
 #: templates/notifications/list.html:448
 msgid "Здесь будут отображаться важные обновления и новости"
 msgstr "Muhim yangilanishlar va yangiliklar shu yerda ko'rinadi"
+
+#: templates/partials/telegram_connect_banner.html:10
+msgid "Не пропускайте уроки"
+msgstr "Darslarni o'tkazib yubormang"
+
+#: templates/partials/telegram_connect_banner.html:11
+msgid ""
+"Подключите Telegram-бота — напоминания об уроках, домашних заданиях и "
+"сообщениях придут прямо в Telegram."
+msgstr "Telegram-botni ulang — darslar, uy vazifalari va xabarlar haqidagi eslatmalar to'g'ridan-to'g'ri Telegramga keladi."
+
+#: templates/partials/telegram_connect_banner.html:14
+msgid "Подключить"
+msgstr "Ulash"
 
 #: templates/registration/base_wizard.html:7
 msgid "Регистрация учителя"

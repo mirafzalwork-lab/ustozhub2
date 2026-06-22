@@ -586,6 +586,58 @@ def queue_new_message_notification(recipient: User, sender_name: str, message_pr
     )
 
 
+# Эмодзи-префикс по категории Notification — для читаемости в Telegram
+# (в самом приложении категория рисуется иконкой, в Telegram нужен текст).
+_CATEGORY_EMOJI = {
+    'booking': '📅', 'lesson': '🎓', 'payment_in': '💰', 'payment_out': '💸',
+    'review': '⭐', 'moderation': '🛡', 'reminder': '⏰', 'subscription': '📦',
+    'success': '✅', 'warning': '⚠️', 'general': '🔔',
+}
+
+# Подпись кнопки по категории — чтобы CTA в Telegram был осмысленным.
+_CATEGORY_BUTTON = {
+    'reminder': '🎥 Войти в урок', 'lesson': '🎥 Войти в урок',
+    'booking': '📅 Открыть бронь', 'review': '⭐ Смотреть отзыв',
+    'payment_in': '💰 Открыть', 'payment_out': '💸 Открыть',
+    'subscription': '📦 Открыть',
+}
+
+
+def queue_user_notification(recipient, title, message, *, action_url=None,
+                            button_text=None, category='general', notification_id=None):
+    """Поставить в очередь Telegram произвольное персональное уведомление.
+
+    Мост Notification → Telegram (см. teachers/signals.py): любое in-app
+    уведомление конкретному пользователю дублируется в Telegram, если он
+    подключил бота. Тихо ничего не делает, если бот не подключён или выключены
+    уведомления (это решает create_notification).
+
+    notification_id делает ключ идемпотентности уникальным на каждое
+    уведомление — защищает от дублей при повторном срабатывании сигнала.
+    """
+    emoji = _CATEGORY_EMOJI.get(category, '🔔')
+    tg_title = f"{emoji} {title}" if title else emoji
+
+    data = {'category': category}
+    if action_url:
+        url = action_url
+        if url.startswith('/'):
+            url = f"{settings.SITE_URL.rstrip('/')}{url}"
+        if url.startswith('http'):
+            data['url'] = url
+            data['button_text'] = button_text or _CATEGORY_BUTTON.get(category, '🔗 Открыть')
+    if notification_id is not None:
+        data['notification_id'] = str(notification_id)
+
+    return notification_service.create_notification(
+        recipient=recipient,
+        notification_type='system',
+        title=tg_title,
+        message=message,
+        data=data,
+    )
+
+
 def process_notification_queue(batch_size=10):
     """
     Обработать очередь уведомлений (синхронно)

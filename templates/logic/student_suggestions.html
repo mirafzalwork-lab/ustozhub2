@@ -441,5 +441,29 @@
         </div>
     {% endif %}
 
+    {% if TELEGRAM_CHANNEL_URL %}
+    <div class="sm-tg-cta">
+        <div class="sm-tg-cta__icon" aria-hidden="true">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
+        </div>
+        <div class="sm-tg-cta__text">
+            <strong>{% trans "Подпишитесь на наш Telegram-канал" %}</strong>
+            <span>{% trans "Новые учителя, акции и полезные советы по обучению — первыми у нас в канале." %}</span>
+        </div>
+        <a href="{{ TELEGRAM_CHANNEL_URL }}" target="_blank" rel="noopener" class="sm-btn sm-btn--primary">
+            <i class="fab fa-telegram"></i> {% trans "Подписаться" %}
+        </a>
+    </div>
+    <style>
+        .sm-tg-cta{display:flex;align-items:center;gap:16px;margin-top:28px;padding:20px 22px;background:linear-gradient(135deg,#229ED9,#1c7fb0);color:#fff;border-radius:16px;}
+        .sm-tg-cta__icon{flex-shrink:0;width:54px;height:54px;background:rgba(255,255,255,0.18);border-radius:50%;display:flex;align-items:center;justify-content:center;}
+        .sm-tg-cta__text{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;}
+        .sm-tg-cta__text strong{font-size:16px;}
+        .sm-tg-cta__text span{font-size:13px;opacity:0.92;line-height:1.4;}
+        .sm-tg-cta .sm-btn--primary{flex-shrink:0;background:#fff;color:#1c7fb0;}
+        @media(max-width:560px){.sm-tg-cta{flex-wrap:wrap;text-align:center;}.sm-tg-cta__text{flex-basis:100%;align-items:center;order:2;}.sm-tg-cta__icon{order:1;margin:0 auto;}.sm-tg-cta .sm-btn{order:3;width:100%;justify-content:center;}}
+    </style>
+    {% endif %}
+
 </div>
 {% endblock %}

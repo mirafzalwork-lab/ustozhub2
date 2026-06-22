@@ -1,5 +1,6 @@
 """Context processors для добавления глобальных переменных во все шаблоны"""
 from .models import Message, Conversation, Notification
+from django.conf import settings
 from django.db.models import Q, Count
 from django.core.cache import cache
 import logging
@@ -135,6 +136,20 @@ def unread_notifications_count(request):
     except Exception as e:
         logger.error(f"Error in unread_notifications_count for user_id={request.user.pk}: {e}", exc_info=True)
         return {'unread_notifications_count': 0}
+
+
+def telegram_links(request):
+    """Ссылки на официальный Telegram канал и бот — доступны во всех шаблонах.
+
+    Без обращений к БД: чистые настройки, чтобы не нагружать каждый запрос.
+    Используются в футере (канал) и как fallback-ссылка на бота.
+    """
+    return {
+        'TELEGRAM_CHANNEL_URL': getattr(settings, 'TELEGRAM_CHANNEL_URL', ''),
+        'TELEGRAM_CHANNEL_USERNAME': getattr(settings, 'TELEGRAM_CHANNEL_USERNAME', ''),
+        'TELEGRAM_BOT_URL': getattr(settings, 'TELEGRAM_BOT_URL', ''),
+        'TELEGRAM_BOT_USERNAME': getattr(settings, 'TELEGRAM_BOT_USERNAME', ''),
+    }
 
 
 def admin_nav_badges(request):

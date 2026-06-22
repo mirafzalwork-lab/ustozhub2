@@ -324,8 +324,13 @@
     function handleConfirmed(payload) {
         if ($confirmedReply) $confirmedReply.textContent = payload.teacher_reply || '';
         if ($confirmedMeeting) {
-            if (payload.meeting_url) {
-                $confirmedMeeting.href = payload.meeting_url;
+            // Ведём в нашу комнату урока (учёт присутствия/доска/спор), а не на
+            // сырой meeting_url: вход мимо комнаты ломает фиксацию присутствия.
+            const roomHref = payload.lesson_room_url || payload.meeting_url;
+            if (roomHref) {
+                $confirmedMeeting.href = roomHref;
+                // Своя страница — открываем в том же табе, не в новом окне.
+                if (payload.lesson_room_url) $confirmedMeeting.removeAttribute('target');
                 $confirmedMeeting.hidden = false;
             } else {
                 $confirmedMeeting.hidden = true;

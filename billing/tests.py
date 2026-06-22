@@ -97,6 +97,33 @@ def _make_student_with_balance(username='stud', balance=Decimal('1000000')):
     return student
 
 
+def _attend(booking, role, *, fraction=1.0, offset=0.0):
+    """Тест-помощник: эмулирует реальное присутствие в видеокомнате.
+
+    Гарантирует, что слот в прошлом (если был в будущем — сдвигает), и создаёт
+    закрытую LessonAttendanceSession для `role` ('teacher'/'student') на долю
+    `fraction` длительности слота со сдвигом `offset` от начала. Нужен потому, что
+    settle_after_end теперь считает РЕАЛЬНОЕ время присутствия и overlap, а не
+    факт входа (см. Booking.compute_attendance)."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from teachers.models import TimeSlot, LessonAttendanceSession
+    now = timezone.now()
+    if booking.slot.end_at >= now:
+        dur = booking.slot.end_at - booking.slot.start_at
+        end = now - timedelta(minutes=10)
+        TimeSlot.objects.filter(pk=booking.slot_id).update(
+            start_at=end - dur, end_at=end)
+        booking.slot.refresh_from_db()
+    start = booking.slot.start_at
+    total = (booking.slot.end_at - booking.slot.start_at).total_seconds()
+    return LessonAttendanceSession.objects.create(
+        booking=booking, role=role,
+        joined_at=start + timedelta(seconds=total * offset),
+        left_at=start + timedelta(seconds=total * (offset + fraction)),
+    )
+
+
 class WalletAutoCreateTests(TestCase):
     def test_wallet_created_on_user_create(self):
         u = User.objects.create_user(username='alice', email='a@a.com', password='x' * 12)
@@ -1229,9 +1256,9 @@ class BugfixHardeningTests(TestCase):
         b.slot.end_at = timezone.now() - timedelta(hours=1)
         b.slot.save(update_fields=['start_at', 'end_at'])
         b.meeting_url = b.build_meeting_url()
-        b.record_join(is_teacher=True)   # учитель был
-        b.record_join(is_teacher=False)  # ученик был → урок проведён (completed)
         b.save()
+        _attend(b, 'teacher')   # учитель был всю длительность
+        _attend(b, 'student')   # ученик был → урок проведён (completed)
         SubscriptionService.cancel(self.sub, cancelled_by='student', reason='тест')
         self.teacher.user.wallet.refresh_from_db()
         # За проведённый урок учитель получил 85% (800000/8=100000 → 85000).
@@ -1507,8 +1534,8 @@ class TeacherNoShowSettleTests(TestCase):
         balance_before = self.student.wallet.balance
         total_before = self.subscription.total_lessons
 
-        # Ученик подключился, учитель — нет → no_show_teacher (ТЗ §7).
-        b.record_join(is_teacher=False)
+        # Ученик присутствовал, учитель — нет → no_show_teacher (ТЗ §7).
+        _attend(b, 'student')
         result = b.settle_after_end()
         self.assertEqual(result, 'no_show_teacher')
         b.refresh_from_db()
@@ -1524,8 +1551,8 @@ class TeacherNoShowSettleTests(TestCase):
 
     def test_teacher_present_completes(self):
         b = self._jitsi_booking()
-        b.record_join(is_teacher=True)
-        b.record_join(is_teacher=False)  # ученик тоже подключился
+        _attend(b, 'teacher')
+        _attend(b, 'student')  # ученик тоже присутствовал
         result = b.settle_after_end()
         self.assertEqual(result, 'completed')
         b.refresh_from_db()
@@ -1533,7 +1560,7 @@ class TeacherNoShowSettleTests(TestCase):
 
     def test_teacher_present_student_absent_is_no_show_student(self):
         b = self._jitsi_booking()
-        b.record_join(is_teacher=True)  # только учитель
+        _attend(b, 'teacher')  # только учитель
         result = b.settle_after_end()
         self.assertEqual(result, 'no_show_student')
         b.refresh_from_db()
@@ -1556,7 +1583,7 @@ class TeacherNoShowSettleTests(TestCase):
         from django.utils import timezone
         from teachers.models import Booking
         b = self._jitsi_booking()
-        b.record_join(is_teacher=False)         # ученик пришёл, учитель — нет
+        _attend(b, 'student')                   # ученик пришёл, учитель — нет
         self.assertEqual(b.settle_after_end(), 'no_show_teacher')
         old = timezone.now() - timedelta(minutes=20)
         Booking.objects.filter(pk=b.pk).update(updated_at=old)  # bypass auto_now
@@ -2288,16 +2315,20 @@ class LessonAttendanceTests(TestCase):
         self.assertIsNotNone(self.booking.teacher_joined_at)
         self.assertIsNone(self.booking.student_joined_at)
 
-    def test_leave_accumulates_and_clamps_seconds(self):
+    def test_leave_closes_attendance_session(self):
+        from teachers.models import LessonAttendanceSession
         self.client.login(username='at_t', password='x' * 12)
         self.client.post(self._url(), {'event': 'join'})
-        self.client.post(self._url(), {'event': 'leave', 'seconds': '600'})
-        self.booking.refresh_from_db()
-        self.assertEqual(self.booking.teacher_present_seconds, 600)
-        # Подделанное огромное значение клампится (60мин*60 + 1800 = 5400).
+        sessions = LessonAttendanceSession.objects.filter(
+            booking=self.booking, role=LessonAttendanceSession.ROLE_TEACHER,
+        )
+        self.assertEqual(sessions.count(), 1)
+        self.assertIsNone(sessions.first().left_at)  # ещё в комнате
+        # leave закрывает интервал по серверному времени (seconds игнорируются).
         self.client.post(self._url(), {'event': 'leave', 'seconds': '999999'})
         self.booking.refresh_from_db()
-        self.assertEqual(self.booking.teacher_present_seconds, 600 + 5400)
+        self.assertIsNotNone(sessions.first().left_at)
+        self.assertIsNotNone(self.booking.teacher_left_at)
 
     def test_non_participant_forbidden(self):
         _make_student_with_balance('at_x', balance=Decimal('0'))
@@ -2308,42 +2339,68 @@ class LessonAttendanceTests(TestCase):
         self.assertIsNone(self.booking.teacher_joined_at)
         self.assertIsNone(self.booking.student_joined_at)
 
-    def test_settle_uses_real_join_not_page_open(self):
+    def _past_slot(self):
+        """Сдвигает слот в прошлое (урок 60 мин) и возвращает (start, end)."""
         from datetime import timedelta
         from django.utils import timezone
-        # Оба реально подключились (через endpoint) → урок завершается completed.
-        self.client.login(username='at_t', password='x' * 12)
-        self.client.post(self._url(), {'event': 'join'})
-        self.client.logout()
-        self.client.login(username='at_s', password='x' * 12)
-        self.client.post(self._url(), {'event': 'join'})
-        # Сдвигаем слот в прошлое и завершаем.
-        self.slot.start_at = timezone.now() - timedelta(minutes=70)
-        self.slot.end_at = timezone.now() - timedelta(minutes=10)
+        start = timezone.now() - timedelta(minutes=70)
+        end = timezone.now() - timedelta(minutes=10)
+        self.slot.start_at = start
+        self.slot.end_at = end
         self.slot.save(update_fields=['start_at', 'end_at'])
         self.booking.refresh_from_db()
+        return start, end
+
+    def _session(self, role, start_min, end_min):
+        """Создаёт сессию присутствия [start+start_min, start+end_min] (минуты)."""
+        from datetime import timedelta
+        from teachers.models import LessonAttendanceSession
+        start = self.slot.start_at
+        LessonAttendanceSession.objects.create(
+            booking=self.booking, role=role,
+            joined_at=start + timedelta(minutes=start_min),
+            left_at=start + timedelta(minutes=end_min),
+        )
+
+    def test_settle_full_presence_is_completed(self):
+        # Урок 60 мин, required=24. Оба присутствовали >40% с overlap 45 мин.
+        self._past_slot()
+        self._session('teacher', 0, 50)
+        self._session('student', 5, 50)
         self.assertEqual(self.booking.settle_after_end(), 'completed')
+        self.booking.refresh_from_db()
+        self.assertGreaterEqual(self.booking.overlap_duration_seconds, 24 * 60)
+
+    def test_settle_short_join_is_not_completed(self):
+        # Анти-фрод §5: оба зашли на 2 минуты — меньше 40% → урок не состоялся.
+        self._past_slot()
+        self._session('teacher', 0, 2)
+        self._session('student', 0, 2)
+        self.assertEqual(self.booking.settle_after_end(), 'not_held')
+
+    def test_settle_low_overlap_is_not_held(self):
+        # Анти-фрод §5: каждый был >40%, но НЕ одновременно (overlap ~0) → not_held.
+        self._past_slot()
+        self._session('teacher', 0, 28)    # первые 28 мин
+        self._session('student', 30, 58)   # последние 28 мин — пересечения нет
+        self.assertEqual(self.booking.settle_after_end(), 'not_held')
 
     def test_settle_teacher_present_student_absent_is_no_show_student(self):
-        from datetime import timedelta
-        from django.utils import timezone
-        # Учитель подключился, ученик — нет → no_show_student (урок засчитан учителю).
-        self.client.login(username='at_t', password='x' * 12)
-        self.client.post(self._url(), {'event': 'join'})
-        self.slot.start_at = timezone.now() - timedelta(minutes=70)
-        self.slot.end_at = timezone.now() - timedelta(minutes=10)
-        self.slot.save(update_fields=['start_at', 'end_at'])
-        self.booking.refresh_from_db()
+        # Учитель был >40%, ученик не заходил → no_show_student (урок засчитан учителю).
+        self._past_slot()
+        self._session('teacher', 0, 50)
         self.assertEqual(self.booking.settle_after_end(), 'no_show_student')
 
+    def test_settle_student_present_teacher_short_is_no_show_teacher(self):
+        # Ученик был >40%, учитель зашёл на 3 мин (<40%) → no_show_teacher (возврат).
+        self._past_slot()
+        self._session('teacher', 0, 3)
+        self._session('student', 0, 50)
+        self.assertEqual(self.booking.settle_after_end(), 'no_show_teacher')
+
     def test_settle_no_join_is_not_held(self):
-        from datetime import timedelta
-        from django.utils import timezone
         # Никто не подключался → not_held (ТЗ §8: урок не состоялся).
-        self.slot.start_at = timezone.now() - timedelta(minutes=70)
-        self.slot.end_at = timezone.now() - timedelta(minutes=10)
-        self.slot.save(update_fields=['start_at', 'end_at'])
-        self.booking.refresh_from_db()
+        self._past_slot()
         self.assertEqual(self.booking.settle_after_end(), 'not_held')
 
 
@@ -2495,7 +2552,7 @@ class StudentNoShowForgivenessTests(TestCase):
         # 3 неявки подряд — все прощены (урок возвращается, выплаты нет).
         for i in range(3):
             b = self._past_jitsi_booking()
-            b.record_join(is_teacher=True)  # учитель был, ученик — нет
+            _attend(b, 'teacher')  # учитель был, ученик — нет
             self.assertEqual(b.settle_after_end(), 'no_show_student')
             b.refresh_from_db()
             self.assertTrue(b.no_show_forgiven, f'неявка #{i+1} должна быть прощена')
@@ -2510,7 +2567,7 @@ class StudentNoShowForgivenessTests(TestCase):
 
         # 4-я неявка — урок списывается и оплачивается учителю.
         b4 = self._past_jitsi_booking()
-        b4.record_join(is_teacher=True)
+        _attend(b4, 'teacher')
         self.assertEqual(b4.settle_after_end(), 'no_show_student')
         b4.refresh_from_db()
         self.assertFalse(b4.no_show_forgiven, '4-я неявка должна списываться')
@@ -2532,7 +2589,8 @@ class StudentNoShowForgivenessTests(TestCase):
     def test_lesson_event_journal_written(self):
         from teachers.models import LessonEvent
         b = self._past_jitsi_booking()
-        b.record_join(is_teacher=True)
+        b.record_join(is_teacher=True)  # реальный вход → событие join_teacher
+        _attend(b, 'teacher')           # + присутствие, чтобы settle дал no_show_student
         b.settle_after_end()
         kinds = set(LessonEvent.objects.filter(booking=b).values_list('kind', flat=True))
         self.assertIn('join_teacher', kinds)

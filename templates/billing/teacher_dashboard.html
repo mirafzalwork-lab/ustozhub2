@@ -69,6 +69,7 @@
 </style>
 
 <div class="tdb">
+  {% include 'partials/telegram_connect_banner.html' %}
   <h1 class="greet">
     {% trans 'Здравствуйте' %}, {{ request.user.first_name|default:request.user.username }}!
     <small>{% trans 'Сводка на сегодня' %}</small>
@@ -202,8 +203,12 @@
                 <small>· {{ b.subject.name|default:'' }}</small>
               </div>
               <span class="pill {{ b.status }}">{{ b.get_status_display }}</span>
-              {% if b.meeting_url %}
-                <a href="{{ b.meeting_url }}" target="_blank" style="color:#6366F1; text-decoration:none; font-size:13px; margin-left:8px;"><i class="fas fa-video"></i></a>
+              {% if b.status == 'confirmed' %}
+                {% if b.is_join_window_open %}
+                  <a href="{% url 'lesson_room' b.id %}" style="display:inline-flex; align-items:center; gap:5px; color:#fff; background:#22C55E; padding:5px 12px; border-radius:8px; text-decoration:none; font-size:13px; font-weight:600; margin-left:8px;"><i class="fas fa-video"></i> {% trans 'Войти' %}</a>
+                {% else %}
+                  <span style="color:#94A3B8; font-size:12px; margin-left:8px;" title="{% trans 'Вход открывается незадолго до начала' %}"><i class="far fa-clock"></i> {% blocktrans with t=b.join_opens_at|date:"H:i" %}с {{ t }}{% endblocktrans %}</span>
+                {% endif %}
               {% endif %}
             </div>
           {% endfor %}

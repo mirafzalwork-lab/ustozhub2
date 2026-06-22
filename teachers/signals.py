@@ -15,7 +15,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 try:
-    from telegram_bot.notification_service import queue_new_message_notification
+    from telegram_bot.notification_service import (
+        queue_new_message_notification, queue_user_notification,
+    )
     TELEGRAM_BOT_AVAILABLE = True
 except ImportError:
     TELEGRAM_BOT_AVAILABLE = False
@@ -279,6 +281,42 @@ def clear_teacher_reviews_cache(sender, instance=None, **kwargs):
         logger.error(f"Ошибка пересчёта rating: {e}", exc_info=True)
 
 
+@receiver(post_save, sender=Review)
+def notify_teacher_new_review(sender, instance=None, created=False, **kwargs):
+    """Уведомление учителю о новом отзыве.
+
+    Создаёт персональный Notification — он автоматически уйдёт в in-app,
+    email и Telegram (через мост в push_notification_realtime).
+    """
+    if not created or not instance:
+        return
+    try:
+        from django.urls import reverse
+        teacher_user = instance.teacher.user
+        student_name = instance.student.get_full_name() or instance.student.username
+        stars = '★' * instance.rating + '☆' * (5 - instance.rating)
+        short = f"{student_name} оценил вас на {instance.rating}/5"
+        comment = (instance.comment or '').strip()
+        full = f"{stars}\n{short}"
+        if comment:
+            full += f"\n\n«{comment[:300]}»"
+        try:
+            url = reverse('teacher_detail', args=[instance.teacher_id])
+        except Exception:
+            url = ''
+        Notification.objects.create(
+            title='Новый отзыв',
+            short_text=short,
+            full_text=full,
+            target='specific_user',
+            target_user=teacher_user,
+            category=Notification.Category.REVIEW,
+            action_url=url,
+        )
+    except Exception as e:
+        logger.error(f"Не удалось создать уведомление об отзыве {getattr(instance,'pk',None)}: {e}", exc_info=True)
+
+
 @receiver(post_save, sender=User)
 def sync_teacher_search_text_on_user_change(sender, instance=None, created=False, **kwargs):
     """
@@ -357,6 +395,26 @@ def push_notification_realtime(sender, instance, created, **kwargs):
                         send_notification_email.apply(args=[instance.pk])
                     except Exception:
                         logger.error(f'sync email send failed for notification {instance.pk}', exc_info=True)
+
+            # Мост в Telegram: догоняем оффлайн-пользователя в боте. Тихо
+            # пропускается, если бот не подключён (решает create_notification).
+            # Покрывает брони, платежи, неявки, ДЗ, отзывы и т.д. — всё, что
+            # уже создаёт персональный Notification, без правок десятка вьюх.
+            if TELEGRAM_BOT_AVAILABLE and instance.target_user_id:
+                try:
+                    queue_user_notification(
+                        recipient=instance.target_user,
+                        title=instance.title,
+                        message=instance.short_text or instance.full_text,
+                        action_url=instance.action_url,
+                        category=instance.category,
+                        notification_id=instance.pk,
+                    )
+                except Exception as e:
+                    logger.error(
+                        f'Telegram bridge failed for notification {instance.pk}: {e}',
+                        exc_info=True,
+                    )
         elif instance.target in ('all', 'students', 'teachers', 'admins'):
             # Массовая рассылка — в Celery, чтобы не подвешивать web-процесс.
             # Eager-fallback: если Celery недоступен, выполнится синхронно (.apply()).

@@ -58,6 +58,15 @@ app.conf.beat_schedule = {
         'schedule': 60.0,
         'options': {'expires': 60.0},
     },
+    # Скользящее окно слотов: слоты нарезаются один раз при регистрации на
+    # 4 недели и без пополнения «протухают» (календарь бронирования пустеет).
+    # Раз в сутки докручиваем окно до 4 недель по личному расписанию учителя
+    # (идемпотентно — добавляются только недостающие будущие free-слоты).
+    'replenish-teacher-slots-daily': {
+        'task': 'teachers.replenish_teacher_slots',
+        'schedule': crontab(hour=1, minute=0),
+        'options': {'expires': 3600.0},
+    },
     # Деактивация in-app уведомлений старше 90 дней (бейдж/листинг не
     # деградируют от вечного роста таблицы Notification).
     'cleanup-old-inapp-notifications-daily': {

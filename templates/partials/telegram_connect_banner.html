@@ -1,0 +1,33 @@
+{% load i18n %}
+{# Баннер «Подключить Telegram-бота». Показывается, если аккаунт ещё не привязан. #}
+{# Ожидает в контексте: telegram_connected (bool), telegram_connect_url (str). #}
+{% if not telegram_connected and telegram_connect_url %}
+<div class="tg-connect-banner" id="tgConnectBanner">
+    <div class="tg-connect-icon" aria-hidden="true">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
+    </div>
+    <div class="tg-connect-text">
+        <strong>{% trans 'Не пропускайте уроки' %}</strong>
+        <span>{% trans 'Подключите Telegram-бота — напоминания об уроках, домашних заданиях и сообщениях придут прямо в Telegram.' %}</span>
+    </div>
+    <a class="tg-connect-btn" href="{{ telegram_connect_url }}" target="_blank" rel="noopener">
+        {% trans 'Подключить' %}
+    </a>
+    <button type="button" class="tg-connect-close" aria-label="{% trans 'Скрыть' %}" onclick="(function(){var b=document.getElementById('tgConnectBanner');if(b)b.remove();try{sessionStorage.setItem('tgBannerHidden','1');}catch(e){}})()">&times;</button>
+</div>
+<style>
+    .tg-connect-banner{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#229ED9,#1c7fb0);color:#fff;border-radius:14px;padding:16px 18px;margin-bottom:20px;box-shadow:0 4px 16px rgba(34,158,217,0.25);}
+    .tg-connect-icon{flex-shrink:0;width:46px;height:46px;background:rgba(255,255,255,0.18);border-radius:50%;display:flex;align-items:center;justify-content:center;}
+    .tg-connect-text{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0;}
+    .tg-connect-text strong{font-size:15px;}
+    .tg-connect-text span{font-size:13px;opacity:0.92;line-height:1.35;}
+    .tg-connect-btn{flex-shrink:0;background:#fff;color:#1c7fb0;font-weight:700;text-decoration:none;padding:10px 20px;border-radius:9px;transition:transform .15s;}
+    .tg-connect-btn:hover{transform:translateY(-1px);}
+    .tg-connect-close{flex-shrink:0;background:transparent;border:none;color:rgba(255,255,255,0.8);font-size:26px;line-height:1;cursor:pointer;padding:0 4px;}
+    .tg-connect-close:hover{color:#fff;}
+    @media(max-width:560px){.tg-connect-banner{flex-wrap:wrap;}.tg-connect-text{flex-basis:100%;order:2;}.tg-connect-btn{order:3;}}
+</style>
+<script>
+    (function(){try{if(sessionStorage.getItem('tgBannerHidden')==='1'){var b=document.getElementById('tgConnectBanner');if(b)b.remove();}}catch(e){}})();
+</script>
+{% endif %}

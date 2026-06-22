@@ -901,6 +901,23 @@
             color: white;
         }
 
+        .footer-tg-link {
+            display: inline-flex !important;
+            align-items: center;
+            margin-top: 14px;
+            padding: 8px 14px;
+            background: rgba(36,159,216,0.16);
+            border: 1px solid rgba(36,159,216,0.45);
+            border-radius: 8px;
+            color: #8fd3f4 !important;
+            font-weight: 600;
+        }
+
+        .footer-tg-link:hover {
+            background: rgba(36,159,216,0.28);
+            color: #fff !important;
+        }
+
         .social-links {
             display: flex;
             gap: 12px;
@@ -1753,7 +1770,12 @@
             <div class="footer-section">
                 <h3>UstozHub</h3>
                 <p>{% trans 'Платформа №1 для поиска квалифицированных преподавателей в Узбекистане.' %}</p>
-                {# Соцсети скрыты до запуска официальных каналов — пустые ссылки убраны #}
+                {% if TELEGRAM_CHANNEL_URL %}
+                <a class="footer-tg-link" href="{{ TELEGRAM_CHANNEL_URL }}" target="_blank" rel="noopener">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align:-3px;margin-right:6px;"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
+                    {% trans 'Наш Telegram-канал' %}
+                </a>
+                {% endif %}
             </div>
 
             <div class="footer-section">
