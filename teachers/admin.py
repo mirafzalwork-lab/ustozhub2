@@ -1165,23 +1165,34 @@ class TimeSlotAdmin(admin.ModelAdmin):
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
     list_display = (
-        'short_id', 'student_name', 'teacher_name', 'slot_time',
-        'status_colored', 'is_trial', 'expires_at', 'created_at',
+        'short_id', 'student_name', 'student_contacts', 'teacher_name', 'teacher_contacts',
+        'slot_time', 'status_colored', 'is_trial', 'expires_at', 'created_at',
     )
-    list_filter = ('status', 'is_trial', 'created_at')
+    list_filter = ('is_trial', 'status', 'created_at')
     search_fields = (
-        'student__first_name', 'student__last_name', 'student__email',
+        'student__first_name', 'student__last_name', 'student__email', 'student__phone',
         'slot__teacher__user__first_name', 'slot__teacher__user__last_name',
+        'slot__teacher__user__phone', 'slot__teacher__telegram',
     )
     autocomplete_fields = ('slot', 'student', 'subject')
-    readonly_fields = ('id', 'created_at', 'updated_at', 'started_at', 'ended_at')
+    readonly_fields = (
+        'id', 'created_at', 'updated_at', 'started_at', 'ended_at',
+        'student_contacts_full', 'teacher_contacts_full',
+    )
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)
     list_per_page = 50
+    list_select_related = ('student', 'student__student_profile', 'slot__teacher__user', 'subject')
 
     fieldsets = (
         ('Основное', {
             'fields': ('id', 'slot', 'student', 'subject', 'is_trial', 'status'),
+        }),
+        ('Контакты ученика', {
+            'fields': ('student_contacts_full',),
+        }),
+        ('Контакты учителя', {
+            'fields': ('teacher_contacts_full',),
         }),
         ('Hold', {
             'fields': ('expires_at',),
@@ -1198,6 +1209,39 @@ class BookingAdmin(admin.ModelAdmin):
         }),
     )
 
+    # --- Вспомогательные форматтеры контактов ---
+
+    @staticmethod
+    def _phone_link(phone):
+        phone = (phone or '').strip()
+        if not phone:
+            return None
+        return format_html('<a href="tel:{}">{}</a>', phone, phone)
+
+    @staticmethod
+    def _telegram_link(telegram):
+        tg = (telegram or '').strip()
+        if not tg:
+            return None
+        handle = tg.lstrip('@')
+        if tg.startswith('http://') or tg.startswith('https://'):
+            url, label = tg, tg
+        else:
+            url, label = f'https://t.me/{handle}', f'@{handle}'
+        return format_html('<a href="{}" target="_blank">{}</a>', url, label)
+
+    def _contacts_short(self, phone, telegram):
+        parts = []
+        p = self._phone_link(phone)
+        if p:
+            parts.append(p)
+        t = self._telegram_link(telegram)
+        if t:
+            parts.append(t)
+        if not parts:
+            return '—'
+        return format_html('<br>'.join(['{}'] * len(parts)), *parts)
+
     @admin.display(description='ID')
     def short_id(self, obj):
         return str(obj.id)[:8] + '…'
@@ -1205,6 +1249,26 @@ class BookingAdmin(admin.ModelAdmin):
     @admin.display(description='Ученик')
     def student_name(self, obj):
         return obj.student.get_full_name() or obj.student.username
+
+    @admin.display(description='Контакты ученика')
+    def student_contacts(self, obj):
+        telegram = getattr(getattr(obj.student, 'student_profile', None), 'telegram', '')
+        return self._contacts_short(obj.student.phone, telegram)
+
+    @admin.display(description='Телефон / Telegram учителя')
+    def teacher_contacts(self, obj):
+        profile = obj.slot.teacher
+        return self._contacts_short(profile.user.phone, profile.telegram)
+
+    @admin.display(description='Контакты ученика')
+    def student_contacts_full(self, obj):
+        telegram = getattr(getattr(obj.student, 'student_profile', None), 'telegram', '')
+        return self._contacts_short(obj.student.phone, telegram)
+
+    @admin.display(description='Контакты учителя')
+    def teacher_contacts_full(self, obj):
+        profile = obj.slot.teacher
+        return self._contacts_short(profile.user.phone, profile.telegram)
 
     @admin.display(description='Учитель')
     def teacher_name(self, obj):
