@@ -13,6 +13,7 @@ urlpatterns = [
     path('admin-dashboard/billing/withdrawals/<uuid:wr_id>/action/', admin_views.withdrawal_action, name='admin_withdrawal_action'),
     path('admin-dashboard/billing/subscriptions/', admin_views.subscriptions_manage, name='admin_billing_subscriptions'),
     path('admin-dashboard/billing/subscriptions/<uuid:sub_id>/cancel/', admin_views.subscription_admin_cancel, name='admin_subscription_cancel'),
+    path('admin-dashboard/billing/trials/', admin_views.trial_lessons_manage, name='admin_billing_trials'),
     path('admin-dashboard/billing/disputes/', admin_views.disputes_manage, name='admin_billing_disputes'),
     path('admin-dashboard/billing/disputes/<uuid:dispute_id>/action/', admin_views.dispute_action, name='admin_dispute_action'),
 

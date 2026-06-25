@@ -167,7 +167,7 @@ def admin_nav_badges(request):
         if cached is not None:
             return {'admin_badges': cached}
 
-        from .models import TeacherProfile
+        from .models import Booking, TeacherProfile
         from billing.models import LessonDispute, Subscription, WithdrawalRequest
 
         badges = {
@@ -177,6 +177,9 @@ def admin_nav_badges(request):
             'requests': Subscription.objects.filter(status=Subscription.Status.PENDING_APPROVAL).count(),
         }
         badges['total'] = sum(badges.values())
+        # Пробные уроки в ожидании подтверждения учителя — информативный счётчик,
+        # НЕ входит в «требует внимания» (подтверждает учитель, не админ).
+        badges['trials'] = Booking.objects.filter(is_trial=True, status='pending').count()
         cache.set(cache_key, badges, 30)  # 30s — свежо, но без нагрузки
         return {'admin_badges': badges}
     except Exception as e:

@@ -74,6 +74,7 @@
             <li><a href="{% url 'admin_billing_hub' %}"><i class="fas fa-coins"></i> <span>Финансы</span></a></li>
             <li><a href="{% url 'admin_billing_wallets' %}"><i class="fas fa-wallet"></i> <span>Кошельки</span></a></li>
             <li><a href="{% url 'admin_billing_subscriptions' %}"><i class="fas fa-graduation-cap"></i> <span>Подписки</span></a></li>
+            <li><a href="{% url 'admin_billing_trials' %}"><i class="fas fa-flask"></i> <span>Пробные уроки</span>{% if admin_badges.trials %}<span class="sb-badge">{{ admin_badges.trials }}</span>{% endif %}</a></li>
 
             <li class="sidebar-group">Коммуникации</li>
             <li><a href="{% url 'admin_messages' %}"><i class="fas fa-comments"></i> <span>Сообщения</span></a></li>

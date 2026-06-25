@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans 'Пробные уроки' %} — Admin{% endblock %}
+
+{% block content %}
+<style>
+  .ab-status.confirmed { background:#EFF6FF; color:#1D4ED8; }
+  .ab-status.rescheduled { background:#F5F3FF; color:#6D28D9; }
+  .ab-status.no_show_student, .ab-status.no_show_teacher { background:#FEF2F2; color:#B91C1C; }
+</style>
+<div class="ab-page">
+  {% with active_tab='trials' %}{% include 'billing/admin/_base.html' %}{% endwith %}
+
+  <h1><i class="fas fa-flask"></i> {% trans 'Пробные уроки' %}</h1>
+  <p class="subtitle">
+    {% blocktrans %}Кто забронировал пробный урок и у какого учителя. Телефон и Telegram — кликабельны.{% endblocktrans %}
+  </p>
+
+  <div class="ab-cards">
+    <div class="ab-card brand">
+      <div class="lbl">{% trans 'Всего' %}</div>
+      <div class="val">{{ total }}</div>
+    </div>
+    <div class="ab-card warn">
+      <div class="lbl">{% trans 'Ждут подтверждения' %}</div>
+      <div class="val">{{ pending_count }}</div>
+    </div>
+  </div>
+
+  {# Фильтр по статусу #}
+  <div class="ab-tabs" style="margin-top:0">
+    <a href="?status=all{% if q %}&q={{ q|urlencode }}{% endif %}" {% if status == 'all' %}class="active"{% endif %}>{% trans 'Все' %}</a>
+    {% for val, label in statuses %}
+      <a href="?status={{ val }}{% if q %}&q={{ q|urlencode }}{% endif %}" {% if status == val %}class="active"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  {# Поиск #}
+  <form method="get" class="ab-search">
+    {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+    <input type="text" name="q" value="{{ q }}"
+           placeholder="{% trans 'Имя ученика/учителя, телефон, Telegram…' %}">
+    <button type="submit" class="ab-btn ab-btn-primary"><i class="fas fa-search"></i> {% trans 'Найти' %}</button>
+    {% if q %}<a href="?status={{ status }}" class="ab-btn ab-btn-secondary">{% trans 'Сброс' %}</a>{% endif %}
+  </form>
+
+  <div class="ab-section" style="padding:0; overflow-x:auto">
+    <table class="ab-table">
+      <thead>
+        <tr>
+          <th>{% trans 'Забронирован' %}</th>
+          <th>{% trans 'Ученик' %}</th>
+          <th>{% trans 'Контакты ученика' %}</th>
+          <th>{% trans 'Учитель' %}</th>
+          <th>{% trans 'Телефон / Telegram учителя' %}</th>
+          <th>{% trans 'Предмет' %}</th>
+          <th>{% trans 'Время урока' %}</th>
+          <th>{% trans 'Статус' %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+          <tr>
+            <td style="white-space:nowrap; color:#64748B">{{ r.booking.created_at|date:"d.m.Y H:i" }}</td>
+            <td><b>{{ r.student_name }}</b></td>
+            <td>
+              {% if r.student_phone %}<a href="tel:{{ r.student_phone }}">{{ r.student_phone }}</a>{% endif %}
+              {% if r.student_tg_url %}{% if r.student_phone %}<br>{% endif %}<a href="{{ r.student_tg_url }}" target="_blank" rel="noopener"><i class="fab fa-telegram"></i> {{ r.student_tg_label }}</a>{% endif %}
+              {% if not r.student_phone and not r.student_tg_url %}<span style="color:#94A3B8">—</span>{% endif %}
+            </td>
+            <td><b>{{ r.teacher_name }}</b></td>
+            <td>
+              {% if r.teacher_phone %}<a href="tel:{{ r.teacher_phone }}">{{ r.teacher_phone }}</a>{% endif %}
+              {% if r.teacher_tg_url %}{% if r.teacher_phone %}<br>{% endif %}<a href="{{ r.teacher_tg_url }}" target="_blank" rel="noopener"><i class="fab fa-telegram"></i> {{ r.teacher_tg_label }}</a>{% endif %}
+              {% if not r.teacher_phone and not r.teacher_tg_url %}<span style="color:#94A3B8">—</span>{% endif %}
+            </td>
+            <td>{{ r.booking.subject.name|default:'—' }}</td>
+            <td style="white-space:nowrap">{{ r.booking.slot.start_at|date:"d.m.Y H:i" }}</td>
+            <td><span class="ab-status {{ r.booking.status }}">{{ r.booking.get_status_display }}</span></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" style="text-align:center; padding:40px; color:#94A3B8">
+            <i class="far fa-folder-open fa-2x"></i><p>{% trans 'Пробных уроков не найдено.' %}</p>
+          </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# Пагинация #}
+  {% if page_obj.has_other_pages %}
+    <div style="display:flex; gap:12px; align-items:center; justify-content:center; margin-top:18px">
+      {% if page_obj.has_previous %}
+        <a class="ab-btn ab-btn-secondary" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.previous_page_number }}">← {% trans 'Назад' %}</a>
+      {% endif %}
+      <span style="color:#64748B; font-size:14px">{% blocktrans with cur=page_obj.number total=page_obj.paginator.num_pages %}Стр. {{ cur }} из {{ total }}{% endblocktrans %}</span>
+      {% if page_obj.has_next %}
+        <a class="ab-btn ab-btn-secondary" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.next_page_number }}">{% trans 'Вперёд' %} →</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

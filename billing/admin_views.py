@@ -80,6 +80,98 @@ def dispute_action(request, dispute_id):
     return redirect('admin_billing_disputes')
 
 
+# ---------- Пробные уроки / бронирования ----------
+
+
+def _telegram_url(value):
+    """Нормализует Telegram (@user / user / ссылка) → (url, подпись) или (None, None)."""
+    tg = (value or '').strip()
+    if not tg:
+        return None, None
+    if tg.startswith(('http://', 'https://')):
+        return tg, tg.split('//', 1)[-1]
+    handle = tg.lstrip('@')
+    return f'https://t.me/{handle}', f'@{handle}'
+
+
+@staff_required
+def trial_lessons_manage(request):
+    """Пробные уроки: кто забронировал, у какого учителя, контакты обеих сторон.
+
+    Для админа сразу видны телефон и Telegram учителя (и ученика) — чтобы
+    связаться без раскопок по Django admin. Фильтр по статусу + поиск.
+    """
+    from django.core.paginator import Paginator
+
+    from teachers.models import Booking
+
+    status = (request.GET.get('status') or 'all').strip()
+    q = (request.GET.get('q') or '').strip()
+
+    qs = (
+        Booking.objects
+        .filter(is_trial=True)
+        .select_related(
+            'student', 'student__student_profile',
+            'slot', 'slot__teacher', 'slot__teacher__user', 'subject',
+        )
+        .order_by('-created_at')
+    )
+
+    if status in dict(Booking.STATUS_CHOICES):
+        qs = qs.filter(status=status)
+
+    if q:
+        qs = qs.filter(
+            Q(student__first_name__icontains=q)
+            | Q(student__last_name__icontains=q)
+            | Q(student__phone__icontains=q)
+            | Q(slot__teacher__user__first_name__icontains=q)
+            | Q(slot__teacher__user__last_name__icontains=q)
+            | Q(slot__teacher__user__phone__icontains=q)
+            | Q(slot__teacher__telegram__icontains=q)
+        )
+
+    pending_count = Booking.objects.filter(is_trial=True, status='pending').count()
+
+    paginator = Paginator(qs, 50)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    rows = []
+    for b in page_obj.object_list:
+        student = b.student
+        teacher = b.slot.teacher
+        s_profile = getattr(student, 'student_profile', None)
+        s_tg_url, s_tg_label = _telegram_url(getattr(s_profile, 'telegram', ''))
+        t_tg_url, t_tg_label = _telegram_url(teacher.telegram)
+        rows.append({
+            'booking': b,
+            'student_name': student.get_full_name() or student.username,
+            'student_phone': (student.phone or '').strip(),
+            'student_tg_url': s_tg_url,
+            'student_tg_label': s_tg_label,
+            'teacher_name': teacher.user.get_full_name() or teacher.user.username,
+            'teacher_phone': (teacher.user.phone or '').strip(),
+            'teacher_tg_url': t_tg_url,
+            'teacher_tg_label': t_tg_label,
+        })
+
+    qd = request.GET.copy()
+    qd.pop('page', None)
+    querystring = qd.urlencode()
+
+    return render(request, 'billing/admin/trials.html', {
+        'page_obj': page_obj,
+        'rows': rows,
+        'total': paginator.count,
+        'status': status,
+        'q': q,
+        'pending_count': pending_count,
+        'statuses': Booking.STATUS_CHOICES,
+        'querystring': querystring,
+    })
+
+
 # ---------- Hub ----------
 
 

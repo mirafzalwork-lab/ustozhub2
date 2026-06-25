@@ -73,5 +73,6 @@
   <a href="{% url 'admin_billing_wallets' %}" {% if active_tab == 'wallets' %}class="active"{% endif %}><i class="fas fa-wallet"></i> Кошельки</a>
   <a href="{% url 'admin_billing_withdrawals' %}" {% if active_tab == 'withdrawals' %}class="active"{% endif %}><i class="fas fa-money-bill-wave"></i> Выводы{% if admin_badges.withdrawals %}<span class="ab-badge">{{ admin_badges.withdrawals }}</span>{% endif %}</a>
   <a href="{% url 'admin_billing_subscriptions' %}" {% if active_tab == 'subscriptions' %}class="active"{% endif %}><i class="fas fa-graduation-cap"></i> Подписки{% if admin_badges.requests %}<span class="ab-badge">{{ admin_badges.requests }}</span>{% endif %}</a>
+  <a href="{% url 'admin_billing_trials' %}" {% if active_tab == 'trials' %}class="active"{% endif %}><i class="fas fa-flask"></i> Пробные уроки{% if admin_badges.trials %}<span class="ab-badge" style="background:#D97706">{{ admin_badges.trials }}</span>{% endif %}</a>
   <a href="{% url 'admin_billing_disputes' %}" {% if active_tab == 'disputes' %}class="active"{% endif %}><i class="fas fa-scale-balanced"></i> Споры{% if admin_badges.disputes %}<span class="ab-badge">{{ admin_badges.disputes }}</span>{% endif %}</a>
 </div>
