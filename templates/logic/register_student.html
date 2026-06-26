@@ -970,6 +970,20 @@
             {% endfor %}
         {% endif %}
 
+        {# Прогрессивное улучшение: без JavaScript пошаговый визард не работает    #}
+        {# (.reg-step скрыты, кнопки-переходы на JS). Раскрываем всю форму одной   #}
+        {# страницей, прячем прогресс и JS-кнопки — submit/skip остаются рабочими. #}
+        <noscript>
+            <style>
+                .reg-step { display: block !important; }
+                .reg-wizard-progress { display: none !important; }
+                .reg-nav__btn--next, .reg-nav__btn--back { display: none !important; }
+            </style>
+            <div class="alert alert-info">
+                {% trans 'Для пошагового заполнения включите JavaScript. Сейчас все поля показаны на одной странице — заполните их и нажмите «Создать аккаунт».' %}
+            </div>
+        </noscript>
+
         <form method="post" id="registerForm" data-wizard data-initial-step="{% if form.errors %}{% if form.interests.errors or form.learning_format.errors or form.budget_min.errors or form.budget_max.errors or form.available_weekdays.errors %}2{% elif form.bio.errors or form.telegram.errors or form.whatsapp.errors %}3{% else %}1{% endif %}{% else %}1{% endif %}">
             {% csrf_token %}
 
