@@ -163,6 +163,19 @@ class HomeworkForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['due_at'].input_formats = ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M']
         self.fields['due_at'].required = False
+        # Клиентский минимум — нельзя выбрать дедлайн в прошлом (datetime-local).
+        from django.utils import timezone
+        self.fields['due_at'].widget.attrs['min'] = timezone.localtime(
+            timezone.now()).strftime('%Y-%m-%dT%H:%M')
+
+    def clean_due_at(self):
+        # Серверная защита: дедлайн в прошлом сделал бы задание сразу «просроченным».
+        due_at = self.cleaned_data.get('due_at')
+        if due_at:
+            from django.utils import timezone
+            if due_at < timezone.now():
+                raise forms.ValidationError(_('Дедлайн не может быть в прошлом.'))
+        return due_at
 
 
 class HomeworkSubmissionForm(forms.ModelForm):

@@ -57,6 +57,8 @@ urlpatterns = [
     # Homework (LMS, Phase 8)
     path('profile/homework/', views.teacher_homework_list, name='teacher_homework_list'),
     path('profile/homework/new/', views.teacher_homework_create, name='teacher_homework_create'),
+    path('homework/<uuid:hw_id>/edit/', views.teacher_homework_edit, name='teacher_homework_edit'),
+    path('homework/<uuid:hw_id>/delete/', views.teacher_homework_delete, name='teacher_homework_delete'),
     path('my/homework/', views.student_homework_list, name='student_homework_list'),
     path('homework/<uuid:hw_id>/', views.homework_detail, name='homework_detail'),
 

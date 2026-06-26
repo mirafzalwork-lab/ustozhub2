@@ -1263,6 +1263,54 @@ def teacher_homework_create(request):
 
 
 @login_required
+def teacher_homework_edit(request, hw_id):
+    """Учитель правит ещё не сданное ДЗ (опечатка/не тот срок).
+
+    Только пока status=ASSIGNED — после сдачи менять условие нельзя, иначе
+    у ученика «съезжает» задание под уже отправленным ответом.
+    """
+    teacher = _get_teacher_or_403(request)
+    if teacher is None:
+        return redirect('home')
+    hw = get_object_or_404(Homework, pk=hw_id, teacher=teacher)
+    if hw.status != Homework.Status.ASSIGNED:
+        messages.error(request, _('Редактировать можно только ещё не сданное задание.'))
+        return redirect('homework_detail', hw_id=hw.id)
+
+    if request.method == 'POST':
+        form = HomeworkForm(request.POST, instance=hw)
+        if form.is_valid():
+            hw = form.save(commit=False)
+            from teachers.contact_filter import mask_for_pair
+            # NB: _w1/_w2, не `_` — иначе затенили бы gettext на всю функцию.
+            hw.title, _w1 = mask_for_pair(hw.student, teacher, hw.title or '')
+            hw.description, _w2 = mask_for_pair(hw.student, teacher, hw.description or '')
+            hw.save()
+            messages.success(request, _('Задание обновлено.'))
+            return redirect('homework_detail', hw_id=hw.id)
+    else:
+        form = HomeworkForm(instance=hw)
+
+    return render(request, 'billing/homework_edit.html', {'form': form, 'homework': hw})
+
+
+@login_required
+@require_POST
+def teacher_homework_delete(request, hw_id):
+    """Учитель удаляет ещё не сданное ДЗ (только status=ASSIGNED)."""
+    teacher = _get_teacher_or_403(request)
+    if teacher is None:
+        return redirect('home')
+    hw = get_object_or_404(Homework, pk=hw_id, teacher=teacher)
+    if hw.status != Homework.Status.ASSIGNED:
+        messages.error(request, _('Удалить можно только ещё не сданное задание.'))
+        return redirect('homework_detail', hw_id=hw.id)
+    hw.delete()
+    messages.success(request, _('Задание удалено.'))
+    return redirect('teacher_homework_list')
+
+
+@login_required
 def homework_detail(request, hw_id):
     """Единая страница ДЗ — рендерим разный UI для учителя и ученика."""
     homework = get_object_or_404(
@@ -1297,6 +1345,17 @@ def homework_detail(request, hw_id):
     })
 
 
+def _render_student_homework(request, homework, submission, submission_form):
+    """Рендер страницы ДЗ для ученика с сохранением введённого ответа в форме."""
+    return render(request, 'billing/homework_detail.html', {
+        'homework': homework,
+        'submission': submission,
+        'role': 'student',
+        'submission_form': submission_form,
+        'grade_form': None,
+    })
+
+
 def _handle_student_submit(request, homework, submission):
     """Ученик сдаёт работу (или пересдаёт, если status=returned)."""
     if homework.status not in (Homework.Status.ASSIGNED, Homework.Status.RETURNED):
@@ -1306,10 +1365,11 @@ def _handle_student_submit(request, homework, submission):
     form = HomeworkSubmissionForm(request.POST, instance=submission)
     files = request.FILES.getlist('files')
 
-    # Должно быть хоть что-то (текст или файл)
+    # Должно быть хоть что-то (текст или файл). При ошибке РЕНДЕРИМ страницу с
+    # заполненной формой, а не redirect — иначе набранный ответ теряется.
     if not (form.data.get('text_response', '').strip() or files):
         messages.error(request, _('Напишите ответ или прикрепите хотя бы один файл.'))
-        return redirect('homework_detail', hw_id=homework.id)
+        return _render_student_homework(request, homework, submission, form)
 
     # Валидация файлов
     for f in files:
@@ -1317,7 +1377,7 @@ def _handle_student_submit(request, homework, submission):
             validate_homework_file(f)
         except Exception as e:
             messages.error(request, f'{f.name}: {e}')
-            return redirect('homework_detail', hw_id=homework.id)
+            return _render_student_homework(request, homework, submission, form)
 
     if form.is_valid():
         if submission is None:
@@ -1516,8 +1576,13 @@ def student_dashboard(request):
     )
 
     # ДЗ — pending (новые) и submitted (на проверке)
+    # Включаем и «возвращённые на доработку» — иначе ученик, пропустивший
+    # уведомление, теряет доработку из виду на дашборде (аудит §5).
     new_homework = (
-        Homework.objects.filter(student=request.user, status=Homework.Status.ASSIGNED)
+        Homework.objects.filter(
+            student=request.user,
+            status__in=(Homework.Status.ASSIGNED, Homework.Status.RETURNED),
+        )
         .select_related('teacher__user', 'subscription__subject')
         .order_by('-created_at')[:5]
     )

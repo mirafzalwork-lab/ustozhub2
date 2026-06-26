@@ -792,6 +792,8 @@ class Homework(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # Когда отправлено напоминание о приближении дедлайна — чтобы не слать дважды.
+    reminder_sent_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = _('Домашнее задание')

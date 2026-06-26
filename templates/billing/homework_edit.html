@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans 'Редактировать задание' %} — UstozHub{% endblock %}
+
+{% block content %}
+{% include 'billing/_homework_common.html' %}
+
+<div class="hw-page" style="max-width:780px;">
+  <h1>{% trans 'Редактировать задание' %}</h1>
+  <p class="subtitle">{% trans 'Можно изменить условие и срок, пока ученик ещё не сдал работу. Ученик:' %}
+    <strong>{{ homework.student.get_full_name|default:homework.student.username }}</strong></p>
+
+  <form method="post" novalidate data-lock>
+    {% csrf_token %}
+
+    <div class="form-row">
+      <label for="{{ form.title.id_for_label }}">{% trans 'Название задания' %} <span style="color:#DC2626">*</span></label>
+      {{ form.title }}
+      {% if form.title.errors %}<div class="err">{{ form.title.errors }}</div>{% endif %}
+    </div>
+
+    <div class="form-row">
+      <label for="{{ form.description.id_for_label }}">{% trans 'Описание' %} <span style="color:#DC2626">*</span></label>
+      {{ form.description }}
+      {% if form.description.errors %}<div class="err">{{ form.description.errors }}</div>{% endif %}
+    </div>
+
+    <div class="form-row">
+      <label for="{{ form.due_at.id_for_label }}">{% trans 'Дедлайн (опционально)' %}</label>
+      {{ form.due_at }}
+      {% if form.due_at.errors %}<div class="err">{{ form.due_at.errors }}</div>{% endif %}
+    </div>
+
+    <div style="display:flex; gap:12px; margin-top:24px;">
+      <button type="submit" class="hw-btn-primary">{% trans 'Сохранить изменения' %}</button>
+      <a href="{% url 'homework_detail' homework.id %}" class="hw-btn-secondary">{% trans 'Отмена' %}</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

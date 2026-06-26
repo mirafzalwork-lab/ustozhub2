@@ -84,6 +84,17 @@
     </div>
   {% endif %}
 
+  {# Учитель может править/удалять задание, пока ученик его не сдал. #}
+  {% if role == 'teacher' and homework.status == 'assigned' %}
+    <div class="hw-card" style="margin-top:18px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+      <a href="{% url 'teacher_homework_edit' homework.id %}" class="hw-btn-secondary"><i class="fas fa-pen"></i> {% trans 'Редактировать' %}</a>
+      <form method="post" action="{% url 'teacher_homework_delete' homework.id %}" onsubmit="return confirm('{% trans 'Удалить это задание? Действие необратимо.' %}');" style="margin:0;">
+        {% csrf_token %}
+        <button type="submit" class="hw-btn-secondary" style="color:#DC2626; border-color:#FECACA;"><i class="fas fa-trash"></i> {% trans 'Удалить' %}</button>
+      </form>
+    </div>
+  {% endif %}
+
   <!-- Форма ученика (если ещё не сдано или returned) -->
   {% if role == 'student' and submission_form %}
   {% if homework.status == 'assigned' or homework.status == 'returned' %}
@@ -91,7 +102,7 @@
       <h2 style="margin:0 0 10px; font-size:16px; color:#0A2540;">
         {% if homework.status == 'returned' %}<i class="fas fa-rotate-left"></i> {% trans 'Пересдать работу' %}{% else %}<i class="fas fa-pen"></i> {% trans 'Сдать работу' %}{% endif %}
       </h2>
-      <form method="post" enctype="multipart/form-data" novalidate>
+      <form method="post" enctype="multipart/form-data" novalidate data-lock>
         {% csrf_token %}
         <div class="form-row">
           <label for="{{ submission_form.text_response.id_for_label }}">{% trans 'Ваш ответ' %}</label>
@@ -114,7 +125,7 @@
       <h2 style="margin:0 0 10px; font-size:16px; color:#0A2540;">
         <i class="fas fa-star"></i> {% if homework.status == 'graded' %}{% trans 'Пересмотреть оценку' %}{% else %}{% trans 'Поставить оценку' %}{% endif %}
       </h2>
-      <form method="post" novalidate>
+      <form method="post" novalidate data-lock>
         {% csrf_token %}
         <div class="form-row">
           {% for radio in grade_form.decision %}

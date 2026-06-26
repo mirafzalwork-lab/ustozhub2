@@ -477,3 +477,50 @@ def settle_expired_subscriptions():
             f'refunded {refunded_total}, errors {errors}'
         )
     return {'settled': settled, 'refunded': refunded_total, 'errors': errors}
+
+
+@shared_task(name='billing.homework_due_reminders')
+def homework_due_reminders():
+    """Напоминание ученику о приближении дедлайна ДЗ (аудит §5 — раньше дедлайн
+    не подкреплялся ничем, поле due_at было почти декоративным).
+
+    Берёт незавершённые задания (assigned/returned) с дедлайном в ближайшие
+    HOMEWORK_REMINDER_LEAD_HOURS часов, по которым ещё не слали напоминание
+    (reminder_sent_at is None), и шлёт одно уведомление ученику. Идемпотентно:
+    повторный запуск не дублирует — reminder_sent_at проставляется сразу.
+    """
+    from django.urls import reverse
+    from .models import Homework
+    from .services import SubscriptionService
+
+    now = timezone.now()
+    lead = getattr(settings, 'HOMEWORK_REMINDER_LEAD_HOURS', 24)
+    window_end = now + timedelta(hours=lead)
+    qs = Homework.objects.filter(
+        status__in=(Homework.Status.ASSIGNED, Homework.Status.RETURNED),
+        due_at__isnull=False,
+        due_at__gt=now,
+        due_at__lte=window_end,
+        reminder_sent_at__isnull=True,
+    ).select_related('student')
+
+    sent = 0
+    for hw in qs:
+        try:
+            when = timezone.localtime(hw.due_at).strftime('%d.%m %H:%M')
+            SubscriptionService._notify(
+                hw.student,
+                'Скоро дедлайн домашнего задания',
+                f'Дедлайн по заданию «{hw.title}» — {when}. Не забудьте сдать работу.',
+                url=reverse('homework_detail', args=[hw.id]),
+                category='reminder',
+            )
+            hw.reminder_sent_at = now
+            hw.save(update_fields=['reminder_sent_at'])
+            sent += 1
+        except Exception:
+            logger.warning('homework reminder failed for hw=%s', hw.id, exc_info=True)
+
+    if sent:
+        logger.info(f'homework_due_reminders: sent {sent}')
+    return sent
