@@ -123,7 +123,7 @@
   <div class="balance-card">
     <div>
       <div class="label">{% trans 'Текущий баланс' %}</div>
-      <div class="amount">{{ wallet.balance|floatformat:0|intcomma }} <small>{{ wallet.currency|default:'UZS' }}</small></div>
+      <div class="amount">{{ wallet.balance|floatformat:0|intcomma }} <small>{% trans 'сум' %}</small></div>
     </div>
     <i class="fas fa-wallet" style="font-size:36px; opacity:.4;"></i>
   </div>
@@ -163,7 +163,7 @@
       <div class="req-row" style="background:#fff;">
         <div class="req-info">
           <div class="req-label">{% trans 'Сумма пополнения, сум' %}</div>
-          <input type="number" name="amount" min="{{ min_topup }}" step="1000" required
+          <input type="number" name="amount" min="{{ min_topup }}"{% if max_topup %} max="{{ max_topup }}"{% endif %} step="1000" required
                  value="{% if needed > 0 %}{{ needed }}{% elif amount > 0 %}{{ amount }}{% endif %}"
                  placeholder="{{ min_topup }}"
                  style="width:100%; border:none; outline:none; background:transparent; font-size:18px; font-weight:600; color:#0A2540; font-variant-numeric:tabular-nums;">

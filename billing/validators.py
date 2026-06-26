@@ -7,6 +7,7 @@ from __future__ import annotations
 import os
 
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext as _
 
 
 MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB
@@ -48,22 +49,23 @@ def validate_homework_file(uploaded_file) -> None:
     mime = getattr(uploaded_file, 'content_type', '') or ''
 
     if size <= 0:
-        raise ValidationError('Файл пустой.')
+        raise ValidationError(_('Файл пустой.'))
 
     if size > MAX_FILE_SIZE_BYTES:
         mb = size / (1024 * 1024)
         raise ValidationError(
-            f'Файл слишком большой: {mb:.1f} MB (максимум {MAX_FILE_SIZE_BYTES // (1024*1024)} MB).'
+            _('Файл слишком большой: %(mb).1f MB (максимум %(max)s MB).')
+            % {'mb': mb, 'max': MAX_FILE_SIZE_BYTES // (1024 * 1024)}
         )
 
     ext = os.path.splitext(name)[1].lstrip('.').lower()
     if not ext:
-        raise ValidationError(f'У файла «{name}» не указано расширение.')
+        raise ValidationError(_('У файла «%(name)s» не указано расширение.') % {'name': name})
 
     if ext not in ALLOWED_EXTENSIONS:
         raise ValidationError(
-            f'Расширение .{ext} не разрешено. Допустимы: pdf, doc/docx, xls/xlsx, '
-            f'txt, jpg/png, mp4, zip и др.'
+            _('Расширение .%(ext)s не разрешено. Допустимы: pdf, doc/docx, xls/xlsx, '
+              'txt, jpg/png, mp4, zip и др.') % {'ext': ext}
         )
 
     expected_mimes = EXTENSION_MIME_HINTS.get(ext)
@@ -72,5 +74,6 @@ def validate_homework_file(uploaded_file) -> None:
         # Жёсткий контроль расширения уже сделан выше; MIME — мягкое предупреждение.
         if 'octet-stream' not in mime:
             raise ValidationError(
-                f'MIME-тип «{mime}» не соответствует расширению .{ext}.'
+                _('MIME-тип «%(mime)s» не соответствует расширению .%(ext)s.')
+                % {'mime': mime, 'ext': ext}
             )

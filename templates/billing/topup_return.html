@@ -32,7 +32,7 @@
     <div class="pay-icon ok"><i class="fas fa-circle-check"></i></div>
     <h1>{% trans 'Оплата прошла успешно' %}</h1>
     <p>{% trans 'Средства зачислены на ваш кошелёк.' %}</p>
-    <div class="pay-balance">{{ wallet.balance|floatformat:0|intcomma }} {{ wallet.currency|default:'UZS' }}</div>
+    <div class="pay-balance">{{ wallet.balance|floatformat:0|intcomma }} {% trans 'сум' %}</div>
   {% elif invoice and invoice.status == 'error' %}
     <div class="pay-icon fail"><i class="fas fa-circle-xmark"></i></div>
     <h1>{% trans 'Оплата не прошла' %}</h1>
@@ -41,7 +41,7 @@
     <div class="pay-icon wait"><i class="fas fa-hourglass-half fa-spin"></i></div>
     <h1>{% trans 'Платёж обрабатывается' %}</h1>
     <p>{% trans 'Если оплата прошла, средства появятся на балансе в течение нескольких минут. Статус обновляется автоматически.' %}</p>
-    {% if wallet %}<div class="pay-balance">{{ wallet.balance|floatformat:0|intcomma }} {{ wallet.currency|default:'UZS' }}</div>{% endif %}
+    {% if wallet %}<div class="pay-balance">{{ wallet.balance|floatformat:0|intcomma }} {% trans 'сум' %}</div>{% endif %}
     <script>
     (function () {
         // Авто-обновление статуса (callback Multicard асинхронный): перезагружаем

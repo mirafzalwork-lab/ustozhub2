@@ -60,7 +60,7 @@
       <div class="wallet-label">{% trans 'Баланс кошелька' %}</div>
       <div class="wallet-amount">
         {{ wallet.balance|floatformat:0|intcomma }}
-        <small>{{ wallet.currency|default:"UZS" }}</small>
+        <small>{% trans 'сум' %}</small>
       </div>
     </div>
   </div>
