@@ -343,6 +343,7 @@ window.UstozMyBookings = {
     joinLeadMinutes: {{ join_lead_minutes|default:10 }},
     joinGraceMinutes: {{ join_grace_minutes|default:30 }},
     noShowReportMinutes: {{ no_show_report_minutes|default:15 }},
+    rescheduleMinLeadHours: {{ reschedule_min_lead_hours|default:4 }},
     urls: {
         list:    "{% url 'my_bookings_api' %}",
         confirm: "/{{ LANGUAGE_CODE|default:'ru' }}/api/bookings/__ID__/confirm/",
@@ -388,6 +389,9 @@ window.UstozMyBookings = {
         reschedule: "{% filter escapejs %}{% trans 'Перенести' %}{% endfilter %}",
         rescheduleTitle: "{% filter escapejs %}{% trans 'Перенести урок' %}{% endfilter %}",
         rescheduleHint: "{% filter escapejs %}{% trans 'Выберите другой свободный слот. После переноса учитель подтвердит новое время.' %}{% endfilter %}",
+        rescheduleHintSubscription: "{% filter escapejs %}{% trans 'Выберите другой свободный слот. Новое время подтвердится сразу — отдельного подтверждения учителя не нужно.' %}{% endfilter %}",
+        rescheduleTooLate: "{% filter escapejs %}{% trans 'Перенести можно не позднее чем за {n} ч до начала урока' %}{% endfilter %}",
+        rescheduledSubscription: "{% filter escapejs %}{% trans 'Урок перенесён на новое время.' %}{% endfilter %}",
         pickSlot: "{% filter escapejs %}{% trans 'Новый слот' %}{% endfilter %}",
         noFreeSlots: "{% filter escapejs %}{% trans 'У учителя нет свободных слотов на ближайшие 30 дней.' %}{% endfilter %}",
         addToCalendar: "{% filter escapejs %}{% trans 'Добавить в календарь (.ics)' %}{% endfilter %}",

@@ -627,6 +627,9 @@ def _booking_to_dict(b: Booking, has_review: bool | None = None) -> dict:
         'status': b.status,
         'status_display': b.get_status_display(),
         'is_trial': b.is_trial,
+        # Подписочный урок переносится сразу в confirmed (без повторного
+        # подтверждения учителя) — клиент по этому флагу показывает корректный текст.
+        'is_subscription': bool(b.subscription_id),
         'created_at': b.created_at.isoformat(),
         'expires_at': b.expires_at.isoformat() if b.expires_at else None,
         'student_message': b.student_message,
@@ -1211,6 +1214,9 @@ def my_bookings_page(request):
         # Порог, после которого ученик может отметить неявку преподавателя —
         # должен совпадать с серверной проверкой (student_report_teacher_no_show).
         'no_show_report_minutes': getattr(settings, 'TEACHER_NO_SHOW_REPORT_AFTER_MINUTES', 15),
+        # Минимальный лид-тайм переноса — чтобы кнопку «Перенести» гасить заранее,
+        # а не показывать ошибку после выбора слота (совпадает с reschedule_by_student).
+        'reschedule_min_lead_hours': getattr(settings, 'RESCHEDULE_MIN_LEAD_HOURS', 4),
     })
 
 

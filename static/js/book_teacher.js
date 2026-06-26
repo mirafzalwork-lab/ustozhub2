@@ -44,6 +44,7 @@
     const $duration = document.getElementById('book-duration');
     const $subject = document.getElementById('book-subject');
     const $trial = document.getElementById('book-trial');
+    const $trialWrap = $trial ? $trial.closest('.cal-field') : null;
     const $message = document.getElementById('book-message');
     const $error = document.getElementById('book-error');
     const $confirm = document.getElementById('book-confirm');
@@ -95,6 +96,13 @@
         const isFreeTrial = opt.dataset.freeTrial === '1';
         const trialPrice = parseFloat(opt.dataset.trialPrice || '0');
         const trialDuration = parseInt(opt.dataset.trialDuration || '60', 10);
+
+        // Чекбокс «пробный» имеет смысл только если у выбранного предмета есть
+        // пробный (бесплатный или платный). Иначе прячем и снимаем отметку —
+        // чтобы не отправлять пробный, который сервер отклонит (400/409).
+        const hasTrial = isFreeTrial || trialPrice > 0;
+        if ($trialWrap) $trialWrap.style.display = hasTrial ? '' : 'none';
+        if (!hasTrial && $trial.checked) $trial.checked = false;
 
         // Пробный — бесплатный
         if ($trial.checked && isFreeTrial) {
@@ -407,7 +415,7 @@
     }
 
     const calendar = new FullCalendar.Calendar(el, {
-        locale: cfg.locale === 'uz' ? 'en' : (cfg.locale || 'ru'),
+        locale: cfg.locale || 'ru',
         initialView: 'timeGridWeek',
         firstDay: 1,
         nowIndicator: true,
@@ -425,11 +433,9 @@
             center: 'title',
             right: 'timeGridDay,timeGridWeek',
         },
-        buttonText: {
-            today: cfg.locale === 'ru' ? 'Сегодня' : 'Today',
-            day:   cfg.locale === 'ru' ? 'День' : 'Day',
-            week:  cfg.locale === 'ru' ? 'Неделя' : 'Week',
-        },
+        // Подписи кнопок и дни недели локализует сам FullCalendar из бандла
+        // locales-all (включая uz). Раньше locale uz подменялся на en + кастомный
+        // buttonText форсил английский — из-за этого uz не локализовался.
         validRange: { start: new Date() }, // нельзя смотреть в прошлое
         events: async (info, success, failure) => {
             try {

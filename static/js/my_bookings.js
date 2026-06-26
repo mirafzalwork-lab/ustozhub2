@@ -229,13 +229,21 @@
                 <i class="fa-regular fa-calendar-plus"></i></a>`);
         }
         if (cfg.role === 'teacher' && b.status === 'confirmed') {
-            const lbl = b.meeting_url ? i18n.editLink : i18n.setLink;
-            buttons.push(`<button class="bk-btn secondary" data-action="set-link">${lbl}</button>`);
+            // Ссылка на встречу не задаётся вручную: внешние ссылки отключены,
+            // урок всегда идёт во встроенной видеокомнате (авто-Jitsi).
             buttons.push(`<button class="bk-btn danger" data-action="cancel">${i18n.cancel}</button>`);
         }
         if (cfg.role === 'student' && (b.status === 'pending' || b.status === 'confirmed')) {
-            buttons.push(`<button class="bk-btn secondary" data-action="reschedule">
-                <i class="fa-regular fa-clock"></i> ${i18n.reschedule || 'Перенести'}</button>`);
+            // Лид-тайм переноса показываем заранее: если до старта меньше порога,
+            // кнопка неактивна с понятной подсказкой (а не ошибка после выбора слота).
+            if (canReschedule(b)) {
+                buttons.push(`<button class="bk-btn secondary" data-action="reschedule">
+                    <i class="fa-regular fa-clock"></i> ${i18n.reschedule || 'Перенести'}</button>`);
+            } else {
+                const tip = (i18n.rescheduleTooLate || 'Перенос недоступен').replace('{n}', cfg.rescheduleMinLeadHours || 4);
+                buttons.push(`<button class="bk-btn secondary" disabled title="${escapeHtml(tip)}" style="opacity:.5;cursor:not-allowed;">
+                    <i class="fa-regular fa-clock"></i> ${i18n.reschedule || 'Перенести'}</button>`);
+            }
             buttons.push(`<button class="bk-btn danger" data-action="cancel">${i18n.cancel}</button>`);
         }
         // Неявка преподавателя — прямо из списка, не заходя в комнату (аудит §2 P1).
@@ -281,6 +289,14 @@
         const lead = (cfg.joinLeadMinutes || 10) * 60 * 1000;
         const grace = (cfg.joinGraceMinutes || 30) * 60 * 1000;
         return (start - now <= lead) && (now <= new Date(end.getTime() + grace));
+    }
+
+    // Перенос доступен, пока до начала урока не меньше лид-тайма (квоты подписки
+    // проверяет сервер — их клиент не знает, но лид-тайм гасим заранее).
+    function canReschedule(b) {
+        const start = new Date(b.slot.start);
+        const lead = (cfg.rescheduleMinLeadHours || 4) * 3600 * 1000;
+        return (start.getTime() - Date.now()) >= lead;
     }
 
     // Можно ли отметить неявку преподавателя прямо из списка: ученик, наш Jitsi,
@@ -612,20 +628,22 @@
         if (action === 'confirm-fast') {
             url = cfg.urls.confirm.replace('__ID__', id);
             body = { reply: '', meeting_url: '' };
-            // Сразу submit, без подтверждения — undo можно через reject если что
+            // Подтверждение сразу, без модалки. Откат — отдельным действием
+            // «Отменить» (с политикой возврата), не через reject.
         } else if (action === 'confirm') {
+            // Ссылку на встречу не спрашиваем: внешние ссылки отключены, урок
+            // всегда идёт во встроенной видеокомнате (авто-Jitsi).
             const res = await modal({
                 title: i18n.confirmTitle,
                 okText: i18n.confirm,
                 okClass: 'primary',
                 fields: [
-                    { name: 'meeting_url', label: i18n.meetingUrlLabel, hint: i18n.meetingUrlHint, type: 'text', placeholder: 'https://…' },
                     { name: 'reply', label: i18n.replyLabel, type: 'textarea' },
                 ],
             });
             if (res === null) return;
             url = cfg.urls.confirm.replace('__ID__', id);
-            body = { reply: res.reply || '', meeting_url: res.meeting_url || '' };
+            body = { reply: res.reply || '', meeting_url: '' };
         } else if (action === 'reject') {
             // Phase 5: quick-reply chips
             const chips = [
@@ -653,16 +671,6 @@
             if (res === null) return;
             url = cfg.urls.cancel.replace('__ID__', id);
             body = {};
-        } else if (action === 'set-link') {
-            const current = card.dataset.meetingUrl || '';
-            const res = await modal({
-                title: i18n.setLinkTitle,
-                okText: i18n.ok,
-                fields: [{ name: 'meeting_url', label: i18n.meetingUrlLabel, hint: i18n.meetingUrlHint, type: 'text', value: current, placeholder: 'https://…' }],
-            });
-            if (res === null) return;
-            url = cfg.urls.setLink.replace('__ID__', id);
-            body = { meeting_url: res.meeting_url || '' };
         } else if (action === 'reschedule') {
             const teacherId = card.dataset.teacherId;
             btn.disabled = true;
@@ -681,9 +689,15 @@
             if (!slots.length) { toast(i18n.noFreeSlots, true); return; }
             const fmt = s => new Date(s.start).toLocaleString(cfg.locale,
                 { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+            // Подписочный урок переносится сразу (confirmed), разовый/пробный —
+            // снова уходит на подтверждение учителя. Текст не должен обещать
+            // подтверждение там, где его не будет.
+            const rescheduleText = b.is_subscription
+                ? (i18n.rescheduleHintSubscription || i18n.rescheduleHint)
+                : i18n.rescheduleHint;
             const res = await modal({
                 title: i18n.rescheduleTitle,
-                text: i18n.rescheduleHint,
+                text: rescheduleText,
                 okText: i18n.reschedule,
                 fields: [{
                     name: 'slot_id', label: i18n.pickSlot, type: 'select',
@@ -694,7 +708,9 @@
             try {
                 await api('POST', cfg.urls.reschedule.replace('__ID__', id),
                     { slot_id: parseInt(res.slot_id, 10) });
-                toast(i18n.rescheduled);
+                toast(b.is_subscription
+                    ? (i18n.rescheduledSubscription || i18n.rescheduled)
+                    : i18n.rescheduled);
                 await loadList();
             } catch (err) {
                 toast('Ошибка: ' + err.message, true);
