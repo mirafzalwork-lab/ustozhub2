@@ -1298,12 +1298,13 @@ def register_choose(request):
         # Разрешаем доступ пользователям без профиля (после Google login)
         has_profile = False
         try:
-            _ = request.user.teacher_profile.pk
+            # Не присваивать `_` — затеняет gettext на всю функцию (см. register_student).
+            request.user.teacher_profile.pk
             has_profile = True
         except Exception:
             pass
         try:
-            _ = request.user.student_profile.pk
+            request.user.student_profile.pk
             has_profile = True
         except Exception:
             pass
@@ -1320,7 +1321,10 @@ def register_student(request):
         # Разрешаем доступ Google-пользователям без профиля студента
         has_student = False
         try:
-            _ = request.user.student_profile.pk
+            # NB: не присваивать `_` — это затеняет gettext `_` на всю функцию,
+            # из-за чего messages.success(_('…')) ниже падал UnboundLocalError
+            # (тот же класс бага, что в leave_review). Просто обращаемся к .pk.
+            request.user.student_profile.pk
             has_student = True
         except Exception:
             pass
