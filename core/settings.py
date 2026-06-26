@@ -127,6 +127,7 @@ TEMPLATES = [
                 'teachers.context_processors.unread_notifications_count',  # Счётчик непрочитанных уведомлений
                 'teachers.context_processors.admin_nav_badges',  # Бейджи админ-навигации (staff)
                 'teachers.context_processors.telegram_links',  # Ссылки на Telegram канал/бот (футер и т.д.)
+                'teachers.context_processors.telegram_connect',  # Статус привязки + баннер «Подключить» на любой странице
             ],
         },
     },

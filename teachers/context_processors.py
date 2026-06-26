@@ -152,6 +152,39 @@ def telegram_links(request):
     }
 
 
+def telegram_connect(request):
+    """Статус привязки Telegram + deep-link для баннера «Подключить».
+
+    Делает баннер `partials/telegram_connect_banner.html` доступным на ЛЮБОЙ
+    странице (раньше переменные клались только во вьюхах дашбордов, поэтому на
+    уведомлениях и в переписке баннер не показывался). Кэшируется на пользователя
+    коротким TTL, чтобы не бить БД проверкой привязки на каждом запросе. Для
+    анонимов и staff не считаем — баннер им не нужен.
+    """
+    user = getattr(request, 'user', None)
+    if not (user and user.is_authenticated) or getattr(user, 'is_staff', False):
+        return {}
+    try:
+        cache_key = f'tg_connect_ctx_{user.pk}'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        from telegram_bot.account_link import is_connected, bot_connect_url
+        connected = is_connected(user)
+        # bot_connect_url генерит одноразовый токен с TTL 1 час (>> TTL кэша),
+        # поэтому ссылка останется живой в пределах окна кэширования.
+        ctx = {
+            'telegram_connected': connected,
+            'telegram_connect_url': '' if connected else bot_connect_url(user.pk),
+        }
+        cache.set(cache_key, ctx, 60)  # 60с — статус привязки меняется редко
+        return ctx
+    except Exception as e:
+        logger.debug(f"telegram_connect context failed for user_id={getattr(user, 'pk', None)}: {e}")
+        return {}
+
+
 def admin_nav_badges(request):
     """Счётчики «требует внимания» для админ-навигации (только для staff).
 

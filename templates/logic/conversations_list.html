@@ -525,6 +525,8 @@
         <h1><i class="fas fa-comment"></i> {% trans "Сообщения" %}</h1>
     </div>
 
+    {% include 'partials/telegram_connect_banner.html' %}
+
     {% if conversations %}
         <div class="conversations-list">
             {% for item in conversations %}
