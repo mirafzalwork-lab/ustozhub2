@@ -6,24 +6,38 @@
 {% block content %}
 <div style="max-width:1200px;margin:0 auto;padding:32px 16px;">
   <h1 style="font-size:24px;font-weight:700;margin-bottom:16px;">{% trans 'Мои избранные ученики' %}</h1>
+  {% csrf_token %}
   {% if students %}
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;">
+    <div id="fav-students-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;">
       {% for s in students %}
-        <a href="{% url 'student_detail' s.id %}" style="display:block;padding:16px;background:#f8f9fa;border-radius:12px;text-decoration:none;color:inherit;border:2px solid #e9ecef;">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:48px;height:48px;border-radius:50%;background:#10B981;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;overflow:hidden;">
+        <div class="fav-student-card" data-student-id="{{ s.id }}"
+             style="display:flex;flex-direction:column;gap:12px;padding:16px;background:#f8f9fa;border-radius:12px;border:2px solid #e9ecef;">
+          <a href="{% url 'student_detail' s.id %}" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;">
+            <div style="width:48px;height:48px;border-radius:50%;background:#10B981;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;overflow:hidden;flex-shrink:0;">
               {% if s.user.avatar %}
                 <img src="{{ s.user.avatar.url }}" alt="{{ s.user.get_full_name }}" style="width:100%;height:100%;object-fit:cover;">
               {% else %}
                 {{ s.user.first_name.0|default:"У" }}
               {% endif %}
             </div>
-            <div style="flex:1;">
+            <div style="flex:1;min-width:0;">
               <div style="font-weight:700;">{{ s.user.get_full_name|default:s.user.username }}</div>
               <div style="font-size:12px;color:#666;">{{ s.get_desired_subjects_display }}</div>
             </div>
+          </a>
+          <div style="display:flex;gap:8px;">
+            <a href="{% url 'start_conversation' s.user.id %}"
+               style="flex:1;text-align:center;padding:8px 10px;background:#3B82F6;color:#fff;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;">
+              <i class="fas fa-paper-plane"></i> {% trans 'Написать' %}
+            </a>
+            <button type="button" class="fav-student-remove" data-student-id="{{ s.id }}"
+                    data-url="{% url 'toggle_favorite_student' s.id %}"
+                    title="{% trans 'Убрать из избранного' %}"
+                    style="padding:8px 12px;background:#fff;color:#DC2626;border:1px solid #FECACA;border-radius:8px;cursor:pointer;font-size:13px;">
+              <i class="fas fa-heart-broken"></i>
+            </button>
           </div>
-        </a>
+        </div>
       {% endfor %}
     </div>
   {% else %}
@@ -33,8 +47,26 @@
     </div>
   {% endif %}
 </div>
+
+<script>
+(function () {
+  var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+  csrf = csrf ? csrf.value : '';
+  document.querySelectorAll('.fav-student-remove').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (!confirm("{% filter escapejs %}{% trans 'Убрать ученика из избранного?' %}{% endfilter %}")) return;
+      btn.disabled = true;
+      fetch(btn.getAttribute('data-url'), {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+      }).then(function (r) { return r.json(); }).then(function (d) {
+        if (d.success && !d.favorited) {
+          var card = btn.closest('.fav-student-card');
+          if (card) card.remove();
+        } else { btn.disabled = false; }
+      }).catch(function () { btn.disabled = false; });
+    });
+  });
+})();
+</script>
 {% endblock %}
-
-
-
-
