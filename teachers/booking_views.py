@@ -1208,6 +1208,9 @@ def my_bookings_page(request):
         # окном в lesson_room/lesson_attendance_api (−lead … +grace).
         'join_lead_minutes': getattr(settings, 'LESSON_JOIN_LEAD_MINUTES', 10),
         'join_grace_minutes': getattr(settings, 'LESSON_JOIN_GRACE_MINUTES', 30),
+        # Порог, после которого ученик может отметить неявку преподавателя —
+        # должен совпадать с серверной проверкой (student_report_teacher_no_show).
+        'no_show_report_minutes': getattr(settings, 'TEACHER_NO_SHOW_REPORT_AFTER_MINUTES', 15),
     })
 
 
@@ -1369,13 +1372,21 @@ def lesson_room(request, booking_id):
     # Ученик может отметить неявку преподавателя, если тот объективно не
     # подключился к нашей видеокомнате и прошёл порог опоздания.
     noshow_grace = getattr(settings, 'TEACHER_NO_SHOW_REPORT_AFTER_MINUTES', 15)
-    can_report_teacher_noshow = (
+    # Право на репорт, НЕ зависящее от времени и присутствия: их учитывает
+    # клиентский таймер + индикатор присутствия, чтобы кнопка появлялась без
+    # перезагрузки страницы ровно в момент start+grace (аудит §4/§2 P1). Раньше
+    # условие вычислялось только на сервере при рендере, и вошедший вовремя
+    # ученик кнопку не видел никогда без ручного reload.
+    noshow_eligible = (
         is_student
         and booking.status == 'confirmed'
         and not (booking.meeting_url and not booking.is_jitsi_meeting())  # не внешняя ссылка
-        and booking.teacher_joined_at is None
-        and now >= booking.slot.start_at + timedelta(minutes=noshow_grace)
     )
+    # Абсолютный момент, с которого репорт допустим (для клиентского таймера).
+    noshow_report_at = booking.slot.start_at + timedelta(minutes=noshow_grace)
+    # Серверная подсказка: подключался ли учитель к моменту рендера (клиент
+    # дополнительно отслеживает присутствие в реальном времени).
+    teacher_present_initial = booking.teacher_joined_at is not None
 
     return render(request, 'booking/lesson_room.html', {
         'booking': booking,
@@ -1388,7 +1399,9 @@ def lesson_room(request, booking_id):
         'other_name': other_name,
         'open_from': open_from,
         'join_lead': lead,
-        'can_report_teacher_noshow': can_report_teacher_noshow,
+        'noshow_eligible': noshow_eligible,
+        'noshow_report_at': noshow_report_at,
+        'teacher_present_initial': teacher_present_initial,
         'noshow_grace': noshow_grace,
     })
 

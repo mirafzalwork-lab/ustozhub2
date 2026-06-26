@@ -248,40 +248,21 @@
             <span>{% trans "Урок проходит на платформе: оплата защищена, при проблеме можно открыть спор и вернуть деньги. Договорённости вне платформы этих гарантий не дают." %}</span>
         </div>
 
-        {% if can_report_teacher_noshow %}
-        <div class="lr-noshow" style="margin-top:12px; padding:12px 16px; background:#FEF2F2; border:1px solid #FECACA; border-radius:10px; font-size:13px; color:#991B1B;">
+        {% if noshow_eligible %}
+        {# Блок неявки рендерится всегда (для ученика, при нашем Jitsi), но скрыт. #}
+        {# Клиентский таймер раскрывает его в момент start+grace, а индикатор    #}
+        {# присутствия прячет, если преподаватель на связи — без перезагрузки.   #}
+        <div class="lr-noshow" id="lr-noshow"
+             data-report-at="{{ noshow_report_at|date:'c' }}"
+             data-teacher-present="{% if teacher_present_initial %}1{% else %}0{% endif %}"
+             data-report-url="{% url 'booking_report_teacher_noshow_api' booking.id %}"
+             hidden
+             style="margin-top:12px; padding:12px 16px; background:#FEF2F2; border:1px solid #FECACA; border-radius:10px; font-size:13px; color:#991B1B;">
             <div style="margin-bottom:8px;">{% blocktrans %}Преподаватель так и не подключился? Если его нет дольше {{ noshow_grace }} минут, отметьте неявку — урок отменится, а средства сразу вернутся вам.{% endblocktrans %}</div>
             <button type="button" id="lr-report-noshow" style="background:#DC2626; color:#fff; border:none; border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer;">
                 <i class="fa-solid fa-user-xmark"></i> {% trans "Преподаватель не пришёл" %}
             </button>
         </div>
-        <script>
-        (function(){
-            var btn = document.getElementById('lr-report-noshow');
-            if (!btn) return;
-            btn.addEventListener('click', async function(){
-                if (!confirm("{% filter escapejs %}{% trans 'Отметить, что преподаватель не подключился? Урок будет отменён, а средства возвращены.' %}{% endfilter %}")) return;
-                btn.disabled = true;
-                try {
-                    var r = await fetch("{% url 'booking_report_teacher_noshow_api' booking.id %}", {
-                        method: 'POST',
-                        headers: { 'X-CSRFToken': "{{ csrf_token }}", 'X-Requested-With': 'XMLHttpRequest' }
-                    });
-                    var data = await r.json();
-                    if (r.ok) {
-                        alert(data.message || "{% filter escapejs %}{% trans 'Готово' %}{% endfilter %}");
-                        window.location.href = "{% url 'my_bookings_page' %}";
-                    } else {
-                        alert(data.error || "{% filter escapejs %}{% trans 'Не удалось выполнить действие' %}{% endfilter %}");
-                        btn.disabled = false;
-                    }
-                } catch (e) {
-                    alert("{% filter escapejs %}{% trans 'Ошибка сети, попробуйте ещё раз' %}{% endfilter %}");
-                    btn.disabled = false;
-                }
-            });
-        })();
-        </script>
         {% endif %}
     {% else %}
         <div class="lr-state">
@@ -433,12 +414,60 @@
     const txtOnline = "{% filter escapejs %}{% trans 'на связи' %}{% endfilter %}";
     const txtWaiting = "{% filter escapejs %}{% trans 'Ожидаем' %}{% endfilter %}";
     function setPresence(online) {
+        // Для ученика вторая сторона — преподаватель: его присутствие управляет
+        // видимостью кнопки неявки (если он на связи — кнопку прячем).
+        if (online) teacherEverPresent = true;
+        teacherOnline = online;
+        updateNoshowVisibility();
         if (!presenceEl) return;
         presenceEl.classList.toggle('is-online', online);
         if (presenceText) {
             presenceText.textContent = online
                 ? (otherName + ' ' + txtOnline)
                 : (txtWaiting + ' ' + otherName + '…');
+        }
+    }
+
+    // ---- Кнопка «Преподаватель не пришёл»: показ без перезагрузки ----
+    // Блок отрендерен скрытым; раскрываем его, когда наступил момент start+grace
+    // И преподаватель сейчас не на связи. Если он подключается — снова прячем.
+    const noshowBox = document.getElementById('lr-noshow');
+    let teacherOnline = false;
+    let teacherEverPresent = noshowBox ? noshowBox.getAttribute('data-teacher-present') === '1' : false;
+    const noshowReportAt = noshowBox
+        ? new Date(noshowBox.getAttribute('data-report-at')).getTime() : 0;
+    function updateNoshowVisibility() {
+        if (!noshowBox) return;
+        const due = Date.now() >= noshowReportAt;
+        noshowBox.hidden = !(due && !teacherOnline);
+    }
+    if (noshowBox) {
+        teacherOnline = teacherEverPresent;  // стартовое значение с сервера
+        updateNoshowVisibility();
+        setInterval(updateNoshowVisibility, 1000);  // дождаться момента start+grace
+        const noshowBtn = document.getElementById('lr-report-noshow');
+        if (noshowBtn) {
+            noshowBtn.addEventListener('click', async function () {
+                if (!confirm("{% filter escapejs %}{% trans 'Отметить, что преподаватель не подключился? Урок будет отменён, а средства возвращены.' %}{% endfilter %}")) return;
+                noshowBtn.disabled = true;
+                try {
+                    const r = await fetch(noshowBox.getAttribute('data-report-url'), {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrf, 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    const data = await r.json();
+                    if (r.ok) {
+                        alert(data.message || "{% filter escapejs %}{% trans 'Готово' %}{% endfilter %}");
+                        window.location.href = back;
+                    } else {
+                        alert(data.error || "{% filter escapejs %}{% trans 'Не удалось выполнить действие' %}{% endfilter %}");
+                        noshowBtn.disabled = false;
+                    }
+                } catch (e) {
+                    alert("{% filter escapejs %}{% trans 'Ошибка сети, попробуйте ещё раз' %}{% endfilter %}");
+                    noshowBtn.disabled = false;
+                }
+            });
         }
     }
 

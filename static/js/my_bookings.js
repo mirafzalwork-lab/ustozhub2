@@ -238,6 +238,12 @@
                 <i class="fa-regular fa-clock"></i> ${i18n.reschedule || 'Перенести'}</button>`);
             buttons.push(`<button class="bk-btn danger" data-action="cancel">${i18n.cancel}</button>`);
         }
+        // Неявка преподавателя — прямо из списка, не заходя в комнату (аудит §2 P1).
+        // Показываем по времени; присутствие и точные правила проверяет сервер.
+        if (isReportableNoshow(b)) {
+            buttons.push(`<button class="bk-btn danger" data-action="report-noshow">
+                <i class="fa-solid fa-user-xmark"></i> ${i18n.reportNoshow || 'Преподаватель не пришёл'}</button>`);
+        }
         if (cfg.role === 'student' && b.status === 'completed' && b.review_url) {
             const lbl = b.has_review ? (i18n.editReview || 'Изменить отзыв')
                                      : (i18n.leaveReview || 'Оставить отзыв');
@@ -275,6 +281,21 @@
         const lead = (cfg.joinLeadMinutes || 10) * 60 * 1000;
         const grace = (cfg.joinGraceMinutes || 30) * 60 * 1000;
         return (start - now <= lead) && (now <= new Date(end.getTime() + grace));
+    }
+
+    // Можно ли отметить неявку преподавателя прямо из списка: ученик, наш Jitsi,
+    // прошёл порог start+noShowReportMinutes и окно урока ещё открыто (end+grace).
+    // Финальную проверку (преподаватель реально не подключался) делает сервер.
+    function isReportableNoshow(b) {
+        if (cfg.role !== 'student' || b.status !== 'confirmed') return false;
+        if (!b.meeting_is_jitsi) return false;
+        const start = new Date(b.slot.start);
+        const end = new Date(b.slot.end);
+        const now = new Date();
+        const reportAfter = (cfg.noShowReportMinutes || 15) * 60 * 1000;
+        const grace = (cfg.joinGraceMinutes || 30) * 60 * 1000;
+        return (now >= new Date(start.getTime() + reportAfter)) &&
+               (now <= new Date(end.getTime() + grace));
     }
 
     // ---- stats strip ----
@@ -677,6 +698,25 @@
                 await loadList();
             } catch (err) {
                 toast('Ошибка: ' + err.message, true);
+            }
+            return;
+        } else if (action === 'report-noshow') {
+            const res = await modal({
+                title: i18n.reportNoshowTitle || 'Преподаватель не пришёл?',
+                text: i18n.reportNoshowConfirm || 'Отметить, что преподаватель не подключился? Урок будет отменён, а средства возвращены.',
+                okText: i18n.reportNoshow || 'Преподаватель не пришёл',
+                okClass: 'danger',
+            });
+            if (res === null) return;
+            btn.disabled = true;
+            try {
+                const data = await api('POST', cfg.urls.reportNoshow.replace('__ID__', id), {});
+                toast(data.message || i18n.reportNoshowDone || 'Готово');
+                await loadList();
+            } catch (err) {
+                // Сервер — арбитр: рано / преподаватель подключался → понятная ошибка.
+                toast('Ошибка: ' + err.message, true);
+                btn.disabled = false;
             }
             return;
         } else {

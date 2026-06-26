@@ -342,6 +342,7 @@ window.UstozMyBookings = {
     locale: '{{ LANGUAGE_CODE|default:"ru" }}',
     joinLeadMinutes: {{ join_lead_minutes|default:10 }},
     joinGraceMinutes: {{ join_grace_minutes|default:30 }},
+    noShowReportMinutes: {{ no_show_report_minutes|default:15 }},
     urls: {
         list:    "{% url 'my_bookings_api' %}",
         confirm: "/{{ LANGUAGE_CODE|default:'ru' }}/api/bookings/__ID__/confirm/",
@@ -349,6 +350,7 @@ window.UstozMyBookings = {
         cancel:  "/{{ LANGUAGE_CODE|default:'ru' }}/api/bookings/__ID__/cancel/",
         setLink: "/{{ LANGUAGE_CODE|default:'ru' }}/api/bookings/__ID__/meeting-url/",
         reschedule: "/{{ LANGUAGE_CODE|default:'ru' }}/api/bookings/__ID__/reschedule/",
+        reportNoshow: "/{{ LANGUAGE_CODE|default:'ru' }}/api/bookings/__ID__/report-teacher-noshow/",
         publicSlots: "/{{ LANGUAGE_CODE|default:'ru' }}/api/teachers/__TID__/slots/",
         ical: "/{{ LANGUAGE_CODE|default:'ru' }}/bookings/__ID__/calendar.ics",
     },
@@ -390,6 +392,10 @@ window.UstozMyBookings = {
         noFreeSlots: "{% filter escapejs %}{% trans 'У учителя нет свободных слотов на ближайшие 30 дней.' %}{% endfilter %}",
         addToCalendar: "{% filter escapejs %}{% trans 'Добавить в календарь (.ics)' %}{% endfilter %}",
         rescheduled: "{% filter escapejs %}{% trans 'Урок перенесён — ждёт подтверждения учителя.' %}{% endfilter %}",
+        reportNoshow: "{% filter escapejs %}{% trans 'Преподаватель не пришёл' %}{% endfilter %}",
+        reportNoshowTitle: "{% filter escapejs %}{% trans 'Преподаватель не пришёл?' %}{% endfilter %}",
+        reportNoshowConfirm: "{% filter escapejs %}{% trans 'Отметить, что преподаватель не подключился? Урок будет отменён, а средства возвращены.' %}{% endfilter %}",
+        reportNoshowDone: "{% filter escapejs %}{% trans 'Готово — средства возвращены.' %}{% endfilter %}",
         // Споры (ТЗ шаг 8)
         openDispute: "{% filter escapejs %}{% trans 'Открыть спор' %}{% endfilter %}",
         disputeStatus: "{% filter escapejs %}{% trans 'Спор' %}{% endfilter %}",
