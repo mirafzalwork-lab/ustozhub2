@@ -548,17 +548,26 @@ class TelegramNotificationService:
         """
         title = "💬 Новое сообщение!"
         message = f"От: *{sender_name}*\n\n_{message_preview[:150]}{'...' if len(message_preview) > 150 else ''}_"
-        
+
         # URL для перехода в диалог
         conversation_url = f"{settings.SITE_URL}/messages/{conversation_id}/"
-        
+
+        # Дебаунс 5 минут (решение продукта 2026-06-26). Ключ идемпотентности
+        # строится из data; раньше data НЕ содержал времени → ключ был вечным,
+        # и TG-уведомление о новом сообщении приходило ОДИН раз на (отправитель,
+        # диалог) за всю историю, потом молчало навсегда. Добавляем 5-минутный
+        # «бакет»: внутри окна повторные сообщения дедуплицируются (не спамим),
+        # в новом окне ключ меняется → оффлайн-получатель снова получает догон.
+        dedup_bucket = int(timezone.now().timestamp() // 300)
+
         data = {
             'sender_name': sender_name,
             'conversation_id': str(conversation_id),
             'url': conversation_url,
-            'button_text': '📬 Открыть диалог'
+            'button_text': '📬 Открыть диалог',
+            'dedup_bucket': dedup_bucket,
         }
-        
+
         return self.create_notification(
             recipient=recipient,
             notification_type='new_message',
