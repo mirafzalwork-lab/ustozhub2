@@ -1176,7 +1176,9 @@ def login_view(request):
         )
         if limited:
             messages.error(request, _('Слишком много попыток входа. Подождите 10 минут и попробуйте снова.'))
-            return render(request, 'logic/login.html', {'form': LoginForm(), 'next': request.GET.get('next', '')}, status=429)
+            # Возвращаем форму с введённым логином (без валидации), чтобы
+            # пользователь не перенабирал его заново. Пароль поле не сохраняет value.
+            return render(request, 'logic/login.html', {'form': LoginForm(request, data=request.POST), 'next': request.GET.get('next', '')}, status=429)
 
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
@@ -1339,7 +1341,9 @@ def register_student(request):
         )
         if limited:
             messages.error(request, _('Слишком много регистраций с этого IP. Попробуйте позже.'))
-            return render(request, 'logic/register_student.html', {'form': StudentRegistrationForm()}, status=429)
+            # Возвращаем форму с уже введёнными данными (без валидации), чтобы
+            # пользователь не заполнял длинную форму заново.
+            return render(request, 'logic/register_student.html', {'form': StudentRegistrationForm(request.POST)}, status=429)
 
         form = StudentRegistrationForm(request.POST)
         if form.is_valid():
@@ -2011,6 +2015,19 @@ def conversation_detail(request, conversation_id):
 
         # Форма для отправки нового сообщения
         if request.method == 'POST':
+            # Те же антиспам-проверки, что и в AJAX-пути — иначе no-JS форма
+            # позволяла обойти rate-limit и лимит «одно первое сообщение учителя».
+            from .consumers import message_rate_limited
+            if message_rate_limited(user):
+                messages.error(request, _('Слишком много сообщений. Подождите немного.'))
+                return redirect('conversation_detail', conversation_id=conversation_id)
+            if user == conversation.teacher.user:
+                from .leads import teacher_can_send_in_conversation
+                allowed, _reason = teacher_can_send_in_conversation(conversation)
+                if not allowed:
+                    messages.error(request, _('Вы уже отправили первое сообщение. '
+                                              'Дождитесь ответа ученика, чтобы продолжить переписку.'))
+                    return redirect('conversation_detail', conversation_id=conversation_id)
             form = MessageForm(request.POST)
             if form.is_valid():
                 message = form.save(commit=False)
