@@ -10,7 +10,7 @@ import html
 import logging
 
 from django.conf import settings
-from django.utils.translation import gettext as _
+from django.utils import translation
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 
 logger = logging.getLogger('telegram_bot.channel')
@@ -18,23 +18,30 @@ logger = logging.getLogger('telegram_bot.channel')
 # Лимит подписи к фото в Telegram — 1024 символа. Оставляем запас под разметку.
 CAPTION_LIMIT = 1024
 
+# Канал одноязычный (узбекский) — тексты хардкодим на узбекском, а не через
+# gettext: в Celery-задаче нет активной локали, и это исключает зависимость
+# от .mo-каталога. Названия предметов берём через get_display_name() под
+# override('uz'), чтобы подтягивались узбекские варианты (Subject.name_uz).
+BTN_ENROLL = '👉 Darsga yozilish'
+
 
 def _profile_url(teacher):
     return f"{settings.SITE_URL.rstrip('/')}/teacher/{teacher.id}/"
 
 
 def build_caption(teacher):
-    """Формирует HTML-подпись. Пользовательский ввод экранируется."""
+    """Формирует HTML-подпись на узбекском. Пользовательский ввод экранируется."""
     user = teacher.user
     name = html.escape(user.get_full_name().strip() or user.username)
 
-    subjects = ', '.join(
-        ts.subject.name
-        for ts in teacher.teachersubject_set.select_related('subject').all()
-    )
+    with translation.override('uz'):
+        subjects = ', '.join(
+            ts.subject.get_display_name()
+            for ts in teacher.teachersubject_set.select_related('subject').all()
+        )
 
     lines = [
-        _('🎉 Новый преподаватель на платформе!'),
+        '🎉 Platformada yangi oʻqituvchi!',
         '',
         f"👨‍🏫 <b>{name}</b>",
     ]
@@ -42,16 +49,16 @@ def build_caption(teacher):
         lines.append(f"📚 {html.escape(subjects)}")
     if teacher.city:
         lines.append(f"📍 {html.escape(teacher.city.name)}")
-    lines.append(_('🕒 Опыт: %(years)d лет') % {'years': teacher.experience_years})
+    lines.append(f"🕒 Tajriba: {teacher.experience_years} yil")
 
     price = teacher.get_min_price()
     if price:
         price_fmt = f"{int(price):,}".replace(',', ' ')
-        lines.append(_('💰 от %(price)s сум/урок') % {'price': price_fmt})
+        lines.append(f"💰 {price_fmt} soʻmdan/dars")
 
     certs = teacher.certificates.count()
     if certs:
-        lines.append(_('🎓 Сертификатов: %(n)d') % {'n': certs})
+        lines.append(f"🎓 Sertifikatlar: {certs} ta")
 
     if teacher.bio:
         bio = teacher.bio.strip()
@@ -69,7 +76,7 @@ def build_caption(teacher):
 
 def build_keyboard(teacher):
     return InlineKeyboardMarkup([[
-        InlineKeyboardButton(_('👉 Записаться на урок'), url=_profile_url(teacher))
+        InlineKeyboardButton(BTN_ENROLL, url=_profile_url(teacher))
     ]])
 
 
