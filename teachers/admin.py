@@ -15,6 +15,7 @@ from .models import (
     ProfileView, TelegramUser, NotificationQueue, NotificationLog,
     Notification, NotificationRead, DailyReminderTemplate,
     TimeSlot, Booking, LessonReminderSent, LessonEvent,
+    StudentInterest, TeacherChannelPost,
 )
 from .admin_telegram_service import admin_telegram_service
 
@@ -1312,3 +1313,43 @@ class LessonEventAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_at'
     readonly_fields = ('booking', 'kind', 'actor', 'meta', 'created_at')
     ordering = ('-created_at',)
+
+
+@admin.register(StudentInterest)
+class StudentInterestAdmin(admin.ModelAdmin):
+    list_display = ('teacher', 'student', 'temperature', 'has_trial',
+                    'has_favorite', 'view_count', 'last_activity_at', 'opted_out_at')
+    list_filter = ('temperature', 'has_trial', 'has_favorite')
+    search_fields = ('teacher__user__username', 'student__username',
+                     'student__first_name', 'student__last_name')
+    readonly_fields = ('teacher', 'student', 'has_trial', 'trial_at',
+                       'has_favorite', 'favorited_at', 'view_count',
+                       'first_viewed_at', 'last_viewed_at', 'temperature',
+                       'last_activity_at', 'opted_out_at', 'created_at', 'updated_at')
+    date_hierarchy = 'last_activity_at'
+    ordering = ('-last_activity_at',)
+
+
+@admin.register(TeacherChannelPost)
+class TeacherChannelPostAdmin(admin.ModelAdmin):
+    """Публикации новых преподавателей в Telegram-канале."""
+    list_display = ('teacher', 'status', 'message_id', 'attempts',
+                    'created_at', 'sent_at')
+    list_filter = ('status',)
+    search_fields = ('teacher__user__first_name', 'teacher__user__last_name',
+                     'teacher__user__username')
+    readonly_fields = ('teacher', 'message_id', 'attempts', 'last_error',
+                       'created_at', 'sent_at')
+    actions = ('republish',)
+
+    @admin.action(description='Опубликовать заново в канале')
+    def republish(self, request, queryset):
+        from telegram_bot.tasks import publish_teacher_to_channel
+        sent = 0
+        for post in queryset:
+            # Сбрасываем в pending, чтобы задача не отсеяла как уже отправленный.
+            post.status = 'pending'
+            post.save(update_fields=['status'])
+            publish_teacher_to_channel.delay(post.teacher_id)
+            sent += 1
+        self.message_user(request, f'Поставлено в очередь: {sent}', messages.SUCCESS)

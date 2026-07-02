@@ -463,6 +463,10 @@ TELEGRAM_BOT_URL = f"https://t.me/{TELEGRAM_BOT_USERNAME}"
 TELEGRAM_CHANNEL_USERNAME = os.environ.get('TELEGRAM_CHANNEL_USERNAME', 'UstozHubUz')
 TELEGRAM_CHANNEL_URL = f"https://t.me/{TELEGRAM_CHANNEL_USERNAME}"
 
+# Канал для авто-публикации новых преподавателей (бот должен быть его админом).
+# Приватный канал → числовой id (-100…), публичный → '@username'.
+TELEGRAM_CHANNEL_ID = os.environ.get('TELEGRAM_CHANNEL_ID', '-1002986846695')
+
 # URL вашего сайта (для кнопок и WebApp)
 SITE_URL = os.environ.get('SITE_URL', 'https://ustozhubedu.uz')
 

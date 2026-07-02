@@ -456,3 +456,71 @@ def health_check_notifications(self):
     except Exception as e:
         logger.error(f"Error in health_check_notifications: {e}", exc_info=True)
         return {}
+
+
+# =============================================================================
+# Публикация нового преподавателя в Telegram-канал
+# =============================================================================
+
+@shared_task(name='publish_teacher_to_channel', bind=True,
+             max_retries=5, default_retry_delay=60, time_limit=120)
+def publish_teacher_to_channel(self, teacher_id):
+    """Постит одобренного учителя в публичный канал. Идемпотентно: пропускает
+    уже отправленные посты. При ошибке — retry с экспоненциальной задержкой."""
+    from teachers.models import TeacherChannelPost
+    from telegram_bot.channel_publisher import publish_teacher
+
+    try:
+        post = TeacherChannelPost.objects.select_related(
+            'teacher__user', 'teacher__city'
+        ).get(teacher_id=teacher_id)
+    except TeacherChannelPost.DoesNotExist:
+        logger.warning(f"TeacherChannelPost для учителя {teacher_id} не найден")
+        return None
+
+    if post.status == 'sent':  # защита от повторной публикации
+        logger.info(f"Учитель {teacher_id} уже опубликован (message_id={post.message_id})")
+        return post.message_id
+
+    try:
+        message_id = publish_teacher(post.teacher)
+    except Exception as exc:
+        post.attempts += 1
+        post.status = 'failed'
+        post.last_error = str(exc)[:2000]
+        post.save(update_fields=['attempts', 'status', 'last_error'])
+        logger.warning(
+            f"Публикация учителя {teacher_id} не удалась "
+            f"(попытка {self.request.retries + 1}): {exc}"
+        )
+        # Экспоненциальный backoff: 60s, 120s, 240s… (капаем на 1 час).
+        raise self.retry(exc=exc, countdown=min(60 * 2 ** self.request.retries, 3600))
+
+    post.attempts += 1
+    post.status = 'sent'
+    post.message_id = message_id
+    post.sent_at = timezone.now()
+    post.last_error = ''
+    post.save(update_fields=['attempts', 'status', 'message_id', 'sent_at', 'last_error'])
+    logger.info(f"Учитель {teacher_id} опубликован в канале, message_id={message_id}")
+    return message_id
+
+
+@shared_task(name='retry_failed_channel_posts', bind=True, time_limit=300)
+def retry_failed_channel_posts(self):
+    """Страховка: добирает публикации, упавшие после исчерпания ретраев задачи
+    (например, при даунтайме воркера). Запускается периодически через Beat."""
+    from teachers.models import TeacherChannelPost
+
+    qs = TeacherChannelPost.objects.filter(
+        status='failed', attempts__lt=models.F('max_attempts')
+    )[:200]
+
+    count = 0
+    for post in qs:
+        publish_teacher_to_channel.delay(post.teacher_id)
+        count += 1
+
+    if count:
+        logger.info(f"Повторно поставлено в очередь {count} публикаций в канал")
+    return count

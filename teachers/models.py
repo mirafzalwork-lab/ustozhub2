@@ -1276,6 +1276,10 @@ class TeacherProfile(models.Model):
                     else:
                         logger.warning(f"No moderator found for notification (teacher: {self.user.username})")
 
+                    # Публичный дебют учителя → однократный пост в Telegram-канал.
+                    if new_status == 'approved' and old_status != 'approved':
+                        self._enqueue_channel_publication()
+
                     return
 
             except TeacherProfile.DoesNotExist:
@@ -1290,7 +1294,76 @@ class TeacherProfile(models.Model):
             cache.delete(f'teacher_views_{self.id}_{period}')
             cache.delete(f'teacher_unique_views_{self.id}_{period}')
         cache.delete(f'teacher_min_price_{self.id}')
-    
+
+    def _enqueue_channel_publication(self):
+        """Однократно ставит публикацию учителя в Telegram-канал в очередь Celery.
+
+        Идемпотентность гарантирует OneToOne TeacherChannelPost + get_or_create:
+        повторный approve (approve→reject→approve) не создаёт вторую запись,
+        значит и повторного поста не будет. Публикуем только публичные профили.
+        """
+        if not self.is_active:
+            return
+        from django.db import transaction as _tx
+        try:
+            _post, created = TeacherChannelPost.objects.get_or_create(teacher=self)
+        except Exception as e:  # не роняем модерацию из-за проблем с очередью
+            logger.error(f"Не удалось создать TeacherChannelPost для {self.pk}: {e}")
+            return
+        if not created:
+            return  # уже публиковали или публикация в процессе
+
+        teacher_id = self.id
+
+        def _dispatch():
+            try:
+                from telegram_bot.tasks import publish_teacher_to_channel
+                publish_teacher_to_channel.delay(teacher_id)
+            except Exception as e:
+                logger.error(f"Не удалось поставить задачу публикации учителя {teacher_id}: {e}")
+
+        # После коммита — иначе воркер стартует до записи профиля/поста в БД.
+        _tx.on_commit(_dispatch)
+
+
+class TeacherChannelPost(models.Model):
+    """Учёт публикации учителя в публичном Telegram-канале.
+
+    OneToOne обеспечивает требование «ровно один раз»: одному учителю
+    соответствует не более одной записи, повторная модерация поста не плодит.
+    """
+    STATUS_CHOICES = [
+        ('pending', _('В очереди')),
+        ('sent', _('Опубликовано')),
+        ('failed', _('Ошибка')),
+    ]
+
+    teacher = models.OneToOneField(
+        TeacherProfile, on_delete=models.CASCADE, related_name='channel_post'
+    )
+    status = models.CharField(
+        max_length=10, choices=STATUS_CHOICES, default='pending', db_index=True
+    )
+    message_id = models.BigIntegerField(
+        null=True, blank=True, help_text=_('ID опубликованного поста в канале')
+    )
+    attempts = models.PositiveSmallIntegerField(default=0)
+    max_attempts = models.PositiveSmallIntegerField(default=5)
+    last_error = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('Публикация в канале')
+        verbose_name_plural = _('Публикации в канале')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.teacher_id} → {self.status}"
+
+    def can_retry(self):
+        return self.status != 'sent' and self.attempts < self.max_attempts
+
 
 class TeacherSubject(models.Model):
     """Промежуточная модель для связи учитель-предмет с ценой"""
