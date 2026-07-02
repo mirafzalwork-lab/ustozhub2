@@ -88,7 +88,7 @@ def _read_avatar_bytes(teacher):
 
 
 async def _send_async(caption, keyboard, photo_bytes):
-    bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+    bot = Bot(token=settings.TELEGRAM_CHANNEL_BOT_TOKEN)
     chat_id = settings.TELEGRAM_CHANNEL_ID
     async with bot:
         if photo_bytes:
@@ -111,8 +111,8 @@ def publish_teacher(teacher):
     Все обращения к ORM/файлам делаем здесь (sync), в async уходят только
     готовые примитивы — иначе Django блокирует ORM в event loop.
     """
-    if not settings.TELEGRAM_BOT_TOKEN:
-        raise RuntimeError('TELEGRAM_BOT_TOKEN не задан')
+    if not settings.TELEGRAM_CHANNEL_BOT_TOKEN:
+        raise RuntimeError('TELEGRAM_CHANNEL_BOT_TOKEN / TELEGRAM_BOT_TOKEN не задан')
     if not getattr(settings, 'TELEGRAM_CHANNEL_ID', ''):
         raise RuntimeError('TELEGRAM_CHANNEL_ID не задан')
 

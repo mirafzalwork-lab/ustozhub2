@@ -467,6 +467,13 @@ TELEGRAM_CHANNEL_URL = f"https://t.me/{TELEGRAM_CHANNEL_USERNAME}"
 # Приватный канал → числовой id (-100…), публичный → '@username'.
 TELEGRAM_CHANNEL_ID = os.environ.get('TELEGRAM_CHANNEL_ID', '-1002986846695')
 
+# Токен бота-публикатора канала. Может отличаться от TELEGRAM_BOT_TOKEN
+# (нотификационный бот не обязан быть админом канала). По умолчанию —
+# общий токен, на проде задаётся отдельно в .env.
+TELEGRAM_CHANNEL_BOT_TOKEN = (
+    os.environ.get('TELEGRAM_CHANNEL_BOT_TOKEN', '').strip() or TELEGRAM_BOT_TOKEN
+)
+
 # URL вашего сайта (для кнопок и WebApp)
 SITE_URL = os.environ.get('SITE_URL', 'https://ustozhubedu.uz')
 
