@@ -1344,7 +1344,7 @@ class TeacherChannelPostAdmin(admin.ModelAdmin):
 
     @admin.action(description='Опубликовать заново в канале')
     def republish(self, request, queryset):
-        from telegram_bot.tasks import publish_teacher_to_channel
+        from teachers.tasks import publish_teacher_to_channel
         sent = 0
         for post in queryset:
             # Сбрасываем в pending, чтобы задача не отсеяла как уже отправленный.

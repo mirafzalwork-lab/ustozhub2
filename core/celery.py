@@ -147,7 +147,7 @@ app.conf.beat_schedule = {
     # Страховка: добрать публикации новых учителей в канал, упавшие после
     # исчерпания ретраев задачи (даунтайм воркера/Telegram). Идемпотентно.
     'retry-failed-channel-posts-hourly': {
-        'task': 'retry_failed_channel_posts',
+        'task': 'teachers.retry_failed_channel_posts',
         'schedule': crontab(minute=30),
         'options': {'expires': 3600.0},
     },

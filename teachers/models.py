@@ -1317,7 +1317,7 @@ class TeacherProfile(models.Model):
 
         def _dispatch():
             try:
-                from telegram_bot.tasks import publish_teacher_to_channel
+                from teachers.tasks import publish_teacher_to_channel
                 publish_teacher_to_channel.delay(teacher_id)
             except Exception as e:
                 logger.error(f"Не удалось поставить задачу публикации учителя {teacher_id}: {e}")
