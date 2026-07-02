@@ -9338,3 +9338,19 @@ msgstr ""
 #, fuzzy
 #~ msgid "Change"
 #~ msgstr "O'zgarishlarni saqlash"
+
+#: templates/logic/potential_students.html
+msgid "Смотрели профиль"
+msgstr "Profilni ko'rganlar"
+
+#: templates/logic/potential_students.html
+msgid "Последний визит"
+msgstr "Oxirgi tashrif"
+
+#: templates/logic/potential_students.html
+msgid "просмотров"
+msgstr "ko'rishlar"
+
+#: templates/logic/potential_students.html
+msgid "Смотрел ваш профиль"
+msgstr "Profilingizni ko'rdi"

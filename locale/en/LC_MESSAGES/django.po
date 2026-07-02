@@ -9275,3 +9275,19 @@ msgstr ""
 #, fuzzy
 #~ msgid "Change"
 #~ msgstr "Save Changes"
+
+#: templates/logic/potential_students.html
+msgid "Смотрели профиль"
+msgstr "Viewed profile"
+
+#: templates/logic/potential_students.html
+msgid "Последний визит"
+msgstr "Last visit"
+
+#: templates/logic/potential_students.html
+msgid "просмотров"
+msgstr "views"
+
+#: templates/logic/potential_students.html
+msgid "Смотрел ваш профиль"
+msgstr "Viewed your profile"
