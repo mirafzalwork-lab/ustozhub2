@@ -1705,6 +1705,136 @@ class LeadOptOut(models.Model):
     def __str__(self):
         return f"{self.student.get_full_name()} ✕ {self.teacher.user.get_full_name()}"
 
+
+class StudentInterest(models.Model):
+    """Агрегат интереса ученика к учителю — единый бэкенд раздела
+    «Заинтересованные ученики».
+
+    Одна строка на пару (учитель, ученик). Денормализованная проекция трёх
+    сигналов, чтобы раздел и бейджи читались одним индексированным запросом
+    (O(лидов), а не O(трафика)), не сканируя горячую ProfileView:
+
+        🔥 hot  — активная бронь пробного урока (has_trial);
+        ⭐ warm  — учитель в избранном у ученика (has_favorite);
+        👀 cold — ученик открывал профиль учителя (view_count).
+
+    Сырьё остаётся в источниках (Favorite / Booking / ProfileView); здесь —
+    только проекция, которую поддерживают сигналы (teachers/signals.py) и
+    record_profile_view. temperature пересчитывается по приоритету hot>warm>cold.
+
+    Фаза 1: cold-лиды показываются учителю как аналитика спроса (кто смотрел
+    профиль), но НЕ дают права написать первым — оно остаётся за hot/warm
+    (см. leads.can_teacher_initiate). Право для cold включается в Фазе 2 под
+    порогом (view_count / повторный визит).
+    """
+    TEMP_HOT, TEMP_WARM, TEMP_COLD = 'hot', 'warm', 'cold'
+    TEMPERATURES = [
+        (TEMP_HOT, _('Горячий (пробный урок)')),
+        (TEMP_WARM, _('Тёплый (избранное)')),
+        (TEMP_COLD, _('Холодный (просмотр профиля)')),
+    ]
+
+    teacher = models.ForeignKey(
+        TeacherProfile, on_delete=models.CASCADE,
+        related_name='student_interests', verbose_name=_('Учитель'),
+    )
+    student = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        related_name='teacher_interests', verbose_name=_('Ученик'),
+    )
+
+    # Денормализованные сигналы
+    has_trial = models.BooleanField(default=False, verbose_name=_('Бронировал пробный'))
+    trial_at = models.DateTimeField(null=True, blank=True, verbose_name=_('Время брони пробного'))
+    has_favorite = models.BooleanField(default=False, verbose_name=_('В избранном'))
+    favorited_at = models.DateTimeField(null=True, blank=True, verbose_name=_('Время добавления в избранное'))
+    view_count = models.PositiveIntegerField(default=0, verbose_name=_('Дней с просмотром профиля'))
+    first_viewed_at = models.DateTimeField(null=True, blank=True, verbose_name=_('Первый просмотр'))
+    last_viewed_at = models.DateTimeField(null=True, blank=True, verbose_name=_('Последний просмотр'))
+
+    # Вычисляемое (пересчитывается при каждом изменении сигналов)
+    temperature = models.CharField(
+        max_length=4, choices=TEMPERATURES, default=TEMP_COLD,
+        db_index=True, verbose_name=_('Температура'),
+    )
+    last_activity_at = models.DateTimeField(
+        default=timezone.now, db_index=True, verbose_name=_('Последняя активность'),
+    )
+
+    # Контроль спроса (форвард-совместимость с LeadOptOut)
+    opted_out_at = models.DateTimeField(null=True, blank=True, verbose_name=_('Отказ ученика'))
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _('Интерес ученика')
+        verbose_name_plural = _('Интересы учеников')
+        constraints = [
+            models.UniqueConstraint(fields=['teacher', 'student'],
+                                    name='uniq_teacher_student_interest'),
+        ]
+        indexes = [
+            # основной запрос раздела: активные лиды учителя по свежести
+            models.Index(fields=['teacher', 'opted_out_at', '-last_activity_at'],
+                         name='si_teacher_active_recent'),
+            models.Index(fields=['teacher', 'temperature'], name='si_teacher_temp_idx'),
+        ]
+
+    def __str__(self):
+        return f"{self.student.get_full_name()} → {self.teacher.user.get_full_name()} [{self.temperature}]"
+
+    def recompute_temperature(self):
+        """Пересчитывает температуру и last_activity_at по приоритету hot>warm>cold."""
+        if self.has_trial:
+            self.temperature = self.TEMP_HOT
+        elif self.has_favorite:
+            self.temperature = self.TEMP_WARM
+        else:
+            self.temperature = self.TEMP_COLD
+        stamps = [t for t in (self.trial_at, self.favorited_at, self.last_viewed_at) if t]
+        self.last_activity_at = max(stamps) if stamps else timezone.now()
+
+    @classmethod
+    def touch(cls, teacher, student, *, favorite=None, trial=None, viewed=False, when=None):
+        """Идемпотентно обновляет агрегат интереса из сигнала.
+
+        favorite/trial: True/False — выставить флаг; None — не трогать.
+        viewed: True — засчитать просмотр профиля (+1 к view_count).
+        Не-ученики игнорируются. Если после обновления сигналов не осталось
+        (снят из избранного, отменён пробный, не смотрел) — строка удаляется.
+        Возвращает StudentInterest или None.
+        """
+        if getattr(student, 'user_type', None) != 'student':
+            return None
+        from django.db import transaction
+        when = when or timezone.now()
+        with transaction.atomic():
+            si, _created = (cls.objects.select_for_update()
+                            .get_or_create(teacher=teacher, student=student,
+                                           defaults={'last_activity_at': when}))
+            if favorite is True:
+                si.has_favorite = True
+                si.favorited_at = si.favorited_at or when
+            elif favorite is False:
+                si.has_favorite = False
+            if trial is True:
+                si.has_trial = True
+                si.trial_at = si.trial_at or when
+            elif trial is False:
+                si.has_trial = False
+            if viewed:
+                si.view_count = (si.view_count or 0) + 1
+                si.first_viewed_at = si.first_viewed_at or when
+                si.last_viewed_at = when
+            if not si.has_favorite and not si.has_trial and not si.view_count:
+                si.delete()
+                return None
+            si.recompute_temperature()
+            si.save()
+        return si
+
+
 class TelegramUser(models.Model):
     """Модель для хранения Telegram-пользователей"""
     user = models.OneToOneField(

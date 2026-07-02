@@ -5,6 +5,7 @@ Django signals для автоматической отправки уведом
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.core.cache import cache
+from django.utils import timezone
 from .models import (
     Message, Subject, City, TeacherSubject, StudentProfile,
     SubjectCategory, TeacherProfile, Review, ProfileView,
@@ -460,3 +461,54 @@ def invalidate_lead_counts_on_trial_booking(sender, instance, **kwargs):
         _invalidate_lead_counts(instance.slot.teacher_id)
     except Exception:
         logger.warning('lead counts invalidation failed (booking)', exc_info=True)
+
+
+# ---- Проекция StudentInterest: поддержка агрегата «Заинтересованные ученики»
+# Держит денормализованную строку на пару (учитель, ученик) в актуальном виде.
+# Просмотр профиля инкрементируется в record_profile_view (не здесь), т.к. там
+# уже есть дедупликация по дню. Здесь — избранное, пробные и opt-out.
+
+@receiver([post_save, post_delete], sender='teachers.Favorite',
+          dispatch_uid='teachers.student_interest_on_favorite')
+def student_interest_on_favorite(sender, instance, **kwargs):
+    from .models import StudentInterest
+    try:
+        is_delete = kwargs.get('signal') is post_delete
+        StudentInterest.touch(
+            instance.teacher, instance.student,
+            favorite=not is_delete,
+            when=getattr(instance, 'created_at', None),
+        )
+    except Exception:
+        logger.warning('StudentInterest favorite sync failed', exc_info=True)
+
+
+@receiver(post_save, sender='teachers.Booking',
+          dispatch_uid='teachers.student_interest_on_trial')
+def student_interest_on_trial(sender, instance, **kwargs):
+    if not instance.is_trial:
+        return
+    from .models import StudentInterest
+    from .leads import _has_trial_booking
+    try:
+        teacher = instance.slot.teacher
+        # Пересчитываем факт активного пробного (у ученика может быть несколько
+        # броней; отмена одной не должна снимать hot, если остались другие).
+        active = _has_trial_booking(teacher, instance.student)
+        StudentInterest.touch(teacher, instance.student, trial=active,
+                              when=getattr(instance, 'created_at', None))
+    except Exception:
+        logger.warning('StudentInterest trial sync failed', exc_info=True)
+
+
+@receiver([post_save, post_delete], sender='teachers.LeadOptOut',
+          dispatch_uid='teachers.student_interest_on_optout')
+def student_interest_on_optout(sender, instance, **kwargs):
+    from .models import StudentInterest
+    try:
+        opted = kwargs.get('signal') is post_save
+        StudentInterest.objects.filter(
+            teacher=instance.teacher, student=instance.student
+        ).update(opted_out_at=timezone.now() if opted else None)
+    except Exception:
+        logger.warning('StudentInterest optout sync failed', exc_info=True)

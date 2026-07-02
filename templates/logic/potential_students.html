@@ -29,6 +29,11 @@
               {% if status_filter == LEAD_WARM %}background:#F08C00;color:#fff;{% else %}background:#fff9db;color:#B8860B;{% endif %}">
       <i class="fas fa-star"></i> {% trans 'Добавили в избранное' %} ({{ counts.warm }})
     </a>
+    <a href="?status={{ LEAD_COLD }}"
+       style="padding:8px 14px;border-radius:20px;text-decoration:none;font-size:14px;font-weight:600;
+              {% if status_filter == LEAD_COLD %}background:#1971C2;color:#fff;{% else %}background:#e7f5ff;color:#1971C2;{% endif %}">
+      <i class="fas fa-eye"></i> {% trans 'Смотрели профиль' %} ({{ counts.cold }})
+    </a>
   </div>
 
   {% if items %}
@@ -36,7 +41,7 @@
       {% for item in items %}
         {% with su=item.student_user sp=item.student_profile %}
         <div style="display:flex;flex-direction:column;padding:18px;background:#fff;border-radius:14px;
-                    border:2px solid {% if item.status == LEAD_HOT %}#ffd8a8{% else %}#ffec99{% endif %};">
+                    border:2px solid {% if item.status == LEAD_HOT %}#ffd8a8{% elif item.status == LEAD_WARM %}#ffec99{% else %}#d0ebff{% endif %};">
           <!-- Шапка: аватар + имя + статус -->
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
             <div style="width:48px;height:48px;border-radius:50%;background:#10B981;color:#fff;display:flex;
@@ -55,7 +60,7 @@
               </div>
             </div>
             <span style="font-size:12px;font-weight:600;white-space:nowrap;
-                         color:{% if item.status == LEAD_HOT %}#E8590C{% else %}#B8860B{% endif %};">
+                         color:{% if item.status == LEAD_HOT %}#E8590C{% elif item.status == LEAD_WARM %}#B8860B{% else %}#1971C2{% endif %};">
               {{ item.status_label }}
             </span>
           </div>
@@ -71,12 +76,22 @@
             </div>
           {% endif %}
           <div style="font-size:12px;color:#aaa;margin-bottom:14px;">
-            {% trans 'Проявил интерес' %}: {{ item.since|date:"d.m.Y" }}
+            {% if item.status == LEAD_COLD %}
+              {% trans 'Последний визит' %}: {{ item.last_viewed_at|date:"d.m.Y" }}
+              · {% trans 'просмотров' %}: {{ item.view_count }}
+            {% else %}
+              {% trans 'Проявил интерес' %}: {{ item.since|date:"d.m.Y" }}
+            {% endif %}
           </div>
 
           <!-- Действие -->
           <div style="margin-top:auto;">
-            {% if item.chat_state == 'awaiting_reply' %}
+            {% if item.chat_state == 'view_only' %}
+              <div style="width:100%;padding:10px;border-radius:10px;background:#e7f5ff;color:#1971C2;
+                          font-weight:600;text-align:center;font-size:13px;">
+                <i class="fas fa-eye"></i> {% trans 'Смотрел ваш профиль' %}
+              </div>
+            {% elif item.chat_state == 'awaiting_reply' %}
               <button disabled
                       style="width:100%;padding:10px;border:none;border-radius:10px;background:#e9ecef;color:#868e96;
                              font-weight:600;cursor:not-allowed;">

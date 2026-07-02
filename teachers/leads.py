@@ -19,11 +19,13 @@ from django.utils import timezone
 
 LEAD_HOT = 'hot'
 LEAD_WARM = 'warm'
+LEAD_COLD = 'cold'
 
 # Человекочитаемые ярлыки статусов для UI.
 LEAD_STATUS_LABELS = {
     LEAD_HOT: '🔥 Забронировал пробный урок',
     LEAD_WARM: '⭐ Добавил в избранное',
+    LEAD_COLD: '👀 Смотрел ваш профиль',
 }
 
 
@@ -184,6 +186,52 @@ def get_teacher_leads(teacher_profile):
     hot_list = sorted(hot.values(), key=lambda x: x['since'], reverse=True)
     warm_list = sorted(warm.values(), key=lambda x: x['since'], reverse=True)
     return hot_list + warm_list
+
+
+def get_profile_view_leads(teacher_profile, exclude_student_ids=None, limit=100):
+    """Холодные лиды: ученики, открывавшие профиль учителя, но пока НЕ добавившие
+    в избранное и не бронировавшие пробный.
+
+    Фаза 1 — аналитика спроса: учитель видит, кто смотрел профиль (имя, время,
+    число визитов), но права написать первым это НЕ даёт (см. can_teacher_initiate,
+    которое проверяет только trial/favorite). Право для cold включается в Фазе 2
+    под порогом.
+
+    Читает агрегат StudentInterest одним индексированным запросом (не сканирует
+    горячую ProfileView). Исключает opt-out (opted_out_at) и учеников, уже
+    попавших в hot/warm (exclude_student_ids). Свежие сверху.
+
+    Возвращает список dict:
+        {student_user, student_profile, status, since, view_count, last_viewed_at}
+    """
+    from .models import StudentInterest
+    exclude_ids = set(exclude_student_ids or ())
+    qs = (
+        StudentInterest.objects
+        .filter(
+            teacher=teacher_profile,
+            temperature=StudentInterest.TEMP_COLD,
+            opted_out_at__isnull=True,
+        )
+        .select_related('student', 'student__student_profile')
+        .order_by('-last_activity_at')
+    )
+    leads = []
+    # Берём с запасом на исключённых, чтобы после фильтра осталось до limit.
+    for si in qs[:limit + len(exclude_ids)]:
+        if si.student_id in exclude_ids:
+            continue
+        leads.append({
+            'student_user': si.student,
+            'student_profile': getattr(si.student, 'student_profile', None),
+            'status': LEAD_COLD,
+            'since': si.last_viewed_at or si.last_activity_at,
+            'view_count': si.view_count,
+            'last_viewed_at': si.last_viewed_at,
+        })
+        if len(leads) >= limit:
+            break
+    return leads
 
 
 def _count_new(leads, seen_at):

@@ -28,7 +28,7 @@ from .models import (
     TeacherSubject, Certificate, User, Favorite, FavoriteStudent,
     Conversation, Message, Review, ViewCounter, TelegramUser,
     SubjectCategory, SubjectSearchLog, Notification, NotificationRead,
-    DailyReminderTemplate, Booking, LeadOptOut,
+    DailyReminderTemplate, Booking, LeadOptOut, StudentInterest,
 )
 from .search import (
     normalize_query, build_teacher_search_q,
@@ -231,6 +231,16 @@ def record_profile_view(request, profile, profile_type):
                 views_count=F('views_count') + 1,
                 last_viewed_at=timezone.now(),
             )
+
+        # Проекция в StudentInterest: холодный лид (ученик открыл профиль
+        # учителя). Инкрементируем только на ПЕРВЫЙ просмотр за день (created),
+        # чтобы write-path был минимальным — view_count = число дней с визитом.
+        # Гости и учителя-зрители лидами не становятся (фильтр внутри touch).
+        if created and profile_type == 'teacher' and viewer_user is not None:
+            try:
+                StudentInterest.touch(profile, viewer_user, viewed=True)
+            except Exception as si_err:
+                logger.error(f"StudentInterest view sync failed: {si_err}", exc_info=True)
     except Exception as e:
         # Логируем ошибку, но не прерываем работу приложения
         logger.error(f"Error recording profile view: {e}", exc_info=True)
@@ -1779,8 +1789,8 @@ def potential_students(request):
     можно ли написать первым / ждём ответа / переписка уже идёт.
     """
     from .leads import (
-        get_teacher_leads, count_teacher_leads,
-        LEAD_HOT, LEAD_WARM, LEAD_STATUS_LABELS,
+        get_teacher_leads, count_teacher_leads, get_profile_view_leads,
+        LEAD_HOT, LEAD_WARM, LEAD_COLD, LEAD_STATUS_LABELS,
         teacher_can_send_in_conversation,
     )
 
@@ -1790,22 +1800,37 @@ def potential_students(request):
 
     teacher_profile = request.user.teacher_profile
 
-    all_leads = get_teacher_leads(teacher_profile)
-    counts = count_teacher_leads(teacher_profile, leads=all_leads)
+    # hot/warm — проверенный derived-путь: это лиды с правом написать первым.
+    hw_leads = get_teacher_leads(teacher_profile)
+    hw_counts = count_teacher_leads(teacher_profile, leads=hw_leads)
+
+    # cold — просмотры профиля из агрегата StudentInterest. Фаза 1: аналитика
+    # спроса без права инициации. Исключаем тех, кто уже в hot/warm.
+    hw_ids = {l['student_user'].id for l in hw_leads}
+    cold_leads = get_profile_view_leads(teacher_profile, exclude_student_ids=hw_ids)
+
+    counts = {
+        'hot': hw_counts['hot'],
+        'warm': hw_counts['warm'],
+        'cold': len(cold_leads),
+        'total': hw_counts['hot'] + hw_counts['warm'] + len(cold_leads),
+        'new': hw_counts['new'],  # индикатор новых на кнопке — только hot/warm
+    }
 
     # Открытие раздела = «просмотрено»: двигаем watermark, чтобы индикатор новых
-    # лидов на кнопке погас. Пишем только при наличии новых (избегаем лишней
-    # записи на каждый показ страницы) и сбрасываем кэш счётчиков ('new' живёт
-    # в той же записи, что и total).
-    if counts['new'] > 0:
+    # лидов на кнопке погас. Индикатор формируют только hot/warm (действия, где
+    # учитель может написать), поэтому и watermark — по ним. Пишем только при
+    # наличии новых и сбрасываем кэш счётчиков ('new' живёт в одной записи с total).
+    if hw_counts['new'] > 0:
         from django.utils import timezone
         from django.core.cache import cache
         teacher_profile.leads_seen_at = timezone.now()
         teacher_profile.save(update_fields=['leads_seen_at'])
         cache.delete(f'teacher_lead_counts_{teacher_profile.pk}')
 
+    all_leads = hw_leads + cold_leads
     status_filter = request.GET.get('status')
-    if status_filter in (LEAD_HOT, LEAD_WARM):
+    if status_filter in (LEAD_HOT, LEAD_WARM, LEAD_COLD):
         visible = [l for l in all_leads if l['status'] == status_filter]
     else:
         status_filter = None
@@ -1824,7 +1849,15 @@ def potential_students(request):
     for l in visible:
         student_user = l['student_user']
         conv = conv_by_student.get(student_user.id)
-        if conv is None:
+        if l['status'] == LEAD_COLD:
+            # Фаза 1: холодный лид без права инициации. Если переписка уже была
+            # (ученик когда-то был hot/warm) — даём открыть её; иначе только просмотр.
+            if conv is not None:
+                allowed, _r = teacher_can_send_in_conversation(conv)
+                chat_state = 'open' if allowed else 'awaiting_reply'
+            else:
+                chat_state = 'view_only'
+        elif conv is None:
             chat_state = 'can_write'        # можно отправить первое сообщение
         else:
             allowed, _r = teacher_can_send_in_conversation(conv)
@@ -1842,6 +1875,7 @@ def potential_students(request):
         'status_filter': status_filter,
         'LEAD_HOT': LEAD_HOT,
         'LEAD_WARM': LEAD_WARM,
+        'LEAD_COLD': LEAD_COLD,
     })
 
 
