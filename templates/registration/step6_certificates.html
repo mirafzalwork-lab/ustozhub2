@@ -56,7 +56,7 @@
             {% elif forloop.counter == 2 %}{{ wizard.form.cert_file_2 }}
             {% elif forloop.counter == 3 %}{{ wizard.form.cert_file_3 }}
             {% elif forloop.counter == 4 %}{{ wizard.form.cert_file_4 }}{% endif %}
-            <div class="field-help">{% trans "PDF, JPG или PNG до 10 МБ." %}</div>
+            <div class="field-help">{% trans "PDF, JPG, PNG, HEIC или WEBP до 10 МБ. Можно сфотографировать документ телефоном." %}</div>
         </div>
     </div>
     {% endfor %}

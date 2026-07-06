@@ -777,8 +777,11 @@ class Step6CertificatesForm(forms.Form):
     """
     MAX_CERTS = 4
     MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
-    VALID_EXTS = {'.jpg', '.jpeg', '.png', '.pdf'}
-    ALLOWED_MIMES = {'image/jpeg', 'image/png', 'application/pdf'}
+    # Реальные учителя фотографируют бумажный диплom телефоном: iPhone по умолчанию
+    # отдаёт HEIC/HEIF, часть Android/WhatsApp — WEBP. Поэтому принимаем их наравне
+    # с классическими JPG/PNG/PDF. Сертификаты нигде не выводятся как <img> (только
+    # ссылка-скачивание), так что HEIC/WEBP не ломают вёрстку.
+    VALID_EXTS = {'.jpg', '.jpeg', '.png', '.pdf', '.heic', '.heif', '.webp'}
 
     video_url = forms.URLField(
         max_length=500,
@@ -814,13 +817,58 @@ class Step6CertificatesForm(forms.Form):
                 label=_('Файл сертификата'),
                 widget=forms.FileInput(attrs={
                     'class': 'form-file-input',
-                    'accept': 'image/*,application/pdf',
+                    'accept': '.jpg,.jpeg,.png,.pdf,.heic,.heif,.webp,image/*,application/pdf',
                     'data-cert-num': i,
                 }),
             )
 
+    @staticmethod
+    def _looks_like_allowed_file(file):
+        """Проверка по сигнатуре (magic bytes), а не по имени файла.
+
+        Это надёжнее прежней проверки через mimetypes.guess_type(file.name),
+        которая опиралась на расширение и тривиально обходилась переименованием,
+        а на нестандартных расширениях (heic и т.п.) ложно отклоняла валидные файлы.
+
+        Читаем первые байты и восстанавливаем позицию, чтобы formtools/Django
+        могли затем сохранить файл с начала.
+        """
+        try:
+            pos = file.tell()
+        except (OSError, ValueError, AttributeError):
+            pos = 0
+        try:
+            file.seek(0)
+            header = file.read(1024)
+        except (OSError, ValueError):
+            return False
+        finally:
+            try:
+                file.seek(pos or 0)
+            except (OSError, ValueError):
+                pass
+
+        if not header:
+            return False
+        # JPEG
+        if header[:3] == b'\xff\xd8\xff':
+            return True
+        # PNG
+        if header[:8] == b'\x89PNG\r\n\x1a\n':
+            return True
+        # PDF (некоторые генераторы добавляют мусор перед %PDF-)
+        if b'%PDF-' in header[:1024] or header[:5] == b'%PDF-':
+            return True
+        # WEBP: RIFF....WEBP
+        if header[:4] == b'RIFF' and header[8:12] == b'WEBP':
+            return True
+        # HEIC/HEIF/AVIF и прочие ISO-BMFF: на смещении 4 стоит 'ftyp'
+        if len(header) >= 12 and header[4:8] == b'ftyp':
+            return True
+        return False
+
     def _validate_one_file(self, file, idx):
-        """Размер ≤10MB, расширение и MIME из белого списка."""
+        """Размер ≤10MB, расширение из белого списка и совпадение сигнатуры файла."""
         if file.size > self.MAX_FILE_SIZE:
             raise ValidationError(
                 _('Сертификат %(idx)s: размер файла не должен превышать 10 МБ.')
@@ -829,14 +877,18 @@ class Step6CertificatesForm(forms.Form):
         ext = '.' + file.name.lower().rsplit('.', 1)[-1] if '.' in file.name else ''
         if ext not in self.VALID_EXTS:
             raise ValidationError(
-                _('Сертификат %(idx)s: разрешены только JPG, PNG и PDF.')
+                _('Сертификат %(idx)s: разрешены PDF, JPG, PNG, HEIC и WEBP.')
                 % {'idx': idx}
             )
-        mime, _mime_ext = mimetypes.guess_type(file.name)
-        if mime not in self.ALLOWED_MIMES:
-            logger.warning(f"Certificate upload: недопустимый MIME type - {mime}")
+        if not self._looks_like_allowed_file(file):
+            logger.warning(
+                "Certificate upload: сигнатура не совпала с разрешёнными форматами (ext=%s)",
+                ext,
+            )
             raise ValidationError(
-                _('Сертификат %(idx)s: недопустимый тип файла.') % {'idx': idx}
+                _('Сертификат %(idx)s: файл повреждён или не является изображением/PDF. '
+                  'Попробуйте другой файл.')
+                % {'idx': idx}
             )
 
     def clean(self):
