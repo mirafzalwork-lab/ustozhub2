@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "Материалы урока" %} — UstozHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .la-wrap { max-width: 900px; margin: 0 auto; padding: 20px 16px 48px; }
+    .la-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+    .la-title { font-size: 20px; font-weight: 700; color: var(--text-primary, #0f172a); margin: 0; display: flex; align-items: center; gap: 10px; }
+    .la-title i { color: #3B82F6; }
+    .la-sub { font-size: 13.5px; color: var(--text-tertiary, #64748b); margin: 4px 0 0; }
+    .la-back { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 10px; border: 1px solid var(--border-light, #e2e8f0); background: #fff; color: var(--text-secondary, #475569); font-size: 14px; font-weight: 500; text-decoration: none; }
+    .la-back:hover { background: #f8fafc; }
+
+    .la-card { background: #fff; border: 1px solid var(--border-light, #e2e8f0); border-radius: 14px; padding: 16px 18px; margin-bottom: 16px; }
+    .la-card h2 { font-size: 15px; font-weight: 700; color: var(--text-primary, #0f172a); margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+    .la-card h2 i { color: #3B82F6; }
+
+    .la-files { list-style: none; margin: 0; padding: 0; }
+    .la-file { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-top: 1px solid #f1f5f9; font-size: 14px; }
+    .la-file:first-child { border-top: 0; }
+    .la-file i.fi-ico { color: #64748b; width: 18px; text-align: center; }
+    .la-file a { color: #1D4ED8; text-decoration: none; font-weight: 500; flex: 1; min-width: 0; word-break: break-word; }
+    .la-file a:hover { text-decoration: underline; }
+    .la-file .fi-size { color: #94a3b8; font-size: 12px; white-space: nowrap; }
+    .la-empty { color: var(--text-tertiary, #94a3b8); font-size: 13.5px; padding: 4px 0; }
+
+    .la-chat { display: flex; flex-direction: column; gap: 8px; }
+    .la-msg { max-width: 80%; padding: 8px 11px; border-radius: 12px; font-size: 13.5px; line-height: 1.45; word-break: break-word; }
+    .la-msg .la-meta { display: block; font-size: 11px; opacity: .7; margin-top: 3px; }
+    .la-msg.them { align-self: flex-start; background: #F8FAFC; border: 1px solid #E2E8F0; color: #0f172a; border-bottom-left-radius: 4px; }
+    .la-msg.me { align-self: flex-end; background: #3B82F6; color: #fff; border-bottom-right-radius: 4px; }
+    .la-msg.me .la-meta { color: #E0ecff; }
+    .la-msg-file { display: inline-flex; align-items: center; gap: 8px; margin-top: 5px; padding: 7px 10px; border-radius: 9px; text-decoration: none; font-weight: 600; background: #EFF6FF; color: #1D4ED8; }
+    .la-msg.me .la-msg-file { background: rgba(255,255,255,.18); color: #fff; }
+    .la-msg-file .fi-size { font-weight: 400; opacity: .8; font-size: 11.5px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="la-wrap">
+    <div class="la-head">
+        <div>
+            <h1 class="la-title">
+                <i class="fa-solid fa-box-archive"></i>
+                {% trans "Материалы урока с" %} {{ other_name }}
+            </h1>
+            <p class="la-sub">
+                {% if booking.subject %}{{ booking.subject.name }} · {% endif %}
+                {{ booking.slot.start_at|date:"d.m.Y H:i" }}–{{ booking.slot.end_at|date:"H:i" }}
+            </p>
+        </div>
+        <a href="{% url 'my_bookings_page' %}" class="la-back">
+            <i class="fa-solid fa-arrow-left"></i> {% trans "К моим урокам" %}
+        </a>
+    </div>
+
+    <div class="la-card">
+        <h2><i class="fa-solid fa-paperclip"></i> {% trans "Материалы урока" %}</h2>
+        {% if files %}
+            <ul class="la-files">
+                {% for f in files %}
+                <li class="la-file">
+                    <i class="fi-ico fa-solid {{ f.icon }}"></i>
+                    <a href="{{ f.url }}" target="_blank" rel="noopener">{{ f.name }}</a>
+                    {% if f.size %}<span class="fi-size">{{ f.size|filesizeformat }}</span>{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="la-empty">{% trans "Материалов к этому уроку нет." %}</p>
+        {% endif %}
+    </div>
+
+    <div class="la-card">
+        <h2><i class="fa-regular fa-comments"></i> {% trans "Переписка урока" %}</h2>
+        {% if chat_messages %}
+            <div class="la-chat">
+                {% for m in chat_messages %}
+                <div class="la-msg {% if m.is_mine %}me{% else %}them{% endif %}">
+                    {% if m.content %}<span>{{ m.content|urlize }}</span>{% endif %}
+                    {% if m.attachment %}
+                        <a class="la-msg-file" href="{{ m.attachment.url }}" target="_blank" rel="noopener">
+                            <i class="fa-solid {{ m.attachment.icon }}"></i>
+                            <span>{{ m.attachment.name }}</span>
+                            {% if m.attachment.size %}<span class="fi-size">{{ m.attachment.size|filesizeformat }}</span>{% endif %}
+                        </a>
+                    {% endif %}
+                    <span class="la-meta">
+                        {% if m.is_mine %}{% trans "Вы" %}{% else %}{{ m.sender_name }}{% endif %} · {{ m.created_at|date:"d.m H:i" }}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="la-empty">{% trans "Переписки по этому уроку не было." %}</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

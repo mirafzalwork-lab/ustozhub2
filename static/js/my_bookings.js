@@ -252,6 +252,12 @@
             buttons.push(`<button class="bk-btn danger" data-action="report-noshow">
                 <i class="fa-solid fa-user-xmark"></i> ${i18n.reportNoshow || 'Преподаватель не пришёл'}</button>`);
         }
+        // Архив урока (материалы + переписка), read-only — доступен после начала.
+        if (b.can_view_archive && b.archive_url) {
+            buttons.push(`<a class="bk-btn secondary" href="${b.archive_url}">
+                <i class="fa-solid fa-box-archive"></i> ${i18n.materialsChat || 'Материалы и чат'}
+            </a>`);
+        }
         if (cfg.role === 'student' && b.status === 'completed' && b.review_url) {
             const lbl = b.has_review ? (i18n.editReview || 'Изменить отзыв')
                                      : (i18n.leaveReview || 'Оставить отзыв');

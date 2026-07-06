@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: UstozHub 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-06 22:53+0500\n"
+"POT-Creation-Date: 2026-07-06 23:43+0500\n"
 "Language-Team: Uzbek\n"
 "Language: uz\n"
 "MIME-Version: 1.0\n"
@@ -919,15 +919,15 @@ msgstr "%(grade)s bahosi qo'yildi."
 msgid "Сначала завершите профиль учителя."
 msgstr "Avval o'qituvchi profilini to'ldiring."
 
-#: teachers/booking_views.py:1299
+#: teachers/booking_views.py:1303
 msgid "Учитель не найден"
 msgstr "O'qituvchi topilmadi"
 
-#: teachers/booking_views.py:1530
+#: teachers/booking_views.py:1596
 msgid "Оставить отзыв можно только после завершения урока."
 msgstr "Sharhni faqat dars tugagandan keyin qoldirish mumkin."
 
-#: teachers/booking_views.py:1567
+#: teachers/booking_views.py:1633
 msgid "Спасибо! Ваш отзыв сохранён."
 msgstr "Rahmat! Sharhingiz saqlandi."
 
@@ -2565,7 +2565,7 @@ msgstr "Vaqt oralig'i"
 msgid "Временные слоты"
 msgstr "Vaqt oraliqlari"
 
-#: teachers/models.py:2935 templates/booking/my_bookings.html:410
+#: teachers/models.py:2935 templates/booking/my_bookings.html:411
 msgid "Подтверждено"
 msgstr "Tasdiqlandi"
 
@@ -3694,7 +3694,7 @@ msgstr "Asosiy navigatsiya"
 msgid "Учителя"
 msgstr "O'qituvchilar"
 
-#: templates/base.html:1740 templates/booking/lesson_room.html:318
+#: templates/base.html:1740 templates/booking/lesson_room.html:353
 #: templates/logic/teacher_detail.html:2658
 msgid "Чат"
 msgstr "Chat"
@@ -3718,7 +3718,7 @@ msgstr "O'quvchilarga"
 #: templates/base.html:1786 templates/billing/my_subscriptions.html:288
 #: templates/billing/student_dashboard.html:219
 #: templates/billing/student_progress.html:140
-#: templates/booking/my_bookings.html:425
+#: templates/booking/my_bookings.html:426
 #: templates/logic/conversations_list.html:600
 msgid "Найти учителя"
 msgstr "O'qituvchi topish"
@@ -3758,7 +3758,7 @@ msgstr "Foydalanish shartlari"
 #: templates/billing/tariff_form.html:96
 #: templates/booking/book_teacher.html:309
 #: templates/booking/my_bookings.html:327
-#: templates/booking/my_bookings.html:380
+#: templates/booking/my_bookings.html:381
 #: templates/booking/teacher_calendar.html:119
 #: templates/booking/teacher_calendar.html:182
 #: templates/booking/teacher_calendar.html:210
@@ -4087,7 +4087,7 @@ msgid ""
 msgstr "Masalan: o'qituvchi qo'shilmadi / dars bo'lmadi / sifat mos kelmadi"
 
 #: templates/billing/dispute_open.html:48
-#: templates/booking/my_bookings.html:404
+#: templates/booking/my_bookings.html:405
 msgid "Открыть спор"
 msgstr "Nizo ochish"
 
@@ -4201,7 +4201,7 @@ msgstr ""
 #: templates/billing/homework_detail.html:93
 #: templates/billing/tariffs_list.html:79
 #: templates/billing/tariffs_list.html:81
-#: templates/booking/lesson_room.html:855
+#: templates/booking/lesson_room.html:898
 #: templates/booking/teacher_calendar.html:116
 #: templates/logic/conversation_detail.html:1026
 #: templates/logic/conversation_detail.html:1027
@@ -4230,7 +4230,7 @@ msgid "Прикрепить файлы (PDF/DOCX/JPG и т.п.)"
 msgstr "Fayllarni biriktirish (PDF/DOCX/JPG va h.k.)"
 
 #: templates/billing/homework_detail.html:116
-#: templates/booking/lesson_room.html:339
+#: templates/booking/lesson_room.html:382
 #: templates/logic/conversation_detail.html:1117
 #: templates/logic/conversation_detail.html:1119
 #: templates/logic/conversation_detail.html:1153
@@ -5154,8 +5154,8 @@ msgid "из них сегодня"
 msgstr "shundan bugun"
 
 #: templates/billing/teacher_dashboard.html:164
-#: templates/booking/my_bookings.html:426
-#: templates/booking/my_bookings.html:428
+#: templates/booking/my_bookings.html:427
+#: templates/booking/my_bookings.html:429
 #: templates/logic/conversation_detail.html:1043
 #: templates/logic/conversation_detail.html:1158
 msgid "Сегодня"
@@ -5786,8 +5786,9 @@ msgstr "Yana bron qilish"
 
 #: templates/booking/book_teacher.html:319
 #: templates/booking/book_teacher.html:363
-#: templates/booking/lesson_room.html:262
-#: templates/booking/lesson_room.html:424
+#: templates/booking/lesson_archive.html:55
+#: templates/booking/lesson_room.html:297
+#: templates/booking/lesson_room.html:467
 msgid "К моим урокам"
 msgstr "Mening darslarimga"
 
@@ -5890,20 +5891,48 @@ msgstr "Sharh yuborish"
 msgid "Поставьте, пожалуйста, общую оценку."
 msgstr "Iltimos, umumiy baho qo'ying."
 
-#: templates/booking/lesson_room.html:254
+#: templates/booking/lesson_archive.html:4
+#: templates/booking/lesson_archive.html:60
+#: templates/booking/lesson_room.html:391
+msgid "Материалы урока"
+msgstr "Dars materiallari"
+
+#: templates/booking/lesson_archive.html:47
+msgid "Материалы урока с"
+msgstr "Dars materiallari —"
+
+#: templates/booking/lesson_archive.html:72
+msgid "Материалов к этому уроку нет."
+msgstr "Bu darsga materiallar yo'q."
+
+#: templates/booking/lesson_archive.html:77
+msgid "Переписка урока"
+msgstr "Dars yozishmalari"
+
+#: templates/booking/lesson_archive.html:91
+#: templates/booking/lesson_room.html:1120
+#: templates/logic/conversations_list.html:563
+msgid "Вы"
+msgstr "Siz"
+
+#: templates/booking/lesson_archive.html:97
+msgid "Переписки по этому уроку не было."
+msgstr "Bu dars bo'yicha yozishmalar bo'lmagan."
+
+#: templates/booking/lesson_room.html:289
 msgid "Урок с"
 msgstr "Dars:"
 
-#: templates/booking/lesson_room.html:270
+#: templates/booking/lesson_room.html:305
 msgid "До конца урока"
 msgstr "Dars oxirigacha"
 
-#: templates/booking/lesson_room.html:275
+#: templates/booking/lesson_room.html:310
 #, python-format
 msgid "Ожидаем %(other_name)s…"
 msgstr "%(other_name)s kutilmoqda…"
 
-#: templates/booking/lesson_room.html:280
+#: templates/booking/lesson_room.html:315
 msgid ""
 "Нажмите «Присоединиться» и разрешите доступ к камере и микрофону. Материалы "
 "урока — ниже под видео; доска, демонстрация экрана и чат — в нижней панели "
@@ -5913,54 +5942,61 @@ msgstr ""
 "materiallari — video ostida; doska, ekranni ulashish va chat — video "
 "oynaning pastki panelida."
 
-#: templates/booking/lesson_room.html:281
-#: templates/booking/lesson_room.html:306 templates/logic/home.html:2469
+#: templates/booking/lesson_room.html:316
+#: templates/booking/lesson_room.html:341 templates/logic/home.html:2469
 #: templates/partials/telegram_connect_banner.html:16
 msgid "Скрыть"
 msgstr "Yashirish"
 
-#: templates/booking/lesson_room.html:304
-#: templates/booking/lesson_room.html:310
+#: templates/booking/lesson_room.html:339
+#: templates/booking/lesson_room.html:345
 msgid "Переподключиться"
 msgstr "Qayta ulanish"
 
-#: templates/booking/lesson_room.html:322
+#: templates/booking/lesson_room.html:357
 msgid "Материалы"
 msgstr "Materiallar"
 
-#: templates/booking/lesson_room.html:329
-msgid "Сообщений пока нет. Общайтесь прямо здесь — история сохранится."
-msgstr "Hozircha xabarlar yo'q. Shu yerda yozishingiz mumkin — tarix saqlanadi."
+#: templates/booking/lesson_room.html:365
+#, python-format
+msgid "%(other_name)s не в комнате"
+msgstr "%(other_name)s kabinetda yo'q"
 
-#: templates/booking/lesson_room.html:332
+#: templates/booking/lesson_room.html:368
+msgid "Сообщений пока нет. Общайтесь прямо здесь — история сохранится."
+msgstr ""
+"Hozircha xabarlar yo'q. Shu yerda yozishingiz mumkin — tarix saqlanadi."
+
+#: templates/booking/lesson_room.html:372
+#, python-format
+msgid "%(other_name)s печатает…"
+msgstr "%(other_name)s yozmoqda…"
+
+#: templates/booking/lesson_room.html:375
 msgid "Прикрепить файл"
 msgstr "Fayl biriktirish"
 
-#: templates/booking/lesson_room.html:338
+#: templates/booking/lesson_room.html:381
 msgid "Сообщение…"
 msgstr "Xabar…"
 
-#: templates/booking/lesson_room.html:348
-msgid "Материалы урока"
-msgstr "Dars materiallari"
-
-#: templates/booking/lesson_room.html:351
-#: templates/booking/lesson_room.html:850
+#: templates/booking/lesson_room.html:394
+#: templates/booking/lesson_room.html:893
 msgid "Загрузить файл"
 msgstr "Fayl yuklash"
 
-#: templates/booking/lesson_room.html:357
+#: templates/booking/lesson_room.html:400
 msgid ""
 "Документы, изображения, презентации — до 25 МБ. Видны обеим сторонам урока."
 msgstr ""
 "Hujjatlar, rasmlar, taqdimotlar — 25 MB gacha. Darsning ikkala tomoniga "
 "ko'rinadi."
 
-#: templates/booking/lesson_room.html:360
+#: templates/booking/lesson_room.html:403
 msgid "Пока нет загруженных материалов."
 msgstr "Hozircha yuklangan materiallar yo'q."
 
-#: templates/booking/lesson_room.html:369
+#: templates/booking/lesson_room.html:412
 msgid ""
 "Урок проходит на платформе: оплата защищена, при проблеме можно открыть спор "
 "и вернуть деньги. Договорённости вне платформы этих гарантий не дают."
@@ -5969,7 +6005,7 @@ msgstr ""
 "ochib, pulni qaytarib olishingiz mumkin. Platformadan tashqaridagi "
 "kelishuvlar bunday kafolatlarni bermaydi."
 
-#: templates/booking/lesson_room.html:382
+#: templates/booking/lesson_room.html:425
 #, python-format
 msgid ""
 "Преподаватель так и не подключился? Если его нет дольше %(noshow_grace)s "
@@ -5979,42 +6015,42 @@ msgstr ""
 "bo'lmasa, kelmaganini belgilang — dars bekor qilinadi va mablag'ingiz darhol "
 "qaytariladi."
 
-#: templates/booking/lesson_room.html:384
-#: templates/booking/my_bookings.html:399
+#: templates/booking/lesson_room.html:427
+#: templates/booking/my_bookings.html:400
 msgid "Преподаватель не пришёл"
 msgstr "O'qituvchi kelmadi"
 
 # New login required messages
-#: templates/booking/lesson_room.html:392
+#: templates/booking/lesson_room.html:435
 msgid "Комната ещё закрыта"
 msgstr "Xona hali yopiq"
 
-#: templates/booking/lesson_room.html:393
+#: templates/booking/lesson_room.html:436
 #, python-format
 msgid "Вы сможете войти за %(join_lead)s минут до начала урока"
 msgstr "Dars boshlanishidan %(join_lead)s daqiqa oldin qo'shilishingiz mumkin"
 
-#: templates/booking/lesson_room.html:401
+#: templates/booking/lesson_room.html:444
 msgid "До открытия"
 msgstr "Ochilishgacha"
 
-#: templates/booking/lesson_room.html:416
+#: templates/booking/lesson_room.html:459
 msgid "Урок завершён"
 msgstr "Dars tugadi"
 
-#: templates/booking/lesson_room.html:417
+#: templates/booking/lesson_room.html:460
 msgid "Время этого урока уже прошло."
 msgstr "Bu darsning vaqti allaqachon o'tib ketgan."
 
-#: templates/booking/lesson_room.html:420
+#: templates/booking/lesson_room.html:463
 msgid "Урок ещё не подтверждён"
 msgstr "Dars hali tasdiqlanmagan"
 
-#: templates/booking/lesson_room.html:421
+#: templates/booking/lesson_room.html:464
 msgid "Комната станет доступной после подтверждения брони учителем."
 msgstr "Xona o'qituvchi bronni tasdiqlaganidan keyin ochiladi."
 
-#: templates/booking/lesson_room.html:448
+#: templates/booking/lesson_room.html:491
 msgid ""
 "Ваш микрофон перестал передавать звук. Нажмите «Переподключиться» — это "
 "переподключит устройство."
@@ -6022,44 +6058,44 @@ msgstr ""
 "Mikrofoningiz ovozni uzatishni to‘xtatdi. «Qayta ulanish»ni bosing — bu "
 "qurilmani qayta ulaydi."
 
-#: templates/booking/lesson_room.html:449
+#: templates/booking/lesson_room.html:492
 msgid "Проблема со связью. Если звук или видео пропали — переподключитесь."
 msgstr "Aloqa muammosi. Agar ovoz yoki video yo‘qolgan bo‘lsa — qayta ulaning."
 
-#: templates/booking/lesson_room.html:450
+#: templates/booking/lesson_room.html:493
 msgid "Интернет пропал. Ждём восстановления соединения…"
 msgstr "Internet aloqasi uzildi. Tiklanishini kutmoqdamiz…"
 
-#: templates/booking/lesson_room.html:451
+#: templates/booking/lesson_room.html:494
 msgid "Связь прервалась — восстанавливаем подключение…"
 msgstr "Aloqa uzildi — ulanishni tiklayapmiz…"
 
-#: templates/booking/lesson_room.html:452
+#: templates/booking/lesson_room.html:495
 msgid ""
 "Не удаётся восстановить соединение. Проверьте интернет и обновите страницу."
 msgstr "Aloqani tiklab bo‘lmadi. Internetni tekshiring va sahifani yangilang."
 
-#: templates/booking/lesson_room.html:542
+#: templates/booking/lesson_room.html:585
 msgid ""
 "Не удалось загрузить видео-модуль. Проверьте интернет и попробуйте "
 "переподключиться."
 msgstr ""
 "Video modulni yuklab bo'lmadi. Internetni tekshirib, qayta ulanib ko'ring."
 
-#: templates/booking/lesson_room.html:554
+#: templates/booking/lesson_room.html:597
 msgid "время вышло"
 msgstr "vaqt tugadi"
 
-#: templates/booking/lesson_room.html:570
+#: templates/booking/lesson_room.html:613
 msgid "на связи"
 msgstr "aloqada"
 
-#: templates/booking/lesson_room.html:571
+#: templates/booking/lesson_room.html:614
 msgid "Ожидаем"
 msgstr "Kutilmoqda"
 
-#: templates/booking/lesson_room.html:607
-#: templates/booking/my_bookings.html:401
+#: templates/booking/lesson_room.html:650
+#: templates/booking/my_bookings.html:402
 msgid ""
 "Отметить, что преподаватель не подключился? Урок будет отменён, а средства "
 "возвращены."
@@ -6067,64 +6103,71 @@ msgstr ""
 "O'qituvchi ulanmagan deb belgilansinmi? Dars bekor qilinadi va mablag' "
 "qaytariladi."
 
-#: templates/booking/lesson_room.html:616
+#: templates/booking/lesson_room.html:659
 #: templates/logic/_profile_edit_enhancements.html:406
 msgid "Готово"
 msgstr "Tayyor"
 
-#: templates/booking/lesson_room.html:619
+#: templates/booking/lesson_room.html:662
 msgid "Не удалось выполнить действие"
 msgstr "Amalni bajarib bo'lmadi"
 
-#: templates/booking/lesson_room.html:623
+#: templates/booking/lesson_room.html:666
 msgid "Ошибка сети, попробуйте ещё раз"
 msgstr "Tarmoq xatosi, qayta urinib ko'ring"
 
-#: templates/booking/lesson_room.html:849
+#: templates/booking/lesson_room.html:892
 #: templates/booking/my_bookings.html:359
 msgid "Загрузка…"
 msgstr "Yuklanmoqda…"
 
-#: templates/booking/lesson_room.html:851
+#: templates/booking/lesson_room.html:894
 msgid "Удалить этот файл?"
 msgstr "Bu fayl o'chirilsinmi?"
 
-#: templates/booking/lesson_room.html:852
-#: templates/booking/lesson_room.html:1077
+#: templates/booking/lesson_room.html:895
+#: templates/booking/lesson_room.html:1123
 msgid "Файл слишком большой (максимум 25 МБ)."
 msgstr "Fayl juda katta (eng ko'pi 25 MB)."
 
-#: templates/booking/lesson_room.html:853
+#: templates/booking/lesson_room.html:896
 msgid "Недопустимый формат файла."
 msgstr "Yaroqsiz fayl formati."
 
-#: templates/booking/lesson_room.html:854
-#: templates/booking/lesson_room.html:1076
+#: templates/booking/lesson_room.html:897
+#: templates/booking/lesson_room.html:1122
 msgid "Не удалось загрузить файл. Попробуйте ещё раз."
 msgstr "Faylni yuklab bo'lmadi. Qayta urinib ko'ring."
 
-#: templates/booking/lesson_room.html:1074
-#: templates/logic/conversations_list.html:563
-msgid "Вы"
-msgstr "Siz"
-
-#: templates/booking/lesson_room.html:1075
+#: templates/booking/lesson_room.html:1121
 #: templates/logic/conversation_detail.html:1152
 msgid "Отправка…"
 msgstr "Yuborilmoqda…"
 
+#: templates/booking/lesson_room.html:1125
+msgid "в комнате"
+msgstr "kabinetda"
+
+#: templates/booking/lesson_room.html:1126
+msgid "не в комнате"
+msgstr "kabinetda emas"
+
+#: templates/booking/lesson_room.html:1127
+msgid "Новые сообщения"
+msgstr "Yangi xabarlar"
+
 #: templates/booking/my_bookings.html:307
-#: templates/booking/my_bookings.html:407
+#: templates/booking/my_bookings.html:408
 msgid "Срочно"
 msgstr "Shoshilinch"
 
 #: templates/booking/my_bookings.html:308
-#: templates/booking/my_bookings.html:408
+#: templates/booking/my_bookings.html:409
 msgid "Предстоящие"
 msgstr "Bo'lajak"
 
 #: templates/booking/my_bookings.html:309
-#: templates/booking/my_bookings.html:409
+#: templates/booking/my_bookings.html:410
 msgid "Прошедшие"
 msgstr "O'tgan"
 
@@ -6134,7 +6177,7 @@ msgid "Загрузка..."
 msgstr "Yuklanmoqda..."
 
 #: templates/booking/my_bookings.html:328
-#: templates/booking/my_bookings.html:379
+#: templates/booking/my_bookings.html:380
 msgid "ОК"
 msgstr "OK"
 
@@ -6204,53 +6247,57 @@ msgstr ""
 "avtomatik yaratamiz:"
 
 #: templates/booking/my_bookings.html:377
+msgid "Материалы и чат"
+msgstr "Materiallar va chat"
+
+#: templates/booking/my_bookings.html:378
 msgid "Оставить отзыв"
 msgstr "Sharh qoldirish"
 
-#: templates/booking/my_bookings.html:378
+#: templates/booking/my_bookings.html:379
 msgid "Изменить отзыв"
 msgstr "Sharhni tahrirlash"
 
-#: templates/booking/my_bookings.html:381
+#: templates/booking/my_bookings.html:382
 #: templates/notifications/detail.html:548
 msgid "Подтвердить урок"
 msgstr "Darsni tasdiqlash"
 
-#: templates/booking/my_bookings.html:382
+#: templates/booking/my_bookings.html:383
 msgid "Отклонить заявку"
 msgstr "So'rovni rad etish"
 
-#: templates/booking/my_bookings.html:383
+#: templates/booking/my_bookings.html:384
 msgid "Отменить бронирование"
 msgstr "Bronni bekor qilish"
 
-#: templates/booking/my_bookings.html:384
 #: templates/booking/my_bookings.html:385
+#: templates/booking/my_bookings.html:386
 msgid "Ссылка на встречу"
 msgstr "Uchrashuv havolasi"
 
-#: templates/booking/my_bookings.html:386
+#: templates/booking/my_bookings.html:387
 msgid "Оставьте пустым — создадим видео-комнату автоматически"
 msgstr "Bo'sh qoldiring — biz video xonani avtomatik yaratamiz"
 
-#: templates/booking/my_bookings.html:387
+#: templates/booking/my_bookings.html:388
 #: templates/notifications/detail.html:540
 msgid "Сообщение ученику (необязательно)"
 msgstr "O'quvchiga xabar (ixtiyoriy)"
 
-#: templates/booking/my_bookings.html:388
+#: templates/booking/my_bookings.html:389
 msgid "Причина отклонения (необязательно)"
 msgstr "Rad etish sababi (ixtiyoriy)"
 
-#: templates/booking/my_bookings.html:389
+#: templates/booking/my_bookings.html:390
 msgid "Перенести"
 msgstr "Ko'chirish"
 
-#: templates/booking/my_bookings.html:390
+#: templates/booking/my_bookings.html:391
 msgid "Перенести урок"
 msgstr "Darsni ko'chirish"
 
-#: templates/booking/my_bookings.html:391
+#: templates/booking/my_bookings.html:392
 msgid ""
 "Выберите другой свободный слот. После переноса учитель подтвердит новое "
 "время."
@@ -6258,7 +6305,7 @@ msgstr ""
 "Boshqa bo'sh slotni tanlang. Ko'chirilgandan so'ng o'qituvchi yangi vaqtni "
 "tasdiqlaydi."
 
-#: templates/booking/my_bookings.html:392
+#: templates/booking/my_bookings.html:393
 #, fuzzy
 #| msgid ""
 #| "Выберите другой свободный слот. После переноса учитель подтвердит новое "
@@ -6270,111 +6317,111 @@ msgstr ""
 "Boshqa bo'sh slotni tanlang. Ko'chirilgandan so'ng o'qituvchi yangi vaqtni "
 "tasdiqlaydi."
 
-#: templates/booking/my_bookings.html:393
+#: templates/booking/my_bookings.html:394
 #, fuzzy, python-brace-format
 #| msgid "Заявка истекла (не подтверждена до начала урока)"
 msgid "Перенести можно не позднее чем за {n} ч до начала урока"
 msgstr "So'rov muddati tugadi (dars boshlanishidan oldin tasdiqlanmadi)"
 
-#: templates/booking/my_bookings.html:394
+#: templates/booking/my_bookings.html:395
 #, fuzzy
 #| msgid "Урок перенесён — ждёт подтверждения учителя."
 msgid "Урок перенесён на новое время."
 msgstr "Dars ko'chirildi — o'qituvchi tasdiqlashini kutmoqda."
 
-#: templates/booking/my_bookings.html:395
+#: templates/booking/my_bookings.html:396
 #: templates/booking/teacher_calendar.html:245
 msgid "Новый слот"
 msgstr "Yangi slot"
 
-#: templates/booking/my_bookings.html:396
+#: templates/booking/my_bookings.html:397
 msgid "У учителя нет свободных слотов на ближайшие 30 дней."
 msgstr "O'qituvchida yaqin 30 kun ichida bo'sh slot yo'q."
 
-#: templates/booking/my_bookings.html:397
+#: templates/booking/my_bookings.html:398
 msgid "Добавить в календарь (.ics)"
 msgstr "Taqvimga qo'shish (.ics)"
 
-#: templates/booking/my_bookings.html:398
+#: templates/booking/my_bookings.html:399
 msgid "Урок перенесён — ждёт подтверждения учителя."
 msgstr "Dars ko'chirildi — o'qituvchi tasdiqlashini kutmoqda."
 
-#: templates/booking/my_bookings.html:400
+#: templates/booking/my_bookings.html:401
 #, fuzzy
 #| msgid "Преподаватель не пришёл"
 msgid "Преподаватель не пришёл?"
 msgstr "O'qituvchi kelmadi"
 
-#: templates/booking/my_bookings.html:402
+#: templates/booking/my_bookings.html:403
 msgid "Готово — средства возвращены."
 msgstr ""
 
-#: templates/booking/my_bookings.html:405
+#: templates/booking/my_bookings.html:406
 msgid "Спор"
 msgstr "Nizo"
 
-#: templates/booking/my_bookings.html:411
+#: templates/booking/my_bookings.html:412
 msgid "С сообщением"
 msgstr "Xabar bilan"
 
-#: templates/booking/my_bookings.html:412
+#: templates/booking/my_bookings.html:413
 msgid "В это время занят"
 msgstr "Bu vaqtda bandman"
 
-#: templates/booking/my_bookings.html:413
+#: templates/booking/my_bookings.html:414
 msgid "Заболел, не смогу провести"
 msgstr "Kasal bo'lib qoldim, dars o'tkaza olmayman"
 
-#: templates/booking/my_bookings.html:414
+#: templates/booking/my_bookings.html:415
 msgid "Давайте перенесём — предложите другое время"
 msgstr "Keling, ko'chiraylik — boshqa vaqt taklif qiling"
 
-#: templates/booking/my_bookings.html:415
+#: templates/booking/my_bookings.html:416
 msgid "Другая причина"
 msgstr "Boshqa sabab"
 
-#: templates/booking/my_bookings.html:416
+#: templates/booking/my_bookings.html:417
 msgid "уроков сегодня"
 msgstr "ta dars bugun"
 
-#: templates/booking/my_bookings.html:417
+#: templates/booking/my_bookings.html:418
 msgid "ждут подтверждения"
 msgstr "tasdiqlashni kutmoqda"
 
-#: templates/booking/my_bookings.html:418
+#: templates/booking/my_bookings.html:419
 msgid "истекают скоро"
 msgstr "tez orada tugaydi"
 
-#: templates/booking/my_bookings.html:419
+#: templates/booking/my_bookings.html:420
 msgid "предстоит"
 msgstr "kutilmoqda"
 
-#: templates/booking/my_bookings.html:420
+#: templates/booking/my_bookings.html:421
 msgid "Все запросы обработаны"
 msgstr "Barcha so'rovlar ko'rib chiqildi"
 
-#: templates/booking/my_bookings.html:421
+#: templates/booking/my_bookings.html:422
 msgid "Нет уроков, ждущих подтверждения"
 msgstr "Tasdiqlashni kutayotgan darslar yo'q"
 
-#: templates/booking/my_bookings.html:422
+#: templates/booking/my_bookings.html:423
 msgid "У вас нет предстоящих уроков"
 msgstr "Sizda kutilayotgan darslar yo'q"
 
-#: templates/booking/my_bookings.html:423
+#: templates/booking/my_bookings.html:424
 msgid "У вас нет предстоящих уроков. Найдите учителя →"
 msgstr "Sizda kutilayotgan darslar yo'q. O'qituvchi toping →"
 
-#: templates/booking/my_bookings.html:424
+#: templates/booking/my_bookings.html:425
 msgid "Здесь будут уроки после их завершения"
 msgstr "Tugagan darslar shu yerda ko'rinadi"
 
-#: templates/booking/my_bookings.html:427
+#: templates/booking/my_bookings.html:428
 #: templates/emails/lesson_reminder.html:12
 msgid "Завтра"
 msgstr "Ertaga"
 
-#: templates/booking/my_bookings.html:429
+#: templates/booking/my_bookings.html:430
 #: templates/logic/teacher_detail.html:2299
 msgid "Пробный"
 msgstr "Sinov"

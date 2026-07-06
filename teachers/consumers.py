@@ -686,6 +686,16 @@ class LessonRoomConsumer(AsyncWebsocketConsumer):
             })
             return
 
+        if mtype == 'typing':
+            # Индикатор «печатает…» — только ретрансляция, без БД.
+            await self.channel_layer.group_send(self.group_name, {
+                'type': 'typing',
+                'user_id': self.user.pk,
+                'state': bool(data.get('state')),
+                'sender_channel': self.channel_name,
+            })
+            return
+
         if mtype == 'chat_message':
             # Анти-флуд: минимальный интервал между сообщениями на соединение.
             now = time.monotonic()
@@ -718,6 +728,15 @@ class LessonRoomConsumer(AsyncWebsocketConsumer):
 
     async def file_changed(self, event):
         await self.send(text_data=json.dumps({'type': 'file_changed'}))
+
+    async def typing(self, event):
+        if event.get('sender_channel') == self.channel_name:
+            return
+        await self.send(text_data=json.dumps({
+            'type': 'typing',
+            'user_id': event.get('user_id'),
+            'state': event.get('state', False),
+        }))
 
     async def presence(self, event):
         # Не отражаем собственное presence-сообщение обратно себе.

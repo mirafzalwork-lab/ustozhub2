@@ -236,6 +236,41 @@
     .lr-chat-send:hover { background: #2563EB; }
     .lr-chat-send[disabled] { opacity: .5; cursor: default; }
 
+    /* Шапка чата: presence собеседника */
+    .lr-chat-head {
+        display: flex; align-items: center; gap: 8px;
+        padding: 8px 12px; font-size: 12px; color: var(--text-tertiary, #64748b);
+        border-bottom: 1px solid #f1f5f9; background: #fff;
+    }
+    .lr-chat-dot { width: 8px; height: 8px; border-radius: 50%; background: #cbd5e1; flex: 0 0 auto; }
+    .lr-chat-head.is-online .lr-chat-dot { background: #22C55E; box-shadow: 0 0 0 3px rgba(34,197,94,.18); }
+    .lr-chat-head.is-online { color: #166534; }
+    /* Индикатор «печатает…» */
+    .lr-typing {
+        display: flex; align-items: center; gap: 8px;
+        padding: 4px 14px 2px; font-size: 12px; color: var(--text-tertiary, #94a3b8);
+    }
+    .lr-typing-dots { display: inline-flex; gap: 3px; }
+    .lr-typing-dots span {
+        width: 5px; height: 5px; border-radius: 50%; background: #94a3b8;
+        animation: lr-typing-bounce 1.2s infinite ease-in-out;
+    }
+    .lr-typing-dots span:nth-child(2) { animation-delay: .2s; }
+    .lr-typing-dots span:nth-child(3) { animation-delay: .4s; }
+    @keyframes lr-typing-bounce { 0%,60%,100% { opacity: .3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+    /* Разделитель непрочитанного */
+    .lr-msg-divider {
+        align-self: stretch; text-align: center; font-size: 11px; font-weight: 600;
+        color: #EF4444; margin: 4px 0; position: relative;
+    }
+    .lr-msg-divider::before, .lr-msg-divider::after {
+        content: ''; position: absolute; top: 50%; width: 32%; height: 1px; background: #FECACA;
+    }
+    .lr-msg-divider::before { left: 0; } .lr-msg-divider::after { right: 0; }
+    /* Ссылки в сообщениях */
+    .lr-msg a.lr-link { color: inherit; text-decoration: underline; word-break: break-all; }
+    .lr-msg.is-them a.lr-link { color: #1D4ED8; }
+
     @media (max-width: 900px) {
         .lr-stage { flex-direction: column; }
         .lr-video #jitsi-container { height: 60vh; }
@@ -325,8 +360,16 @@
                 <div class="lr-panel-body">
                     <!-- Вкладка: Чат урока -->
                     <div class="lr-tabpane is-active" id="lr-pane-chat">
+                        <div class="lr-chat-head" id="lr-chat-head">
+                            <span class="lr-chat-dot" id="lr-chat-dot"></span>
+                            <span id="lr-chat-presence">{% blocktrans %}{{ other_name }} не в комнате{% endblocktrans %}</span>
+                        </div>
                         <div class="lr-chat-msgs" id="lr-chat-msgs">
                             <p class="lr-chat-empty" id="lr-chat-empty">{% trans "Сообщений пока нет. Общайтесь прямо здесь — история сохранится." %}</p>
+                        </div>
+                        <div class="lr-typing" id="lr-typing" hidden>
+                            <span class="lr-typing-dots"><span></span><span></span><span></span></span>
+                            <span>{% blocktrans %}{{ other_name }} печатает…{% endblocktrans %}</span>
                         </div>
                         <form class="lr-chat-form" id="lr-chat-form" autocomplete="off">
                             <label class="lr-chat-attach" id="lr-chat-attach-label" title="{% trans 'Прикрепить файл' %}">
@@ -1065,6 +1108,9 @@
     const attachLabel = document.getElementById('lr-chat-attach-label');
     const attachInput = document.getElementById('lr-chat-file');
     const badge = document.getElementById('lr-chat-badge');
+    const headEl = document.getElementById('lr-chat-head');
+    const presenceTextEl = document.getElementById('lr-chat-presence');
+    const typingEl = document.getElementById('lr-typing');
     if (!msgsEl || !form) return;
 
     let activeTab = 'chat';
@@ -1075,8 +1121,19 @@
         sending: "{% filter escapejs %}{% trans 'Отправка…' %}{% endfilter %}",
         failed: "{% filter escapejs %}{% trans 'Не удалось загрузить файл. Попробуйте ещё раз.' %}{% endfilter %}",
         tooBig: "{% filter escapejs %}{% trans 'Файл слишком большой (максимум 25 МБ).' %}{% endfilter %}",
+        otherName: "{{ other_name|escapejs }}",
+        inRoom: "{% filter escapejs %}{% trans 'в комнате' %}{% endfilter %}",
+        notInRoom: "{% filter escapejs %}{% trans 'не в комнате' %}{% endfilter %}",
+        newMessages: "{% filter escapejs %}{% trans 'Новые сообщения' %}{% endfilter %}",
     };
     const MAX_BYTES = 25 * 1024 * 1024;
+
+    // URL уже HTML-экранированного текста → кликабельная ссылка (XSS-safe).
+    function linkify(escaped) {
+        return escaped.replace(/(https?:\/\/[^\s<]+)/g, function (u) {
+            return '<a class="lr-link" href="' + u + '" target="_blank" rel="noopener">' + u + '</a>';
+        });
+    }
 
     function escapeHtml(s) {
         return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
@@ -1115,7 +1172,7 @@
         const li = document.createElement('div');
         li.className = 'lr-msg ' + (mine ? 'is-me' : 'is-them');
         let html = '';
-        if (m.content) html += '<span class="lr-msg-text">' + escapeHtml(m.content) + '</span>';
+        if (m.content) html += '<span class="lr-msg-text">' + linkify(escapeHtml(m.content)) + '</span>';
         if (m.attachment) {
             const a = m.attachment;
             html += '<a class="lr-msg-file" href="' + escapeHtml(a.file_url) + '" target="_blank" rel="noopener">' +
@@ -1139,6 +1196,37 @@
         unread = 0;
         if (badge) badge.hidden = true;
     }
+    // Разделитель «Новые сообщения»: ставим перед первым непрочитанным (когда чат
+    // не активен), убираем при уходе с вкладки/перезагрузке истории.
+    function maybeInsertDivider(fromOther) {
+        if (!fromOther) return;
+        if (activeTab === 'chat' && document.visibilityState === 'visible') return;
+        if (msgsEl.querySelector('.lr-msg-divider')) return;
+        const d = document.createElement('div');
+        d.className = 'lr-msg-divider';
+        d.textContent = i18n.newMessages;
+        msgsEl.appendChild(d);
+    }
+    function removeDivider() {
+        const d = msgsEl.querySelector('.lr-msg-divider');
+        if (d) d.remove();
+    }
+
+    // ---- Presence собеседника (шапка чата) ----
+    function setChatPresence(online) {
+        if (headEl) headEl.classList.toggle('is-online', online);
+        if (presenceTextEl) presenceTextEl.textContent = i18n.otherName + ' ' + (online ? i18n.inRoom : i18n.notInRoom);
+    }
+
+    // ---- Индикатор «печатает…» ----
+    let typingTimer = null, lastTypingSent = 0, typingHideTimer = null;
+    function sendTyping(state) {
+        if (window.lessonRT) window.lessonRT.send('typing', { state: !!state });
+    }
+    function stopTypingNow() {
+        if (typingTimer) { clearTimeout(typingTimer); typingTimer = null; }
+        if (lastTypingSent) { sendTyping(false); lastTypingSent = 0; }
+    }
 
     // ---- Переключение вкладок ----
     function selectTab(name) {
@@ -1146,6 +1234,7 @@
         tabs.forEach(t => t.classList.toggle('is-active', t.getAttribute('data-tab') === name));
         Object.keys(panes).forEach(k => { if (panes[k]) panes[k].classList.toggle('is-active', k === name); });
         if (name === 'chat') { clearUnread(); scrollDown(); if (inputEl) inputEl.focus(); }
+        else { removeDivider(); }
     }
     tabs.forEach(t => t.addEventListener('click', function () { selectTab(t.getAttribute('data-tab')); }));
 
@@ -1156,7 +1245,15 @@
         if (!text) return;
         if (window.lessonRT) window.lessonRT.send('chat_message', { text: text });
         inputEl.value = '';
+        stopTypingNow();
         inputEl.focus();
+    });
+    // Печатает…: шлём «true» не чаще раза в ~2.5с, «false» — через 3с простоя.
+    if (inputEl) inputEl.addEventListener('input', function () {
+        const now = Date.now();
+        if (now - lastTypingSent > 2500) { sendTyping(true); lastTypingSent = now; }
+        if (typingTimer) clearTimeout(typingTimer);
+        typingTimer = setTimeout(function () { sendTyping(false); lastTypingSent = 0; }, 3000);
     });
 
     // ---- Вложение в чат: тот же upload-пайплайн, затем сообщение с файлом ----
@@ -1182,17 +1279,37 @@
     if (window.lessonRT) {
         window.lessonRT.on('chat_message', function (msg) {
             const m = (msg && msg.message) || {};
+            const fromOther = (m.sender_id !== myId);
+            maybeInsertDivider(fromOther);
             renderMsg(m);
             scrollDown();
-            if (m.sender_id !== myId) bumpUnread();
+            if (fromOther) { bumpUnread(); if (typingEl) typingEl.hidden = true; }
         });
         window.lessonRT.on('chat_history', function (msg) {
             const list = (msg && msg.messages) || [];
             // Полная перерисовка истории (при входе/реконнекте).
+            removeDivider();
             Array.prototype.slice.call(msgsEl.querySelectorAll('.lr-msg')).forEach(n => n.remove());
             if (emptyEl) emptyEl.hidden = list.length > 0;
             list.forEach(renderMsg);
             scrollDown();
+        });
+        // Presence собеседника (не отражаем своё).
+        window.lessonRT.on('presence', function (msg) {
+            if (!msg || msg.user_id === myId) return;
+            setChatPresence(!!msg.online);
+        });
+        // «Печатает…» (авто-сброс, если событие stop потеряется).
+        window.lessonRT.on('typing', function (msg) {
+            if (!msg || msg.user_id === myId || !typingEl) return;
+            if (msg.state) {
+                typingEl.hidden = false;
+                if (typingHideTimer) clearTimeout(typingHideTimer);
+                typingHideTimer = setTimeout(function () { typingEl.hidden = true; }, 5000);
+            } else {
+                typingEl.hidden = true;
+                if (typingHideTimer) clearTimeout(typingHideTimer);
+            }
         });
     }
 

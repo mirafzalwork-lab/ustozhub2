@@ -44,7 +44,7 @@ from .booking_views import (
     booking_set_meeting_url_api, booking_reschedule_api,
     booking_report_teacher_noshow_api,
     my_bookings_api, my_bookings_page, book_teacher_page,
-    lesson_room, lesson_attendance_api, lesson_diag_api, leave_review, booking_ical,
+    lesson_room, lesson_archive, lesson_attendance_api, lesson_diag_api, leave_review, booking_ical,
 )
 from .lesson_files_views import (
     lesson_file_list, lesson_file_presigned_url, lesson_file_save, lesson_file_delete,
@@ -165,6 +165,7 @@ urlpatterns = [
     path('my/bookings/', my_bookings_page, name='my_bookings_page'),
     path('bookings/<uuid:booking_id>/calendar.ics', booking_ical, name='booking_ical'),
     path('lesson/<uuid:booking_id>/', lesson_room, name='lesson_room'),
+    path('lesson/<uuid:booking_id>/archive/', lesson_archive, name='lesson_archive'),
     path('lesson/<uuid:booking_id>/attendance/', lesson_attendance_api, name='lesson_attendance_api'),
     path('lesson/<uuid:booking_id>/diag/', lesson_diag_api, name='lesson_diag_api'),
     # Материалы урока (LessonFile)

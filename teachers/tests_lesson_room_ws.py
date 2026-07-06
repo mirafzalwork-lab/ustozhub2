@@ -11,7 +11,8 @@ from datetime import timedelta
 from asgiref.sync import async_to_sync
 from channels.routing import URLRouter
 from channels.testing import WebsocketCommunicator
-from django.test import TransactionTestCase, override_settings
+from django.test import TestCase, TransactionTestCase, override_settings
+from django.urls import reverse
 from django.utils import timezone
 
 from billing.tests import (
@@ -19,8 +20,10 @@ from billing.tests import (
     _make_student_with_balance,
     _make_teacher_with_subject,
 )
-from teachers.models import Booking, LessonChatMessage, TimeSlot
+from teachers.models import Booking, LessonChatMessage, LessonFile, TimeSlot
 from teachers.routing import websocket_urlpatterns
+
+PWD = 'x' * 12
 
 # Тестовый слой каналов — in-memory (без Redis).
 _INMEM_LAYERS = {'default': {'BACKEND': 'channels.layers.InMemoryChannelLayer'}}
@@ -136,3 +139,49 @@ class LessonRoomConsumerTest(TransactionTestCase):
             await t_comm.disconnect()
             await s_comm.disconnect()
         async_to_sync(flow)()
+
+
+@override_settings(STORAGES=SIMPLE_STATIC_STORAGES)
+class LessonArchiveViewTest(TestCase):
+    """Архив урока: read-only материалы + чат, доступ только участникам, без гейта времени."""
+
+    def setUp(self):
+        self.teacher, self.subject = _make_teacher_with_subject('ar_t')
+        self.teacher.moderation_status = 'approved'
+        self.teacher.is_active = True
+        self.teacher.save()
+        self.student = _make_student_with_balance('ar_s', balance=0)
+        self.outsider = _make_student_with_balance('ar_x', balance=0)
+        slot = TimeSlot.objects.create(
+            teacher=self.teacher,
+            start_at=timezone.now() + timedelta(hours=1),
+            end_at=timezone.now() + timedelta(hours=2),
+            status='free',
+        )
+        self.booking = Booking.create_hold(
+            slot_id=slot.id, student=self.student, subject=self.subject)
+        self.booking.confirm()
+        # Сдвигаем слот в прошлое (урок «завершён») в обход валидации create_hold.
+        TimeSlot.objects.filter(pk=slot.id).update(
+            start_at=timezone.now() - timedelta(hours=2),
+            end_at=timezone.now() - timedelta(hours=1),
+        )
+        self.booking.refresh_from_db()
+        LessonChatMessage.objects.create(
+            booking=self.booking, sender=self.student, content='спасибо за урок')
+        LessonFile.objects.create(
+            booking=self.booking, uploaded_by=self.teacher.user,
+            file_name='домашка.pdf', file_key='lessons/x/y.pdf',
+            file_url='https://cdn.example/lessons/x/y.pdf', size=1234)
+
+    def test_participant_sees_chat_and_files(self):
+        self.client.login(username='ar_s', password=PWD)
+        r = self.client.get(reverse('lesson_archive', args=[self.booking.id]))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'спасибо за урок')
+        self.assertContains(r, 'домашка.pdf')
+
+    def test_non_participant_forbidden(self):
+        self.client.login(username='ar_x', password=PWD)
+        r = self.client.get(reverse('lesson_archive', args=[self.booking.id]))
+        self.assertEqual(r.status_code, 403)

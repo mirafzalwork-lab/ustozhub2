@@ -639,6 +639,10 @@ def _booking_to_dict(b: Booking, has_review: bool | None = None) -> dict:
         # внешних ссылок meeting_is_jitsi=False и заходим напрямую по meeting_url.
         'meeting_is_jitsi': b.is_jitsi_meeting(),
         'lesson_room_url': reverse('lesson_room', args=[b.id]),
+        # Архив урока (материалы + чат, read-only) — доступен после начала урока,
+        # без ограничения по времени. Постоянство материалов после занятия.
+        'archive_url': reverse('lesson_archive', args=[b.id]),
+        'can_view_archive': timezone.now() >= b.slot.start_at,
         # Отзыв: ученик может оценить завершённый урок (или обновить отзыв)
         'review_url': reverse('leave_review', args=[b.id]),
         'has_review': has_review,
@@ -1409,6 +1413,68 @@ def lesson_room(request, booking_id):
         'noshow_report_at': noshow_report_at,
         'teacher_present_initial': teacher_present_initial,
         'noshow_grace': noshow_grace,
+    })
+
+
+@authenticated_required
+@require_http_methods(['GET'])
+def lesson_archive(request, booking_id):
+    """Архив урока (read-only): материалы + история чата, доступны после урока.
+
+    В отличие от комнаты, НЕ ограничен окном времени — обе стороны могут
+    вернуться к переписке и файлам урока когда угодно. Постоянство материалов —
+    ключевое преимущество платформы перед разовыми звонками.
+    """
+    from .models import LessonFile, LessonChatMessage
+
+    booking = get_object_or_404(
+        Booking.objects.select_related('slot__teacher__user', 'student', 'subject'),
+        pk=booking_id,
+    )
+    if not _can_view_booking(request.user, booking):
+        return HttpResponseForbidden('Этот урок доступен только его участникам.')
+
+    is_teacher = bool(
+        getattr(request.user, 'teacher_profile', None)
+        and booking.slot.teacher_id == request.user.teacher_profile.pk
+    )
+    other = booking.slot.teacher.user if not is_teacher else booking.student
+    other_name = other.get_full_name() or other.username
+
+    def _icon(name):
+        ext = (name.rsplit('.', 1)[-1] if '.' in name else '').lower()
+        if ext in ('png', 'jpg', 'jpeg', 'gif', 'webp'):
+            return 'fa-file-image'
+        return {
+            'pdf': 'fa-file-pdf', 'doc': 'fa-file-word', 'docx': 'fa-file-word',
+            'ppt': 'fa-file-powerpoint', 'pptx': 'fa-file-powerpoint',
+            'xls': 'fa-file-excel', 'xlsx': 'fa-file-excel', 'zip': 'fa-file-zipper',
+        }.get(ext, 'fa-file')
+
+    files = [
+        {'name': f.file_name, 'url': f.file_url, 'size': f.size, 'icon': _icon(f.file_name)}
+        for f in LessonFile.objects.filter(booking=booking).select_related('uploaded_by')
+    ]
+    chat = []
+    for m in (LessonChatMessage.objects.filter(booking=booking)
+              .select_related('sender', 'attachment').order_by('created_at')):
+        att = None
+        if m.attachment_id and m.attachment:
+            att = {'name': m.attachment.file_name, 'url': m.attachment.file_url,
+                   'size': m.attachment.size, 'icon': _icon(m.attachment.file_name)}
+        chat.append({
+            'is_mine': m.sender_id == request.user.pk,
+            'sender_name': (m.sender.get_full_name() or m.sender.username) if m.sender_id else '',
+            'content': m.content,
+            'attachment': att,
+            'created_at': m.created_at,
+        })
+
+    return render(request, 'booking/lesson_archive.html', {
+        'booking': booking,
+        'other_name': other_name,
+        'files': files,
+        'chat_messages': chat,
     })
 
 
