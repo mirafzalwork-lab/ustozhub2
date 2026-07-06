@@ -587,3 +587,227 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }))
         except Exception as e:
             logger.error(f"Error sending message history: {e}", exc_info=True)
+
+
+# =============================================================================
+# LessonRoomConsumer: надёжный реалтайм комнаты урока (чат + файлы + presence)
+# =============================================================================
+
+class LessonRoomConsumer(AsyncWebsocketConsumer):
+    """
+    WebSocket комнаты урока `ws/lesson/<booking_id>/`.
+
+    Заменяет прежний ненадёжный P2P data-канал Jitsi (`window.lessonRT` через
+    `sendEndpointTextMessage`) серверной ретрансляцией через Channels+Redis:
+      - `chat_message`  — чат внутри урока (с опциональным вложением-файлом);
+      - `file_changed`  — оповещение «материалы изменились» обеим сторонам;
+      - `presence`      — открыта ли комната у собеседника (только для UI-хинта;
+                          НЕ источник истины присутствия в видео — им остаётся
+                          Jitsi, от него зависит логика неявки).
+
+    Доступ — только участники брони (учитель и ученик), как в файловых ручках
+    (`teachers/lesson_files_views.py`).
+    """
+
+    _CHAT_MIN_INTERVAL = 0.4    # сек между сообщениями на соединение (анти-флуд)
+    _HISTORY_LIMIT = 100
+
+    async def connect(self):
+        try:
+            self.booking_id = self.scope['url_route']['kwargs']['booking_id']
+            self.user = self.scope.get('user')
+            if not self.user or isinstance(self.user, AnonymousUser):
+                await self.close(code=4001)
+                return
+
+            self.booking = await self.get_booking_if_participant()
+            if not self.booking:
+                await self.close(code=4003)
+                return
+
+            self.group_name = f'lesson_{self.booking_id}'
+            await self.channel_layer.group_add(self.group_name, self.channel_name)
+            await self.accept()
+
+            # История чата — чтобы вошедший/переподключившийся догнал переписку.
+            history = await self.get_chat_history()
+            await self.send(text_data=json.dumps({
+                'type': 'chat_history',
+                'messages': history,
+            }))
+
+            # Presence: оповещаем, что комната у нас открыта, и просим остальных
+            # представиться (эхо), чтобы поздно вошедший узнал о собеседнике.
+            await self.channel_layer.group_send(self.group_name, {
+                'type': 'presence',
+                'user_id': self.user.pk,
+                'online': True,
+                'echo': True,
+                'sender_channel': self.channel_name,
+            })
+        except Exception as e:
+            logger.error(f"LessonRoom connect error: {e}", exc_info=True)
+            try:
+                await self.close(code=4500)
+            except Exception:
+                pass
+
+    async def disconnect(self, close_code):
+        if hasattr(self, 'group_name'):
+            try:
+                await self.channel_layer.group_send(self.group_name, {
+                    'type': 'presence',
+                    'user_id': self.user.pk,
+                    'online': False,
+                    'echo': False,
+                    'sender_channel': self.channel_name,
+                })
+            except Exception:
+                pass
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def receive(self, text_data):
+        try:
+            data = json.loads(text_data)
+        except (json.JSONDecodeError, TypeError):
+            return
+        mtype = data.get('type')
+
+        if mtype == 'ping':
+            await self.send(text_data=json.dumps({'type': 'pong'}))
+            return
+
+        if mtype == 'file_changed':
+            # Метаданные уже сохранены REST-ручкой lesson_file_save — просто
+            # надёжно оповещаем обе стороны, чтобы перечитали список.
+            await self.channel_layer.group_send(self.group_name, {
+                'type': 'file_changed',
+                'sender_channel': self.channel_name,
+            })
+            return
+
+        if mtype == 'chat_message':
+            # Анти-флуд: минимальный интервал между сообщениями на соединение.
+            now = time.monotonic()
+            if now - getattr(self, '_last_chat_ts', 0.0) < self._CHAT_MIN_INTERVAL:
+                return
+            self._last_chat_ts = now
+
+            content = (data.get('text') or '').strip()
+            attachment_id = data.get('attachment_id')
+            if not content and not attachment_id:
+                return
+            if len(content) > MAX_MESSAGE_LENGTH:
+                content = content[:MAX_MESSAGE_LENGTH]
+
+            payload = await self.save_chat_message(content, attachment_id)
+            if not payload:
+                return
+            await self.channel_layer.group_send(self.group_name, {
+                'type': 'chat_message',
+                'message': payload,
+            })
+
+    # -------- handlers (group_send → client) --------
+
+    async def chat_message(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'chat_message',
+            'message': event.get('message', {}),
+        }))
+
+    async def file_changed(self, event):
+        await self.send(text_data=json.dumps({'type': 'file_changed'}))
+
+    async def presence(self, event):
+        # Не отражаем собственное presence-сообщение обратно себе.
+        if event.get('sender_channel') == self.channel_name:
+            return
+        online = event.get('online', False)
+        await self.send(text_data=json.dumps({
+            'type': 'presence',
+            'user_id': event.get('user_id'),
+            'online': online,
+        }))
+        # Эхо: если кто-то только что вошёл (online+echo) — представимся в ответ,
+        # чтобы он узнал, что мы уже в комнате. Отвечаем адресно этому каналу.
+        if online and event.get('echo') and hasattr(self, 'group_name'):
+            await self.channel_layer.send(event['sender_channel'], {
+                'type': 'presence',
+                'user_id': self.user.pk,
+                'online': True,
+                'echo': False,
+                'sender_channel': self.channel_name,
+            })
+
+    # -------- db helpers --------
+
+    @database_sync_to_async
+    def get_booking_if_participant(self):
+        """Возвращает Booking, если текущий пользователь — участник, иначе None."""
+        from .models import Booking
+        try:
+            booking = Booking.objects.select_related('slot').get(pk=self.booking_id)
+        except (Booking.DoesNotExist, ValueError, Exception):
+            return None
+        tp = getattr(self.user, 'teacher_profile', None)
+        is_teacher = bool(tp and booking.slot.teacher_id == tp.pk)
+        is_student = (booking.student_id == self.user.pk)
+        return booking if (is_teacher or is_student) else None
+
+    def _chat_to_dict(self, m):
+        from .lesson_files_views import _file_to_dict
+        att = None
+        if m.attachment_id and m.attachment:
+            att = _file_to_dict(m.attachment)
+        return {
+            'id': m.pk,
+            'sender_id': m.sender_id,
+            'sender_name': (m.sender.get_full_name() or m.sender.username) if m.sender_id else '',
+            'content': m.content,
+            'attachment': att,
+            'created_at': m.created_at.isoformat(),
+        }
+
+    @database_sync_to_async
+    def get_chat_history(self):
+        from .models import LessonChatMessage
+        qs = (LessonChatMessage.objects
+              .filter(booking_id=self.booking_id)
+              .select_related('sender', 'attachment')
+              .order_by('-created_at')[:self._HISTORY_LIMIT])
+        return [self._chat_to_dict(m) for m in reversed(list(qs))]
+
+    @database_sync_to_async
+    def save_chat_message(self, content, attachment_id):
+        from .models import LessonChatMessage, LessonFile
+        attachment = None
+        if attachment_id:
+            try:
+                # Вложение обязано принадлежать этой же броне (IDOR-защита).
+                attachment = LessonFile.objects.get(pk=attachment_id, booking_id=self.booking_id)
+            except (LessonFile.DoesNotExist, ValueError, TypeError):
+                attachment = None
+        try:
+            m = LessonChatMessage.objects.create(
+                booking_id=self.booking_id,
+                sender=self.user,
+                content=content,
+                attachment=attachment,
+            )
+            # get_full_name/username берём из уже загруженного self.user
+            return {
+                'id': m.pk,
+                'sender_id': self.user.pk,
+                'sender_name': self.user.get_full_name() or self.user.username,
+                'content': m.content,
+                'attachment': (self._file_dict_safe(attachment) if attachment else None),
+                'created_at': m.created_at.isoformat(),
+            }
+        except Exception as e:
+            logger.error(f"LessonRoom save_chat_message error: {e}", exc_info=True)
+            return None
+
+    def _file_dict_safe(self, f):
+        from .lesson_files_views import _file_to_dict
+        return _file_to_dict(f)

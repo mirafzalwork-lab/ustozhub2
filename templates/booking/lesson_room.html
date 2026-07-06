@@ -159,6 +159,89 @@
     .lr-file-del:hover { background: #fef2f2; }
     .lr-files-empty { color: var(--text-tertiary, #94a3b8); font-size: 13px; padding: 6px 0; }
     .lr-files-error { color: #b91c1c; font-size: 13px; margin-top: 6px; }
+
+    /* ===== Preply-раскладка: видео + боковая панель с вкладками ===== */
+    .lr-stage { display: flex; gap: 14px; align-items: stretch; }
+    .lr-video { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+    .lr-video #jitsi-container { flex: 1 1 auto; }
+
+    .lr-panel {
+        flex: 0 0 350px;
+        display: flex; flex-direction: column;
+        height: 75vh; min-height: 480px;
+        background: #fff;
+        border: 1px solid var(--border-light, #e2e8f0);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(15, 23, 42, .06);
+    }
+    .lr-panel-tabs { display: flex; border-bottom: 1px solid var(--border-light, #e2e8f0); }
+    .lr-tab {
+        flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+        padding: 12px 8px; border: 0; background: transparent; cursor: pointer;
+        font-size: 13.5px; font-weight: 600; color: var(--text-tertiary, #64748b);
+        border-bottom: 2px solid transparent; position: relative;
+    }
+    .lr-tab i { font-size: 13px; }
+    .lr-tab.is-active { color: #1D4ED8; border-bottom-color: #3B82F6; }
+    .lr-tab-badge {
+        min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+        background: #EF4444; color: #fff; font-size: 11px; font-weight: 700;
+        display: inline-flex; align-items: center; justify-content: center;
+    }
+    .lr-panel-body { flex: 1; min-height: 0; display: flex; }
+    .lr-tabpane { display: none; flex: 1; min-height: 0; width: 100%; flex-direction: column; }
+    .lr-tabpane.is-active { display: flex; }
+    #lr-pane-files { overflow-y: auto; padding: 14px 16px; }
+    /* внутри панели у блока материалов свой бордер не нужен */
+    #lr-pane-files .lr-files { margin-top: 0; border: 0; border-radius: 0; padding: 0; }
+
+    /* ---- Чат урока ---- */
+    .lr-chat-msgs {
+        flex: 1; min-height: 0; overflow-y: auto;
+        padding: 14px; display: flex; flex-direction: column; gap: 8px;
+        background: #F8FAFC;
+    }
+    .lr-chat-empty { color: var(--text-tertiary, #94a3b8); font-size: 13px; text-align: center; margin: auto 8px; }
+    .lr-msg { max-width: 84%; padding: 8px 11px; border-radius: 12px; font-size: 13.5px; line-height: 1.4; word-break: break-word; }
+    .lr-msg .lr-msg-meta { display: block; font-size: 11px; opacity: .7; margin-top: 3px; }
+    .lr-msg.is-them { align-self: flex-start; background: #fff; border: 1px solid #E2E8F0; color: #0f172a; border-bottom-left-radius: 4px; }
+    .lr-msg.is-me { align-self: flex-end; background: #3B82F6; color: #fff; border-bottom-right-radius: 4px; }
+    .lr-msg.is-me .lr-msg-meta { color: #E0ecff; opacity: .85; }
+    .lr-msg-file {
+        display: inline-flex; align-items: center; gap: 8px; margin-top: 5px;
+        padding: 7px 10px; border-radius: 9px; text-decoration: none; font-weight: 600;
+        background: rgba(255,255,255,.18);
+    }
+    .lr-msg.is-them .lr-msg-file { background: #EFF6FF; color: #1D4ED8; }
+    .lr-msg.is-me .lr-msg-file { color: #fff; }
+    .lr-msg-file .fi-size { font-weight: 400; opacity: .8; font-size: 11.5px; }
+    .lr-chat-form { display: flex; align-items: center; gap: 8px; padding: 10px; border-top: 1px solid var(--border-light, #e2e8f0); }
+    .lr-chat-attach {
+        flex: 0 0 auto; width: 38px; height: 38px; border-radius: 9px; cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center;
+        color: #64748b; background: #F1F5F9;
+    }
+    .lr-chat-attach:hover { background: #E2E8F0; color: #1D4ED8; }
+    .lr-chat-attach.is-busy { opacity: .6; pointer-events: none; }
+    .lr-chat-input {
+        flex: 1; min-width: 0; height: 38px; padding: 0 12px; border-radius: 10px;
+        border: 1px solid var(--border-light, #e2e8f0); font-size: 14px; outline: none;
+    }
+    .lr-chat-input:focus { border-color: #93C5FD; }
+    .lr-chat-send {
+        flex: 0 0 auto; width: 38px; height: 38px; border-radius: 9px; border: 0; cursor: pointer;
+        background: #3B82F6; color: #fff; display: inline-flex; align-items: center; justify-content: center;
+    }
+    .lr-chat-send:hover { background: #2563EB; }
+    .lr-chat-send[disabled] { opacity: .5; cursor: default; }
+
+    @media (max-width: 900px) {
+        .lr-stage { flex-direction: column; }
+        .lr-video #jitsi-container { height: 60vh; }
+        .lr-panel { flex-basis: auto; height: auto; min-height: 0; max-height: 62vh; }
+        .lr-chat-msgs { max-height: 44vh; }
+    }
 </style>
 {% endblock %}
 
@@ -209,39 +292,77 @@
             });
         })();
         </script>
-        <div id="jitsi-container"></div>
-        <div id="lr-health" role="alert">
-            <span class="lr-health-msg">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-                <span id="lr-health-text"></span>
-            </span>
-            <button type="button" id="lr-health-btn">
-                <i class="fa-solid fa-rotate-right"></i> {% trans "Переподключиться" %}
-            </button>
-            <button type="button" id="lr-health-dismiss" aria-label="{% trans 'Скрыть' %}">×</button>
-        </div>
-        <div id="lr-reload">
-            <button type="button" onclick="window.location.reload()">
-                <i class="fa-solid fa-rotate-right"></i> {% trans "Переподключиться" %}
-            </button>
-        </div>
-
-        <div class="lr-files" id="lr-files">
-            <div class="lr-files-head">
-                <h3><i class="fa-solid fa-paperclip"></i> {% trans "Материалы урока" %}</h3>
-                <label class="lr-upload-btn" id="lr-upload-label">
-                    <i class="fa-solid fa-upload"></i>
-                    <span id="lr-upload-text">{% trans "Загрузить файл" %}</span>
-                    <input type="file" id="lr-file-input" hidden
-                           accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip">
-                </label>
+        <div class="lr-stage">
+            <div class="lr-video">
+                <div id="jitsi-container"></div>
+                <div id="lr-health" role="alert">
+                    <span class="lr-health-msg">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span id="lr-health-text"></span>
+                    </span>
+                    <button type="button" id="lr-health-btn">
+                        <i class="fa-solid fa-rotate-right"></i> {% trans "Переподключиться" %}
+                    </button>
+                    <button type="button" id="lr-health-dismiss" aria-label="{% trans 'Скрыть' %}">×</button>
+                </div>
+                <div id="lr-reload">
+                    <button type="button" onclick="window.location.reload()">
+                        <i class="fa-solid fa-rotate-right"></i> {% trans "Переподключиться" %}
+                    </button>
+                </div>
             </div>
-            <p class="lr-files-hint">
-                {% trans "Документы, изображения, презентации — до 25 МБ. Видны обеим сторонам урока." %}
-            </p>
-            <ul class="lr-file-list" id="lr-file-list"></ul>
-            <p class="lr-files-empty" id="lr-files-empty">{% trans "Пока нет загруженных материалов." %}</p>
-            <p class="lr-files-error" id="lr-files-error" hidden></p>
+
+            <aside class="lr-panel" id="lr-panel">
+                <div class="lr-panel-tabs" role="tablist">
+                    <button type="button" class="lr-tab is-active" data-tab="chat" id="lr-tab-chat">
+                        <i class="fa-regular fa-comments"></i> {% trans "Чат" %}
+                        <span class="lr-tab-badge" id="lr-chat-badge" hidden>0</span>
+                    </button>
+                    <button type="button" class="lr-tab" data-tab="files" id="lr-tab-files">
+                        <i class="fa-solid fa-paperclip"></i> {% trans "Материалы" %}
+                    </button>
+                </div>
+                <div class="lr-panel-body">
+                    <!-- Вкладка: Чат урока -->
+                    <div class="lr-tabpane is-active" id="lr-pane-chat">
+                        <div class="lr-chat-msgs" id="lr-chat-msgs">
+                            <p class="lr-chat-empty" id="lr-chat-empty">{% trans "Сообщений пока нет. Общайтесь прямо здесь — история сохранится." %}</p>
+                        </div>
+                        <form class="lr-chat-form" id="lr-chat-form" autocomplete="off">
+                            <label class="lr-chat-attach" id="lr-chat-attach-label" title="{% trans 'Прикрепить файл' %}">
+                                <i class="fa-solid fa-paperclip"></i>
+                                <input type="file" id="lr-chat-file" hidden
+                                       accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip">
+                            </label>
+                            <input type="text" class="lr-chat-input" id="lr-chat-input" maxlength="5000"
+                                   placeholder="{% trans 'Сообщение…' %}">
+                            <button type="submit" class="lr-chat-send" id="lr-chat-send" aria-label="{% trans 'Отправить' %}">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    </div>
+                    <!-- Вкладка: Материалы урока -->
+                    <div class="lr-tabpane" id="lr-pane-files">
+                        <div class="lr-files" id="lr-files">
+                            <div class="lr-files-head">
+                                <h3><i class="fa-solid fa-paperclip"></i> {% trans "Материалы урока" %}</h3>
+                                <label class="lr-upload-btn" id="lr-upload-label">
+                                    <i class="fa-solid fa-upload"></i>
+                                    <span id="lr-upload-text">{% trans "Загрузить файл" %}</span>
+                                    <input type="file" id="lr-file-input" hidden
+                                           accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip">
+                                </label>
+                            </div>
+                            <p class="lr-files-hint">
+                                {% trans "Документы, изображения, презентации — до 25 МБ. Видны обеим сторонам урока." %}
+                            </p>
+                            <ul class="lr-file-list" id="lr-file-list"></ul>
+                            <p class="lr-files-empty" id="lr-files-empty">{% trans "Пока нет загруженных материалов." %}</p>
+                            <p class="lr-files-error" id="lr-files-error" hidden></p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
         </div>
         <div class="lr-trust" style="margin-top:14px; padding:12px 16px; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:10px; font-size:13px; color:#166534; display:flex; align-items:center; gap:10px;">
             <i class="fa-solid fa-shield-halved"></i>
@@ -350,23 +471,58 @@
     }
 
     // ================== Шина реального времени (event-driven) ==================
-    // P2P-сообщения между участниками идут по уже открытому WebRTC data-каналу
-    // конференции Jitsi. Это НЕ нагружает наш сервер (0 запросов), доставляется
-    // мгновенно и масштабируется без серверной инфраструктуры. «Догон» состояния
-    // для тех, кто только вошёл/переподключился — разовым GET (см. onReady).
+    // Транспорт — НАШ WebSocket (Django Channels + Redis), комната `ws/lesson/<id>/`
+    // (LessonRoomConsumer). Сервер надёжно ретранслирует события обеим сторонам:
+    // чат (`chat_message`), изменение материалов (`file_changed`), presence. Это
+    // заменило прежний P2P data-канал Jitsi, который терял broadcast-сообщения
+    // (файлы приходилось «догонять» перезагрузкой). Jitsi остаётся только для
+    // видео/аудио. «Догон» состояния при (пере)подключении — через onReady.
     const rtHandlers = {};
     const readyCbs = [];
     let api = null;
+
+    // --- WebSocket-соединение комнаты (независимо от входа в видео) ---
+    const wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://')
+        + location.host + "/ws/lesson/{{ booking.id }}/";
+    let ws = null, wsReady = false, wsAttempts = 0, wsTimer = null, wsClosedByUs = false, wsPing = null;
+
+    function connectWS() {
+        if (wsTimer) { clearTimeout(wsTimer); wsTimer = null; }
+        try { ws = new WebSocket(wsUrl); }
+        catch (e) { scheduleWSReconnect(); return; }
+        ws.onopen = function () {
+            wsReady = true; wsAttempts = 0;
+            fireReady('ws-open');   // ← ресинк материалов при (пере)подключении
+        };
+        ws.onmessage = function (ev) {
+            try {
+                const msg = JSON.parse(ev.data);
+                if (!msg || !msg.type || msg.type === 'pong') return;
+                dispatchRT(msg.type, msg);   // payload = весь объект сообщения
+            } catch (e) { /* не наше — игнор */ }
+        };
+        ws.onclose = function () {
+            wsReady = false;
+            if (!wsClosedByUs) scheduleWSReconnect();
+        };
+        ws.onerror = function () { try { ws.close(); } catch (e) {} };
+    }
+    function scheduleWSReconnect() {
+        if (wsTimer || wsClosedByUs) return;
+        wsAttempts++;
+        const delay = Math.min(1000 * Math.pow(1.6, Math.min(wsAttempts, 6)), 15000);
+        wsTimer = setTimeout(function () { wsTimer = null; connectWS(); }, delay);
+    }
 
     window.lessonRT = {
         on: function (type, fn) { (rtHandlers[type] = rtHandlers[type] || []).push(fn); return this; },
         onReady: function (fn) { readyCbs.push(fn); return this; },
         send: function (type, payload) {
             try {
-                if (api) api.executeCommand('sendEndpointTextMessage', '',
-                    JSON.stringify({ __lr: type, p: payload || {} }));
-            } catch (e) { /* канала нет — синхронизируемся при ресинке */ }
+                if (ws && wsReady) ws.send(JSON.stringify(Object.assign({ type: type }, payload || {})));
+            } catch (e) { /* нет канала — синхронизируемся при ресинке */ }
         },
+        isReady: function () { return wsReady; },
         log: rtLog,
         diag: diag,
     };
@@ -647,14 +803,25 @@
     window.addEventListener('offline', function () { diag('net_offline'); showHealth('conn', txtOffline); });
     window.addEventListener('online', function () {
         diag('net_online');
+        // Реалтайм-канал комнаты (чат/файлы) поднимаем сразу, не дожидаясь видео.
+        if (!wsReady) { wsAttempts = 0; connectWS(); }
         if (connState !== 'live') { attempts = 0; reconnect('back-online'); }
         else { if (healthCategory === 'conn') hideHealth(); fireReady('online'); }
     });
-    window.addEventListener('pagehide', reportLeave);
+    window.addEventListener('pagehide', function () {
+        reportLeave();
+        wsClosedByUs = true;
+        try { if (ws) ws.close(); } catch (e) {}
+    });
 
     // ---- Старт ----
     tickTimer();
     setInterval(tickTimer, 1000);
+    connectWS();          // реалтайм комнаты (чат/файлы) — сразу, до входа в видео
+    // Keepalive: держим WebSocket живым за прокси/балансировщиком.
+    wsPing = setInterval(function () {
+        try { if (ws && wsReady) ws.send(JSON.stringify({ type: 'ping' })); } catch (e) {}
+    }, 25000);
     mountJitsi(false);   // первый вход — с pre-join (проверка устройств)
 })();
 </script>
@@ -827,13 +994,15 @@
                 }),
             });
             const saveData = await save.json();
-            if (!save.ok) { showError(saveData.error || i18n.failed); return; }
+            if (!save.ok) { showError(saveData.error || i18n.failed); return null; }
             await loadList();
-            // Мгновенно оповещаем второго участника по data-каналу (без сервера).
+            // Мгновенно и надёжно оповещаем второго участника через наш WebSocket.
             if (window.lessonRT) window.lessonRT.send('file_changed');
+            return saveData.file || null;   // ← чат-вложение использует id файла
         } catch (e) {
             if (window.lessonRT) window.lessonRT.diag('upload_failed', (e && e.message) || 'flow');
             showError(i18n.failed);
+            return null;
         } finally {
             setBusy(false);
             input.value = '';
@@ -872,6 +1041,164 @@
     // Возврат на вкладку (фокус) — догоняем состояние, что могли пропустить.
     document.addEventListener('visibilitychange', function () {
         if (document.visibilityState === 'visible') loadList();
+    });
+
+    // Экспорт для чата: вложения переиспользуют тот же upload-пайплайн.
+    window.lessonFiles = { upload: upload, reload: loadList };
+})();
+</script>
+
+<script>
+// ---- Вкладки панели + чат урока (через window.lessonRT / WebSocket) ----
+(function () {
+    const myId = {{ user.pk }};
+    const tabs = Array.prototype.slice.call(document.querySelectorAll('.lr-tab'));
+    const panes = {
+        chat: document.getElementById('lr-pane-chat'),
+        files: document.getElementById('lr-pane-files'),
+    };
+    const msgsEl = document.getElementById('lr-chat-msgs');
+    const emptyEl = document.getElementById('lr-chat-empty');
+    const form = document.getElementById('lr-chat-form');
+    const inputEl = document.getElementById('lr-chat-input');
+    const sendBtn = document.getElementById('lr-chat-send');
+    const attachLabel = document.getElementById('lr-chat-attach-label');
+    const attachInput = document.getElementById('lr-chat-file');
+    const badge = document.getElementById('lr-chat-badge');
+    if (!msgsEl || !form) return;
+
+    let activeTab = 'chat';
+    let unread = 0;
+
+    const i18n = {
+        you: "{% filter escapejs %}{% trans 'Вы' %}{% endfilter %}",
+        sending: "{% filter escapejs %}{% trans 'Отправка…' %}{% endfilter %}",
+        failed: "{% filter escapejs %}{% trans 'Не удалось загрузить файл. Попробуйте ещё раз.' %}{% endfilter %}",
+        tooBig: "{% filter escapejs %}{% trans 'Файл слишком большой (максимум 25 МБ).' %}{% endfilter %}",
+    };
+    const MAX_BYTES = 25 * 1024 * 1024;
+
+    function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+            {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+        ));
+    }
+    function humanSize(n) {
+        if (!n) return '';
+        if (n < 1024) return n + ' B';
+        if (n < 1048576) return (n / 1024).toFixed(0) + ' KB';
+        return (n / 1048576).toFixed(1) + ' MB';
+    }
+    function iconFor(name) {
+        const ext = (String(name).split('.').pop() || '').toLowerCase();
+        if (['png','jpg','jpeg','gif','webp'].includes(ext)) return 'fa-file-image';
+        if (ext === 'pdf') return 'fa-file-pdf';
+        if (['doc','docx'].includes(ext)) return 'fa-file-word';
+        if (['ppt','pptx'].includes(ext)) return 'fa-file-powerpoint';
+        if (['xls','xlsx'].includes(ext)) return 'fa-file-excel';
+        if (ext === 'zip') return 'fa-file-zipper';
+        return 'fa-file';
+    }
+    function fmtTime(iso) {
+        try {
+            const d = new Date(iso);
+            const p = n => String(n).padStart(2, '0');
+            return p(d.getHours()) + ':' + p(d.getMinutes());
+        } catch (e) { return ''; }
+    }
+
+    function scrollDown() { msgsEl.scrollTop = msgsEl.scrollHeight; }
+
+    function renderMsg(m) {
+        if (emptyEl) emptyEl.hidden = true;
+        const mine = (m.sender_id === myId);
+        const li = document.createElement('div');
+        li.className = 'lr-msg ' + (mine ? 'is-me' : 'is-them');
+        let html = '';
+        if (m.content) html += '<span class="lr-msg-text">' + escapeHtml(m.content) + '</span>';
+        if (m.attachment) {
+            const a = m.attachment;
+            html += '<a class="lr-msg-file" href="' + escapeHtml(a.file_url) + '" target="_blank" rel="noopener">' +
+                    '<i class="fa-solid ' + iconFor(a.file_name) + '"></i>' +
+                    '<span>' + escapeHtml(a.file_name) + '</span>' +
+                    (a.size ? '<span class="fi-size">' + humanSize(a.size) + '</span>' : '') +
+                    '</a>';
+        }
+        const who = mine ? i18n.you : escapeHtml(m.sender_name || '');
+        html += '<span class="lr-msg-meta">' + who + ' · ' + fmtTime(m.created_at) + '</span>';
+        li.innerHTML = html;
+        msgsEl.appendChild(li);
+    }
+
+    function bumpUnread() {
+        if (activeTab === 'chat' && document.visibilityState === 'visible') return;
+        unread++;
+        if (badge) { badge.textContent = unread > 99 ? '99+' : String(unread); badge.hidden = false; }
+    }
+    function clearUnread() {
+        unread = 0;
+        if (badge) badge.hidden = true;
+    }
+
+    // ---- Переключение вкладок ----
+    function selectTab(name) {
+        activeTab = name;
+        tabs.forEach(t => t.classList.toggle('is-active', t.getAttribute('data-tab') === name));
+        Object.keys(panes).forEach(k => { if (panes[k]) panes[k].classList.toggle('is-active', k === name); });
+        if (name === 'chat') { clearUnread(); scrollDown(); if (inputEl) inputEl.focus(); }
+    }
+    tabs.forEach(t => t.addEventListener('click', function () { selectTab(t.getAttribute('data-tab')); }));
+
+    // ---- Отправка сообщения ----
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const text = (inputEl.value || '').trim();
+        if (!text) return;
+        if (window.lessonRT) window.lessonRT.send('chat_message', { text: text });
+        inputEl.value = '';
+        inputEl.focus();
+    });
+
+    // ---- Вложение в чат: тот же upload-пайплайн, затем сообщение с файлом ----
+    if (attachInput) attachInput.addEventListener('change', async function () {
+        const file = attachInput.files && attachInput.files[0];
+        attachInput.value = '';
+        if (!file || !window.lessonFiles) return;
+        if (file.size > MAX_BYTES) { alert(i18n.tooBig); return; }
+        if (attachLabel) attachLabel.classList.add('is-busy');
+        try {
+            const text = (inputEl.value || '').trim();
+            const saved = await window.lessonFiles.upload(file);   // создаёт LessonFile + оповещает
+            if (saved && window.lessonRT) {
+                window.lessonRT.send('chat_message', { text: text, attachment_id: saved.id });
+                inputEl.value = '';
+            }
+        } finally {
+            if (attachLabel) attachLabel.classList.remove('is-busy');
+        }
+    });
+
+    // ---- Приём из реального времени ----
+    if (window.lessonRT) {
+        window.lessonRT.on('chat_message', function (msg) {
+            const m = (msg && msg.message) || {};
+            renderMsg(m);
+            scrollDown();
+            if (m.sender_id !== myId) bumpUnread();
+        });
+        window.lessonRT.on('chat_history', function (msg) {
+            const list = (msg && msg.messages) || [];
+            // Полная перерисовка истории (при входе/реконнекте).
+            Array.prototype.slice.call(msgsEl.querySelectorAll('.lr-msg')).forEach(n => n.remove());
+            if (emptyEl) emptyEl.hidden = list.length > 0;
+            list.forEach(renderMsg);
+            scrollDown();
+        });
+    }
+
+    // Сброс счётчика непрочитанного, когда пользователь вернулся на вкладку с открытым чатом.
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible' && activeTab === 'chat') clearUnread();
     });
 })();
 </script>

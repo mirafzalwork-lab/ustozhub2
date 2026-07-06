@@ -3988,3 +3988,47 @@ class LessonFile(models.Model):
         return f'{self.booking_id} • {self.file_name}'
 
 
+class LessonChatMessage(models.Model):
+    """Сообщение чата внутри комнаты урока (привязано к броне).
+
+    Отдельно от общей переписки Conversation/Message: это контекст конкретного
+    урока (доставка — через LessonRoomConsumer, `ws/lesson/<booking_id>/`).
+    История подтягивается при (пере)входе в комнату. Сообщение может нести
+    вложение — уже загруженный материал урока (LessonFile).
+    """
+    booking = models.ForeignKey(
+        Booking,
+        on_delete=models.CASCADE,
+        related_name='chat_messages',
+        verbose_name=_('Урок'),
+    )
+    sender = models.ForeignKey(
+        'User',
+        on_delete=models.CASCADE,
+        related_name='lesson_chat_messages',
+        verbose_name=_('Отправитель'),
+    )
+    content = models.TextField(blank=True, default='')
+    # Необязательное вложение — файл-материал этого же урока (карточка в чате).
+    attachment = models.ForeignKey(
+        LessonFile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='chat_messages',
+        verbose_name=_('Вложение'),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('Сообщение чата урока')
+        verbose_name_plural = _('Сообщения чата урока')
+        ordering = ['created_at']
+        indexes = [
+            models.Index(fields=['booking', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.booking_id} • {self.sender_id}: {self.content[:32]}'
+
+
