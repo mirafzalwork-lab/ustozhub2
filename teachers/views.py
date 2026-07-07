@@ -1634,14 +1634,20 @@ def delete_teacher(request, teacher_id):
     Дополнительно, если на учётной записи нет финансовой истории (транзакций),
     удаляет и сам аккаунт вместе с кошельком.
 
-    Финансовая целостность защищена жёстко на уровне БД:
+    Финансовая целостность и история уроков защищены жёстко на уровне БД:
       • `Subscription.teacher` = PROTECT — учителя с подписками удалить нельзя;
+      • `Booking.slot` / `TimeSlot.teacher` = PROTECT — учителя с бронями
+        (реальные/забронированные уроки) удалить нельзя;
       • `Wallet.user` и `Transaction.wallet` = PROTECT — аккаунт с историей
         транзакций не удаляется, кошелёк/леджер сохраняются.
-    Все такие случаи обрабатываются и сообщаются администратору понятным текстом.
+
+    Пустые слоты расписания (`TimeSlot` без броней) генерируются автоматически
+    и не являются историей — они безопасно удаляются перед снятием профиля.
+    Все блокирующие случаи сообщаются администратору понятным текстом.
     """
     from django.db.models.deletion import ProtectedError
     from billing.models import Subscription, Transaction, Wallet
+    from .models import TimeSlot, Booking
 
     teacher = get_object_or_404(TeacherProfile.objects.select_related('user'), id=teacher_id)
     user = teacher.user
@@ -1656,7 +1662,7 @@ def delete_teacher(request, teacher_id):
     else:
         back = reverse('admin_dashboard')
 
-    # Защита: нельзя удалять учителя с финансовой историей (подписки под PROTECT).
+    # Защита №1: нельзя удалять учителя с подписками (финансовая история).
     sub_count = Subscription.objects.filter(teacher=teacher).count()
     if sub_count:
         messages.error(
@@ -1667,9 +1673,22 @@ def delete_teacher(request, teacher_id):
         )
         return redirect(back)
 
-    # 1) Удаляем сам профиль учителя.
+    # Защита №2: нельзя удалять учителя с бронями (реальные/забронированные уроки).
+    booking_count = Booking.objects.filter(slot__teacher=teacher).count()
+    if booking_count:
+        messages.error(
+            request,
+            _('Нельзя удалить «%(name)s»: есть уроки/брони (%(n)d) — это история '
+              'занятий. Удаление отменено (можно деактивировать профиль).')
+            % {'name': teacher_name, 'n': booking_count}
+        )
+        return redirect(back)
+
+    # 1) Чистим пустые слоты расписания (PROTECT-ссылки без броней) и удаляем профиль.
     try:
-        teacher.delete()
+        with transaction.atomic():
+            TimeSlot.objects.filter(teacher=teacher).delete()  # без броней — безопасно
+            teacher.delete()
     except ProtectedError:
         messages.error(
             request,
