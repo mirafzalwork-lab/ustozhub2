@@ -1587,6 +1587,45 @@ def delete_teacher_subject(request, subject_id):
 
 
 @staff_member_required
+def admin_teachers(request):
+    """Управление учителями: поиск по всем профилям + удаление.
+
+    Дополняет дашборд (где видны только последние регистрации) — здесь
+    можно найти любого учителя по имени / логину / email / телефону / контактам
+    и удалить его через ту же кнопку (view delete_teacher).
+    """
+    q = (request.GET.get('q') or '').strip()
+    qs = TeacherProfile.objects.select_related('user', 'city').order_by('-created_at')
+    if q:
+        qs = qs.filter(
+            Q(user__first_name__icontains=q)
+            | Q(user__last_name__icontains=q)
+            | Q(user__username__icontains=q)
+            | Q(user__email__icontains=q)
+            | Q(user__phone__icontains=q)
+            | Q(telegram__icontains=q)
+            | Q(whatsapp__icontains=q)
+        )
+    total_found = qs.count()
+
+    paginator = Paginator(qs, 25)
+    try:
+        teachers = paginator.page(request.GET.get('page'))
+    except PageNotAnInteger:
+        teachers = paginator.page(1)
+    except EmptyPage:
+        teachers = paginator.page(paginator.num_pages)
+
+    context = {
+        'q': q,
+        'teachers': teachers,
+        'total_found': total_found,
+        'total_teachers': TeacherProfile.objects.count(),
+    }
+    return render(request, 'admin/admin_teachers.html', context)
+
+
+@staff_member_required
 @require_POST
 def delete_teacher(request, teacher_id):
     """Удаление профиля учителя из админ-дашборда.

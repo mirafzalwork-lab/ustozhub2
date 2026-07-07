@@ -1,0 +1,179 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{% static 'logo/new_logo.png' %}" type="image/x-icon">
+    <title>Учителя — Admin UstozHub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'teachers/admin.css' %}">
+    <style>
+        .sidebar-group{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:#94A3B8;padding:14px 18px 4px;font-weight:700}
+        .sidebar-menu li a{display:flex;align-items:center;gap:10px}
+        .sb-badge{margin-left:auto;background:#FC7702;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:700}
+        .sb-badge.danger{background:#DC2626}
+        .profile-link{color:#1a1a1a;text-decoration:none;font-weight:600;transition:color .2s}
+        .profile-link:hover{color:#FC7702}
+        /* Поиск */
+        .search-bar{display:flex;gap:10px;margin:8px 0 22px;flex-wrap:wrap}
+        .search-bar input[type=text]{flex:1;min-width:260px;border:2px solid #e0e0e0;border-radius:10px;padding:12px 16px;font-size:15px;font-family:inherit}
+        .search-bar input[type=text]:focus{outline:none;border-color:#FC7702}
+        .search-bar button{background:#FC7702;color:#fff;border:none;border-radius:10px;padding:12px 22px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px}
+        .search-bar button:hover{background:#e56a00}
+        .search-bar .clear-btn{background:#f0f1f3;color:#1a1a1a;text-decoration:none;border-radius:10px;padding:12px 18px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px}
+        .search-bar .clear-btn:hover{background:#e2e4e7}
+        .result-meta{font-size:13px;color:#6b7280;margin-bottom:14px}
+        /* Статус-пилюли */
+        .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;vertical-align:middle}
+        .pill.approved{background:#D1FAE5;color:#065F46}
+        .pill.pending{background:#FEF3C7;color:#92400E}
+        .pill.rejected{background:#FEE2E2;color:#991B1B}
+        .pill.inactive{background:#E5E7EB;color:#4B5563}
+        /* Пагинация */
+        .pager{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:22px}
+        .pager a,.pager span{padding:8px 14px;border-radius:8px;font-size:14px;text-decoration:none;font-weight:600}
+        .pager a{background:#fff;border:1px solid #e0e0e0;color:#1a1a1a}
+        .pager a:hover{border-color:#FC7702;color:#FC7702}
+        .pager .cur{background:#FC7702;color:#fff}
+    </style>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'logo/new_logo.png' %}" alt="UstozHub" style="height: 32px; width: auto;">
+        </div>
+        <ul class="sidebar-menu">
+            <li class="sidebar-group">Обзор</li>
+            <li><a href="{% url 'admin_dashboard' %}"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+            <li><a href="{% url 'admin_teachers' %}" class="active"><i class="fas fa-chalkboard-teacher"></i> <span>Учителя</span></a></li>
+
+            <li class="sidebar-group">Требует внимания</li>
+            <li><a href="/admin/teachers/teacherprofile/?moderation_status__exact=pending"><i class="fas fa-user-check"></i> <span>Модерация</span></a></li>
+            <li><a href="{% url 'admin_billing_withdrawals' %}?status=pending"><i class="fas fa-money-bill-wave"></i> <span>Выводы</span></a></li>
+
+            <li class="sidebar-group">Финансы</li>
+            <li><a href="{% url 'admin_billing_hub' %}"><i class="fas fa-coins"></i> <span>Финансы</span></a></li>
+            <li><a href="{% url 'admin_billing_wallets' %}"><i class="fas fa-wallet"></i> <span>Кошельки</span></a></li>
+
+            <li class="sidebar-group">Коммуникации</li>
+            <li><a href="{% url 'admin_messages' %}"><i class="fas fa-comments"></i> <span>Сообщения</span></a></li>
+            <li><a href="{% url 'telegram_management' %}"><i class="fab fa-telegram"></i> <span>Telegram</span></a></li>
+
+            <li class="sidebar-group">Система</li>
+            <li><a href="{% url 'home' %}"><i class="fas fa-globe"></i> <span>На сайт</span></a></li>
+            <li><a href="/admin/"><i class="fas fa-cog"></i> <span>Django Admin</span></a></li>
+            <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> <span>Выход</span></a></li>
+        </ul>
+    </aside>
+
+    <!-- TOP NAVBAR -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <h1>Учителя</h1>
+        </div>
+        <div class="topbar-right">
+            <div class="user-profile">
+                <div class="user-avatar">{{ request.user.first_name.0|upper }}</div>
+                <div class="user-info">
+                    <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                    <div class="user-role">Администратор</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+
+        {% if messages %}
+        {% for message in messages %}
+        <div style="padding:12px 16px;border-radius:8px;margin-bottom:12px;font-size:14px;{% if message.tags == 'success' %}background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7{% elif message.tags == 'error' %}background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5{% else %}background:#DBEAFE;color:#1E40AF;border:1px solid #93C5FD{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <div class="section-card">
+            <div class="section-header">
+                <h3>Поиск и управление учителями</h3>
+                <span class="section-badge">всего {{ total_teachers }}</span>
+            </div>
+
+            <!-- ПОИСК -->
+            <form method="get" class="search-bar">
+                <input type="text" name="q" value="{{ q }}"
+                       placeholder="Имя, логин, email, телефон, Telegram…" autofocus>
+                <button type="submit"><i class="fas fa-search"></i> Найти</button>
+                {% if q %}<a href="{% url 'admin_teachers' %}" class="clear-btn"><i class="fas fa-times"></i> Сброс</a>{% endif %}
+            </form>
+
+            {% if q %}
+            <div class="result-meta">Найдено по запросу «{{ q }}»: <strong>{{ total_found }}</strong></div>
+            {% else %}
+            <div class="result-meta">Показаны все учителя (новые сверху). Введите запрос, чтобы найти конкретного.</div>
+            {% endif %}
+
+            <!-- СПИСОК -->
+            <div class="items-list">
+                {% for teacher in teachers %}
+                <div class="item-row">
+                    <div class="item-left">
+                        <div class="item-icon">
+                            {% if teacher.user.avatar %}
+                                <img src="{{ teacher.user.avatar.url }}" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:cover">
+                            {% else %}
+                                <i class="fas fa-user-tie"></i>
+                            {% endif %}
+                        </div>
+                        <div class="item-info">
+                            <div class="item-name">
+                                <a href="{% url 'teacher_detail' teacher.id %}" class="profile-link" target="_blank">
+                                    {{ teacher.user.get_full_name|default:teacher.user.username }}
+                                </a>
+                                {% if teacher.moderation_status == 'approved' %}<span class="pill approved">одобрен</span>
+                                {% elif teacher.moderation_status == 'pending' %}<span class="pill pending">на модерации</span>
+                                {% elif teacher.moderation_status == 'rejected' %}<span class="pill rejected">отклонён</span>{% endif %}
+                                {% if not teacher.is_active %}<span class="pill inactive">неактивен</span>{% endif %}
+                            </div>
+                            <div class="item-date">
+                                {{ teacher.user.email|default:teacher.user.username }}
+                                {% if teacher.user.phone %} | {{ teacher.user.phone }}{% endif %}
+                                {% if teacher.city %} | {{ teacher.city.name }}{% endif %}
+                                | {{ teacher.created_at|date:"d.m.Y" }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <a href="{% url 'teacher_detail' teacher.id %}" class="action-btn" target="_blank"><i class="fas fa-eye"></i> Профиль</a>
+                        <a href="/admin/teachers/teacherprofile/{{ teacher.id }}/change/" class="action-btn" target="_blank"><i class="fas fa-edit"></i></a>
+                        <form method="post" action="{% url 'admin_delete_teacher' teacher.id %}"
+                              class="inline-delete-form"
+                              onsubmit="return confirm('Удалить профиль учителя «{{ teacher.user.get_full_name|default:teacher.user.username|escapejs }}» без возможности восстановления?');">
+                            {% csrf_token %}
+                            <button type="submit" class="action-btn danger"><i class="fas fa-trash"></i> Удалить</button>
+                        </form>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="no-items">{% if q %}Ничего не найдено по запросу «{{ q }}».{% else %}Учителей пока нет.{% endif %}</div>
+                {% endfor %}
+            </div>
+
+            <!-- ПАГИНАЦИЯ -->
+            {% if teachers.paginator.num_pages > 1 %}
+            <div class="pager">
+                {% if teachers.has_previous %}
+                    <a href="?{% if q %}q={{ q }}&{% endif %}page={{ teachers.previous_page_number }}"><i class="fas fa-chevron-left"></i></a>
+                {% endif %}
+                <span class="cur">{{ teachers.number }} / {{ teachers.paginator.num_pages }}</span>
+                {% if teachers.has_next %}
+                    <a href="?{% if q %}q={{ q }}&{% endif %}page={{ teachers.next_page_number }}"><i class="fas fa-chevron-right"></i></a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</body>
+</html>

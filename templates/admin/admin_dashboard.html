@@ -63,6 +63,7 @@
         <ul class="sidebar-menu">
             <li class="sidebar-group">Обзор</li>
             <li><a href="{% url 'admin_dashboard' %}" class="active"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+            <li><a href="{% url 'admin_teachers' %}"><i class="fas fa-chalkboard-teacher"></i> <span>Учителя</span></a></li>
 
             <li class="sidebar-group">Требует внимания</li>
             <li><a href="/admin/teachers/teacherprofile/?moderation_status__exact=pending"><i class="fas fa-user-check"></i> <span>Модерация</span>{% if admin_badges.moderation %}<span class="sb-badge">{{ admin_badges.moderation }}</span>{% endif %}</a></li>
@@ -411,7 +412,9 @@
             <div class="section-card" id="teachers">
                 <div class="section-header">
                     <h3>Новые учителя</h3>
-                    <span class="section-badge">+{{ new_teachers_week }} за неделю</span>
+                    <a href="{% url 'admin_teachers' %}" class="action-btn primary" style="font-size:13px">
+                        <i class="fas fa-search"></i> Все / поиск
+                    </a>
                 </div>
                 <div class="items-list" style="max-height:400px">
                     {% for teacher in recent_teachers %}
