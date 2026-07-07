@@ -731,12 +731,18 @@ body {
 }
 
 .action-btn.danger {
-    background: #666;
+    background: #dc2626;
     color: white;
 }
 
 .action-btn.danger:hover {
-    background: #333;
+    background: #b91c1c;
+}
+
+/* Форма-обёртка вокруг кнопки удаления не должна ломать ряд действий */
+.inline-delete-form {
+    display: inline-flex;
+    margin: 0;
 }
 
 .no-items {

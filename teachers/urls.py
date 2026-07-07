@@ -11,7 +11,7 @@ from .views import (
     student_suggestions,
     conversations_list, conversation_detail, start_conversation,
     send_message_ajax, mark_messages_read, delete_conversation,
-    delete_teacher_subject, admin_dashboard,
+    delete_teacher_subject, delete_teacher, admin_dashboard,
     # API для поиска предметов
     subjects_autocomplete, subjects_popular, subjects_categories, subjects_by_category,
     # Telegram & admin messages
@@ -60,7 +60,8 @@ urlpatterns = [
     path('students/', students_list, name='students_list'),
     path('student/<int:id>/', student_detail, name='student_detail'),
     path('admin-dashboard/', admin_dashboard, name='admin_dashboard'),
-    
+    path('admin-dashboard/teacher/<int:teacher_id>/delete/', delete_teacher, name='admin_delete_teacher'),
+
     # Telegram Management
     path('admin-dashboard/telegram/', telegram_management, name='telegram_management'),
     path('admin-dashboard/telegram/broadcast/', send_broadcast_message, name='send_broadcast_message'),

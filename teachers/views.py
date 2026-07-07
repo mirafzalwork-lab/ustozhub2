@@ -1586,6 +1586,85 @@ def delete_teacher_subject(request, subject_id):
     return redirect('teacher_profile_edit')
 
 
+@staff_member_required
+@require_POST
+def delete_teacher(request, teacher_id):
+    """Удаление профиля учителя из админ-дашборда.
+
+    Всегда удаляет `TeacherProfile` (каскадом снимаются тарифы, брони и т.п.).
+    Дополнительно, если на учётной записи нет финансовой истории (транзакций),
+    удаляет и сам аккаунт вместе с кошельком.
+
+    Финансовая целостность защищена жёстко на уровне БД:
+      • `Subscription.teacher` = PROTECT — учителя с подписками удалить нельзя;
+      • `Wallet.user` и `Transaction.wallet` = PROTECT — аккаунт с историей
+        транзакций не удаляется, кошелёк/леджер сохраняются.
+    Все такие случаи обрабатываются и сообщаются администратору понятным текстом.
+    """
+    from django.db.models.deletion import ProtectedError
+    from billing.models import Subscription, Transaction, Wallet
+
+    teacher = get_object_or_404(TeacherProfile.objects.select_related('user'), id=teacher_id)
+    user = teacher.user
+    teacher_name = user.get_full_name() or user.username
+
+    # Куда вернуться: на страницу-источник (если она наша), иначе на дашборд.
+    referer = request.META.get('HTTP_REFERER', '')
+    if referer and url_has_allowed_host_and_scheme(
+        referer, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        back = referer
+    else:
+        back = reverse('admin_dashboard')
+
+    # Защита: нельзя удалять учителя с финансовой историей (подписки под PROTECT).
+    sub_count = Subscription.objects.filter(teacher=teacher).count()
+    if sub_count:
+        messages.error(
+            request,
+            _('Нельзя удалить «%(name)s»: есть связанные подписки (%(n)d). '
+              'Сначала завершите или отмените их — это защита финансовой истории.')
+            % {'name': teacher_name, 'n': sub_count}
+        )
+        return redirect(back)
+
+    # 1) Удаляем сам профиль учителя.
+    try:
+        teacher.delete()
+    except ProtectedError:
+        messages.error(
+            request,
+            _('Нельзя удалить «%(name)s»: у профиля есть защищённые связанные '
+              'записи (оплаты/история). Удаление отменено.') % {'name': teacher_name}
+        )
+        return redirect(back)
+
+    # 2) Если на аккаунте нет транзакций — удаляем и учётную запись с кошельком.
+    account_removed = False
+    if not Transaction.objects.filter(wallet__user=user).exists():
+        try:
+            with transaction.atomic():
+                Wallet.objects.filter(user=user).delete()
+                user.delete()
+            account_removed = True
+        except ProtectedError:
+            account_removed = False  # остались иные защищённые связи — аккаунт сохраняем
+
+    cache.delete('admin_dashboard_ctx')  # сбросим кэш сводки, чтобы счётчики обновились
+    if account_removed:
+        messages.success(
+            request,
+            _('Профиль и учётная запись учителя «%(name)s» удалены.') % {'name': teacher_name}
+        )
+    else:
+        messages.success(
+            request,
+            _('Профиль учителя «%(name)s» удалён. Учётная запись сохранена '
+              '(есть финансовая история или связанные записи).') % {'name': teacher_name}
+        )
+    return redirect(back)
+
+
 @login_required
 def student_profile_edit(request):
     """Редактирование профиля ученика"""
