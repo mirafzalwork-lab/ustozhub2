@@ -16,7 +16,7 @@ from .views import (
     subjects_autocomplete, subjects_popular, subjects_categories, subjects_by_category,
     # Telegram & admin messages
     telegram_management, send_broadcast_message, send_individual_message, export_telegram_users, messages_management,
-    admin_toggle_telegram_notifications, admin_conversation_detail,
+    admin_toggle_telegram_notifications, admin_conversation_detail, admin_delete_message,
     # Daily reminders (admin-dashboard)
     daily_reminders_list, daily_reminder_edit, daily_reminder_delete,
     daily_reminder_toggle, daily_reminder_test,
@@ -73,6 +73,7 @@ urlpatterns = [
     # Admin Messages management
     path('admin-dashboard/messages/', messages_management, name='admin_messages'),
     path('admin-dashboard/conversation/<uuid:conversation_id>/', admin_conversation_detail, name='admin_conversation_detail'),
+    path('admin-dashboard/conversation/<uuid:conversation_id>/message/<int:message_id>/delete/', admin_delete_message, name='admin_delete_message'),
 
     # Daily reminder templates (ежедневная авто-рассылка)
     path('admin-dashboard/reminders/', daily_reminders_list, name='daily_reminders_list'),

@@ -2875,6 +2875,29 @@ def admin_conversation_detail(request, conversation_id):
 
 
 @staff_member_required
+@require_POST
+def admin_delete_message(request, conversation_id, message_id):
+    """Admin: удалить одно сообщение из беседы (своё или чужое).
+
+    Только POST + CSRF — чтобы удаление нельзя было выполнить GET-ссылкой.
+    Сообщение ищется строго внутри указанной беседы, поэтому подставить
+    чужой message_id из другой переписки нельзя.
+    """
+    from django.contrib import messages as django_messages
+    conversation = get_object_or_404(Conversation, id=conversation_id)
+    message = get_object_or_404(Message, id=message_id, conversation=conversation)
+
+    logger.warning(
+        'admin_delete_message: staff=%s deleted message=%s (sender=%s) in conversation=%s',
+        request.user.pk, message.pk, message.sender_id, conversation.id,
+    )
+    message.delete()
+    conversation.save(update_fields=['updated_at'])
+    django_messages.success(request, _('Сообщение удалено'))
+    return redirect('admin_conversation_detail', conversation_id=conversation.id)
+
+
+@staff_member_required
 def export_telegram_users(request):
     """Экспорт списка Telegram пользователей в CSV"""
     response = HttpResponse(content_type='text/csv; charset=utf-8')
