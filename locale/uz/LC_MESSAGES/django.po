@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: UstozHub 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-06 23:43+0500\n"
+"POT-Creation-Date: 2026-07-07 10:57+0500\n"
 "Language-Team: Uzbek\n"
 "Language: uz\n"
 "MIME-Version: 1.0\n"
@@ -631,11 +631,11 @@ msgstr "Tarif yangilandi."
 msgid "Тариф удалён."
 msgstr "Tarif o'chirildi."
 
-#: billing/views.py:144 teachers/views.py:3238
+#: billing/views.py:144 teachers/views.py:3356
 msgid "включён"
 msgstr "yoqildi"
 
-#: billing/views.py:144 teachers/views.py:3238
+#: billing/views.py:144 teachers/views.py:3356
 msgid "выключен"
 msgstr "o'chirildi"
 
@@ -1417,7 +1417,7 @@ msgstr "Xabaringizni kiriting..."
 msgid "Сообщение"
 msgstr "Xabar"
 
-#: teachers/forms.py:1198 teachers/views.py:2574
+#: teachers/forms.py:1198 teachers/views.py:2692
 msgid "Сообщение не может быть пустым"
 msgstr "Xabar bo'sh bo'lishi mumkin emas"
 
@@ -3211,7 +3211,7 @@ msgstr "Iltimos, ro'yxatdan o'tishni yakunlang"
 
 #: teachers/registration_wizard.py:614 teachers/video_views.py:63
 #: teachers/video_views.py:139 teachers/video_views.py:188
-#: teachers/views.py:1484 teachers/views.py:1724 teachers/views.py:2152
+#: teachers/views.py:1484 teachers/views.py:1842 teachers/views.py:2270
 msgid "Профиль учителя не найден"
 msgstr "O'qituvchi profili topilmadi"
 
@@ -3293,11 +3293,11 @@ msgstr ""
 "Ro'yxatdan muvaffaqiyatli o'tdingiz! Sizga mos keladigan o'qituvchilarni "
 "tanladik."
 
-#: teachers/views.py:1442 teachers/views.py:1952
+#: teachers/views.py:1442 teachers/views.py:2070
 msgid "Завершите регистрацию учителя"
 msgstr "O'qituvchi sifatida ro'yxatdan o'tishni yakunlang"
 
-#: teachers/views.py:1536 teachers/views.py:1605
+#: teachers/views.py:1536 teachers/views.py:1723
 msgid "Профиль успешно обновлен!"
 msgstr "Profil yangilandi!"
 
@@ -3318,55 +3318,81 @@ msgstr "Fan o'chirildi"
 msgid "Предмет не найден"
 msgstr "Fan topilmadi"
 
-#: teachers/views.py:1608
+#: teachers/views.py:1664
+#, python-format
+msgid ""
+"Нельзя удалить «%(name)s»: есть связанные подписки (%(n)d). Сначала "
+"завершите или отмените их — это защита финансовой истории."
+msgstr ""
+
+#: teachers/views.py:1676
+#, python-format
+msgid ""
+"Нельзя удалить «%(name)s»: у профиля есть защищённые связанные записи "
+"(оплаты/история). Удаление отменено."
+msgstr ""
+
+#: teachers/views.py:1696
+#, python-format
+msgid "Профиль и учётная запись учителя «%(name)s» удалены."
+msgstr ""
+
+#: teachers/views.py:1701
+#, python-format
+msgid ""
+"Профиль учителя «%(name)s» удалён. Учётная запись сохранена (есть финансовая "
+"история или связанные записи)."
+msgstr ""
+
+#: teachers/views.py:1726
 msgid "Пожалуйста, исправьте ошибки в форме"
 msgstr "Iltimos, formadagi xatolarni to'g'rilang"
 
-#: teachers/views.py:1627
+#: teachers/views.py:1745
 msgid "Неверный запрос"
 msgstr "Noto'g'ri so'rov"
 
-#: teachers/views.py:1638
+#: teachers/views.py:1756
 msgid "активен"
 msgstr "faol"
 
-#: teachers/views.py:1638
+#: teachers/views.py:1756
 msgid "деактивирован"
 msgstr "o'chirilgan"
 
-#: teachers/views.py:1639
+#: teachers/views.py:1757
 #, python-format
 msgid "Ваш профиль %(status)s в поиске"
 msgstr "Sizning profilingiz qidiruvda %(status)s"
 
-#: teachers/views.py:1644
+#: teachers/views.py:1762
 #, python-format
 msgid "Профиль %(status)s"
 msgstr "Profil %(status)s"
 
-#: teachers/views.py:1647
+#: teachers/views.py:1765
 msgid "Профиль не найден"
 msgstr "Profil topilmadi"
 
-#: teachers/views.py:1654 teachers/views.py:1716 teachers/views.py:1743
+#: teachers/views.py:1772 teachers/views.py:1834 teachers/views.py:1861
 msgid "Неверный метод"
 msgstr "Noto'g'ri usul"
 
-#: teachers/views.py:1657 teachers/views.py:1719 teachers/views.py:1746
-#: teachers/views.py:1763 teachers/views.py:1775 teachers/views.py:1798
-#: teachers/views.py:1886
+#: teachers/views.py:1775 teachers/views.py:1837 teachers/views.py:1864
+#: teachers/views.py:1881 teachers/views.py:1893 teachers/views.py:1916
+#: teachers/views.py:2004
 msgid "Доступ запрещен"
 msgstr "Ruxsat berilmagan"
 
-#: teachers/views.py:1892 teachers/views.py:1969
+#: teachers/views.py:2010 teachers/views.py:2087
 msgid "Заполните профиль ученика"
 msgstr "O'quvchi profilini to'ldiring"
 
-#: teachers/views.py:2056 teachers/views.py:2192
+#: teachers/views.py:2174 teachers/views.py:2310
 msgid "Слишком много сообщений. Подождите немного."
 msgstr "Xabarlar juda ko'p. Biroz kuting."
 
-#: teachers/views.py:2062 teachers/views.py:2203
+#: teachers/views.py:2180 teachers/views.py:2321
 msgid ""
 "Вы уже отправили первое сообщение. Дождитесь ответа ученика, чтобы "
 "продолжить переписку."
@@ -3374,31 +3400,31 @@ msgstr ""
 "Birinchi xabarni allaqachon yuborgansiz. Suhbatni davom ettirish uchun "
 "o'quvchining javobini kuting."
 
-#: teachers/views.py:2078
+#: teachers/views.py:2196
 msgid "Сообщение отправлено!"
 msgstr "Xabar yuborildi!"
 
-#: teachers/views.py:2081
+#: teachers/views.py:2199
 msgid "Ошибка при отправке сообщения"
 msgstr "Xabarni yuborishda xatolik"
 
-#: teachers/views.py:2095
+#: teachers/views.py:2213
 msgid "Переписка не найдена или доступ запрещен"
 msgstr "Suhbat topilmadi yoki ruxsat berilmagan"
 
-#: teachers/views.py:2111
+#: teachers/views.py:2229
 msgid "Вы не можете писать себе"
 msgstr "O'zingizga yoza olmaysiz"
 
-#: teachers/views.py:2120
+#: teachers/views.py:2238
 msgid "Завершите регистрацию учителя, чтобы писать сообщения"
 msgstr "Xabar yuborish uchun o'qituvchi sifatida ro'yxatdan o'tishni yakunlang"
 
-#: teachers/views.py:2126
+#: teachers/views.py:2244
 msgid "Вы можете писать только ученикам"
 msgstr "Faqat o'quvchilarga yoza olasiz"
 
-#: teachers/views.py:2139
+#: teachers/views.py:2257
 msgid ""
 "Написать можно только ученикам, которые добавили вас в избранное или "
 "забронировали пробный урок."
@@ -3406,65 +3432,65 @@ msgstr ""
 "Faqat sizni sevimlilarga qo'shgan yoki sinov darsini bron qilgan "
 "o'quvchilarga yoza olasiz."
 
-#: teachers/views.py:2146
+#: teachers/views.py:2264
 msgid "Вы можете писать только учителям"
 msgstr "Faqat o'qituvchilarga yoza olasiz"
 
-#: teachers/views.py:2179 teachers/views.py:2274
+#: teachers/views.py:2297 teachers/views.py:2392
 msgid "Только POST запросы"
 msgstr "Faqat POST so'rovlar"
 
-#: teachers/views.py:2264
+#: teachers/views.py:2382
 msgid "Произошла ошибка при отправке сообщения"
 msgstr "Xabarni yuborishda xatolik yuz berdi"
 
 # ========== JAVASCRIPT MESSAGES ==========
-#: teachers/views.py:2302 templates/billing/student_dashboard.html:399
+#: teachers/views.py:2420 templates/billing/student_dashboard.html:399
 #: templates/logic/teacher_detail.html:2763
 #: templates/notifications/detail.html:625
 #: templates/notifications/list.html:480
 msgid "Произошла ошибка"
 msgstr "Xatolik yuz berdi"
 
-#: teachers/views.py:2312
+#: teachers/views.py:2430
 msgid "Неверный метод запроса"
 msgstr "Noto'g'ri so'rov usuli"
 
-#: teachers/views.py:2324
+#: teachers/views.py:2442
 msgid "Переписка удалена"
 msgstr "Suhbat o'chirildi"
 
-#: teachers/views.py:2329
+#: teachers/views.py:2447
 msgid "Ошибка при удалении переписки"
 msgstr "Suhbatni o'chirishda xatolik"
 
-#: teachers/views.py:2421
+#: teachers/views.py:2539
 msgid "Ошибка поиска предметов"
 msgstr "Fanlarni qidirishda xatolik"
 
-#: teachers/views.py:2478
+#: teachers/views.py:2596
 msgid "Категория не найдена"
 msgstr "Toifa topilmadi"
 
-#: teachers/views.py:2579
+#: teachers/views.py:2697
 msgid "Сообщение слишком длинное (максимум 4000 символов)"
 msgstr "Xabar juda uzun (eng ko'pi 4000 belgi)"
 
-#: teachers/views.py:2597
+#: teachers/views.py:2715
 msgid "Нет пользователей для отправки сообщения"
 msgstr "Xabar yuborish uchun foydalanuvchilar yo'q"
 
-#: teachers/views.py:2616
+#: teachers/views.py:2734
 #, python-format
 msgid "Ошибка сервиса отправки: %(err)s"
 msgstr "Yuborish xizmati xatosi: %(err)s"
 
-#: teachers/views.py:2619
+#: teachers/views.py:2737
 #, python-format
 msgid "Сообщение успешно отправлено %(count)s пользователям"
 msgstr "Xabar %(count)s foydalanuvchiga yuborildi"
 
-#: teachers/views.py:2622
+#: teachers/views.py:2740
 #, python-format
 msgid ""
 "Не удалось отправить %(count)s пользователям (возможно, заблокировали бота "
@@ -3473,25 +3499,25 @@ msgstr ""
 "%(count)s foydalanuvchiga yetkazib bo'lmadi (botni bloklagan yoki chatni "
 "o'chirgan bo'lishi mumkin)"
 
-#: teachers/views.py:2625
+#: teachers/views.py:2743
 #, python-format
 msgid "Ошибка при отправке сообщений: %(err)s"
 msgstr "Xabarlarni yuborishda xatolik: %(err)s"
 
-#: teachers/views.py:2641
+#: teachers/views.py:2759
 msgid "Необходимо выбрать пользователя и ввести сообщение"
 msgstr "Foydalanuvchini tanlang va xabar kiriting"
 
-#: teachers/views.py:2647
+#: teachers/views.py:2765
 msgid "Пользователь не активировал бота"
 msgstr "Foydalanuvchi botni faollashtirmagan"
 
-#: teachers/views.py:2662
+#: teachers/views.py:2780
 #, python-format
 msgid "Сообщение отправлено пользователю %(name)s"
 msgstr "Xabar %(name)s ga yuborildi"
 
-#: teachers/views.py:2664
+#: teachers/views.py:2782
 #, python-format
 msgid ""
 "Не удалось отправить сообщение пользователю %(name)s (возможно, заблокировал "
@@ -3500,70 +3526,70 @@ msgstr ""
 "%(name)s ga xabar yuborib bo'lmadi (botni bloklagan yoki chatni o'chirgan "
 "bo'lishi mumkin)"
 
-#: teachers/views.py:2667
+#: teachers/views.py:2785
 #, python-format
 msgid "Ошибка: %(err)s"
 msgstr "Xatolik: %(err)s"
 
-#: teachers/views.py:2713
+#: teachers/views.py:2831
 msgid "Можно писать только от имени участников беседы."
 msgstr "Faqat suhbat ishtirokchilari nomidan yozish mumkin."
 
-#: teachers/views.py:2728
+#: teachers/views.py:2846
 #, python-format
 msgid "Сообщение отправлено от имени %(name)s"
 msgstr "Xabar %(name)s nomidan yuborildi"
 
-#: teachers/views.py:2836
+#: teachers/views.py:2954
 msgid "У вас нет доступа к этому уведомлению."
 msgstr "Bu bildirishnomaga kirish huquqingiz yo'q."
 
-#: teachers/views.py:2876
+#: teachers/views.py:2994
 msgid "Нет доступа"
 msgstr "Ruxsat berilmagan"
 
-#: teachers/views.py:3057
+#: teachers/views.py:3175
 msgid "Добро пожаловать! Мы подберём для вас подходящих учителей."
 msgstr "Xush kelibsiz! Sizga mos o'qituvchilarni tanlab beramiz."
 
-#: teachers/views.py:3093
+#: teachers/views.py:3211
 msgid "У вас уже есть профиль"
 msgstr "Sizda allaqachon profil bor"
 
-#: teachers/views.py:3187
+#: teachers/views.py:3305
 msgid "Выберите корректный период (утро/вечер)."
 msgstr "To'g'ri vaqtni tanlang (ertalab/kechqurun)."
 
-#: teachers/views.py:3189
+#: teachers/views.py:3307
 msgid "Выберите корректный язык."
 msgstr "To'g'ri tilni tanlang."
 
-#: teachers/views.py:3191
+#: teachers/views.py:3309
 msgid "Текст сообщения не может быть пустым."
 msgstr "Xabar matni bo'sh bo'lishi mumkin emas."
 
-#: teachers/views.py:3193
+#: teachers/views.py:3311
 msgid "Текст слишком длинный (максимум 4000 символов)."
 msgstr "Matn juda uzun (eng ko'pi 4000 belgi)."
 
-#: teachers/views.py:3205
+#: teachers/views.py:3323
 msgid "Шаблон обновлён."
 msgstr "Shablon yangilandi."
 
-#: teachers/views.py:3205
+#: teachers/views.py:3323
 msgid "Шаблон создан."
 msgstr "Shablon yaratildi."
 
-#: teachers/views.py:3225
+#: teachers/views.py:3343
 msgid "Шаблон удалён."
 msgstr "Shablon o'chirildi."
 
-#: teachers/views.py:3238
+#: teachers/views.py:3356
 #, python-format
 msgid "Шаблон %(state)s."
 msgstr "Shablon %(state)s."
 
-#: teachers/views.py:3258
+#: teachers/views.py:3376
 msgid ""
 "Ваш аккаунт не привязан к Telegram-боту — привяжите его, чтобы получать "
 "тестовые сообщения."
@@ -3571,11 +3597,11 @@ msgstr ""
 "Hisobingiz Telegram botga ulanmagan — sinov xabarlarini olish uchun uni "
 "ulang."
 
-#: teachers/views.py:3271
+#: teachers/views.py:3389
 msgid "Тестовое сообщение отправлено вам в Telegram."
 msgstr "Sinov xabari sizga Telegram orqali yuborildi."
 
-#: teachers/views.py:3273
+#: teachers/views.py:3391
 msgid "Не удалось отправить тестовое сообщение."
 msgstr "Sinov xabarini yuborib bo'lmadi."
 
@@ -3694,7 +3720,7 @@ msgstr "Asosiy navigatsiya"
 msgid "Учителя"
 msgstr "O'qituvchilar"
 
-#: templates/base.html:1740 templates/booking/lesson_room.html:353
+#: templates/base.html:1740 templates/booking/lesson_room.html:382
 #: templates/logic/teacher_detail.html:2658
 msgid "Чат"
 msgstr "Chat"
@@ -4201,7 +4227,7 @@ msgstr ""
 #: templates/billing/homework_detail.html:93
 #: templates/billing/tariffs_list.html:79
 #: templates/billing/tariffs_list.html:81
-#: templates/booking/lesson_room.html:898
+#: templates/booking/lesson_room.html:1014
 #: templates/booking/teacher_calendar.html:116
 #: templates/logic/conversation_detail.html:1026
 #: templates/logic/conversation_detail.html:1027
@@ -4230,7 +4256,7 @@ msgid "Прикрепить файлы (PDF/DOCX/JPG и т.п.)"
 msgstr "Fayllarni biriktirish (PDF/DOCX/JPG va h.k.)"
 
 #: templates/billing/homework_detail.html:116
-#: templates/booking/lesson_room.html:382
+#: templates/booking/lesson_room.html:411
 #: templates/logic/conversation_detail.html:1117
 #: templates/logic/conversation_detail.html:1119
 #: templates/logic/conversation_detail.html:1153
@@ -5787,8 +5813,8 @@ msgstr "Yana bron qilish"
 #: templates/booking/book_teacher.html:319
 #: templates/booking/book_teacher.html:363
 #: templates/booking/lesson_archive.html:55
-#: templates/booking/lesson_room.html:297
-#: templates/booking/lesson_room.html:467
+#: templates/booking/lesson_room.html:326
+#: templates/booking/lesson_room.html:516
 msgid "К моим урокам"
 msgstr "Mening darslarimga"
 
@@ -5893,7 +5919,7 @@ msgstr "Iltimos, umumiy baho qo'ying."
 
 #: templates/booking/lesson_archive.html:4
 #: templates/booking/lesson_archive.html:60
-#: templates/booking/lesson_room.html:391
+#: templates/booking/lesson_room.html:420
 msgid "Материалы урока"
 msgstr "Dars materiallari"
 
@@ -5910,7 +5936,7 @@ msgid "Переписка урока"
 msgstr "Dars yozishmalari"
 
 #: templates/booking/lesson_archive.html:91
-#: templates/booking/lesson_room.html:1120
+#: templates/booking/lesson_room.html:1236
 #: templates/logic/conversations_list.html:563
 msgid "Вы"
 msgstr "Siz"
@@ -5919,20 +5945,20 @@ msgstr "Siz"
 msgid "Переписки по этому уроку не было."
 msgstr "Bu dars bo'yicha yozishmalar bo'lmagan."
 
-#: templates/booking/lesson_room.html:289
+#: templates/booking/lesson_room.html:318
 msgid "Урок с"
 msgstr "Dars:"
 
-#: templates/booking/lesson_room.html:305
+#: templates/booking/lesson_room.html:334
 msgid "До конца урока"
 msgstr "Dars oxirigacha"
 
-#: templates/booking/lesson_room.html:310
+#: templates/booking/lesson_room.html:339
 #, python-format
 msgid "Ожидаем %(other_name)s…"
 msgstr "%(other_name)s kutilmoqda…"
 
-#: templates/booking/lesson_room.html:315
+#: templates/booking/lesson_room.html:344
 msgid ""
 "Нажмите «Присоединиться» и разрешите доступ к камере и микрофону. Материалы "
 "урока — ниже под видео; доска, демонстрация экрана и чат — в нижней панели "
@@ -5942,61 +5968,61 @@ msgstr ""
 "materiallari — video ostida; doska, ekranni ulashish va chat — video "
 "oynaning pastki panelida."
 
-#: templates/booking/lesson_room.html:316
-#: templates/booking/lesson_room.html:341 templates/logic/home.html:2469
+#: templates/booking/lesson_room.html:345
+#: templates/booking/lesson_room.html:370 templates/logic/home.html:2469
 #: templates/partials/telegram_connect_banner.html:16
 msgid "Скрыть"
 msgstr "Yashirish"
 
-#: templates/booking/lesson_room.html:339
-#: templates/booking/lesson_room.html:345
+#: templates/booking/lesson_room.html:368
+#: templates/booking/lesson_room.html:374
 msgid "Переподключиться"
 msgstr "Qayta ulanish"
 
-#: templates/booking/lesson_room.html:357
+#: templates/booking/lesson_room.html:386
 msgid "Материалы"
 msgstr "Materiallar"
 
-#: templates/booking/lesson_room.html:365
+#: templates/booking/lesson_room.html:394
 #, python-format
 msgid "%(other_name)s не в комнате"
 msgstr "%(other_name)s kabinetda yo'q"
 
-#: templates/booking/lesson_room.html:368
+#: templates/booking/lesson_room.html:397
 msgid "Сообщений пока нет. Общайтесь прямо здесь — история сохранится."
 msgstr ""
 "Hozircha xabarlar yo'q. Shu yerda yozishingiz mumkin — tarix saqlanadi."
 
-#: templates/booking/lesson_room.html:372
+#: templates/booking/lesson_room.html:401
 #, python-format
 msgid "%(other_name)s печатает…"
 msgstr "%(other_name)s yozmoqda…"
 
-#: templates/booking/lesson_room.html:375
+#: templates/booking/lesson_room.html:404
 msgid "Прикрепить файл"
 msgstr "Fayl biriktirish"
 
-#: templates/booking/lesson_room.html:381
+#: templates/booking/lesson_room.html:410
 msgid "Сообщение…"
 msgstr "Xabar…"
 
-#: templates/booking/lesson_room.html:394
-#: templates/booking/lesson_room.html:893
+#: templates/booking/lesson_room.html:423
+#: templates/booking/lesson_room.html:1009
 msgid "Загрузить файл"
 msgstr "Fayl yuklash"
 
-#: templates/booking/lesson_room.html:400
+#: templates/booking/lesson_room.html:429
 msgid ""
 "Документы, изображения, презентации — до 25 МБ. Видны обеим сторонам урока."
 msgstr ""
 "Hujjatlar, rasmlar, taqdimotlar — 25 MB gacha. Darsning ikkala tomoniga "
 "ko'rinadi."
 
-#: templates/booking/lesson_room.html:403
+#: templates/booking/lesson_room.html:432
 msgid "Пока нет загруженных материалов."
 msgstr "Hozircha yuklangan materiallar yo'q."
 
-#: templates/booking/lesson_room.html:412
+#: templates/booking/lesson_room.html:441
 msgid ""
 "Урок проходит на платформе: оплата защищена, при проблеме можно открыть спор "
 "и вернуть деньги. Договорённости вне платформы этих гарантий не дают."
@@ -6005,7 +6031,7 @@ msgstr ""
 "ochib, pulni qaytarib olishingiz mumkin. Platformadan tashqaridagi "
 "kelishuvlar bunday kafolatlarni bermaydi."
 
-#: templates/booking/lesson_room.html:425
+#: templates/booking/lesson_room.html:454
 #, python-format
 msgid ""
 "Преподаватель так и не подключился? Если его нет дольше %(noshow_grace)s "
@@ -6015,42 +6041,62 @@ msgstr ""
 "bo'lmasa, kelmaganini belgilang — dars bekor qilinadi va mablag'ingiz darhol "
 "qaytariladi."
 
-#: templates/booking/lesson_room.html:427
+#: templates/booking/lesson_room.html:456
 #: templates/booking/my_bookings.html:400
 msgid "Преподаватель не пришёл"
 msgstr "O'qituvchi kelmadi"
 
+#: templates/booking/lesson_room.html:465
+msgid "Вы сейчас на уроке"
+msgstr "Siz hozir darsdasiz"
+
+#: templates/booking/lesson_room.html:466
+msgid "Если перейти на другую страницу — видеосвязь прервётся. Что сделать?"
+msgstr "Boshqa sahifaga o'tsangiz — video aloqa uziladi. Nima qilamiz?"
+
+#: templates/booking/lesson_room.html:469
+msgid "Остаться на уроке"
+msgstr "Darsda qolish"
+
+#: templates/booking/lesson_room.html:472
+msgid "Открыть в новой вкладке"
+msgstr "Yangi oynada ochish"
+
+#: templates/booking/lesson_room.html:475
+msgid "Выйти из урока"
+msgstr "Darsdan chiqish"
+
 # New login required messages
-#: templates/booking/lesson_room.html:435
+#: templates/booking/lesson_room.html:484
 msgid "Комната ещё закрыта"
 msgstr "Xona hali yopiq"
 
-#: templates/booking/lesson_room.html:436
+#: templates/booking/lesson_room.html:485
 #, python-format
 msgid "Вы сможете войти за %(join_lead)s минут до начала урока"
 msgstr "Dars boshlanishidan %(join_lead)s daqiqa oldin qo'shilishingiz mumkin"
 
-#: templates/booking/lesson_room.html:444
+#: templates/booking/lesson_room.html:493
 msgid "До открытия"
 msgstr "Ochilishgacha"
 
-#: templates/booking/lesson_room.html:459
+#: templates/booking/lesson_room.html:508
 msgid "Урок завершён"
 msgstr "Dars tugadi"
 
-#: templates/booking/lesson_room.html:460
+#: templates/booking/lesson_room.html:509
 msgid "Время этого урока уже прошло."
 msgstr "Bu darsning vaqti allaqachon o'tib ketgan."
 
-#: templates/booking/lesson_room.html:463
+#: templates/booking/lesson_room.html:512
 msgid "Урок ещё не подтверждён"
 msgstr "Dars hali tasdiqlanmagan"
 
-#: templates/booking/lesson_room.html:464
+#: templates/booking/lesson_room.html:513
 msgid "Комната станет доступной после подтверждения брони учителем."
 msgstr "Xona o'qituvchi bronni tasdiqlaganidan keyin ochiladi."
 
-#: templates/booking/lesson_room.html:491
+#: templates/booking/lesson_room.html:540
 msgid ""
 "Ваш микрофон перестал передавать звук. Нажмите «Переподключиться» — это "
 "переподключит устройство."
@@ -6058,43 +6104,43 @@ msgstr ""
 "Mikrofoningiz ovozni uzatishni to‘xtatdi. «Qayta ulanish»ni bosing — bu "
 "qurilmani qayta ulaydi."
 
-#: templates/booking/lesson_room.html:492
+#: templates/booking/lesson_room.html:541
 msgid "Проблема со связью. Если звук или видео пропали — переподключитесь."
 msgstr "Aloqa muammosi. Agar ovoz yoki video yo‘qolgan bo‘lsa — qayta ulaning."
 
-#: templates/booking/lesson_room.html:493
+#: templates/booking/lesson_room.html:542
 msgid "Интернет пропал. Ждём восстановления соединения…"
 msgstr "Internet aloqasi uzildi. Tiklanishini kutmoqdamiz…"
 
-#: templates/booking/lesson_room.html:494
+#: templates/booking/lesson_room.html:543
 msgid "Связь прервалась — восстанавливаем подключение…"
 msgstr "Aloqa uzildi — ulanishni tiklayapmiz…"
 
-#: templates/booking/lesson_room.html:495
+#: templates/booking/lesson_room.html:544
 msgid ""
 "Не удаётся восстановить соединение. Проверьте интернет и обновите страницу."
 msgstr "Aloqani tiklab bo‘lmadi. Internetni tekshiring va sahifani yangilang."
 
-#: templates/booking/lesson_room.html:585
+#: templates/booking/lesson_room.html:634
 msgid ""
 "Не удалось загрузить видео-модуль. Проверьте интернет и попробуйте "
 "переподключиться."
 msgstr ""
 "Video modulni yuklab bo'lmadi. Internetni tekshirib, qayta ulanib ko'ring."
 
-#: templates/booking/lesson_room.html:597
+#: templates/booking/lesson_room.html:646
 msgid "время вышло"
 msgstr "vaqt tugadi"
 
-#: templates/booking/lesson_room.html:613
+#: templates/booking/lesson_room.html:662
 msgid "на связи"
 msgstr "aloqada"
 
-#: templates/booking/lesson_room.html:614
+#: templates/booking/lesson_room.html:663
 msgid "Ожидаем"
 msgstr "Kutilmoqda"
 
-#: templates/booking/lesson_room.html:650
+#: templates/booking/lesson_room.html:699
 #: templates/booking/my_bookings.html:402
 msgid ""
 "Отметить, что преподаватель не подключился? Урок будет отменён, а средства "
@@ -6103,56 +6149,56 @@ msgstr ""
 "O'qituvchi ulanmagan deb belgilansinmi? Dars bekor qilinadi va mablag' "
 "qaytariladi."
 
-#: templates/booking/lesson_room.html:659
+#: templates/booking/lesson_room.html:708
 #: templates/logic/_profile_edit_enhancements.html:406
 msgid "Готово"
 msgstr "Tayyor"
 
-#: templates/booking/lesson_room.html:662
+#: templates/booking/lesson_room.html:712
 msgid "Не удалось выполнить действие"
 msgstr "Amalni bajarib bo'lmadi"
 
-#: templates/booking/lesson_room.html:666
+#: templates/booking/lesson_room.html:716
 msgid "Ошибка сети, попробуйте ещё раз"
 msgstr "Tarmoq xatosi, qayta urinib ko'ring"
 
-#: templates/booking/lesson_room.html:892
+#: templates/booking/lesson_room.html:1008
 #: templates/booking/my_bookings.html:359
 msgid "Загрузка…"
 msgstr "Yuklanmoqda…"
 
-#: templates/booking/lesson_room.html:894
+#: templates/booking/lesson_room.html:1010
 msgid "Удалить этот файл?"
 msgstr "Bu fayl o'chirilsinmi?"
 
-#: templates/booking/lesson_room.html:895
-#: templates/booking/lesson_room.html:1123
+#: templates/booking/lesson_room.html:1011
+#: templates/booking/lesson_room.html:1239
 msgid "Файл слишком большой (максимум 25 МБ)."
 msgstr "Fayl juda katta (eng ko'pi 25 MB)."
 
-#: templates/booking/lesson_room.html:896
+#: templates/booking/lesson_room.html:1012
 msgid "Недопустимый формат файла."
 msgstr "Yaroqsiz fayl formati."
 
-#: templates/booking/lesson_room.html:897
-#: templates/booking/lesson_room.html:1122
+#: templates/booking/lesson_room.html:1013
+#: templates/booking/lesson_room.html:1238
 msgid "Не удалось загрузить файл. Попробуйте ещё раз."
 msgstr "Faylni yuklab bo'lmadi. Qayta urinib ko'ring."
 
-#: templates/booking/lesson_room.html:1121
+#: templates/booking/lesson_room.html:1237
 #: templates/logic/conversation_detail.html:1152
 msgid "Отправка…"
 msgstr "Yuborilmoqda…"
 
-#: templates/booking/lesson_room.html:1125
+#: templates/booking/lesson_room.html:1241
 msgid "в комнате"
 msgstr "kabinetda"
 
-#: templates/booking/lesson_room.html:1126
+#: templates/booking/lesson_room.html:1242
 msgid "не в комнате"
 msgstr "kabinetda emas"
 
-#: templates/booking/lesson_room.html:1127
+#: templates/booking/lesson_room.html:1243
 msgid "Новые сообщения"
 msgstr "Yangi xabarlar"
 

@@ -272,6 +272,34 @@
     .lr-msg a.lr-link { color: inherit; text-decoration: underline; word-break: break-all; }
     .lr-msg.is-them a.lr-link { color: #1D4ED8; }
 
+    /* Модалка защиты от ухода с урока */
+    .lr-modal {
+        position: fixed; inset: 0; z-index: 3000;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(15, 23, 42, .55); padding: 20px;
+    }
+    .lr-modal[hidden] { display: none; }
+    .lr-modal-box {
+        background: #fff; border-radius: 16px; max-width: 420px; width: 100%;
+        padding: 26px 24px 20px; text-align: center;
+        box-shadow: 0 20px 60px rgba(15, 23, 42, .3);
+    }
+    .lr-modal-ico { font-size: 30px; color: #D97706; margin-bottom: 10px; }
+    .lr-modal-box h3 { margin: 0 0 8px; font-size: 18px; font-weight: 700; color: var(--text-primary, #0f172a); }
+    .lr-modal-box p { margin: 0 0 18px; font-size: 14px; color: var(--text-tertiary, #64748b); line-height: 1.5; }
+    .lr-modal-actions { display: flex; flex-direction: column; gap: 8px; }
+    .lr-modal-btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        padding: 11px 16px; border-radius: 11px; border: 0; cursor: pointer;
+        font-size: 14.5px; font-weight: 600;
+    }
+    .lr-modal-btn.primary { background: #3B82F6; color: #fff; }
+    .lr-modal-btn.primary:hover { background: #2563EB; }
+    .lr-modal-btn.secondary { background: #EFF6FF; color: #1D4ED8; }
+    .lr-modal-btn.secondary:hover { background: #DBEAFE; }
+    .lr-modal-btn.danger { background: transparent; color: #DC2626; }
+    .lr-modal-btn.danger:hover { background: #FEF2F2; }
+
     @media (max-width: 900px) {
         .lr-stage { flex-direction: column; }
         .lr-video #jitsi-container { height: 60vh; }
@@ -429,6 +457,26 @@
             </button>
         </div>
         {% endif %}
+
+        {# Защита от случайного ухода с урока: перехват перехода по посторонней ссылке #}
+        <div id="lr-leave-modal" class="lr-modal" hidden>
+            <div class="lr-modal-box" role="dialog" aria-modal="true" aria-labelledby="lr-leave-title">
+                <div class="lr-modal-ico"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <h3 id="lr-leave-title">{% trans "Вы сейчас на уроке" %}</h3>
+                <p>{% trans "Если перейти на другую страницу — видеосвязь прервётся. Что сделать?" %}</p>
+                <div class="lr-modal-actions">
+                    <button type="button" id="lr-leave-stay" class="lr-modal-btn primary">
+                        <i class="fa-solid fa-video"></i> {% trans "Остаться на уроке" %}
+                    </button>
+                    <button type="button" id="lr-leave-newtab" class="lr-modal-btn secondary">
+                        <i class="fa-solid fa-up-right-from-square"></i> {% trans "Открыть в новой вкладке" %}
+                    </button>
+                    <button type="button" id="lr-leave-go" class="lr-modal-btn danger">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> {% trans "Выйти из урока" %}
+                    </button>
+                </div>
+            </div>
+        </div>
     {% else %}
         <div class="lr-state">
             {% if state == 'too_early' %}
@@ -658,6 +706,7 @@
                     const data = await r.json();
                     if (r.ok) {
                         alert(data.message || "{% filter escapejs %}{% trans 'Готово' %}{% endfilter %}");
+                        leaving = true;
                         window.location.href = back;
                     } else {
                         alert(data.error || "{% filter escapejs %}{% trans 'Не удалось выполнить действие' %}{% endfilter %}");
@@ -713,6 +762,9 @@
     // пропускаем pre-join, чтобы восстановление шло без участия пользователя.
     let connState = 'init';   // init | connecting | live | recovering
     let reconnecting = false;
+    // Защита от случайного ухода: как только подключились к уроку — стережём
+    // переходы, пока пользователь сознательно не выйдет (leaving=true).
+    let everJoined = false, leaving = false;
     let attempts = 0;
     let recoverTimer = null;
     const MAX_ATTEMPTS = 5;
@@ -764,6 +816,7 @@
 
     function onConferenceLive() {
         connState = 'live';
+        everJoined = true;   // с этого момента бережём от случайного ухода
         attempts = 0;
         reconnecting = false;
         if (reloadBox) reloadBox.style.display = 'none';
@@ -806,7 +859,7 @@
             if (e && e.muted === false && healthCategory === 'mic') hideHealth();
         });
         api.addEventListener('errorOccurred', onError);
-        api.addEventListener('readyToClose', function () { reportLeave(); window.location.href = back; });
+        api.addEventListener('readyToClose', function () { leaving = true; reportLeave(); window.location.href = back; });
     }
 
     function teardownJitsi() {
@@ -857,6 +910,68 @@
         wsClosedByUs = true;
         try { if (ws) ws.close(); } catch (e) {}
     });
+
+    // ================== Защита от случайного ухода с урока ==================
+    // Пока пользователь на уроке (everJoined && !leaving):
+    //  • нативное предупреждение при закрытии/обновлении вкладки (beforeunload);
+    //  • перехват клика по посторонней внутренней ссылке → модалка с выбором
+    //    «Остаться / Открыть в новой вкладке / Выйти из урока».
+    function guardActive() { return everJoined && !leaving; }
+
+    window.addEventListener('beforeunload', function (e) {
+        if (!guardActive()) return;
+        e.preventDefault();
+        e.returnValue = '';   // требуется некоторыми браузерами для показа диалога
+        return '';
+    });
+
+    const leaveModal = document.getElementById('lr-leave-modal');
+    let pendingHref = null;
+    function openLeaveModal(href) {
+        pendingHref = href;
+        if (leaveModal) leaveModal.hidden = false;
+    }
+    function closeLeaveModal() {
+        pendingHref = null;
+        if (leaveModal) leaveModal.hidden = true;
+    }
+    if (leaveModal) {
+        const stay = document.getElementById('lr-leave-stay');
+        const newtab = document.getElementById('lr-leave-newtab');
+        const go = document.getElementById('lr-leave-go');
+        if (stay) stay.addEventListener('click', closeLeaveModal);
+        if (newtab) newtab.addEventListener('click', function () {
+            if (pendingHref) window.open(pendingHref, '_blank', 'noopener');
+            closeLeaveModal();   // урок не покидаем — раздел открылся во второй вкладке
+        });
+        if (go) go.addEventListener('click', function () {
+            const href = pendingHref;
+            leaving = true;      // сознательный выход — снимаем защиту
+            closeLeaveModal();
+            if (href) window.location.href = href;
+        });
+        // Клик по затемнению / Esc — остаёмся на уроке.
+        leaveModal.addEventListener('click', function (e) { if (e.target === leaveModal) closeLeaveModal(); });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && leaveModal && !leaveModal.hidden) closeLeaveModal();
+        });
+    }
+
+    // Перехват кликов по ссылкам, ведущим на другую страницу.
+    document.addEventListener('click', function (e) {
+        if (!guardActive()) return;
+        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        const a = e.target.closest ? e.target.closest('a[href]') : null;
+        if (!a || a.target === '_blank' || a.hasAttribute('download')) return;
+        const raw = a.getAttribute('href') || '';
+        if (!raw || raw.charAt(0) === '#' || /^(javascript:|mailto:|tel:)/i.test(raw)) return;
+        let url;
+        try { url = new URL(a.href, location.href); } catch (err) { return; }
+        // Тот же адрес (якорь/сам урок) — не мешаем.
+        if (url.href === location.href || (url.pathname === location.pathname && url.search === location.search)) return;
+        e.preventDefault();
+        openLeaveModal(a.href);
+    }, true);
 
     // ---- Старт ----
     tickTimer();
