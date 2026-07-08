@@ -1413,6 +1413,7 @@ def lesson_room(request, booking_id):
         'noshow_report_at': noshow_report_at,
         'teacher_present_initial': teacher_present_initial,
         'noshow_grace': noshow_grace,
+        'lesson_file_max_mb': settings.LESSON_FILE_MAX_SIZE_MB,
     })
 
 

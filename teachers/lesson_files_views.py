@@ -114,7 +114,16 @@ def lesson_file_presigned_url(request, booking_id):
         file_size = 0
 
     allowed = settings.LESSON_FILE_ALLOWED_TYPES
-    if content_type not in allowed:
+    ext_to_mime = settings.LESSON_FILE_EXT_TO_MIME
+    # Канонический MIME: сначала по заявленному типу, иначе по расширению имени
+    # (телефоны/некоторые браузеры шлют пустой или application/octet-stream тип —
+    # из-за этого валидный PDF/книга отклонялись как «недопустимый формат»).
+    if content_type in allowed:
+        canonical_ct = content_type
+    else:
+        name_ext = file_name.rsplit('.', 1)[-1].lower() if '.' in file_name else ''
+        canonical_ct = ext_to_mime.get(name_ext, '')
+    if canonical_ct not in allowed:
         return JsonResponse(
             {'error': _('Недопустимый формат файла')},
             status=400,
@@ -129,17 +138,19 @@ def lesson_file_presigned_url(request, booking_id):
             status=400,
         )
 
-    ext = allowed[content_type]
+    ext = allowed[canonical_ct]
     file_key = f"lessons/{booking.pk}/{uuid.uuid4().hex}.{ext}"
 
     try:
         s3_client = _get_s3_client()
+        # ВАЖНО: подписываем тем же ContentType, которым клиент затем сделает PUT
+        # (канонический). Иначе подпись не сойдётся и хранилище отклонит загрузку.
         upload_url = s3_client.generate_presigned_url(
             'put_object',
             Params={
                 'Bucket': settings.S3_BUCKET_NAME,
                 'Key': file_key,
-                'ContentType': content_type,
+                'ContentType': canonical_ct,
                 'ContentLength': file_size,
             },
             ExpiresIn=settings.LESSON_FILE_PRESIGNED_URL_EXPIRY,
@@ -156,7 +167,7 @@ def lesson_file_presigned_url(request, booking_id):
         'file_url': file_url,
         'file_key': file_key,
         'file_name': file_name[:255],
-        'content_type': content_type,
+        'content_type': canonical_ct,
         'size': file_size,
     })
 

@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: UstozHub 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-07 10:57+0500\n"
+"POT-Creation-Date: 2026-07-08 15:50+0500\n"
 "Language-Team: Uzbek\n"
 "Language: uz\n"
 "MIME-Version: 1.0\n"
@@ -631,11 +631,11 @@ msgstr "Tarif yangilandi."
 msgid "Тариф удалён."
 msgstr "Tarif o'chirildi."
 
-#: billing/views.py:144 teachers/views.py:3356
+#: billing/views.py:144 teachers/views.py:3398
 msgid "включён"
 msgstr "yoqildi"
 
-#: billing/views.py:144 teachers/views.py:3356
+#: billing/views.py:144 teachers/views.py:3398
 msgid "выключен"
 msgstr "o'chirildi"
 
@@ -923,11 +923,11 @@ msgstr "Avval o'qituvchi profilini to'ldiring."
 msgid "Учитель не найден"
 msgstr "O'qituvchi topilmadi"
 
-#: teachers/booking_views.py:1596
+#: teachers/booking_views.py:1597
 msgid "Оставить отзыв можно только после завершения урока."
 msgstr "Sharhni faqat dars tugagandan keyin qoldirish mumkin."
 
-#: teachers/booking_views.py:1633
+#: teachers/booking_views.py:1634
 msgid "Спасибо! Ваш отзыв сохранён."
 msgstr "Rahmat! Sharhingiz saqlandi."
 
@@ -1417,7 +1417,7 @@ msgstr "Xabaringizni kiriting..."
 msgid "Сообщение"
 msgstr "Xabar"
 
-#: teachers/forms.py:1198 teachers/views.py:2692
+#: teachers/forms.py:1198 teachers/views.py:2711
 msgid "Сообщение не может быть пустым"
 msgstr "Xabar bo'sh bo'lishi mumkin emas"
 
@@ -1441,45 +1441,45 @@ msgstr "Ruxsat berilmagan"
 msgid "Загрузка файлов временно недоступна"
 msgstr "Fayl yuklash vaqtincha mavjud emas"
 
-#: teachers/lesson_files_views.py:107 teachers/lesson_files_views.py:176
+#: teachers/lesson_files_views.py:107 teachers/lesson_files_views.py:187
 #: teachers/video_views.py:69 teachers/video_views.py:144
 #: teachers/video_views.py:214
 msgid "Некорректный JSON"
 msgstr "Yaroqsiz JSON"
 
-#: teachers/lesson_files_views.py:119 teachers/lesson_files_views.py:198
+#: teachers/lesson_files_views.py:128 teachers/lesson_files_views.py:209
 msgid "Недопустимый формат файла"
 msgstr "Yaroqsiz fayl formati"
 
-#: teachers/lesson_files_views.py:125 teachers/video_views.py:84
+#: teachers/lesson_files_views.py:134 teachers/video_views.py:84
 #: teachers/video_views.py:224
 msgid "Размер файла не указан"
 msgstr "Fayl hajmi ko'rsatilmagan"
 
-#: teachers/lesson_files_views.py:128 teachers/video_views.py:87
+#: teachers/lesson_files_views.py:137 teachers/video_views.py:87
 #: teachers/video_views.py:227
 #, python-format
 msgid "Максимальный размер файла: %(mb)sMB"
 msgstr "Maksimal fayl hajmi: %(mb)sMB"
 
-#: teachers/lesson_files_views.py:149 teachers/video_views.py:109
+#: teachers/lesson_files_views.py:160 teachers/video_views.py:109
 #: teachers/video_views.py:253
 msgid "Не удалось создать ссылку для загрузки"
 msgstr "Yuklash havolasini yaratib bo'lmadi"
 
-#: teachers/lesson_files_views.py:188
+#: teachers/lesson_files_views.py:199
 msgid "Недостаточно данных о файле"
 msgstr "Fayl haqida ma'lumot yetarli emas"
 
-#: teachers/lesson_files_views.py:194
+#: teachers/lesson_files_views.py:205
 msgid "Недопустимый путь файла"
 msgstr "Yaroqsiz fayl yo'li"
 
-#: teachers/lesson_files_views.py:196
+#: teachers/lesson_files_views.py:207
 msgid "Недопустимый URL файла"
 msgstr "Yaroqsiz fayl URL manzili"
 
-#: teachers/lesson_files_views.py:223
+#: teachers/lesson_files_views.py:234
 msgid "Удалить файл может только тот, кто его загрузил"
 msgstr "Faylni faqat uni yuklagan shaxs o'chira oladi"
 
@@ -3211,7 +3211,7 @@ msgstr "Iltimos, ro'yxatdan o'tishni yakunlang"
 
 #: teachers/registration_wizard.py:614 teachers/video_views.py:63
 #: teachers/video_views.py:139 teachers/video_views.py:188
-#: teachers/views.py:1484 teachers/views.py:1842 teachers/views.py:2270
+#: teachers/views.py:1484 teachers/views.py:1861 teachers/views.py:2289
 msgid "Профиль учителя не найден"
 msgstr "O'qituvchi profili topilmadi"
 
@@ -3293,11 +3293,11 @@ msgstr ""
 "Ro'yxatdan muvaffaqiyatli o'tdingiz! Sizga mos keladigan o'qituvchilarni "
 "tanladik."
 
-#: teachers/views.py:1442 teachers/views.py:2070
+#: teachers/views.py:1442 teachers/views.py:2089
 msgid "Завершите регистрацию учителя"
 msgstr "O'qituvchi sifatida ro'yxatdan o'tishni yakunlang"
 
-#: teachers/views.py:1536 teachers/views.py:1723
+#: teachers/views.py:1536 teachers/views.py:1742
 msgid "Профиль успешно обновлен!"
 msgstr "Profil yangilandi!"
 
@@ -3318,81 +3318,88 @@ msgstr "Fan o'chirildi"
 msgid "Предмет не найден"
 msgstr "Fan topilmadi"
 
-#: teachers/views.py:1664
+#: teachers/views.py:1670
 #, python-format
 msgid ""
 "Нельзя удалить «%(name)s»: есть связанные подписки (%(n)d). Сначала "
 "завершите или отмените их — это защита финансовой истории."
 msgstr ""
 
-#: teachers/views.py:1676
+#: teachers/views.py:1681
+#, python-format
+msgid ""
+"Нельзя удалить «%(name)s»: есть уроки/брони (%(n)d) — это история занятий. "
+"Удаление отменено (можно деактивировать профиль)."
+msgstr ""
+
+#: teachers/views.py:1695
 #, python-format
 msgid ""
 "Нельзя удалить «%(name)s»: у профиля есть защищённые связанные записи "
 "(оплаты/история). Удаление отменено."
 msgstr ""
 
-#: teachers/views.py:1696
+#: teachers/views.py:1715
 #, python-format
 msgid "Профиль и учётная запись учителя «%(name)s» удалены."
 msgstr ""
 
-#: teachers/views.py:1701
+#: teachers/views.py:1720
 #, python-format
 msgid ""
 "Профиль учителя «%(name)s» удалён. Учётная запись сохранена (есть финансовая "
 "история или связанные записи)."
 msgstr ""
 
-#: teachers/views.py:1726
+#: teachers/views.py:1745
 msgid "Пожалуйста, исправьте ошибки в форме"
 msgstr "Iltimos, formadagi xatolarni to'g'rilang"
 
-#: teachers/views.py:1745
+#: teachers/views.py:1764
 msgid "Неверный запрос"
 msgstr "Noto'g'ri so'rov"
 
-#: teachers/views.py:1756
+#: teachers/views.py:1775
 msgid "активен"
 msgstr "faol"
 
-#: teachers/views.py:1756
+#: teachers/views.py:1775
 msgid "деактивирован"
 msgstr "o'chirilgan"
 
-#: teachers/views.py:1757
+#: teachers/views.py:1776
 #, python-format
 msgid "Ваш профиль %(status)s в поиске"
 msgstr "Sizning profilingiz qidiruvda %(status)s"
 
-#: teachers/views.py:1762
+#: teachers/views.py:1781
 #, python-format
 msgid "Профиль %(status)s"
 msgstr "Profil %(status)s"
 
-#: teachers/views.py:1765
+#: teachers/views.py:1784
 msgid "Профиль не найден"
 msgstr "Profil topilmadi"
 
-#: teachers/views.py:1772 teachers/views.py:1834 teachers/views.py:1861
+#: teachers/views.py:1791 teachers/views.py:1853 teachers/views.py:1880
 msgid "Неверный метод"
 msgstr "Noto'g'ri usul"
 
-#: teachers/views.py:1775 teachers/views.py:1837 teachers/views.py:1864
-#: teachers/views.py:1881 teachers/views.py:1893 teachers/views.py:1916
-#: teachers/views.py:2004
+#: teachers/views.py:1794 teachers/views.py:1856 teachers/views.py:1883
+#: teachers/views.py:1900 teachers/views.py:1912 teachers/views.py:1935
+#: teachers/views.py:2023
 msgid "Доступ запрещен"
 msgstr "Ruxsat berilmagan"
 
-#: teachers/views.py:2010 teachers/views.py:2087
+#: teachers/views.py:2029 teachers/views.py:2106
 msgid "Заполните профиль ученика"
 msgstr "O'quvchi profilini to'ldiring"
 
-#: teachers/views.py:2174 teachers/views.py:2310
+#: teachers/views.py:2193 teachers/views.py:2329
 msgid "Слишком много сообщений. Подождите немного."
 msgstr "Xabarlar juda ko'p. Biroz kuting."
 
-#: teachers/views.py:2180 teachers/views.py:2321
+#: teachers/views.py:2199 teachers/views.py:2340
 msgid ""
 "Вы уже отправили первое сообщение. Дождитесь ответа ученика, чтобы "
 "продолжить переписку."
@@ -3400,31 +3407,31 @@ msgstr ""
 "Birinchi xabarni allaqachon yuborgansiz. Suhbatni davom ettirish uchun "
 "o'quvchining javobini kuting."
 
-#: teachers/views.py:2196
+#: teachers/views.py:2215
 msgid "Сообщение отправлено!"
 msgstr "Xabar yuborildi!"
 
-#: teachers/views.py:2199
+#: teachers/views.py:2218
 msgid "Ошибка при отправке сообщения"
 msgstr "Xabarni yuborishda xatolik"
 
-#: teachers/views.py:2213
+#: teachers/views.py:2232
 msgid "Переписка не найдена или доступ запрещен"
 msgstr "Suhbat topilmadi yoki ruxsat berilmagan"
 
-#: teachers/views.py:2229
+#: teachers/views.py:2248
 msgid "Вы не можете писать себе"
 msgstr "O'zingizga yoza olmaysiz"
 
-#: teachers/views.py:2238
+#: teachers/views.py:2257
 msgid "Завершите регистрацию учителя, чтобы писать сообщения"
 msgstr "Xabar yuborish uchun o'qituvchi sifatida ro'yxatdan o'tishni yakunlang"
 
-#: teachers/views.py:2244
+#: teachers/views.py:2263
 msgid "Вы можете писать только ученикам"
 msgstr "Faqat o'quvchilarga yoza olasiz"
 
-#: teachers/views.py:2257
+#: teachers/views.py:2276
 msgid ""
 "Написать можно только ученикам, которые добавили вас в избранное или "
 "забронировали пробный урок."
@@ -3432,65 +3439,65 @@ msgstr ""
 "Faqat sizni sevimlilarga qo'shgan yoki sinov darsini bron qilgan "
 "o'quvchilarga yoza olasiz."
 
-#: teachers/views.py:2264
+#: teachers/views.py:2283
 msgid "Вы можете писать только учителям"
 msgstr "Faqat o'qituvchilarga yoza olasiz"
 
-#: teachers/views.py:2297 teachers/views.py:2392
+#: teachers/views.py:2316 teachers/views.py:2411
 msgid "Только POST запросы"
 msgstr "Faqat POST so'rovlar"
 
-#: teachers/views.py:2382
+#: teachers/views.py:2401
 msgid "Произошла ошибка при отправке сообщения"
 msgstr "Xabarni yuborishda xatolik yuz berdi"
 
 # ========== JAVASCRIPT MESSAGES ==========
-#: teachers/views.py:2420 templates/billing/student_dashboard.html:399
+#: teachers/views.py:2439 templates/billing/student_dashboard.html:399
 #: templates/logic/teacher_detail.html:2763
 #: templates/notifications/detail.html:625
 #: templates/notifications/list.html:480
 msgid "Произошла ошибка"
 msgstr "Xatolik yuz berdi"
 
-#: teachers/views.py:2430
+#: teachers/views.py:2449
 msgid "Неверный метод запроса"
 msgstr "Noto'g'ri so'rov usuli"
 
-#: teachers/views.py:2442
+#: teachers/views.py:2461
 msgid "Переписка удалена"
 msgstr "Suhbat o'chirildi"
 
-#: teachers/views.py:2447
+#: teachers/views.py:2466
 msgid "Ошибка при удалении переписки"
 msgstr "Suhbatni o'chirishda xatolik"
 
-#: teachers/views.py:2539
+#: teachers/views.py:2558
 msgid "Ошибка поиска предметов"
 msgstr "Fanlarni qidirishda xatolik"
 
-#: teachers/views.py:2596
+#: teachers/views.py:2615
 msgid "Категория не найдена"
 msgstr "Toifa topilmadi"
 
-#: teachers/views.py:2697
+#: teachers/views.py:2716
 msgid "Сообщение слишком длинное (максимум 4000 символов)"
 msgstr "Xabar juda uzun (eng ko'pi 4000 belgi)"
 
-#: teachers/views.py:2715
+#: teachers/views.py:2734
 msgid "Нет пользователей для отправки сообщения"
 msgstr "Xabar yuborish uchun foydalanuvchilar yo'q"
 
-#: teachers/views.py:2734
+#: teachers/views.py:2753
 #, python-format
 msgid "Ошибка сервиса отправки: %(err)s"
 msgstr "Yuborish xizmati xatosi: %(err)s"
 
-#: teachers/views.py:2737
+#: teachers/views.py:2756
 #, python-format
 msgid "Сообщение успешно отправлено %(count)s пользователям"
 msgstr "Xabar %(count)s foydalanuvchiga yuborildi"
 
-#: teachers/views.py:2740
+#: teachers/views.py:2759
 #, python-format
 msgid ""
 "Не удалось отправить %(count)s пользователям (возможно, заблокировали бота "
@@ -3499,25 +3506,25 @@ msgstr ""
 "%(count)s foydalanuvchiga yetkazib bo'lmadi (botni bloklagan yoki chatni "
 "o'chirgan bo'lishi mumkin)"
 
-#: teachers/views.py:2743
+#: teachers/views.py:2762
 #, python-format
 msgid "Ошибка при отправке сообщений: %(err)s"
 msgstr "Xabarlarni yuborishda xatolik: %(err)s"
 
-#: teachers/views.py:2759
+#: teachers/views.py:2778
 msgid "Необходимо выбрать пользователя и ввести сообщение"
 msgstr "Foydalanuvchini tanlang va xabar kiriting"
 
-#: teachers/views.py:2765
+#: teachers/views.py:2784
 msgid "Пользователь не активировал бота"
 msgstr "Foydalanuvchi botni faollashtirmagan"
 
-#: teachers/views.py:2780
+#: teachers/views.py:2799
 #, python-format
 msgid "Сообщение отправлено пользователю %(name)s"
 msgstr "Xabar %(name)s ga yuborildi"
 
-#: teachers/views.py:2782
+#: teachers/views.py:2801
 #, python-format
 msgid ""
 "Не удалось отправить сообщение пользователю %(name)s (возможно, заблокировал "
@@ -3526,70 +3533,76 @@ msgstr ""
 "%(name)s ga xabar yuborib bo'lmadi (botni bloklagan yoki chatni o'chirgan "
 "bo'lishi mumkin)"
 
-#: teachers/views.py:2785
+#: teachers/views.py:2804
 #, python-format
 msgid "Ошибка: %(err)s"
 msgstr "Xatolik: %(err)s"
 
-#: teachers/views.py:2831
+#: teachers/views.py:2850
 msgid "Можно писать только от имени участников беседы."
 msgstr "Faqat suhbat ishtirokchilari nomidan yozish mumkin."
 
-#: teachers/views.py:2846
+#: teachers/views.py:2865
 #, python-format
 msgid "Сообщение отправлено от имени %(name)s"
 msgstr "Xabar %(name)s nomidan yuborildi"
 
-#: teachers/views.py:2954
+#: teachers/views.py:2896
+#, fuzzy
+#| msgid "Сообщение отправлено!"
+msgid "Сообщение удалено"
+msgstr "Xabar yuborildi!"
+
+#: teachers/views.py:2996
 msgid "У вас нет доступа к этому уведомлению."
 msgstr "Bu bildirishnomaga kirish huquqingiz yo'q."
 
-#: teachers/views.py:2994
+#: teachers/views.py:3036
 msgid "Нет доступа"
 msgstr "Ruxsat berilmagan"
 
-#: teachers/views.py:3175
+#: teachers/views.py:3217
 msgid "Добро пожаловать! Мы подберём для вас подходящих учителей."
 msgstr "Xush kelibsiz! Sizga mos o'qituvchilarni tanlab beramiz."
 
-#: teachers/views.py:3211
+#: teachers/views.py:3253
 msgid "У вас уже есть профиль"
 msgstr "Sizda allaqachon profil bor"
 
-#: teachers/views.py:3305
+#: teachers/views.py:3347
 msgid "Выберите корректный период (утро/вечер)."
 msgstr "To'g'ri vaqtni tanlang (ertalab/kechqurun)."
 
-#: teachers/views.py:3307
+#: teachers/views.py:3349
 msgid "Выберите корректный язык."
 msgstr "To'g'ri tilni tanlang."
 
-#: teachers/views.py:3309
+#: teachers/views.py:3351
 msgid "Текст сообщения не может быть пустым."
 msgstr "Xabar matni bo'sh bo'lishi mumkin emas."
 
-#: teachers/views.py:3311
+#: teachers/views.py:3353
 msgid "Текст слишком длинный (максимум 4000 символов)."
 msgstr "Matn juda uzun (eng ko'pi 4000 belgi)."
 
-#: teachers/views.py:3323
+#: teachers/views.py:3365
 msgid "Шаблон обновлён."
 msgstr "Shablon yangilandi."
 
-#: teachers/views.py:3323
+#: teachers/views.py:3365
 msgid "Шаблон создан."
 msgstr "Shablon yaratildi."
 
-#: teachers/views.py:3343
+#: teachers/views.py:3385
 msgid "Шаблон удалён."
 msgstr "Shablon o'chirildi."
 
-#: teachers/views.py:3356
+#: teachers/views.py:3398
 #, python-format
 msgid "Шаблон %(state)s."
 msgstr "Shablon %(state)s."
 
-#: teachers/views.py:3376
+#: teachers/views.py:3418
 msgid ""
 "Ваш аккаунт не привязан к Telegram-боту — привяжите его, чтобы получать "
 "тестовые сообщения."
@@ -3597,11 +3610,11 @@ msgstr ""
 "Hisobingiz Telegram botga ulanmagan — sinov xabarlarini olish uchun uni "
 "ulang."
 
-#: teachers/views.py:3389
+#: teachers/views.py:3431
 msgid "Тестовое сообщение отправлено вам в Telegram."
 msgstr "Sinov xabari sizga Telegram orqali yuborildi."
 
-#: teachers/views.py:3391
+#: teachers/views.py:3433
 msgid "Не удалось отправить тестовое сообщение."
 msgstr "Sinov xabarini yuborib bo'lmadi."
 
@@ -5936,7 +5949,7 @@ msgid "Переписка урока"
 msgstr "Dars yozishmalari"
 
 #: templates/booking/lesson_archive.html:91
-#: templates/booking/lesson_room.html:1236
+#: templates/booking/lesson_room.html:1238
 #: templates/logic/conversations_list.html:563
 msgid "Вы"
 msgstr "Siz"
@@ -5960,13 +5973,11 @@ msgstr "%(other_name)s kutilmoqda…"
 
 #: templates/booking/lesson_room.html:344
 msgid ""
-"Нажмите «Присоединиться» и разрешите доступ к камере и микрофону. Материалы "
-"урока — ниже под видео; доска, демонстрация экрана и чат — в нижней панели "
-"видеоокна."
-msgstr ""
-"«Qo'shilish» tugmasini bosing va kamera hamda mikrofonga ruxsat bering. Dars "
-"materiallari — video ostida; doska, ekranni ulashish va chat — video "
-"oynaning pastki panelida."
+"Нажмите «Присоединиться» и разрешите доступ к камере и микрофону. Чат и "
+"материалы урока — на панели справа; доска и демонстрация экрана — в нижней "
+"панели видео. Демонстрация экрана доступна с компьютера (на телефоне "
+"браузеры её не поддерживают)."
+msgstr "«Qo'shilish»ni bosing va kamera hamda mikrofonga ruxsat bering. Chat va dars materiallari — o'ng panelda; doska va ekran namoyishi — video ostidagi panelda. Ekran namoyishi kompyuterda ishlaydi (telefonda brauzerlar uni qo'llab-quvvatlamaydi)."
 
 #: templates/booking/lesson_room.html:345
 #: templates/booking/lesson_room.html:370 templates/logic/home.html:2469
@@ -6012,11 +6023,11 @@ msgid "Загрузить файл"
 msgstr "Fayl yuklash"
 
 #: templates/booking/lesson_room.html:429
+#, python-format
 msgid ""
-"Документы, изображения, презентации — до 25 МБ. Видны обеим сторонам урока."
-msgstr ""
-"Hujjatlar, rasmlar, taqdimotlar — 25 MB gacha. Darsning ikkala tomoniga "
-"ko'rinadi."
+"Документы, книги, презентации, изображения — до %(lesson_file_max_mb)s МБ. "
+"Видны обеим сторонам урока."
+msgstr "Hujjatlar, kitoblar, taqdimotlar, rasmlar — %(lesson_file_max_mb)s MB gacha. Ikkala tomonga ko'rinadi."
 
 #: templates/booking/lesson_room.html:432
 msgid "Пока нет загруженных материалов."
@@ -6172,33 +6183,34 @@ msgid "Удалить этот файл?"
 msgstr "Bu fayl o'chirilsinmi?"
 
 #: templates/booking/lesson_room.html:1011
-#: templates/booking/lesson_room.html:1239
-msgid "Файл слишком большой (максимум 25 МБ)."
-msgstr "Fayl juda katta (eng ko'pi 25 MB)."
+#: templates/booking/lesson_room.html:1241
+#, python-format
+msgid "Файл слишком большой (максимум %(lesson_file_max_mb)s МБ)."
+msgstr "Fayl juda katta (eng ko'pi %(lesson_file_max_mb)s MB)."
 
 #: templates/booking/lesson_room.html:1012
 msgid "Недопустимый формат файла."
 msgstr "Yaroqsiz fayl formati."
 
 #: templates/booking/lesson_room.html:1013
-#: templates/booking/lesson_room.html:1238
+#: templates/booking/lesson_room.html:1240
 msgid "Не удалось загрузить файл. Попробуйте ещё раз."
 msgstr "Faylni yuklab bo'lmadi. Qayta urinib ko'ring."
 
-#: templates/booking/lesson_room.html:1237
+#: templates/booking/lesson_room.html:1239
 #: templates/logic/conversation_detail.html:1152
 msgid "Отправка…"
 msgstr "Yuborilmoqda…"
 
-#: templates/booking/lesson_room.html:1241
+#: templates/booking/lesson_room.html:1243
 msgid "в комнате"
 msgstr "kabinetda"
 
-#: templates/booking/lesson_room.html:1242
+#: templates/booking/lesson_room.html:1244
 msgid "не в комнате"
 msgstr "kabinetda emas"
 
-#: templates/booking/lesson_room.html:1243
+#: templates/booking/lesson_room.html:1245
 msgid "Новые сообщения"
 msgstr "Yangi xabarlar"
 

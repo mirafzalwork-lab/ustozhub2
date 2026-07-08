@@ -609,9 +609,12 @@ STUDENT_NO_SHOW_WINDOW_DAYS = int(os.environ.get('STUDENT_NO_SHOW_WINDOW_DAYS', 
 # Материалы урока (LessonFile): прямая загрузка в S3/R2 через presigned URL.
 # Белый список форматов — только безопасные учебные документы/изображения,
 # без исполняемых типов. Лимит размера защищает хранилище.
-LESSON_FILE_MAX_SIZE_MB = int(os.environ.get('LESSON_FILE_MAX_SIZE_MB', '25'))
+# 100 МБ: учебные книги/PDF нередко крупнее старого лимита 25 МБ — из-за него
+# учителя не могли загрузить книгу. Переопределяется env LESSON_FILE_MAX_SIZE_MB.
+LESSON_FILE_MAX_SIZE_MB = int(os.environ.get('LESSON_FILE_MAX_SIZE_MB', '100'))
 LESSON_FILE_ALLOWED_TYPES = {
     'application/pdf': 'pdf',
+    'application/epub+zip': 'epub',   # электронные книги
     'image/png': 'png',
     'image/jpeg': 'jpg',
     'image/gif': 'gif',
@@ -625,8 +628,27 @@ LESSON_FILE_ALLOWED_TYPES = {
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
     'application/zip': 'zip',
 }
-# Сколько секунд живёт presigned-ссылка на загрузку файла урока.
-LESSON_FILE_PRESIGNED_URL_EXPIRY = int(os.environ.get('LESSON_FILE_PRESIGNED_URL_EXPIRY', '600'))
+# Расширение → канонический MIME. Нужно, когда браузер/телефон присылает пустой
+# или octet-stream content_type: тип определяем по расширению имени файла.
+LESSON_FILE_EXT_TO_MIME = {
+    'pdf': 'application/pdf',
+    'epub': 'application/epub+zip',
+    'png': 'image/png',
+    'jpg': 'image/jpeg', 'jpeg': 'image/jpeg',
+    'gif': 'image/gif',
+    'webp': 'image/webp',
+    'txt': 'text/plain',
+    'doc': 'application/msword',
+    'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'ppt': 'application/vnd.ms-powerpoint',
+    'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'xls': 'application/vnd.ms-excel',
+    'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'zip': 'application/zip',
+}
+# Сколько секунд живёт presigned-ссылка на загрузку файла урока (30 мин —
+# запас для крупных книг на медленном мобильном интернете).
+LESSON_FILE_PRESIGNED_URL_EXPIRY = int(os.environ.get('LESSON_FILE_PRESIGNED_URL_EXPIRY', '1800'))
 
 # =============================================================================
 # LOGGING

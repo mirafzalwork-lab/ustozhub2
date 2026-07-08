@@ -341,7 +341,7 @@
         </div>
         <div class="lr-hint" id="lrHint" style="display:none; align-items:flex-start; gap:10px; margin-bottom:10px; padding:11px 14px; background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px; font-size:13px; color:#1E3A8A;">
             <i class="fa-solid fa-circle-info" style="margin-top:2px;"></i>
-            <span style="flex:1;">{% trans 'Нажмите «Присоединиться» и разрешите доступ к камере и микрофону. Материалы урока — ниже под видео; доска, демонстрация экрана и чат — в нижней панели видеоокна.' %}</span>
+            <span style="flex:1;">{% trans 'Нажмите «Присоединиться» и разрешите доступ к камере и микрофону. Чат и материалы урока — на панели справа; доска и демонстрация экрана — в нижней панели видео. Демонстрация экрана доступна с компьютера (на телефоне браузеры её не поддерживают).' %}</span>
             <button type="button" id="lrHintClose" aria-label="{% trans 'Скрыть' %}" style="border:0; background:transparent; color:#1E3A8A; font-size:18px; line-height:1; cursor:pointer;">×</button>
         </div>
         <script>
@@ -404,7 +404,7 @@
                             <label class="lr-chat-attach" id="lr-chat-attach-label" title="{% trans 'Прикрепить файл' %}">
                                 <i class="fa-solid fa-paperclip"></i>
                                 <input type="file" id="lr-chat-file" hidden
-                                       accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip">
+                                       accept=".pdf,.epub,.png,.jpg,.jpeg,.gif,.webp,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip">
                             </label>
                             <input type="text" class="lr-chat-input" id="lr-chat-input" maxlength="5000"
                                    placeholder="{% trans 'Сообщение…' %}">
@@ -422,11 +422,11 @@
                                     <i class="fa-solid fa-upload"></i>
                                     <span id="lr-upload-text">{% trans "Загрузить файл" %}</span>
                                     <input type="file" id="lr-file-input" hidden
-                                           accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip">
+                                           accept=".pdf,.epub,.png,.jpg,.jpeg,.gif,.webp,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip">
                                 </label>
                             </div>
                             <p class="lr-files-hint">
-                                {% trans "Документы, изображения, презентации — до 25 МБ. Видны обеим сторонам урока." %}
+                                {% blocktrans %}Документы, книги, презентации, изображения — до {{ lesson_file_max_mb }} МБ. Видны обеим сторонам урока.{% endblocktrans %}
                             </p>
                             <ul class="lr-file-list" id="lr-file-list"></ul>
                             <p class="lr-files-empty" id="lr-files-empty">{% trans "Пока нет загруженных материалов." %}</p>
@@ -1008,12 +1008,12 @@
         uploading: "{% filter escapejs %}{% trans 'Загрузка…' %}{% endfilter %}",
         upload: "{% filter escapejs %}{% trans 'Загрузить файл' %}{% endfilter %}",
         confirmDel: "{% filter escapejs %}{% trans 'Удалить этот файл?' %}{% endfilter %}",
-        tooBig: "{% filter escapejs %}{% trans 'Файл слишком большой (максимум 25 МБ).' %}{% endfilter %}",
+        tooBig: "{% filter escapejs %}{% blocktrans %}Файл слишком большой (максимум {{ lesson_file_max_mb }} МБ).{% endblocktrans %}{% endfilter %}",
         badType: "{% filter escapejs %}{% trans 'Недопустимый формат файла.' %}{% endfilter %}",
         failed: "{% filter escapejs %}{% trans 'Не удалось загрузить файл. Попробуйте ещё раз.' %}{% endfilter %}",
         del: "{% filter escapejs %}{% trans 'Удалить' %}{% endfilter %}",
     };
-    const MAX_BYTES = 25 * 1024 * 1024;
+    const MAX_BYTES = {{ lesson_file_max_mb }} * 1024 * 1024;
 
     function showError(msg) {
         errEl.textContent = msg || '';
@@ -1082,13 +1082,15 @@
 
     // Прямой PUT в хранилище через XHR: даёт прогресс и авто-ретрай на сетевых
     // сбоях/5xx (3 попытки, backoff). 4xx не ретраим — это ошибка запроса.
-    function putWithRetry(url, file, onProgress) {
+    function putWithRetry(url, file, contentType, onProgress) {
         const MAX = 3;
         function once(n) {
             return new Promise(function (resolve, reject) {
                 const xhr = new XMLHttpRequest();
                 xhr.open('PUT', url, true);
-                xhr.setRequestHeader('Content-Type', file.type);
+                // Тот же тип, что подписал сервер (канонический) — иначе подпись
+                // presigned-URL не сойдётся и хранилище отклонит PUT.
+                xhr.setRequestHeader('Content-Type', contentType || file.type);
                 xhr.timeout = 180000;
                 if (xhr.upload && onProgress) {
                     xhr.upload.onprogress = function (e) {
@@ -1132,7 +1134,7 @@
 
             // 2) прямой PUT в хранилище — прогресс + авто-ретрай
             try {
-                await putWithRetry(presData.upload_url, file, setUploadProgress);
+                await putWithRetry(presData.upload_url, file, presData.content_type, setUploadProgress);
             } catch (e) {
                 if (window.lessonRT) window.lessonRT.diag('upload_failed', (e && e.message) || 'put');
                 showError(i18n.failed);
@@ -1236,13 +1238,13 @@
         you: "{% filter escapejs %}{% trans 'Вы' %}{% endfilter %}",
         sending: "{% filter escapejs %}{% trans 'Отправка…' %}{% endfilter %}",
         failed: "{% filter escapejs %}{% trans 'Не удалось загрузить файл. Попробуйте ещё раз.' %}{% endfilter %}",
-        tooBig: "{% filter escapejs %}{% trans 'Файл слишком большой (максимум 25 МБ).' %}{% endfilter %}",
+        tooBig: "{% filter escapejs %}{% blocktrans %}Файл слишком большой (максимум {{ lesson_file_max_mb }} МБ).{% endblocktrans %}{% endfilter %}",
         otherName: "{{ other_name|escapejs }}",
         inRoom: "{% filter escapejs %}{% trans 'в комнате' %}{% endfilter %}",
         notInRoom: "{% filter escapejs %}{% trans 'не в комнате' %}{% endfilter %}",
         newMessages: "{% filter escapejs %}{% trans 'Новые сообщения' %}{% endfilter %}",
     };
-    const MAX_BYTES = 25 * 1024 * 1024;
+    const MAX_BYTES = {{ lesson_file_max_mb }} * 1024 * 1024;
 
     // URL уже HTML-экранированного текста → кликабельная ссылка (XSS-safe).
     function linkify(escaped) {
