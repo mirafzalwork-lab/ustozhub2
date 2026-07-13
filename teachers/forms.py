@@ -1229,6 +1229,17 @@ class GoogleStudentOnboardingForm(forms.Form):
         })
     )
 
+    phone = forms.CharField(
+        max_length=20,
+        required=True,
+        label=_('Телефон'),
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': '+998 90 123 45 67',
+        }),
+        help_text=_('Чтобы учитель или поддержка могли связаться с вами'),
+    )
+
     interests = forms.ModelMultipleChoiceField(
         queryset=Subject.objects.filter(is_active=True),
         required=True,
@@ -1238,6 +1249,13 @@ class GoogleStudentOnboardingForm(forms.Form):
         }),
         help_text=_('Выберите один или несколько предметов'),
     )
+
+    def clean_phone(self):
+        # Зеркалит StudentRegistrationForm: обязателен + проверка уникальности.
+        phone = (self.cleaned_data.get('phone') or '').strip()
+        if phone and User.objects.filter(phone=phone).exists():
+            raise ValidationError(_('Этот номер телефона уже используется'))
+        return phone
 
     def clean_interests(self):
         interests = self.cleaned_data.get('interests')

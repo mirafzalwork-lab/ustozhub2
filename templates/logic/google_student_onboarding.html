@@ -265,6 +265,17 @@
             </div>
 
             <div class="form-group">
+                <label class="form-label" for="id_phone">
+                    {{ form.phone.label }} <span style="color: red;">*</span>
+                </label>
+                {{ form.phone }}
+                {% if form.phone.errors %}
+                    <div class="error-message">{{ form.phone.errors.0 }}</div>
+                {% endif %}
+                <div class="help-text">{{ form.phone.help_text }}</div>
+            </div>
+
+            <div class="form-group">
                 <label class="form-label">
                     {{ form.interests.label }} <span style="color: red;">*</span>
                 </label>

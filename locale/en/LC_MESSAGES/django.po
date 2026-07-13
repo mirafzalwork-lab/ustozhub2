@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: UstozHub 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-13 19:06+0500\n"
+"POT-Creation-Date: 2026-07-13 19:31+0500\n"
 "Language-Team: English\n"
 "Language: en\n"
 "MIME-Version: 1.0\n"
@@ -627,11 +627,11 @@ msgstr "Plan updated."
 msgid "Тариф удалён."
 msgstr "Plan deleted."
 
-#: billing/views.py:144 teachers/views.py:3518
+#: billing/views.py:144 teachers/views.py:3519
 msgid "включён"
 msgstr "enabled"
 
-#: billing/views.py:144 teachers/views.py:3518
+#: billing/views.py:144 teachers/views.py:3519
 msgid "выключен"
 msgstr "disabled"
 
@@ -952,7 +952,7 @@ msgid "Email"
 msgstr "Email"
 
 #: teachers/forms.py:44 teachers/forms.py:494 teachers/forms.py:1138
-#: templates/logic/student_profile.html:893
+#: teachers/forms.py:1235 templates/logic/student_profile.html:893
 #: templates/logic/teacher_profile.html:1804
 msgid "Телефон"
 msgstr "Phone"
@@ -1144,6 +1144,7 @@ msgid "Этот email уже используется"
 msgstr "This email is already in use"
 
 #: teachers/forms.py:253 teachers/forms.py:679 teachers/forms.py:1165
+#: teachers/forms.py:1257
 msgid "Этот номер телефона уже используется"
 msgstr "This phone number is already in use"
 
@@ -1239,7 +1240,7 @@ msgstr "Incorrect email/username or password"
 msgid "Предметы, которые хочу изучать"
 msgstr "Subjects I Want to Learn"
 
-#: teachers/forms.py:529 teachers/forms.py:1239
+#: teachers/forms.py:529 teachers/forms.py:1250
 msgid "Выберите один или несколько предметов"
 msgstr "Select one or more subjects"
 
@@ -1310,11 +1311,11 @@ msgstr "Available Days for Classes"
 msgid "Выберите удобные дни для занятий"
 msgstr "Pick the days that work best for lessons"
 
-#: teachers/forms.py:685 teachers/forms.py:1245
+#: teachers/forms.py:685 teachers/forms.py:1263
 msgid "Выберите хотя бы один предмет"
 msgstr "Choose at least one subject"
 
-#: teachers/forms.py:687 teachers/forms.py:1247
+#: teachers/forms.py:687 teachers/forms.py:1265
 msgid "Можно выбрать максимум 10 предметов"
 msgstr "You can choose up to 10 subjects"
 
@@ -1425,7 +1426,11 @@ msgstr "Message is too short"
 msgid "Сообщение слишком длинное (максимум 2000 символов)"
 msgstr "Message is too long (2000 characters max)"
 
-#: teachers/forms.py:1235
+#: teachers/forms.py:1240
+msgid "Чтобы учитель или поддержка могли связаться с вами"
+msgstr "So a teacher or support can reach you"
+
+#: teachers/forms.py:1246
 msgid "Какие предметы хотите изучать?"
 msgstr "Which subjects would you like to learn?"
 
@@ -3571,48 +3576,48 @@ msgstr "You don't have access to this notification."
 msgid "Нет доступа"
 msgstr "Access denied"
 
-#: teachers/views.py:3337
+#: teachers/views.py:3338
 msgid "Добро пожаловать! Мы подберём для вас подходящих учителей."
 msgstr "Welcome! We'll match you with the right teachers."
 
-#: teachers/views.py:3373
+#: teachers/views.py:3374
 msgid "У вас уже есть профиль"
 msgstr "You already have a profile"
 
-#: teachers/views.py:3467
+#: teachers/views.py:3468
 msgid "Выберите корректный период (утро/вечер)."
 msgstr "Choose a valid time of day (morning/evening)."
 
-#: teachers/views.py:3469
+#: teachers/views.py:3470
 msgid "Выберите корректный язык."
 msgstr "Choose a valid language."
 
-#: teachers/views.py:3471
+#: teachers/views.py:3472
 msgid "Текст сообщения не может быть пустым."
 msgstr "The message can't be empty."
 
-#: teachers/views.py:3473
+#: teachers/views.py:3474
 msgid "Текст слишком длинный (максимум 4000 символов)."
 msgstr "The text is too long (4000 characters max)."
 
-#: teachers/views.py:3485
+#: teachers/views.py:3486
 msgid "Шаблон обновлён."
 msgstr "Template updated."
 
-#: teachers/views.py:3485
+#: teachers/views.py:3486
 msgid "Шаблон создан."
 msgstr "Template created."
 
-#: teachers/views.py:3505
+#: teachers/views.py:3506
 msgid "Шаблон удалён."
 msgstr "Template deleted."
 
-#: teachers/views.py:3518
+#: teachers/views.py:3519
 #, python-format
 msgid "Шаблон %(state)s."
 msgstr "Template %(state)s."
 
-#: teachers/views.py:3538
+#: teachers/views.py:3539
 msgid ""
 "Ваш аккаунт не привязан к Telegram-боту — привяжите его, чтобы получать "
 "тестовые сообщения."
@@ -3620,11 +3625,11 @@ msgstr ""
 "Your account isn't linked to the Telegram bot — link it to receive test "
 "messages."
 
-#: teachers/views.py:3551
+#: teachers/views.py:3552
 msgid "Тестовое сообщение отправлено вам в Telegram."
 msgstr "A test message has been sent to you on Telegram."
 
-#: teachers/views.py:3553
+#: teachers/views.py:3554
 msgid "Не удалось отправить тестовое сообщение."
 msgstr "Couldn't send the test message."
 
@@ -7554,15 +7559,15 @@ msgstr "Almost done!"
 msgid "Tell us a bit about yourself to find the best teachers"
 msgstr "Tell us a bit about yourself to find the best teachers"
 
-#: templates/logic/google_student_onboarding.html:279
+#: templates/logic/google_student_onboarding.html:290
 msgid "Start learning"
 msgstr "Start learning"
 
-#: templates/logic/google_student_onboarding.html:285
+#: templates/logic/google_student_onboarding.html:296
 msgid "Back to role selection"
 msgstr "Back to role selection"
 
-#: templates/logic/google_student_onboarding.html:297
+#: templates/logic/google_student_onboarding.html:308
 msgid "Saving..."
 msgstr "Saving..."
 

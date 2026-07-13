@@ -3318,8 +3318,9 @@ def google_student_onboarding(request):
             # Обновляем имя пользователя
             user.first_name = form.cleaned_data['first_name']
             user.last_name = form.cleaned_data.get('last_name', '')
+            user.phone = form.cleaned_data['phone']
             user.user_type = 'student'
-            user.save(update_fields=['first_name', 'last_name', 'user_type'])
+            user.save(update_fields=['first_name', 'last_name', 'phone', 'user_type'])
 
             # Создаём профиль студента
             student_profile = StudentProfile.objects.create(

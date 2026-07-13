@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: UstozHub 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-13 19:06+0500\n"
+"POT-Creation-Date: 2026-07-13 19:31+0500\n"
 "Language-Team: Uzbek\n"
 "Language: uz\n"
 "MIME-Version: 1.0\n"
@@ -631,11 +631,11 @@ msgstr "Tarif yangilandi."
 msgid "Тариф удалён."
 msgstr "Tarif o'chirildi."
 
-#: billing/views.py:144 teachers/views.py:3518
+#: billing/views.py:144 teachers/views.py:3519
 msgid "включён"
 msgstr "yoqildi"
 
-#: billing/views.py:144 teachers/views.py:3518
+#: billing/views.py:144 teachers/views.py:3519
 msgid "выключен"
 msgstr "o'chirildi"
 
@@ -955,7 +955,7 @@ msgid "Email"
 msgstr "Email"
 
 #: teachers/forms.py:44 teachers/forms.py:494 teachers/forms.py:1138
-#: templates/logic/student_profile.html:893
+#: teachers/forms.py:1235 templates/logic/student_profile.html:893
 #: templates/logic/teacher_profile.html:1804
 msgid "Телефон"
 msgstr "Telefon"
@@ -1147,6 +1147,7 @@ msgid "Этот email уже используется"
 msgstr "Bu email allaqachon ishlatilmoqda"
 
 #: teachers/forms.py:253 teachers/forms.py:679 teachers/forms.py:1165
+#: teachers/forms.py:1257
 msgid "Этот номер телефона уже используется"
 msgstr "Bu telefon raqami allaqachon ishlatilmoqda"
 
@@ -1242,7 +1243,7 @@ msgstr "Email/foydalanuvchi nomi yoki parol noto'g'ri"
 msgid "Предметы, которые хочу изучать"
 msgstr "O'rganmoqchi bo'lgan fanlar"
 
-#: teachers/forms.py:529 teachers/forms.py:1239
+#: teachers/forms.py:529 teachers/forms.py:1250
 msgid "Выберите один или несколько предметов"
 msgstr "Bir yoki bir nechta fanni tanlang"
 
@@ -1314,11 +1315,11 @@ msgstr "Dars uchun mavjud kunlar"
 msgid "Выберите удобные дни для занятий"
 msgstr "Darslar uchun qulay kunlarni tanlang"
 
-#: teachers/forms.py:685 teachers/forms.py:1245
+#: teachers/forms.py:685 teachers/forms.py:1263
 msgid "Выберите хотя бы один предмет"
 msgstr "Kamida bitta fanni tanlang"
 
-#: teachers/forms.py:687 teachers/forms.py:1247
+#: teachers/forms.py:687 teachers/forms.py:1265
 msgid "Можно выбрать максимум 10 предметов"
 msgstr "Maksimal 10 ta fanni tanlash mumkin"
 
@@ -1429,7 +1430,11 @@ msgstr "Xabar juda qisqa"
 msgid "Сообщение слишком длинное (максимум 2000 символов)"
 msgstr "Xabar juda uzun (ko'pi bilan 2000 ta belgi)"
 
-#: teachers/forms.py:1235
+#: teachers/forms.py:1240
+msgid "Чтобы учитель или поддержка могли связаться с вами"
+msgstr "O'qituvchi yoki qo'llab-quvvatlash siz bilan bog'lana olishi uchun"
+
+#: teachers/forms.py:1246
 msgid "Какие предметы хотите изучать?"
 msgstr "Qaysi fanlarni o'rganmoqchisiz?"
 
@@ -3583,48 +3588,48 @@ msgstr "Bu bildirishnomaga kirish huquqingiz yo'q."
 msgid "Нет доступа"
 msgstr "Ruxsat berilmagan"
 
-#: teachers/views.py:3337
+#: teachers/views.py:3338
 msgid "Добро пожаловать! Мы подберём для вас подходящих учителей."
 msgstr "Xush kelibsiz! Sizga mos o'qituvchilarni tanlab beramiz."
 
-#: teachers/views.py:3373
+#: teachers/views.py:3374
 msgid "У вас уже есть профиль"
 msgstr "Sizda allaqachon profil bor"
 
-#: teachers/views.py:3467
+#: teachers/views.py:3468
 msgid "Выберите корректный период (утро/вечер)."
 msgstr "To'g'ri vaqtni tanlang (ertalab/kechqurun)."
 
-#: teachers/views.py:3469
+#: teachers/views.py:3470
 msgid "Выберите корректный язык."
 msgstr "To'g'ri tilni tanlang."
 
-#: teachers/views.py:3471
+#: teachers/views.py:3472
 msgid "Текст сообщения не может быть пустым."
 msgstr "Xabar matni bo'sh bo'lishi mumkin emas."
 
-#: teachers/views.py:3473
+#: teachers/views.py:3474
 msgid "Текст слишком длинный (максимум 4000 символов)."
 msgstr "Matn juda uzun (eng ko'pi 4000 belgi)."
 
-#: teachers/views.py:3485
+#: teachers/views.py:3486
 msgid "Шаблон обновлён."
 msgstr "Shablon yangilandi."
 
-#: teachers/views.py:3485
+#: teachers/views.py:3486
 msgid "Шаблон создан."
 msgstr "Shablon yaratildi."
 
-#: teachers/views.py:3505
+#: teachers/views.py:3506
 msgid "Шаблон удалён."
 msgstr "Shablon o'chirildi."
 
-#: teachers/views.py:3518
+#: teachers/views.py:3519
 #, python-format
 msgid "Шаблон %(state)s."
 msgstr "Shablon %(state)s."
 
-#: teachers/views.py:3538
+#: teachers/views.py:3539
 msgid ""
 "Ваш аккаунт не привязан к Telegram-боту — привяжите его, чтобы получать "
 "тестовые сообщения."
@@ -3632,11 +3637,11 @@ msgstr ""
 "Hisobingiz Telegram botga ulanmagan — sinov xabarlarini olish uchun uni "
 "ulang."
 
-#: teachers/views.py:3551
+#: teachers/views.py:3552
 msgid "Тестовое сообщение отправлено вам в Telegram."
 msgstr "Sinov xabari sizga Telegram orqali yuborildi."
 
-#: teachers/views.py:3553
+#: teachers/views.py:3554
 msgid "Не удалось отправить тестовое сообщение."
 msgstr "Sinov xabarini yuborib bo'lmadi."
 
@@ -7600,15 +7605,15 @@ msgstr ""
 "Eng yaxshi o'qituvchilarni topishimiz uchun o'zingiz haqingizda biroz aytib "
 "bering"
 
-#: templates/logic/google_student_onboarding.html:279
+#: templates/logic/google_student_onboarding.html:290
 msgid "Start learning"
 msgstr "O'qishni boshlash"
 
-#: templates/logic/google_student_onboarding.html:285
+#: templates/logic/google_student_onboarding.html:296
 msgid "Back to role selection"
 msgstr "Rol tanlashga qaytish"
 
-#: templates/logic/google_student_onboarding.html:297
+#: templates/logic/google_student_onboarding.html:308
 msgid "Saving..."
 msgstr "Saqlanmoqda..."
 
