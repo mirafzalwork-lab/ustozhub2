@@ -53,6 +53,52 @@ class GoogleOnboardingFormTest(PhoneRequiredBase):
         self.assertFalse(form.is_valid())
         self.assertIn('phone', form.errors)
 
+    def test_garbage_phone_invalid(self):
+        form = GoogleStudentOnboardingForm(data=self._data(phone='не телефон'))
+        self.assertFalse(form.is_valid())
+        self.assertIn('phone', form.errors)
+
+    def test_phone_with_spaces_normalized(self):
+        form = GoogleStudentOnboardingForm(data=self._data(phone='+998 90 111 22 33'))
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data['phone'], '+998901112233')
+
+
+class MainRegistrationFormBehaviourTest(PhoneRequiredBase):
+    """Основная форма: короткое bio допустимо, телефон валидируется по формату."""
+
+    def _data(self, **over):
+        d = {
+            'first_name': 'Мария', 'last_name': 'Иванова',
+            'phone': '+998901112233',
+            'username': 'maria_reg', 'password1': 'SuperPass123!',
+            'password2': 'SuperPass123!',
+            'interests': [self.subject.id],
+            'learning_format': 'both',
+            'terms_accepted': 'on',
+        }
+        d.update(over)
+        return d
+
+    def test_short_bio_now_allowed(self):
+        # Раньше bio<20 символов на «необязательном» шаге отклонялось сервером.
+        form = StudentRegistrationForm(data=self._data(bio='Привет'))
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_empty_bio_ok(self):
+        form = StudentRegistrationForm(data=self._data(bio=''))
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_garbage_phone_rejected(self):
+        form = StudentRegistrationForm(data=self._data(phone='abcxyz'))
+        self.assertFalse(form.is_valid())
+        self.assertIn('phone', form.errors)
+
+    def test_phone_normalized(self):
+        form = StudentRegistrationForm(data=self._data(phone='+998 90-111-22-33'))
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data['phone'], '+998901112233')
+
 
 class GoogleOnboardingViewTest(PhoneRequiredBase):
     def setUp(self):

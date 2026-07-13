@@ -1,8 +1,21 @@
+import re
+
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from .models import User, TeacherProfile, StudentProfile, Subject, City, Certificate, TeacherSubject, Message, Conversation
+
+# Телефон: убираем пробелы/дефисы/скобки, допускаем необязательный «+» и 9–15
+# цифр (локальные 901234567 и международные +998901234567). Мягкая проверка:
+# отсекает мусор вроде «abc», но не отклоняет валидные узбекские форматы.
+_PHONE_RE = re.compile(r'^\+?\d{9,15}$')
+
+
+def normalize_phone(raw):
+    """Возвращает (нормализованный_телефон, валиден_ли_формат)."""
+    phone = re.sub(r'[\s\-()]', '', (raw or '').strip())
+    return phone, bool(_PHONE_RE.match(phone))
 
 
 class TeacherRegistrationForm(UserCreationForm):
@@ -537,8 +550,7 @@ class StudentRegistrationForm(UserCreationForm):
             'placeholder': _('Например: Хочу подготовиться к экзаменам, улучшить знания по математике, изучить английский с нуля...'),
             'rows': 4
         }),
-        help_text=_('Минимум 20 символов - это поможет учителям лучше понять ваши потребности'),
-        min_length=20,
+        help_text=_('Необязательно — поможет учителям лучше понять ваши цели. Можно заполнить позже.'),
         max_length=1000
     )
     
@@ -674,11 +686,16 @@ class StudentRegistrationForm(UserCreationForm):
         return email
     
     def clean_phone(self):
-        phone = self.cleaned_data.get('phone')
-        if phone and User.objects.filter(phone=phone).exists():
+        raw = self.cleaned_data.get('phone')
+        if not raw:
+            return raw
+        phone, ok = normalize_phone(raw)
+        if not ok:
+            raise ValidationError(_('Введите корректный номер телефона, например +998 90 123 45 67'))
+        if User.objects.filter(phone=phone).exists():
             raise ValidationError(_('Этот номер телефона уже используется'))
         return phone
-    
+
     def clean_interests(self):
         interests = self.cleaned_data.get('interests')
         if not interests:
@@ -686,7 +703,7 @@ class StudentRegistrationForm(UserCreationForm):
         if interests.count() > 10:
             raise ValidationError(_('Можно выбрать максимум 10 предметов'))
         return interests
-    
+
     def clean(self):
         cleaned_data = super().clean()
         budget_min = cleaned_data.get('budget_min')
@@ -1251,9 +1268,14 @@ class GoogleStudentOnboardingForm(forms.Form):
     )
 
     def clean_phone(self):
-        # Зеркалит StudentRegistrationForm: обязателен + проверка уникальности.
-        phone = (self.cleaned_data.get('phone') or '').strip()
-        if phone and User.objects.filter(phone=phone).exists():
+        # Зеркалит StudentRegistrationForm: формат + уникальность.
+        raw = self.cleaned_data.get('phone')
+        if not raw:
+            return raw
+        phone, ok = normalize_phone(raw)
+        if not ok:
+            raise ValidationError(_('Введите корректный номер телефона, например +998 90 123 45 67'))
+        if User.objects.filter(phone=phone).exists():
             raise ValidationError(_('Этот номер телефона уже используется'))
         return phone
 
