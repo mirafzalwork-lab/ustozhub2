@@ -2832,10 +2832,56 @@ def admin_conversation_detail(request, conversation_id):
     messages_qs = conversation.messages.select_related('sender').order_by('created_at')
 
     if request.method == 'POST':
+        from django.contrib import messages as django_messages
+        action = request.POST.get('action', '')
         content = request.POST.get('content', '').strip()
         send_as = request.POST.get('send_as', '')  # user id to send as
+
+        # Ответ от Поддержки: сообщение пишется от лица администрации, а не
+        # участника беседы. Помечается is_admin_message=True → сигнал уведомляет
+        # ОБОИХ участников (ученика и учителя), у них оно рисуется как
+        # «Поддержка UstozHub». Отправитель в БД — текущий staff (для аудита),
+        # но его личность в интерфейсе не показывается.
+        if action == 'support_reply':
+            if not content:
+                django_messages.error(request, _('Введите текст сообщения.'))
+                return redirect('admin_conversation_detail', conversation_id=conversation.id)
+            message = Message.objects.create(
+                conversation=conversation,
+                sender=request.user,
+                content=content,
+                is_admin_message=True,
+            )
+            conversation.save(update_fields=['updated_at'])
+            logger.warning(
+                'admin_conversation_detail: staff=%s sent SUPPORT message in conversation=%s',
+                request.user.pk, conversation.id,
+            )
+            # Ретрансляция в группу chat_<id>, чтобы у участников с открытым чатом
+            # сообщение появилось вживую (сигнал шлёт только badge/тост+Telegram).
+            try:
+                from channels.layers import get_channel_layer
+                from asgiref.sync import async_to_sync
+                channel_layer = get_channel_layer()
+                if channel_layer is not None:
+                    async_to_sync(channel_layer.group_send)(
+                        f'chat_{conversation.id}',
+                        {'type': 'chat_message', 'message_data': {
+                            'id': str(message.id),
+                            'message': message.content,
+                            'sender_id': message.sender.id,
+                            'sender_name': 'Поддержка UstozHub',
+                            'created_at': message.created_at.isoformat(),
+                            'is_read': message.is_read,
+                            'is_admin': True,
+                        }},
+                    )
+            except Exception as ws_err:
+                logger.warning(f"WS-ретрансляция support_reply не удалась: {ws_err}")
+            django_messages.success(request, _('Сообщение от Поддержки отправлено ученику и учителю.'))
+            return redirect('admin_conversation_detail', conversation_id=conversation.id)
+
         if content:
-            from django.contrib import messages as django_messages
             # Имперсонация разрешена ТОЛЬКО за участников этой беседы — иначе
             # staff мог бы слать сообщения от имени любого аккаунта (send_as=<любой id>).
             allowed_senders = {

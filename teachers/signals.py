@@ -25,6 +25,57 @@ except ImportError:
     logger.warning("Telegram bot не доступен - уведомления отключены")
 
 
+# Как подписывается сообщение от администрации/поддержки в чате и в Telegram.
+# Личность конкретного staff-аккаунта ученику/учителю не раскрывается.
+ADMIN_SENDER_DISPLAY = "Поддержка UstozHub"
+
+
+def _deliver_message_notification(recipient, sender_display, message, conversation):
+    """Доставить одному получателю: сброс badge-кэша + real-time push + Telegram.
+
+    Вынесено из send_message_notification, чтобы одинаково обслуживать обычные
+    сообщения (один получатель) и сообщения от поддержки (оба участника).
+    is_admin помечает сообщение как «от Поддержки» на клиенте (бейдж/стиль).
+    """
+    is_admin = bool(getattr(message, 'is_admin_message', False))
+
+    # Real-time push получателю (badge + тост). Должно работать независимо
+    # от доступности Telegram-бота.
+    try:
+        from .context_processors import invalidate_message_cache
+        invalidate_message_cache(recipient.pk)
+        from .consumers import notify_user
+        notify_user(recipient.pk, 'new_message', {
+            'sender_name': sender_display,
+            'preview': (message.content[:80] if message.content else ''),
+            'conversation_id': str(conversation.pk),
+            'is_admin': is_admin,
+        })
+    except Exception as e:
+        logger.debug(f"Push notification failed: {e}")
+
+    # Telegram-уведомление в очередь — только если бот доступен.
+    if not TELEGRAM_BOT_AVAILABLE:
+        return
+
+    message_preview = (message.content[:100] if message.content else "[файл]")
+    notification = queue_new_message_notification(
+        recipient=recipient,
+        sender_name=sender_display,
+        message_preview=message_preview,
+        conversation_id=str(conversation.pk),  # UUID -> str для JSON
+    )
+    if notification:
+        logger.info(
+            f"✅ Уведомление о сообщении добавлено в очередь для {recipient.username}"
+        )
+    else:
+        logger.debug(
+            f"❌ Уведомление не добавлено - пользователь {recipient.username} "
+            f"не подключил Telegram или отключил уведомления"
+        )
+
+
 @receiver(post_save, sender=Message)
 def send_message_notification(sender, instance, created, **kwargs):
     """
@@ -77,65 +128,35 @@ def send_message_notification(sender, instance, created, **kwargs):
             )
             return
 
-        # Получатель - это не отправитель
-        if sender_user.pk == teacher_user.pk:
-            recipient = student_user
-        elif sender_user.pk == student_user.pk:
-            recipient = teacher_user
+        # Определяем получателей и подпись отправителя.
+        if getattr(message, 'is_admin_message', False):
+            # Сообщение от поддержки: отправитель — staff-аккаунт, который не
+            # является участником беседы. Уведомляем ОБОИХ участников (ученика
+            # и учителя), подпись — «Поддержка UstozHub» (личность не раскрываем).
+            recipients = [student_user, teacher_user]
+            sender_display = ADMIN_SENDER_DISPLAY
         else:
-            logger.warning(
-                f"Отправитель {sender_user.pk} ({sender_user.username}) "
-                f"не является участником диалога {conversation.pk}"
-            )
-            return
-
-        # Проверяем что получатель существует
-        if not recipient:
-            logger.error(f"Не удалось определить получателя для сообщения {message.pk or 'new'}")
-            return
-
-        # Сбрасываем кэш badge и пушим real-time уведомление получателю.
-        # Это критично для обновления badge-счётчиков и должно работать
-        # независимо от доступности Telegram-бота.
-        try:
-            from .context_processors import invalidate_message_cache
-            invalidate_message_cache(recipient.pk)
-            from .consumers import notify_user
+            # Обычное сообщение: получатель — тот участник, кто НЕ отправитель.
+            if sender_user.pk == teacher_user.pk:
+                recipients = [student_user]
+            elif sender_user.pk == student_user.pk:
+                recipients = [teacher_user]
+            else:
+                logger.warning(
+                    f"Отправитель {sender_user.pk} ({sender_user.username}) "
+                    f"не является участником диалога {conversation.pk}"
+                )
+                return
             sender_display = sender_user.get_full_name() or sender_user.username
-            notify_user(recipient.pk, 'new_message', {
-                'sender_name': sender_display,
-                'preview': (message.content[:80] if message.content else ''),
-                'conversation_id': str(conversation.pk),
-            })
-        except Exception as e:
-            logger.debug(f"Push notification failed: {e}")
 
-        # Telegram-уведомление в очередь — только если бот доступен
-        if not TELEGRAM_BOT_AVAILABLE:
-            return
+        for recipient in recipients:
+            if not recipient:
+                logger.error(
+                    f"Не удалось определить получателя для сообщения {message.pk or 'new'}"
+                )
+                continue
+            _deliver_message_notification(recipient, sender_display, message, conversation)
 
-        # Добавляем уведомление в очередь
-        sender_name = sender_user.get_full_name() or sender_user.username
-        # ⚡ ОПТИМИЗАЦИЯ: Ограничиваем длину preview
-        message_preview = (message.content[:100] if message.content else "[файл]")
-        
-        notification = queue_new_message_notification(
-            recipient=recipient,
-            sender_name=sender_name,
-            message_preview=message_preview,
-            conversation_id=str(conversation.pk)  # UUID -> str для JSON
-        )
-        
-        if notification:
-            logger.info(
-                f"✅ Уведомление о сообщении добавлено в очередь для {recipient.username}"
-            )
-        else:
-            logger.debug(
-                f"❌ Уведомление не добавлено - пользователь {recipient.username} "
-                f"не подключил Telegram или отключил уведомления"
-            )
-            
     except Exception as e:
         # Не прерываем создание сообщения даже если уведомление не добавлено
         logger.error(

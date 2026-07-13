@@ -272,6 +272,30 @@
         border-bottom-right-radius: 6px;
     }
 
+    /* Сообщение от Поддержки UstozHub — отдельный акцентный стиль */
+    .message-item.support-message {
+        margin: 6px auto;
+        max-width: 90%;
+    }
+    .message-item.support-message .message-avatar {
+        background: linear-gradient(135deg, #EA580C, #C2410C);
+    }
+    .support-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #C2410C;
+        padding: 0 4px;
+    }
+    .message-item.support-message .message-bubble {
+        background: #FFF7ED;
+        color: #7C2D12;
+        border: 1px solid #FED7AA;
+        border-bottom-left-radius: 6px;
+    }
+
     .message-time {
         font-size: 11px;
         color: #9CA3AF;
@@ -1047,21 +1071,27 @@
                             </span>
                         </div>
                     {% endifchanged %}
-                    <div class="message-item {% if message.sender == user %}own-message{% endif %}"
+                    <div class="message-item {% if message.is_admin_message %}support-message{% elif message.sender == user %}own-message{% endif %}"
                          data-message-id="{{ message.id }}"
-                         data-sender-id="{{ message.sender.id }}">
+                         data-sender-id="{{ message.sender.id }}"
+                         {% if message.is_admin_message %}data-admin="1"{% endif %}>
                         <div class="message-avatar">
-                            {% if message.sender.avatar %}
+                            {% if message.is_admin_message %}
+                                <i class="fas fa-headset"></i>
+                            {% elif message.sender.avatar %}
                                 <img src="{{ message.sender.avatar.url }}" alt="{{ message.sender.get_full_name }}">
                             {% else %}
                                 {{ message.sender.first_name.0|default:"U" }}{{ message.sender.last_name.0|default:"" }}
                             {% endif %}
                         </div>
                         <div class="message-content-wrapper">
+                            {% if message.is_admin_message %}
+                                <div class="support-label"><i class="fas fa-headset"></i> {% trans "Поддержка UstozHub" %}</div>
+                            {% endif %}
                             <div class="message-bubble">{{ message.content|urlize|linebreaksbr }}</div>
                             <div class="message-meta">
                                 <span class="message-time">{{ message.created_at|date:"H:i" }}</span>
-                                {% if message.sender == user %}
+                                {% if message.sender == user and not message.is_admin_message %}
                                     <span class="message-receipt"
                                           data-state="{% if message.is_read %}read{% else %}sent{% endif %}"
                                           title="{% if message.is_read %}{% trans 'Прочитано' %}{% else %}{% trans 'Отправлено' %}{% endif %}"></span>
@@ -1162,6 +1192,7 @@
         pending:   '{% filter escapejs %}{% trans "Отправляется" %}{% endfilter %}',
         ws_lost:   '{% filter escapejs %}{% trans "Соединение прервано. Переподключаемся…" %}{% endfilter %}',
         delete_conv: '{% filter escapejs %}{% trans "Удалить переписку?" %}{% endfilter %}',
+        support:   '{% filter escapejs %}{% trans "Поддержка UstozHub" %}{% endfilter %}',
     };
 
     const messagesList = document.getElementById('messagesList');
@@ -1369,18 +1400,23 @@
         // Day-separator
         ensureDaySeparator(data.created_at);
 
-        var isOwn = data.sender_id === CURRENT_USER_ID;
+        var isAdmin = !!data.is_admin;
+        var isOwn = !isAdmin && data.sender_id === CURRENT_USER_ID;
         var initials = (data.sender_name || '').split(' ').map(function(n){return n[0]||'';}).join('').substring(0,2).toUpperCase() || 'U';
         var safe = escapeHtml(data.message || '').replace(/\n/g, '<br>');
         safe = linkify(safe);
 
         var div = document.createElement('div');
-        div.className = 'message-item' + (isOwn ? ' own-message' : '');
+        div.className = 'message-item' + (isAdmin ? ' support-message' : (isOwn ? ' own-message' : ''));
         div.setAttribute('data-message-id', data.id);
         div.setAttribute('data-sender-id', data.sender_id);
+        if (isAdmin) div.setAttribute('data-admin', '1');
+        var avatarInner = isAdmin ? '<i class="fas fa-headset"></i>' : escapeHtml(initials);
+        var supportLabel = isAdmin ? '<div class="support-label"><i class="fas fa-headset"></i> ' + I18N.support + '</div>' : '';
         div.innerHTML =
-            '<div class="message-avatar">' + escapeHtml(initials) + '</div>' +
+            '<div class="message-avatar">' + avatarInner + '</div>' +
             '<div class="message-content-wrapper">' +
+                supportLabel +
                 '<div class="message-bubble">' + safe + '</div>' +
                 '<div class="message-meta">' +
                     '<span class="message-time">' + formatTime(data.created_at) + '</span>' +

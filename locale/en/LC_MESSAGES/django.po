@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: UstozHub 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-08 15:50+0500\n"
+"POT-Creation-Date: 2026-07-13 07:20+0500\n"
 "Language-Team: English\n"
 "Language: en\n"
 "MIME-Version: 1.0\n"
@@ -95,7 +95,7 @@ msgstr "Enter a grade or choose “Return for revision”."
 msgid "При возврате на доработку нужен комментарий."
 msgstr "A comment is required when returning for revision."
 
-#: billing/models.py:34 teachers/models.py:2305 teachers/models.py:2726
+#: billing/models.py:34 teachers/models.py:2315 teachers/models.py:2736
 msgid "Пользователь"
 msgstr "User"
 
@@ -161,7 +161,7 @@ msgstr "Fee withholding"
 msgid "Корректировка (списание)"
 msgstr "Adjustment (debit)"
 
-#: billing/models.py:95 billing/models.py:1006 teachers/models.py:2091
+#: billing/models.py:95 billing/models.py:1006 teachers/models.py:2101
 msgid "В обработке"
 msgstr "Processing"
 
@@ -235,15 +235,15 @@ msgstr "6 months"
 msgid "12 месяцев"
 msgstr "12 months"
 
-#: billing/models.py:204 teachers/models.py:47 teachers/models.py:1766
-#: teachers/models.py:1812 teachers/models.py:2839 teachers/models.py:3874
+#: billing/models.py:204 teachers/models.py:47 teachers/models.py:1776
+#: teachers/models.py:1822 teachers/models.py:2849 teachers/models.py:3884
 #: templates/billing/admin/trials.html:55
 #: templates/emails/lesson_reminder.html:30
 msgid "Учитель"
 msgstr "Teacher"
 
 #: billing/models.py:210 teachers/forms.py:772 teachers/models.py:174
-#: teachers/models.py:2977 templates/billing/admin/trials.html:57
+#: teachers/models.py:2987 templates/billing/admin/trials.html:57
 #: templates/billing/continue_learning.html:29
 #: templates/billing/learning_requests.html:29
 #: templates/billing/tariff_form.html:37
@@ -293,7 +293,7 @@ msgstr "Plan"
 msgid "Тарифы"
 msgstr "Plans"
 
-#: billing/models.py:322 teachers/models.py:2934
+#: billing/models.py:322 teachers/models.py:2944
 msgid "Ожидает подтверждения учителя"
 msgstr "Awaiting teacher confirmation"
 
@@ -387,7 +387,7 @@ msgstr ""
 msgid "Гарантирует один Subscription при повторных submit."
 msgstr "Guarantees a single Subscription on repeated submits."
 
-#: billing/models.py:449 teachers/models.py:2480 teachers/models.py:3019
+#: billing/models.py:449 teachers/models.py:2490 teachers/models.py:3029
 msgid "Подписка"
 msgstr "Subscription"
 
@@ -555,8 +555,8 @@ msgstr "Draft"
 msgid "Оплачен"
 msgstr "Paid"
 
-#: billing/models.py:1008 teachers/models.py:1338 teachers/models.py:2093
-#: teachers/models.py:2237 templates/logic/_profile_edit_enhancements.html:408
+#: billing/models.py:1008 teachers/models.py:1338 teachers/models.py:2103
+#: teachers/models.py:2247 templates/logic/_profile_edit_enhancements.html:408
 msgid "Ошибка"
 msgstr "Error"
 
@@ -627,11 +627,11 @@ msgstr "Plan updated."
 msgid "Тариф удалён."
 msgstr "Plan deleted."
 
-#: billing/views.py:144 teachers/views.py:3398
+#: billing/views.py:144 teachers/views.py:3444
 msgid "включён"
 msgstr "enabled"
 
-#: billing/views.py:144 teachers/views.py:3398
+#: billing/views.py:144 teachers/views.py:3444
 msgid "выключен"
 msgstr "disabled"
 
@@ -1407,7 +1407,7 @@ msgstr "Your last name"
 msgid "Введите ваше сообщение..."
 msgstr "Type your message..."
 
-#: teachers/forms.py:1185 teachers/models.py:1655
+#: teachers/forms.py:1185 teachers/models.py:1665
 #: templates/booking/teacher_calendar.html:109
 #: templates/notifications/detail.html:526
 msgid "Сообщение"
@@ -1479,8 +1479,8 @@ msgstr "Invalid file URL"
 msgid "Удалить файл может только тот, кто его загрузил"
 msgstr "Only the person who uploaded the file can delete it"
 
-#: teachers/models.py:46 teachers/models.py:1762 teachers/models.py:1816
-#: teachers/models.py:2970 teachers/models.py:3875
+#: teachers/models.py:46 teachers/models.py:1772 teachers/models.py:1826
+#: teachers/models.py:2980 teachers/models.py:3885
 #: templates/billing/admin/trials.html:53
 #: templates/billing/teacher_subscribers.html:153
 #: templates/booking/teacher_calendar.html:107
@@ -1524,7 +1524,7 @@ msgstr "Subject category"
 msgid "Категории предметов"
 msgstr "Subject categories"
 
-#: teachers/models.py:155 teachers/models.py:2489
+#: teachers/models.py:155 teachers/models.py:2499
 msgid "Категория"
 msgstr "Category"
 
@@ -1579,14 +1579,14 @@ msgid "Магистр"
 msgstr "Master's"
 
 #: teachers/models.py:250 teachers/models.py:1443
-#: templates/logic/conversation_detail.html:1157 templates/logic/home.html:2169
+#: templates/logic/conversation_detail.html:1187 templates/logic/home.html:2169
 #: templates/logic/student_suggestions.html:335
 #: templates/logic/teacher_detail.html:2126
 msgid "Онлайн"
 msgstr "Online"
 
 #: teachers/models.py:251 teachers/models.py:1444
-#: templates/logic/conversation_detail.html:1156
+#: templates/logic/conversation_detail.html:1186
 #: templates/logic/student_suggestions.html:335
 msgid "Офлайн"
 msgstr "Offline"
@@ -1599,7 +1599,7 @@ msgstr "Online and offline"
 msgid "Узбекский"
 msgstr "Uzbek"
 
-#: teachers/models.py:256 teachers/models.py:2669
+#: teachers/models.py:256 teachers/models.py:2679
 msgid "Русский"
 msgstr "Russian"
 
@@ -1693,7 +1693,7 @@ msgid "Проверил"
 msgstr "Reviewed by"
 
 # ========== STUDENT DETAIL PAGE ==========
-#: teachers/models.py:385 teachers/models.py:1990 teachers/models.py:2014
+#: teachers/models.py:385 teachers/models.py:2000 teachers/models.py:2024
 msgid "Профиль учителя"
 msgstr "Teacher profile"
 
@@ -1811,7 +1811,7 @@ msgid "Доступные дни недели"
 msgstr "Available days of the week"
 
 # ========== STUDENT DETAIL PAGE ==========
-#: teachers/models.py:1536 teachers/models.py:1991 teachers/models.py:2022
+#: teachers/models.py:1536 teachers/models.py:2001 teachers/models.py:2032
 #: templates/logic/student_detail.html:4
 msgid "Профиль ученика"
 msgstr "Student Profile"
@@ -1856,299 +1856,305 @@ msgstr "Conversation"
 msgid "Переписки"
 msgstr "Conversations"
 
-#: teachers/models.py:1656 templates/base.html:1465 templates/base.html:1626
+#: teachers/models.py:1656
+#, fuzzy
+#| msgid "Сообщение отправлено!"
+msgid "Сообщение от поддержки"
+msgstr "Message sent!"
+
+#: teachers/models.py:1666 templates/base.html:1465 templates/base.html:1626
 #: templates/logic/conversations_list.html:5
 #: templates/logic/conversations_list.html:525
 msgid "Сообщения"
 msgstr "Messages"
 
-#: teachers/models.py:1689
+#: teachers/models.py:1699
 msgid "Урок, после которого оставлен отзыв"
 msgstr "Lesson the review was left for"
 
-#: teachers/models.py:1694
+#: teachers/models.py:1704
 msgid "Оценка от 1 до 5"
 msgstr "Rating from 1 to 5"
 
-#: teachers/models.py:1703
+#: teachers/models.py:1713
 msgid "Проверенный отзыв (был реальный урок)"
 msgstr "Verified review (real lesson took place)"
 
-#: teachers/models.py:1712 teachers/models.py:2477
+#: teachers/models.py:1722 teachers/models.py:2487
 #: templates/billing/teacher_student_progress.html:82
 #: templates/billing/teacher_student_progress.html:89
 msgid "Отзыв"
 msgstr "Review"
 
-#: teachers/models.py:1713 templates/logic/teacher_detail.html:2475
+#: teachers/models.py:1723 templates/logic/teacher_detail.html:2475
 msgid "Отзывы"
 msgstr "Reviews"
 
-#: teachers/models.py:1730
+#: teachers/models.py:1740
 msgid "Избранный учитель"
 msgstr "Saved teacher"
 
-#: teachers/models.py:1731 templates/logic/student_profile.html:816
+#: teachers/models.py:1741 templates/logic/student_profile.html:816
 msgid "Избранные учителя"
 msgstr "Saved teachers"
 
-#: teachers/models.py:1745
+#: teachers/models.py:1755
 msgid "Избранный ученик"
 msgstr "Saved student"
 
-#: teachers/models.py:1746 templates/logic/teacher_profile.html:1552
+#: teachers/models.py:1756 templates/logic/teacher_profile.html:1552
 msgid "Избранные ученики"
 msgstr "Saved students"
 
-#: teachers/models.py:1772
+#: teachers/models.py:1782
 msgid "Отказ ученика от лида"
 msgstr "Student lead opt-out"
 
-#: teachers/models.py:1773
+#: teachers/models.py:1783
 msgid "Отказы учеников от лидов"
 msgstr "Student lead opt-outs"
 
-#: teachers/models.py:1805
+#: teachers/models.py:1815
 #, fuzzy
 #| msgid "Это пробный урок"
 msgid "Горячий (пробный урок)"
 msgstr "This is a trial lesson"
 
-#: teachers/models.py:1806
+#: teachers/models.py:1816
 #, fuzzy
 #| msgid "В избранное"
 msgid "Тёплый (избранное)"
 msgstr "Add to Favorites"
 
-#: teachers/models.py:1807
+#: teachers/models.py:1817
 #, fuzzy
 #| msgid "Просмотр профиля"
 msgid "Холодный (просмотр профиля)"
 msgstr "Profile view"
 
-#: teachers/models.py:1820
+#: teachers/models.py:1830
 #, fuzzy
 #| msgid "Забронировали пробный"
 msgid "Бронировал пробный"
 msgstr "Booked a trial"
 
-#: teachers/models.py:1821
+#: teachers/models.py:1831
 #, fuzzy
 #| msgid "Предложить пробное"
 msgid "Время брони пробного"
 msgstr "Offer a trial lesson"
 
-#: teachers/models.py:1822 templates/logic/student_detail.html:1848
+#: teachers/models.py:1832 templates/logic/student_detail.html:1848
 #: templates/logic/teacher_detail.html:2663
 #: templates/logic/teacher_detail.html:2665
 #: templates/logic/teacher_detail.html:2754
 msgid "В избранном"
 msgstr "In Favorites"
 
-#: teachers/models.py:1823
+#: teachers/models.py:1833
 #, fuzzy
 #| msgid "Добавлено в избранное"
 msgid "Время добавления в избранное"
 msgstr "Added to favorites"
 
 # ========== STUDENT PROFILE ==========
-#: teachers/models.py:1824
+#: teachers/models.py:1834
 #, fuzzy
 #| msgid "Статистика просмотров профиля"
 msgid "Дней с просмотром профиля"
 msgstr "Profile View Statistics"
 
-#: teachers/models.py:1825
+#: teachers/models.py:1835
 #, fuzzy
 #| msgid "Дата просмотра"
 msgid "Первый просмотр"
 msgstr "View date"
 
-#: teachers/models.py:1826
+#: teachers/models.py:1836
 #, fuzzy
 #| msgid "Последний визит"
 msgid "Последний просмотр"
 msgstr "Last visit"
 
-#: teachers/models.py:1831
+#: teachers/models.py:1841
 msgid "Температура"
 msgstr ""
 
 # ========== JAVASCRIPT MESSAGES ==========
-#: teachers/models.py:1834
+#: teachers/models.py:1844
 #, fuzzy
 #| msgid "Последняя ошибка"
 msgid "Последняя активность"
 msgstr "Last error"
 
-#: teachers/models.py:1838
+#: teachers/models.py:1848
 #, fuzzy
 #| msgid "Отозван учеником"
 msgid "Отказ ученика"
 msgstr "Withdrawn by student"
 
 # ========== STUDENT DETAIL PAGE ==========
-#: teachers/models.py:1844
+#: teachers/models.py:1854
 #, fuzzy
 #| msgid "Прогресс ученика"
 msgid "Интерес ученика"
 msgstr "Student progress"
 
-#: teachers/models.py:1845
+#: teachers/models.py:1855
 #, fuzzy
 #| msgid "Отзывы учеников"
 msgid "Интересы учеников"
 msgstr "Student reviews"
 
-#: teachers/models.py:1919
+#: teachers/models.py:1929
 msgid "Связанный пользователь"
 msgstr "Linked user"
 
-#: teachers/models.py:1923
+#: teachers/models.py:1933
 msgid "Telegram ID"
 msgstr "Telegram ID"
 
-#: teachers/models.py:1924
+#: teachers/models.py:1934
 msgid "Уникальный ID пользователя в Telegram"
 msgstr "Unique Telegram user ID"
 
-#: teachers/models.py:1930
+#: teachers/models.py:1940
 msgid "Username в Telegram"
 msgstr "Telegram username"
 
-#: teachers/models.py:1935
+#: teachers/models.py:1945
 msgid "Имя в Telegram"
 msgstr "Telegram first name"
 
-#: teachers/models.py:1940
+#: teachers/models.py:1950
 msgid "Фамилия в Telegram"
 msgstr "Telegram last name"
 
-#: teachers/models.py:1946
+#: teachers/models.py:1956
 msgid "Язык интерфейса"
 msgstr "Interface language"
 
-#: teachers/models.py:1952
+#: teachers/models.py:1962
 msgid "Уведомления включены"
 msgstr "Notifications enabled"
 
-#: teachers/models.py:1958
+#: teachers/models.py:1968
 msgid "Нажал Start в боте"
 msgstr "Pressed Start in bot"
 
-#: teachers/models.py:1962
+#: teachers/models.py:1972
 msgid "Последнее взаимодействие"
 msgstr "Last interaction"
 
-#: teachers/models.py:1966
+#: teachers/models.py:1976
 msgid "Дата регистрации в боте"
 msgstr "Bot registration date"
 
-#: teachers/models.py:1970
+#: teachers/models.py:1980
 msgid "Telegram пользователь"
 msgstr "Telegram user"
 
-#: teachers/models.py:1971
+#: teachers/models.py:1981
 msgid "Telegram пользователи"
 msgstr "Telegram users"
 
-#: teachers/models.py:1995
+#: teachers/models.py:2005
 msgid "Тип профиля"
 msgstr "Profile type"
 
 # ========== STUDENT PROFILE ==========
-#: teachers/models.py:1996
+#: teachers/models.py:2006
 msgid "IP адрес просмотревшего"
 msgstr "Viewer IP address"
 
-#: teachers/models.py:2003
+#: teachers/models.py:2013
 msgid "Пользователь (если авторизован)"
 msgstr "User (if logged in)"
 
-#: teachers/models.py:2005
+#: teachers/models.py:2015
 msgid "Дата и время просмотра"
 msgstr "View date and time"
 
-#: teachers/models.py:2031
+#: teachers/models.py:2041
 msgid "Дата просмотра"
 msgstr "View date"
 
 # ========== STUDENT PROFILE ==========
-#: teachers/models.py:2035
+#: teachers/models.py:2045
 msgid "Количество просмотров в этот день"
 msgstr "Views on this day"
 
-#: teachers/models.py:2039
+#: teachers/models.py:2049
 msgid "Время последнего просмотра в этот день"
 msgstr "Last view time on this day"
 
-#: teachers/models.py:2043
+#: teachers/models.py:2053
 msgid "User Agent браузера"
 msgstr "Browser user agent"
 
-#: teachers/models.py:2046 teachers/models.py:2100
+#: teachers/models.py:2056 teachers/models.py:2110
 msgid "Просмотр профиля"
 msgstr "Profile view"
 
-#: teachers/models.py:2047
+#: teachers/models.py:2057
 msgid "Просмотры профилей"
 msgstr "Profile views"
 
-#: teachers/models.py:2090
+#: teachers/models.py:2100
 msgid "Ожидает отправки"
 msgstr "Pending delivery"
 
-#: teachers/models.py:2092 teachers/models.py:2171
-#: templates/logic/conversation_detail.html:1067
-#: templates/logic/conversation_detail.html:1161
+#: teachers/models.py:2102 teachers/models.py:2181
+#: templates/logic/conversation_detail.html:1097
+#: templates/logic/conversation_detail.html:1191
 msgid "Отправлено"
 msgstr "Sent"
 
-#: teachers/models.py:2094
+#: teachers/models.py:2104
 msgid "Отменено"
 msgstr "Cancelled"
 
-#: teachers/models.py:2098 templates/base.html:2190
+#: teachers/models.py:2108 templates/base.html:2190
 msgid "Новое сообщение"
 msgstr "New message"
 
-#: teachers/models.py:2099
+#: teachers/models.py:2109
 msgid "Новый отзыв"
 msgstr "New review"
 
-#: teachers/models.py:2101
+#: teachers/models.py:2111
 msgid "Системное уведомление"
 msgstr "System notification"
 
-#: teachers/models.py:2102
+#: teachers/models.py:2112
 msgid "Массовая рассылка"
 msgstr "Broadcast"
 
-#: teachers/models.py:2111 templates/billing/topup_request.html:216
+#: teachers/models.py:2121 templates/billing/topup_request.html:216
 msgid "Получатель"
 msgstr "Recipient"
 
-#: teachers/models.py:2117
+#: teachers/models.py:2127
 msgid "Тип уведомления"
 msgstr "Notification type"
 
-#: teachers/models.py:2121 teachers/models.py:2380
+#: teachers/models.py:2131 teachers/models.py:2390
 msgid "Заголовок"
 msgstr "Title"
 
-#: teachers/models.py:2122 teachers/models.py:2685
+#: teachers/models.py:2132 teachers/models.py:2695
 msgid "Текст сообщения"
 msgstr "Message text"
 
-#: teachers/models.py:2126
+#: teachers/models.py:2136
 msgid "Дополнительные данные"
 msgstr "Additional data"
 
-#: teachers/models.py:2127
+#: teachers/models.py:2137
 msgid "JSON с доп. информацией (sender_id, conversation_id, url и т.д.)"
 msgstr "JSON with extra data (sender_id, conversation_id, url, etc.)"
 
-#: teachers/models.py:2136 teachers/models.py:2251 teachers/models.py:2848
+#: teachers/models.py:2146 teachers/models.py:2261 teachers/models.py:2858
 #: templates/billing/admin/trials.html:59
 #: templates/billing/teacher_student_progress.html:82
 #: templates/billing/teacher_student_progress.html:88
@@ -2161,217 +2167,217 @@ msgstr "JSON with extra data (sender_id, conversation_id, url, etc.)"
 msgid "Статус"
 msgstr "Status"
 
-#: teachers/models.py:2140
+#: teachers/models.py:2150
 msgid "Количество попыток"
 msgstr "Attempt count"
 
-#: teachers/models.py:2144
+#: teachers/models.py:2154
 msgid "Максимум попыток"
 msgstr "Maximum attempts"
 
 # ========== JAVASCRIPT MESSAGES ==========
-#: teachers/models.py:2148
+#: teachers/models.py:2158
 msgid "Последняя ошибка"
 msgstr "Last error"
 
-#: teachers/models.py:2155 teachers/models.py:2431
+#: teachers/models.py:2165 teachers/models.py:2441
 msgid "Создано"
 msgstr "Created"
 
-#: teachers/models.py:2160
+#: teachers/models.py:2170
 msgid "Запланировано на"
 msgstr "Scheduled for"
 
-#: teachers/models.py:2161
+#: teachers/models.py:2171
 msgid "Время когда уведомление должно быть отправлено"
 msgstr "Time the notification should be sent"
 
-#: teachers/models.py:2166
+#: teachers/models.py:2176
 msgid "Начало обработки"
 msgstr "Processing start"
 
-#: teachers/models.py:2179
+#: teachers/models.py:2189
 msgid "Ключ идемпотентности"
 msgstr "Idempotency key"
 
-#: teachers/models.py:2180
+#: teachers/models.py:2190
 msgid "Уникальный ключ для предотвращения дублирования"
 msgstr "Unique key to prevent duplication"
 
-#: teachers/models.py:2184
+#: teachers/models.py:2194
 msgid "Уведомление в очереди"
 msgstr "Queued notification"
 
-#: teachers/models.py:2185
+#: teachers/models.py:2195
 msgid "Очередь уведомлений"
 msgstr "Notification queue"
 
-#: teachers/models.py:2236
+#: teachers/models.py:2246
 msgid "Успешно"
 msgstr "Success"
 
-#: teachers/models.py:2238
+#: teachers/models.py:2248
 msgid "Пропущено"
 msgstr "Skipped"
 
-#: teachers/models.py:2245 teachers/models.py:2519 teachers/models.py:2733
+#: teachers/models.py:2255 teachers/models.py:2529 teachers/models.py:2743
 #: templates/base.html:2196 templates/logic/_profile_edit_enhancements.html:405
 msgid "Уведомление"
 msgstr "Notification"
 
-#: teachers/models.py:2247
+#: teachers/models.py:2257
 msgid "Номер попытки"
 msgstr "Attempt number"
 
-#: teachers/models.py:2255
+#: teachers/models.py:2265
 msgid "Сообщение об ошибке"
 msgstr "Error message"
 
-#: teachers/models.py:2260
+#: teachers/models.py:2270
 msgid "ID сообщения в Telegram"
 msgstr "Telegram message ID"
 
-#: teachers/models.py:2265
+#: teachers/models.py:2275
 msgid "Данные ответа"
 msgstr "Response data"
 
-#: teachers/models.py:2270
+#: teachers/models.py:2280
 msgid "Время обработки (мс)"
 msgstr "Processing time (ms)"
 
-#: teachers/models.py:2275
+#: teachers/models.py:2285
 msgid "Время попытки"
 msgstr "Attempt time"
 
-#: teachers/models.py:2279
+#: teachers/models.py:2289
 msgid "Лог уведомления"
 msgstr "Notification log"
 
-#: teachers/models.py:2280
+#: teachers/models.py:2290
 msgid "Логи уведомлений"
 msgstr "Notification logs"
 
-#: teachers/models.py:2294
+#: teachers/models.py:2304
 msgid "Поисковый запрос"
 msgstr "Search query"
 
-#: teachers/models.py:2307
+#: teachers/models.py:2317
 msgid "IP адрес"
 msgstr "IP address"
 
-#: teachers/models.py:2308
+#: teachers/models.py:2318
 msgid "Найдено результатов"
 msgstr "Results found"
 
-#: teachers/models.py:2314
+#: teachers/models.py:2324
 msgid "Выбранный предмет"
 msgstr "Selected subject"
 
-#: teachers/models.py:2316
+#: teachers/models.py:2326
 msgid "Дата поиска"
 msgstr "Search date"
 
-#: teachers/models.py:2319
+#: teachers/models.py:2329
 msgid "Лог поиска предметов"
 msgstr "Subject search log"
 
-#: teachers/models.py:2320
+#: teachers/models.py:2330
 msgid "Логи поиска предметов"
 msgstr "Subject search logs"
 
-#: teachers/models.py:2371
+#: teachers/models.py:2381
 msgid "Все пользователи"
 msgstr "All users"
 
-#: teachers/models.py:2372
+#: teachers/models.py:2382
 msgid "Только ученики"
 msgstr "Students only"
 
-#: teachers/models.py:2373
+#: teachers/models.py:2383
 msgid "Только учителя"
 msgstr "Teachers only"
 
-#: teachers/models.py:2374
+#: teachers/models.py:2384
 msgid "Только администраторы"
 msgstr "Admins only"
 
-#: teachers/models.py:2375 teachers/models.py:2455
+#: teachers/models.py:2385 teachers/models.py:2465
 msgid "Конкретный пользователь"
 msgstr "Specific user"
 
-#: teachers/models.py:2381
+#: teachers/models.py:2391
 msgid "Краткий заголовок уведомления"
 msgstr "Short notification title"
 
-#: teachers/models.py:2386
+#: teachers/models.py:2396
 msgid "Краткий текст"
 msgstr "Short text"
 
-#: teachers/models.py:2387
+#: teachers/models.py:2397
 msgid "Текст для отображения в списке уведомлений"
 msgstr "Text shown in the notifications list"
 
-#: teachers/models.py:2391
+#: teachers/models.py:2401
 msgid "Полный текст"
 msgstr "Full text"
 
-#: teachers/models.py:2392
+#: teachers/models.py:2402
 msgid "Подробное описание уведомления"
 msgstr "Detailed notification description"
 
-#: teachers/models.py:2399
+#: teachers/models.py:2409
 msgid "Изображение"
 msgstr "Image"
 
-#: teachers/models.py:2400
+#: teachers/models.py:2410
 msgid "Опциональное изображение к уведомлению"
 msgstr "Optional image for the notification"
 
-#: teachers/models.py:2406
+#: teachers/models.py:2416
 msgid "Ссылка действия"
 msgstr "Action link"
 
-#: teachers/models.py:2407
+#: teachers/models.py:2417
 msgid "URL для перехода при клике (опционально)"
 msgstr "URL to open on click (optional)"
 
-#: teachers/models.py:2414 templates/notifications/detail.html:584
+#: teachers/models.py:2424 templates/notifications/detail.html:584
 msgid "Целевая аудитория"
 msgstr "Target audience"
 
-#: teachers/models.py:2419
+#: teachers/models.py:2429
 msgid "Активно"
 msgstr "Active"
 
-#: teachers/models.py:2420
+#: teachers/models.py:2430
 msgid "Только активные уведомления видны пользователям"
 msgstr "Only active notifications are visible to users"
 
-#: teachers/models.py:2425
+#: teachers/models.py:2435
 msgid "Приоритет"
 msgstr "Priority"
 
-#: teachers/models.py:2426
+#: teachers/models.py:2436
 msgid "Чем выше число, тем выше в списке. 0 = обычный приоритет"
 msgstr "The higher the number, the higher in the list. 0 = normal priority"
 
-#: teachers/models.py:2436
+#: teachers/models.py:2446
 msgid "Обновлено"
 msgstr "Updated"
 
-#: teachers/models.py:2445
+#: teachers/models.py:2455
 msgid "Создал"
 msgstr "Created by"
 
-#: teachers/models.py:2456
+#: teachers/models.py:2466
 msgid "Если указан, уведомление будет видно только этому пользователю"
 msgstr "If set, the notification will be visible only to this user"
 
-#: teachers/models.py:2467
+#: teachers/models.py:2477
 msgid "Связанное бронирование"
 msgstr "Linked booking"
 
-#: teachers/models.py:2468
+#: teachers/models.py:2478
 msgid ""
 "Если уведомление о брони — позволяет подтвердить/отклонить прямо из "
 "уведомления"
@@ -2379,245 +2385,245 @@ msgstr ""
 "For booking notifications — lets you confirm or decline right from the "
 "notification"
 
-#: teachers/models.py:2472
+#: teachers/models.py:2482
 msgid "Общее"
 msgstr "General"
 
-#: teachers/models.py:2473 templates/booking/teacher_calendar.html:105
+#: teachers/models.py:2483 templates/booking/teacher_calendar.html:105
 #: templates/booking/teacher_calendar.html:246
 msgid "Бронирование"
 msgstr "Booking"
 
-#: teachers/models.py:2474 teachers/models.py:3963 teachers/models.py:4003
+#: teachers/models.py:2484 teachers/models.py:3973 teachers/models.py:4013
 #: templates/booking/lesson_room.html:4
 msgid "Урок"
 msgstr "Lesson"
 
-#: teachers/models.py:2475
+#: teachers/models.py:2485
 msgid "Пополнение"
 msgstr "Top-up"
 
-#: teachers/models.py:2476
+#: teachers/models.py:2486
 msgid "Списание"
 msgstr "Charge"
 
-#: teachers/models.py:2478
+#: teachers/models.py:2488
 msgid "Модерация"
 msgstr "Moderation"
 
-#: teachers/models.py:2479
+#: teachers/models.py:2489
 msgid "Напоминание"
 msgstr "Reminder"
 
-#: teachers/models.py:2481
+#: teachers/models.py:2491
 msgid "Успех"
 msgstr "Success"
 
-#: teachers/models.py:2482
+#: teachers/models.py:2492
 msgid "Предупреждение"
 msgstr "Warning"
 
-#: teachers/models.py:2490
+#: teachers/models.py:2500
 msgid "Определяет иконку уведомления в интерфейсе"
 msgstr "Defines the notification icon in the interface"
 
-#: teachers/models.py:2520 templates/base.html:1457 templates/base.html:1635
+#: teachers/models.py:2530 templates/base.html:1457 templates/base.html:1635
 #: templates/notifications/detail.html:6
 #: templates/notifications/detail.html:465 templates/notifications/list.html:6
 #: templates/notifications/list.html:364
 msgid "Уведомления"
 msgstr "Notifications"
 
-#: teachers/models.py:2665 templates/booking/book_teacher.html:188
+#: teachers/models.py:2675 templates/booking/book_teacher.html:188
 msgid "Утро"
 msgstr "Morning"
 
-#: teachers/models.py:2666 templates/booking/book_teacher.html:190
+#: teachers/models.py:2676 templates/booking/book_teacher.html:190
 msgid "Вечер"
 msgstr "Evening"
 
-#: teachers/models.py:2677
+#: teachers/models.py:2687
 msgid "Период"
 msgstr "Period"
 
-#: teachers/models.py:2682
+#: teachers/models.py:2692
 msgid "Язык"
 msgstr "Language"
 
-#: teachers/models.py:2687
+#: teachers/models.py:2697
 msgid ""
 "Поддерживается Markdown: *жирный*, _курсив_. Можно использовать эмодзи и "
 "переводы строк."
 msgstr ""
 "Markdown supported: *bold*, _italic_. You can use emoji and line breaks."
 
-#: teachers/models.py:2693 templates/logic/teacher_profile.html:1868
+#: teachers/models.py:2703 templates/logic/teacher_profile.html:1868
 msgid "Активен"
 msgstr "Active"
 
-#: teachers/models.py:2694
+#: teachers/models.py:2704
 msgid "Если выключено — шаблон не попадает в рассылку."
 msgstr "When off, the template is excluded from the broadcast."
 
-#: teachers/models.py:2700
+#: teachers/models.py:2710
 msgid "Заметка для админа"
 msgstr "Admin note"
 
-#: teachers/models.py:2701
+#: teachers/models.py:2711
 msgid "Необязательное описание — только для вас."
 msgstr "Optional description, visible only to you."
 
-#: teachers/models.py:2703
+#: teachers/models.py:2713
 msgid "Создан"
 msgstr "Created"
 
-#: teachers/models.py:2704
+#: teachers/models.py:2714
 msgid "Обновлён"
 msgstr "Updated"
 
-#: teachers/models.py:2707
+#: teachers/models.py:2717
 msgid "Шаблон ежедневного напоминания"
 msgstr "Daily reminder template"
 
-#: teachers/models.py:2708
+#: teachers/models.py:2718
 msgid "Шаблоны ежедневных напоминаний"
 msgstr "Daily reminder templates"
 
-#: teachers/models.py:2738 templates/logic/conversation_detail.html:1067
-#: templates/logic/conversation_detail.html:1160
+#: teachers/models.py:2748 templates/logic/conversation_detail.html:1097
+#: templates/logic/conversation_detail.html:1190
 #: templates/notifications/detail.html:483
 #: templates/notifications/list.html:401
 msgid "Прочитано"
 msgstr "Read"
 
-#: teachers/models.py:2742
+#: teachers/models.py:2752
 msgid "Прочитанное уведомление"
 msgstr "Read notification"
 
-#: teachers/models.py:2743
+#: teachers/models.py:2753
 msgid "Прочитанные уведомления"
 msgstr "Read notifications"
 
-#: teachers/models.py:2766
+#: teachers/models.py:2776
 msgid "Ключ сессии Django"
 msgstr "Django session key"
 
-#: teachers/models.py:2771
+#: teachers/models.py:2781
 msgid "Идентификатор wizard (на случай если их будет несколько)"
 msgstr "Wizard identifier (in case there are several)"
 
-#: teachers/models.py:2776
+#: teachers/models.py:2786
 msgid "На каком шаге был пользователь"
 msgstr "Which step the user was on"
 
-#: teachers/models.py:2781
+#: teachers/models.py:2791
 msgid "Сериализованные данные wizard (storage.data)"
 msgstr "Serialized wizard data (storage.data)"
 
-#: teachers/models.py:2787
+#: teachers/models.py:2797
 msgid "Черновик регистрации"
 msgstr "Registration draft"
 
-#: teachers/models.py:2788
+#: teachers/models.py:2798
 msgid "Черновики регистрации"
 msgstr "Registration drafts"
 
-#: teachers/models.py:2826 templates/booking/teacher_calendar.html:25
+#: teachers/models.py:2836 templates/booking/teacher_calendar.html:25
 msgid "Свободен"
 msgstr "Available"
 
-#: teachers/models.py:2827
+#: teachers/models.py:2837
 msgid "Зарезервирован (ожидает подтверждения)"
 msgstr "Reserved (awaiting confirmation)"
 
-#: teachers/models.py:2828 templates/billing/admin/trials.html:52
+#: teachers/models.py:2838 templates/billing/admin/trials.html:52
 #: templates/booking/teacher_calendar.html:27
 msgid "Забронирован"
 msgstr "Booked"
 
-#: teachers/models.py:2829
+#: teachers/models.py:2839
 msgid "Заблокирован учителем"
 msgstr "Blocked by teacher"
 
-#: teachers/models.py:2841 templates/logic/teacher_detail.html:2410
+#: teachers/models.py:2851 templates/logic/teacher_detail.html:2410
 #: templates/logic/teacher_profile.html:1739
 msgid "Начало"
 msgstr "Start"
 
-#: teachers/models.py:2842 templates/logic/teacher_detail.html:2417
+#: teachers/models.py:2852 templates/logic/teacher_detail.html:2417
 #: templates/logic/teacher_profile.html:1746
 msgid "Конец"
 msgstr "End"
 
-#: teachers/models.py:2857
+#: teachers/models.py:2867
 msgid "Временной слот"
 msgstr "Time slot"
 
-#: teachers/models.py:2858
+#: teachers/models.py:2868
 msgid "Временные слоты"
 msgstr "Time slots"
 
-#: teachers/models.py:2935 templates/booking/my_bookings.html:411
+#: teachers/models.py:2945 templates/booking/my_bookings.html:411
 msgid "Подтверждено"
 msgstr "Confirmed"
 
-#: teachers/models.py:2936 templates/billing/student_dashboard.html:118
+#: teachers/models.py:2946 templates/billing/student_dashboard.html:118
 #: templates/billing/student_dashboard.html:120
 msgid "Завершён"
 msgstr "Completed"
 
-#: teachers/models.py:2937
+#: teachers/models.py:2947
 msgid "Отменено учеником"
 msgstr "Cancelled by student"
 
-#: teachers/models.py:2938
+#: teachers/models.py:2948
 msgid "Отменено учителем"
 msgstr "Cancelled by teacher"
 
-#: teachers/models.py:2939
+#: teachers/models.py:2949
 msgid "Перенесено"
 msgstr "Rescheduled"
 
-#: teachers/models.py:2940
+#: teachers/models.py:2950
 msgid "Заявка истекла (не подтверждена до начала урока)"
 msgstr "Request expired (not confirmed before the lesson started)"
 
-#: teachers/models.py:2941
+#: teachers/models.py:2951
 msgid "Ученик не пришёл"
 msgstr "Student didn't show up"
 
-#: teachers/models.py:2942
+#: teachers/models.py:2952
 msgid "Учитель не пришёл"
 msgstr "Teacher didn't show up"
 
-#: teachers/models.py:2943
+#: teachers/models.py:2953
 msgid "Не состоялся (никто не пришёл)"
 msgstr "Did not take place (no one showed up)"
 
-#: teachers/models.py:2960 templates/booking/teacher_calendar.html:70
+#: teachers/models.py:2970 templates/booking/teacher_calendar.html:70
 #: templates/booking/teacher_calendar.html:244
 msgid "Слот"
 msgstr "Slot"
 
-#: teachers/models.py:2992
+#: teachers/models.py:3002
 msgid "Сообщение от ученика при бронировании"
 msgstr "Message from the student when booking"
 
-#: teachers/models.py:2996
+#: teachers/models.py:3006
 msgid "Комментарий учителя при подтверждении/отказе"
 msgstr "Teacher's comment when confirming or declining"
 
-#: teachers/models.py:3001 templates/logic/teacher_detail.html:2636
+#: teachers/models.py:3011 templates/logic/teacher_detail.html:2636
 #: templates/notifications/detail.html:523
 #: templates/registration/step5_subjects.html:58
 msgid "Пробный урок"
 msgstr "Trial lesson"
 
-#: teachers/models.py:3009
+#: teachers/models.py:3019
 msgid "Оплачено за пробный"
 msgstr "Paid for trial"
 
-#: teachers/models.py:3010
+#: teachers/models.py:3020
 msgid ""
 "Снэпшот цены платного пробного на момент бронирования. NULL = бесплатный или "
 "не пробный."
@@ -2625,117 +2631,117 @@ msgstr ""
 "Snapshot of the paid trial price at the time of booking. NULL = free or not "
 "a trial."
 
-#: teachers/models.py:3826
+#: teachers/models.py:3836
 msgid "За 24 часа"
 msgstr "24 hours before"
 
-#: teachers/models.py:3827
+#: teachers/models.py:3837
 msgid "За 3 часа"
 msgstr "3 hours before"
 
-#: teachers/models.py:3828
+#: teachers/models.py:3838
 msgid "За 10 минут"
 msgstr "10 minutes before"
 
-#: teachers/models.py:3841
+#: teachers/models.py:3851
 msgid "Каналы через запятую: email,in_app,telegram"
 msgstr "Channels separated by commas: email,in_app,telegram"
 
-#: teachers/models.py:3886
+#: teachers/models.py:3896
 #, fuzzy
 #| msgid "Присутствие"
 msgid "Сессия присутствия"
 msgstr "Attendance"
 
-#: teachers/models.py:3887
+#: teachers/models.py:3897
 #, fuzzy
 #| msgid "Присутствие"
 msgid "Сессии присутствия"
 msgstr "Attendance"
 
-#: teachers/models.py:3905
+#: teachers/models.py:3915
 msgid "Учитель подключился"
 msgstr "Teacher joined"
 
-#: teachers/models.py:3906
+#: teachers/models.py:3916
 msgid "Ученик подключился"
 msgstr "Student joined"
 
-#: teachers/models.py:3907
+#: teachers/models.py:3917
 msgid "Урок проведён"
 msgstr "Lesson held"
 
-#: teachers/models.py:3908
+#: teachers/models.py:3918
 msgid "Неявка учителя"
 msgstr "Teacher no-show"
 
-#: teachers/models.py:3909
+#: teachers/models.py:3919
 msgid "Неявка ученика прощена"
 msgstr "Student no-show forgiven"
 
-#: teachers/models.py:3910
+#: teachers/models.py:3920
 msgid "Неявка ученика — урок списан"
 msgstr "Student no-show — lesson charged"
 
-#: teachers/models.py:3911
+#: teachers/models.py:3921
 msgid "Урок не состоялся"
 msgstr "Lesson did not take place"
 
-#: teachers/models.py:3912
+#: teachers/models.py:3922
 msgid "Урок не подтверждён: мало одновременного присутствия"
 msgstr ""
 
-#: teachers/models.py:3913
+#: teachers/models.py:3923
 msgid "Отправлено предупреждение"
 msgstr "Warning sent"
 
-#: teachers/models.py:3914
+#: teachers/models.py:3924
 msgid "Выплата учителю"
 msgstr "Payout to teacher"
 
-#: teachers/models.py:3915
+#: teachers/models.py:3925
 msgid "Возврат ученику"
 msgstr "Refund to student"
 
-#: teachers/models.py:3929
+#: teachers/models.py:3939
 msgid "Событие урока"
 msgstr "Lesson event"
 
-#: teachers/models.py:3930
+#: teachers/models.py:3940
 msgid "События уроков"
 msgstr "Lesson events"
 
-#: teachers/models.py:3969
+#: teachers/models.py:3979
 msgid "Кто загрузил"
 msgstr "Uploaded by"
 
-#: teachers/models.py:3980
+#: teachers/models.py:3990
 msgid "Файл урока"
 msgstr "Lesson file"
 
-#: teachers/models.py:3981
+#: teachers/models.py:3991
 msgid "Файлы урока"
 msgstr "Lesson files"
 
-#: teachers/models.py:4009
+#: teachers/models.py:4019
 #, fuzzy
 #| msgid "Отправить"
 msgid "Отправитель"
 msgstr "Send"
 
-#: teachers/models.py:4019
+#: teachers/models.py:4029
 #, fuzzy
 #| msgid "Сообщение"
 msgid "Вложение"
 msgstr "Message"
 
-#: teachers/models.py:4024
+#: teachers/models.py:4034
 #, fuzzy
 #| msgid "Сообщение об ошибке"
 msgid "Сообщение чата урока"
 msgstr "Error message"
 
-#: teachers/models.py:4025
+#: teachers/models.py:4035
 #, fuzzy
 #| msgid "Забронируйте урок"
 msgid "Сообщения чата урока"
@@ -3526,71 +3532,79 @@ msgstr ""
 msgid "Ошибка: %(err)s"
 msgstr "Error: %(err)s"
 
-#: teachers/views.py:2850
+#: teachers/views.py:2847
+msgid "Введите текст сообщения."
+msgstr "Enter message text."
+
+#: teachers/views.py:2881
+msgid "Сообщение от Поддержки отправлено ученику и учителю."
+msgstr "Support message sent to the student and teacher."
+
+#: teachers/views.py:2896
 msgid "Можно писать только от имени участников беседы."
 msgstr "You can only write as a participant of the conversation."
 
-#: teachers/views.py:2865
+#: teachers/views.py:2911
 #, python-format
 msgid "Сообщение отправлено от имени %(name)s"
 msgstr "Message sent as %(name)s"
 
-#: teachers/views.py:2896
+#: teachers/views.py:2942
 #, fuzzy
 #| msgid "Сообщение отправлено!"
 msgid "Сообщение удалено"
 msgstr "Message sent!"
 
-#: teachers/views.py:2996
+#: teachers/views.py:3042
 msgid "У вас нет доступа к этому уведомлению."
 msgstr "You don't have access to this notification."
 
-#: teachers/views.py:3036
+#: teachers/views.py:3082
 msgid "Нет доступа"
 msgstr "Access denied"
 
-#: teachers/views.py:3217
+#: teachers/views.py:3263
 msgid "Добро пожаловать! Мы подберём для вас подходящих учителей."
 msgstr "Welcome! We'll match you with the right teachers."
 
-#: teachers/views.py:3253
+#: teachers/views.py:3299
 msgid "У вас уже есть профиль"
 msgstr "You already have a profile"
 
-#: teachers/views.py:3347
+#: teachers/views.py:3393
 msgid "Выберите корректный период (утро/вечер)."
 msgstr "Choose a valid time of day (morning/evening)."
 
-#: teachers/views.py:3349
+#: teachers/views.py:3395
 msgid "Выберите корректный язык."
 msgstr "Choose a valid language."
 
-#: teachers/views.py:3351
+#: teachers/views.py:3397
 msgid "Текст сообщения не может быть пустым."
 msgstr "The message can't be empty."
 
-#: teachers/views.py:3353
+#: teachers/views.py:3399
 msgid "Текст слишком длинный (максимум 4000 символов)."
 msgstr "The text is too long (4000 characters max)."
 
-#: teachers/views.py:3365
+#: teachers/views.py:3411
 msgid "Шаблон обновлён."
 msgstr "Template updated."
 
-#: teachers/views.py:3365
+#: teachers/views.py:3411
 msgid "Шаблон создан."
 msgstr "Template created."
 
-#: teachers/views.py:3385
+#: teachers/views.py:3431
 msgid "Шаблон удалён."
 msgstr "Template deleted."
 
-#: teachers/views.py:3398
+#: teachers/views.py:3444
 #, python-format
 msgid "Шаблон %(state)s."
 msgstr "Template %(state)s."
 
-#: teachers/views.py:3418
+#: teachers/views.py:3464
 msgid ""
 "Ваш аккаунт не привязан к Telegram-боту — привяжите его, чтобы получать "
 "тестовые сообщения."
@@ -3598,11 +3612,11 @@ msgstr ""
 "Your account isn't linked to the Telegram bot — link it to receive test "
 "messages."
 
-#: teachers/views.py:3431
+#: teachers/views.py:3477
 msgid "Тестовое сообщение отправлено вам в Telegram."
 msgstr "A test message has been sent to you on Telegram."
 
-#: teachers/views.py:3433
+#: teachers/views.py:3479
 msgid "Не удалось отправить тестовое сообщение."
 msgstr "Couldn't send the test message."
 
@@ -3788,7 +3802,7 @@ msgstr "Terms of Use"
 #: templates/booking/teacher_calendar.html:119
 #: templates/booking/teacher_calendar.html:182
 #: templates/booking/teacher_calendar.html:210
-#: templates/logic/conversation_detail.html:1135
+#: templates/logic/conversation_detail.html:1165
 #: templates/logic/favorites_teachers.html:465
 #: templates/registration/base_wizard.html:122
 #: templates/registration/step6_certificates.html:147
@@ -4008,7 +4022,7 @@ msgstr "Teacher profile not found"
 #: templates/billing/admin/trials.html:95
 #: templates/billing/teacher_subscribers.html:128
 #: templates/billing/topup_request.html:275
-#: templates/logic/conversation_detail.html:990 templates/logic/home.html:1700
+#: templates/logic/conversation_detail.html:1014 templates/logic/home.html:1700
 #: templates/logic/home.html:1947 templates/logic/home.html:2349
 #: templates/logic/register_student.html:1231
 #: templates/logic/register_student.html:1283
@@ -4230,9 +4244,9 @@ msgstr ""
 #: templates/billing/tariffs_list.html:81
 #: templates/booking/lesson_room.html:1014
 #: templates/booking/teacher_calendar.html:116
-#: templates/logic/conversation_detail.html:1026
-#: templates/logic/conversation_detail.html:1027
-#: templates/logic/conversation_detail.html:1136
+#: templates/logic/conversation_detail.html:1050
+#: templates/logic/conversation_detail.html:1051
+#: templates/logic/conversation_detail.html:1166
 #: templates/logic/favorites_teachers.html:464
 #: templates/logic/register_student.html:1603
 #: templates/logic/teacher_profile_edit.html:1230
@@ -4258,9 +4272,9 @@ msgstr "Attach files (PDF/DOCX/JPG, etc.)"
 
 #: templates/billing/homework_detail.html:116
 #: templates/booking/lesson_room.html:411
-#: templates/logic/conversation_detail.html:1117
-#: templates/logic/conversation_detail.html:1119
-#: templates/logic/conversation_detail.html:1153
+#: templates/logic/conversation_detail.html:1147
+#: templates/logic/conversation_detail.html:1149
+#: templates/logic/conversation_detail.html:1183
 msgid "Отправить"
 msgstr "Send"
 
@@ -5173,8 +5187,8 @@ msgstr "today"
 #: templates/billing/teacher_dashboard.html:164
 #: templates/booking/my_bookings.html:427
 #: templates/booking/my_bookings.html:429
-#: templates/logic/conversation_detail.html:1043
-#: templates/logic/conversation_detail.html:1158
+#: templates/logic/conversation_detail.html:1067
+#: templates/logic/conversation_detail.html:1188
 msgid "Сегодня"
 msgstr "Today"
 
@@ -5949,7 +5963,11 @@ msgid ""
 "материалы урока — на панели справа; доска и демонстрация экрана — в нижней "
 "панели видео. Демонстрация экрана доступна с компьютера (на телефоне "
 "браузеры её не поддерживают)."
-msgstr "Click “Join” and allow access to your camera and microphone. Chat and lesson materials are in the right panel; the whiteboard and screen sharing are in the video toolbar. Screen sharing works on a computer (mobile browsers don’t support it)."
+msgstr ""
+"Click “Join” and allow access to your camera and microphone. Chat and lesson "
+"materials are in the right panel; the whiteboard and screen sharing are in "
+"the video toolbar. Screen sharing works on a computer (mobile browsers don’t "
+"support it)."
 
 #: templates/booking/lesson_room.html:345
 #: templates/booking/lesson_room.html:370 templates/logic/home.html:2469
@@ -5998,7 +6016,9 @@ msgstr "Upload file"
 msgid ""
 "Документы, книги, презентации, изображения — до %(lesson_file_max_mb)s МБ. "
 "Видны обеим сторонам урока."
-msgstr "Documents, books, presentations, images — up to %(lesson_file_max_mb)s MB. Visible to both sides of the lesson."
+msgstr ""
+"Documents, books, presentations, images — up to %(lesson_file_max_mb)s MB. "
+"Visible to both sides of the lesson."
 
 #: templates/booking/lesson_room.html:432
 msgid "Пока нет загруженных материалов."
@@ -6171,7 +6191,7 @@ msgid "Не удалось загрузить файл. Попробуйте е�
 msgstr "Failed to upload the file. Please try again."
 
 #: templates/booking/lesson_room.html:1239
-#: templates/logic/conversation_detail.html:1152
+#: templates/logic/conversation_detail.html:1182
 msgid "Отправка…"
 msgstr "Sending…"
 
@@ -7266,98 +7286,103 @@ msgid "Отменить изменения"
 msgstr "Discard changes"
 
 # ========== STUDENT DETAIL PAGE ==========
-#: templates/logic/conversation_detail.html:1007
-#: templates/logic/conversation_detail.html:1356
+#: templates/logic/conversation_detail.html:1031
+#: templates/logic/conversation_detail.html:1387
 msgid "Подключение…"
 msgstr "Connecting…"
 
-#: templates/logic/conversation_detail.html:1016
+#: templates/logic/conversation_detail.html:1040
 msgid "Предмет беседы"
 msgstr "Conversation topic"
 
-#: templates/logic/conversation_detail.html:1076
+#: templates/logic/conversation_detail.html:1089
+#: templates/logic/conversation_detail.html:1195
+msgid "Поддержка UstozHub"
+msgstr "UstozHub Support"
+
+#: templates/logic/conversation_detail.html:1106
 msgid "Начните беседу"
 msgstr "Start the conversation"
 
-#: templates/logic/conversation_detail.html:1079
+#: templates/logic/conversation_detail.html:1109
 msgid "Поздоровайтесь и расскажите, что вас интересует."
 msgstr "Say hello and tell them what you’re interested in."
 
-#: templates/logic/conversation_detail.html:1081
+#: templates/logic/conversation_detail.html:1111
 msgid "Поприветствуйте ученика и предложите помощь."
 msgstr "Greet the student and offer to help."
 
-#: templates/logic/conversation_detail.html:1086
+#: templates/logic/conversation_detail.html:1116
 msgid "Здравствуйте! Интересует ваш курс."
 msgstr "Hi! I’m interested in your course."
 
-#: templates/logic/conversation_detail.html:1086
-#: templates/logic/conversation_detail.html:1091
+#: templates/logic/conversation_detail.html:1116
+#: templates/logic/conversation_detail.html:1121
 msgid "Поприветствовать"
 msgstr "Say hello"
 
-#: templates/logic/conversation_detail.html:1087
+#: templates/logic/conversation_detail.html:1117
 msgid "Можно ли начать с пробного урока?"
 msgstr "Can we start with a trial lesson?"
 
-#: templates/logic/conversation_detail.html:1087
+#: templates/logic/conversation_detail.html:1117
 msgid "Спросить о пробном"
 msgstr "Ask about a trial"
 
-#: templates/logic/conversation_detail.html:1088
+#: templates/logic/conversation_detail.html:1118
 msgid "Какие у вас свободные слоты на этой неделе?"
 msgstr "What open slots do you have this week?"
 
-#: templates/logic/conversation_detail.html:1088
+#: templates/logic/conversation_detail.html:1118
 msgid "Узнать расписание"
 msgstr "Check schedule"
 
-#: templates/logic/conversation_detail.html:1089
+#: templates/logic/conversation_detail.html:1119
 msgid "Сколько стоит занятие?"
 msgstr "How much is a lesson?"
 
-#: templates/logic/conversation_detail.html:1089
+#: templates/logic/conversation_detail.html:1119
 msgid "Цена"
 msgstr "Price"
 
-#: templates/logic/conversation_detail.html:1091
+#: templates/logic/conversation_detail.html:1121
 msgid "Здравствуйте! Чем могу помочь?"
 msgstr "Hi! How can I help?"
 
-#: templates/logic/conversation_detail.html:1092
+#: templates/logic/conversation_detail.html:1122
 msgid "Расскажите немного о вашем уровне и целях."
 msgstr "Tell me a bit about your level and goals."
 
-#: templates/logic/conversation_detail.html:1092
+#: templates/logic/conversation_detail.html:1122
 msgid "Узнать цели"
 msgstr "Ask about goals"
 
-#: templates/logic/conversation_detail.html:1093
+#: templates/logic/conversation_detail.html:1123
 msgid "Готов предложить бесплатное пробное занятие."
 msgstr "I can offer a free trial lesson."
 
-#: templates/logic/conversation_detail.html:1093
+#: templates/logic/conversation_detail.html:1123
 msgid "Предложить пробное"
 msgstr "Offer a trial lesson"
 
-#: templates/logic/conversation_detail.html:1094
+#: templates/logic/conversation_detail.html:1124
 msgid "Когда вам удобно начать?"
 msgstr "When would you like to start?"
 
-#: templates/logic/conversation_detail.html:1094
+#: templates/logic/conversation_detail.html:1124
 msgid "Уточнить время"
 msgstr "Confirm the time"
 
-#: templates/logic/conversation_detail.html:1107
+#: templates/logic/conversation_detail.html:1137
 msgid "Сообщение..."
 msgstr "Message..."
 
-#: templates/logic/conversation_detail.html:1130
-#: templates/logic/conversation_detail.html:1164
+#: templates/logic/conversation_detail.html:1160
+#: templates/logic/conversation_detail.html:1194
 msgid "Удалить переписку?"
 msgstr "Delete this chat?"
 
-#: templates/logic/conversation_detail.html:1132
+#: templates/logic/conversation_detail.html:1162
 msgid ""
 "Переписка скроется из вашего списка. История сообщений сохранится — если "
 "собеседник напишет вам снова, чат восстановится."
@@ -7365,23 +7390,23 @@ msgstr ""
 "The chat will be hidden from your list. The message history is kept — if the "
 "other person writes to you again, the chat will reappear."
 
-#: templates/logic/conversation_detail.html:1154
+#: templates/logic/conversation_detail.html:1184
 msgid "Не удалось отправить сообщение"
 msgstr "Couldn't send the message"
 
-#: templates/logic/conversation_detail.html:1155
+#: templates/logic/conversation_detail.html:1185
 msgid "Соединение пропало. Сообщение отправлено по резервному каналу."
 msgstr "Connection lost. The message was sent through a backup channel."
 
-#: templates/logic/conversation_detail.html:1159
+#: templates/logic/conversation_detail.html:1189
 msgid "Вчера"
 msgstr "Yesterday"
 
-#: templates/logic/conversation_detail.html:1162
+#: templates/logic/conversation_detail.html:1192
 msgid "Отправляется"
 msgstr "Sending"
 
-#: templates/logic/conversation_detail.html:1163
+#: templates/logic/conversation_detail.html:1193
 msgid "Соединение прервано. Переподключаемся…"
 msgstr "Connection lost. Reconnecting…"
 

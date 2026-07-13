@@ -1646,6 +1646,16 @@ class Message(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
     content = models.TextField(max_length=2000)
 
+    # Сообщение написано администрацией/поддержкой из admin-дашборда, а не
+    # участником переписки. Отображается у ученика и учителя как «Поддержка
+    # UstozHub» (отдельный стиль), и уведомление о нём уходит ОБОИМ участникам
+    # (см. teachers.signals.send_message_notification). sender при этом — тот
+    # staff-аккаунт, который написал, но его личность ученику не показывается.
+    is_admin_message = models.BooleanField(
+        default=False,
+        verbose_name=_('Сообщение от поддержки'),
+    )
+
     is_read = models.BooleanField(default=False)
     read_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
