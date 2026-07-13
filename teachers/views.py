@@ -571,15 +571,18 @@ def home(request):
 
     # Контентные секции лендинга (только на «чистой» главной — без поиска/фильтров)
     popular_subjects = []
-    categories = []
+    pinned_categories = []
     home_reviews = []
     platform_extra = {}
     if not active_filters:
-        # Категории с учителями — плитки блока «Категории» (клик → ?category=).
-        categories = cache.get('home_categories')
-        if categories is None:
-            categories = list(
-                SubjectCategory.objects.filter(is_active=True).annotate(
+        # Закреплённая плитка «Программирование» в карусели «Популярные предметы»
+        # (клик → ?category=). Отдельная плитка-направление рядом с предметами.
+        pinned_categories = cache.get('home_pinned_categories')
+        if pinned_categories is None:
+            pinned_categories = list(
+                SubjectCategory.objects.filter(
+                    is_active=True, name='IT и Программирование',
+                ).annotate(
                     n_teachers=Count('subjects__teacherprofile', filter=Q(
                         subjects__is_active=True,
                         subjects__teacherprofile__is_active=True,
@@ -587,7 +590,7 @@ def home(request):
                     ), distinct=True)
                 ).filter(n_teachers__gt=0).order_by('order', 'name')
             )
-            cache.set('home_categories', categories, 600)
+            cache.set('home_pinned_categories', pinned_categories, 600)
 
         popular_subjects = cache.get('home_popular_subjects')
         if popular_subjects is None:
@@ -624,7 +627,7 @@ def home(request):
         'favorite_teacher_ids': favorite_teacher_ids,
         'active_filters': active_filters,
         'popular_subjects': popular_subjects,
-        'categories': categories,
+        'pinned_categories': pinned_categories,
         'home_reviews': home_reviews,
         'platform_extra': platform_extra,
         'platform_stats': platform_stats,
