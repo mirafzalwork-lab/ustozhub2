@@ -1939,6 +1939,26 @@
         }
     </style>
 
+    {% if categories %}
+    <section class="landing-section cat-subjects" aria-label="{% trans 'Категории' %}">
+        <h2 class="landing-title">{% trans 'Категории' %}</h2>
+        <p class="landing-sub">{% trans 'Выберите направление и найдите репетитора' %}</p>
+        <div class="hcar at-start">
+            <button type="button" class="hcar-arrow hcar-arrow-prev is-hidden" aria-label="{% trans 'Назад' %}"><i class="fas fa-chevron-left"></i></button>
+            <div class="hcar-track">
+                {% for c in categories %}
+                <a class="subject-tile" href="?category={{ c.id }}">
+                    <span class="subject-tile-icon"><i class="{{ c.icon|default:'fas fa-folder' }}"></i></span>
+                    <span class="subject-tile-name">{{ c.name }}</span>
+                    <span class="subject-tile-count">{{ c.n_teachers }} {% trans 'учит.' %}</span>
+                </a>
+                {% endfor %}
+            </div>
+            <button type="button" class="hcar-arrow hcar-arrow-next" aria-label="{% trans 'Вперёд' %}"><i class="fas fa-chevron-right"></i></button>
+        </div>
+    </section>
+    {% endif %}
+
     {% if popular_subjects %}
     <section class="landing-section pop-subjects" aria-label="{% trans 'Популярные предметы' %}">
         <h2 class="landing-title">{% trans 'Популярные предметы' %}</h2>

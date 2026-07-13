@@ -296,8 +296,9 @@ def home(request):
     min_experience = request.GET.get('min_experience')
     search_query = request.GET.get('search') or request.GET.get('q')
     suggest = request.GET.get('suggest')
+    category_id = request.GET.get('category')
     sort_by = request.GET.get('sort', 'recommended')
-    
+
     # Применяем фильтры
     if subject_id:
         teachers = teachers.filter(subjects__id=subject_id)
@@ -309,7 +310,11 @@ def home(request):
                 teachers = teachers.filter(subjects__in=desired_subjects)
         except StudentProfile.DoesNotExist:
             pass
-    
+
+    # Фильтр по категории предметов (плитки блока «Категории» на главной).
+    if category_id:
+        teachers = teachers.filter(subjects__category_id=category_id).distinct()
+
     if city_id:
         teachers = teachers.filter(city_id=city_id)
     
@@ -543,11 +548,14 @@ def home(request):
     _subj_names = {str(s.id): s.get_display_name() for s in all_subjects}
     _city_names = {str(c.id): c.name for c in all_cities}
     _format_names = {k: v for k, v in TeacherProfile.TEACHING_FORMATS}
+    _cat_names = {str(c.id): c.name for c in SubjectCategory.objects.filter(is_active=True)}
     active_filters = []
     if search_query:
         active_filters.append({'param': 'search', 'label': '«%s»' % search_query})
     if subject_id and subject_id in _subj_names:
         active_filters.append({'param': 'subject', 'label': _subj_names[subject_id]})
+    if category_id and category_id in _cat_names:
+        active_filters.append({'param': 'category', 'label': _cat_names[category_id]})
     if city_id and city_id in _city_names:
         active_filters.append({'param': 'city', 'label': _city_names[city_id]})
     if teaching_format and teaching_format in _format_names:
@@ -563,9 +571,24 @@ def home(request):
 
     # Контентные секции лендинга (только на «чистой» главной — без поиска/фильтров)
     popular_subjects = []
+    categories = []
     home_reviews = []
     platform_extra = {}
     if not active_filters:
+        # Категории с учителями — плитки блока «Категории» (клик → ?category=).
+        categories = cache.get('home_categories')
+        if categories is None:
+            categories = list(
+                SubjectCategory.objects.filter(is_active=True).annotate(
+                    n_teachers=Count('subjects__teacherprofile', filter=Q(
+                        subjects__is_active=True,
+                        subjects__teacherprofile__is_active=True,
+                        subjects__teacherprofile__moderation_status='approved',
+                    ), distinct=True)
+                ).filter(n_teachers__gt=0).order_by('order', 'name')
+            )
+            cache.set('home_categories', categories, 600)
+
         popular_subjects = cache.get('home_popular_subjects')
         if popular_subjects is None:
             popular_subjects = list(
@@ -601,6 +624,7 @@ def home(request):
         'favorite_teacher_ids': favorite_teacher_ids,
         'active_filters': active_filters,
         'popular_subjects': popular_subjects,
+        'categories': categories,
         'home_reviews': home_reviews,
         'platform_extra': platform_extra,
         'platform_stats': platform_stats,
