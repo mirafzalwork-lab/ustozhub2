@@ -34,8 +34,11 @@ def _get_user_conversations(user):
             if not hasattr(user, 'teacher_profile') or not user.teacher_profile:
                 return Conversation.objects.none()
 
+            # Q(student=user) — админ-чаты «Поддержка ↔ этот учитель»
+            # (учитель в student-слоте), чтобы их непрочитанные попали в бейдж.
+            from django.db.models import Q
             return Conversation.objects.filter(
-                teacher=user.teacher_profile,
+                Q(teacher=user.teacher_profile) | Q(student=user),
                 is_active=True
             ).select_related('teacher', 'student')
         else:

@@ -1607,6 +1607,28 @@ class StudentProfile(models.Model):
             cache.delete(f'student_views_{self.id}_{period}')
             cache.delete(f'student_unique_views_{self.id}_{period}')
 
+# Системный аккаунт поддержки. Его TeacherProfile ставится в teacher-слот
+# админ-чатов (Conversation), а целевой пользователь — в student-слот, что
+# позволяет переиспользовать весь движок переписки для чата «пользователь ↔
+# Поддержка». Аккаунт создаётся миграцией и скрыт из публичных листингов
+# (is_active=False у профиля).
+SUPPORT_USERNAME = '__support__'
+SUPPORT_DISPLAY_NAME = 'Поддержка UstozHub'
+
+
+def get_support_profile():
+    """Системный профиль «Поддержка UstozHub» (или None, если ещё не создан)."""
+    return (TeacherProfile.objects
+            .filter(user__username=SUPPORT_USERNAME)
+            .select_related('user').first())
+
+
+def get_support_user():
+    """Системный пользователь «Поддержка UstozHub» (или None)."""
+    prof = get_support_profile()
+    return prof.user if prof else None
+
+
 class Conversation(models.Model):
     """Модель переписки между учителем и учеником"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -1639,6 +1661,19 @@ class Conversation(models.Model):
     def get_unread_count(self, user):
         """Получить количество непрочитанных сообщений для пользователя"""
         return self.messages.filter(is_read=False).exclude(sender=user).count()
+
+    @property
+    def is_support(self):
+        """Это админ-чат «пользователь ↔ Поддержка» (teacher-слот = системный)."""
+        return bool(self.teacher_id and self.teacher.user.username == SUPPORT_USERNAME)
+
+    def other_participant(self, user):
+        """Собеседник в беседе для данного пользователя (по факту участия)."""
+        if user.pk == self.student_id:
+            return self.teacher.user
+        if self.teacher_id and user.pk == self.teacher.user_id:
+            return self.student
+        return None
 
 class Message(models.Model):
     """Модель сообщения"""

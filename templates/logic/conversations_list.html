@@ -530,30 +530,24 @@
     {% if conversations %}
         <div class="conversations-list">
             {% for item in conversations %}
-                {% with conv=item.conversation last_msg=item.last_message %}
+                {% with conv=item.conversation last_msg=item.last_message other=item.other %}
                 <a href="{% url 'conversation_detail' conversation_id=conv.id %}" class="conversation-item">
                     <div class="conversation-avatar">
-                        {% if user_type == 'teacher' %}
-                            {% if conv.student.avatar %}
-                                <img src="{{ conv.student.avatar.url }}" alt="{{ conv.student.get_full_name }}">
-                            {% else %}
-                                {{ conv.student.first_name.0|default:"S" }}{{ conv.student.last_name.0|default:"" }}
-                            {% endif %}
+                        {% if conv.is_support %}
+                            <i class="fas fa-headset"></i>
+                        {% elif other.avatar %}
+                            <img src="{{ other.avatar.url }}" alt="{{ other.get_full_name }}">
                         {% else %}
-                            {% if conv.teacher.user.avatar %}
-                                <img src="{{ conv.teacher.user.avatar.url }}" alt="{{ conv.teacher.user.get_full_name }}">
-                            {% else %}
-                                {{ conv.teacher.user.first_name.0|default:"T" }}{{ conv.teacher.user.last_name.0|default:"" }}
-                            {% endif %}
+                            {{ other.first_name.0|default:"U" }}{{ other.last_name.0|default:"" }}
                         {% endif %}
                     </div>
-                    
+
                     <div class="conversation-info">
                         <div class="conversation-name">
-                            {% if user_type == 'teacher' %}
-                                {{ conv.student.get_full_name|default:conv.student.username }}
+                            {% if conv.is_support %}
+                                <i class="fas fa-headset"></i> {% trans "Поддержка UstozHub" %}
                             {% else %}
-                                {{ conv.teacher.user.get_full_name|default:conv.teacher.user.username }}
+                                {{ other.get_full_name|default:other.username }}
                             {% endif %}
                         </div>
                         

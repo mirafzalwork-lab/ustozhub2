@@ -1,0 +1,109 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{% static 'logo/new_logo.png' %}" type="image/x-icon">
+    <title>Написать пользователю - UstozHub Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'teachers/admin.css' %}">
+    <style>
+        .dm-search{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:20px}
+        .dm-search form{display:flex;gap:12px}
+        .dm-search input{flex:1;border:2px solid #e0e0e0;border-radius:8px;padding:12px;font-size:15px}
+        .dm-search input:focus{outline:none;border-color:#FC7702}
+        .dm-search button{background:#EA580C;color:#fff;border:none;border-radius:8px;padding:12px 22px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+        .dm-search button:hover{background:#C2410C}
+        .dm-hint{font-size:13px;color:#888;margin-top:10px}
+        .dm-list{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);overflow:hidden}
+        .dm-row{display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid #f0f1f3}
+        .dm-row:last-child{border-bottom:none}
+        .dm-avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:15px;flex-shrink:0}
+        .dm-av-teacher{background:linear-gradient(135deg,#FC7702,#d66502)}
+        .dm-av-student{background:linear-gradient(135deg,#3B82F6,#2563EB)}
+        .dm-info{flex:1;min-width:0}
+        .dm-name{font-weight:600;font-size:15px}
+        .dm-meta{font-size:12px;color:#999;margin-top:2px}
+        .dm-role{font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;text-transform:uppercase}
+        .dm-role-teacher{background:#FFF7ED;color:#C2410C}
+        .dm-role-student{background:#EFF6FF;color:#2563EB}
+        .dm-write{background:#1a1a1a;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none}
+        .dm-write:hover{background:#333}
+        .dm-empty{padding:40px;text-align:center;color:#999}
+        .alert{padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:14px}
+        .alert-success{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7}
+        .alert-error,.alert-danger{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5}
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'logo/new_logo.png' %}" alt="UstozHub" style="height:32px;width:auto;">
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="{% url 'admin_dashboard' %}"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+            <li><a href="{% url 'admin_direct_messages' %}" class="active"><i class="fas fa-paper-plane"></i> <span>Написать пользователю</span></a></li>
+            <li><a href="{% url 'admin_messages' %}"><i class="fas fa-comments"></i> <span>Сообщения</span></a></li>
+            <li><a href="{% url 'telegram_management' %}"><i class="fab fa-telegram"></i> <span>Telegram</span></a></li>
+            <li><a href="{% url 'home' %}"><i class="fas fa-globe"></i> <span>На сайт</span></a></li>
+            <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> <span>Выход</span></a></li>
+        </ul>
+    </aside>
+
+    <header class="topbar">
+        <div class="topbar-left">
+            <h1><i class="fas fa-paper-plane"></i> Написать пользователю</h1>
+        </div>
+    </header>
+
+    <main class="main-content">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'success' }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+
+        <div class="dm-search">
+            <form method="GET" action="{% url 'admin_direct_messages' %}">
+                <input type="text" name="q" value="{{ q }}" placeholder="Имя, username, email или телефон ученика/учителя..." autofocus>
+                <button type="submit"><i class="fas fa-search"></i> Найти</button>
+            </form>
+            <div class="dm-hint">Найдите ученика или учителя и напишите ему от имени «Поддержка UstozHub». Чат появится у пользователя в разделе «Сообщения» и в Telegram.</div>
+        </div>
+
+        {% if q %}
+        <div class="dm-list">
+            {% for u in results %}
+            <div class="dm-row">
+                <div class="dm-avatar {% if u.user_type == 'teacher' %}dm-av-teacher{% else %}dm-av-student{% endif %}">
+                    {{ u.first_name.0|default:u.username.0|upper }}
+                </div>
+                <div class="dm-info">
+                    <div class="dm-name">
+                        {{ u.get_full_name|default:u.username }}
+                        <span class="dm-role {% if u.user_type == 'teacher' %}dm-role-teacher{% else %}dm-role-student{% endif %}">
+                            {% if u.user_type == 'teacher' %}Учитель{% else %}Ученик{% endif %}
+                        </span>
+                    </div>
+                    <div class="dm-meta">
+                        @{{ u.username }}{% if u.phone %} · {{ u.phone }}{% endif %}{% if u.email %} · {{ u.email }}{% endif %}
+                    </div>
+                </div>
+                <form method="POST" action="{% url 'admin_start_support_chat' u.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="dm-write"><i class="fas fa-pen"></i> Написать</button>
+                </form>
+            </div>
+            {% empty %}
+            <div class="dm-empty">Никого не найдено по запросу «{{ q }}».</div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="dm-list"><div class="dm-empty">Введите запрос, чтобы найти пользователя.</div></div>
+        {% endif %}
+    </main>
+
+    {% include 'admin/_mobile_nav.html' %}
+</body>
+</html>

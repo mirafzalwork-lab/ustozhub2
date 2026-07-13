@@ -96,12 +96,14 @@ def _get_user_conversation(user, conversation_id, require_active=True):
     if require_active:
         filters['is_active'] = True
 
-    if user.user_type == 'teacher':
-        filters['teacher'] = user.teacher_profile
-    else:
-        filters['student'] = user
-
-    return get_object_or_404(Conversation, **filters)
+    conv = get_object_or_404(
+        Conversation.objects.select_related('teacher__user'), **filters
+    )
+    # Доступ по факту участия (не по user_type): нужно для админ-чатов
+    # «Поддержка ↔ пользователь», где учитель стоит в student-слоте.
+    if user.pk == conv.student_id or (conv.teacher_id and user.pk == conv.teacher.user_id):
+        return conv
+    raise Http404('Нет доступа к переписке')
 
 
 def can_view_contact_info(request, profile_owner):
@@ -2123,12 +2125,14 @@ def conversations_list(request):
             messages.warning(request, _('Завершите регистрацию учителя'))
             return redirect('teacher_register')
 
+        # Q(student=user) добавляет админ-чаты «Поддержка ↔ этот учитель»
+        # (учитель стоит в student-слоте такой беседы).
         conversations = Conversation.objects.filter(
-            teacher=teacher_profile,
+            Q(teacher=teacher_profile) | Q(student=user),
             is_active=True,
             messages__isnull=False,
         ).select_related(
-            'student', 'subject'
+            'teacher__user', 'student', 'subject'
         ).annotate(
             unread_count=unread_annotation,
             last_msg_id=last_msg_id_sq,
@@ -2160,7 +2164,10 @@ def conversations_list(request):
         conversations_with_info.append({
             'conversation': conv,
             'last_message': last_by_id.get(conv.last_msg_id),
-            'unread_count': conv.unread_count
+            'unread_count': conv.unread_count,
+            # Собеседник по факту участия (для support-чатов учитель может быть
+            # в student-слоте — тогда собеседник = «Поддержка»).
+            'other': conv.other_participant(user),
         })
 
     return render(request, 'logic/conversations_list.html', {
@@ -2177,32 +2184,20 @@ def conversation_detail(request, conversation_id):
     user = request.user
     
     try:
-        # Получаем переписку с проверкой доступа
-        if user.user_type == 'teacher':
-            conversation = get_object_or_404(
-                Conversation.objects.select_related(
-                    'teacher__user',
-                    'student',
-                    'subject'
-                ),
-                id=conversation_id,
-                teacher=user.teacher_profile,
-                is_active=True
-            )
+        # Доступ по факту участия (а не по user_type): поддерживает админ-чаты
+        # «Поддержка ↔ пользователь», где учитель может быть в student-слоте.
+        conversation = get_object_or_404(
+            Conversation.objects.select_related('teacher__user', 'student', 'subject'),
+            id=conversation_id,
+            is_active=True,
+        )
+        if user.pk == conversation.student_id:
+            other_user = conversation.teacher.user
+        elif conversation.teacher_id and user.pk == conversation.teacher.user_id:
             other_user = conversation.student
         else:
-            conversation = get_object_or_404(
-                Conversation.objects.select_related(
-                    'teacher__user',
-                    'student',
-                    'subject'
-                ),
-                id=conversation_id,
-                student=user,
-                is_active=True
-            )
-            other_user = conversation.teacher.user
-        
+            raise Http404('Нет доступа к переписке')
+
         # Получаем сообщения переписки
         messages_list = conversation.messages.select_related('sender').order_by('created_at')
         
@@ -2974,6 +2969,51 @@ def admin_delete_message(request, conversation_id, message_id):
     message.delete()
     conversation.save(update_fields=['updated_at'])
     django_messages.success(request, _('Сообщение удалено'))
+    return redirect('admin_conversation_detail', conversation_id=conversation.id)
+
+
+@staff_member_required
+def admin_direct_messages(request):
+    """Поиск пользователя (ученик/учитель) для прямого чата от Поддержки.
+
+    Админ ищет по имени/username/email/телефону и жмёт «Написать» → создаётся
+    (или открывается) чат «Поддержка ↔ пользователь», далее — обычная страница
+    admin_conversation_detail с панелью «Ответ от Поддержки».
+    """
+    from .models import SUPPORT_USERNAME
+    q = (request.GET.get('q') or '').strip()
+    results = []
+    if q:
+        results = list(
+            User.objects.filter(
+                Q(first_name__icontains=q) | Q(last_name__icontains=q) |
+                Q(username__icontains=q) | Q(email__icontains=q) |
+                Q(phone__icontains=q)
+            ).exclude(username=SUPPORT_USERNAME)
+            .order_by('first_name', 'username')[:40]
+        )
+    return render(request, 'admin/admin_direct_messages.html', {
+        'q': q, 'results': results,
+    })
+
+
+@staff_member_required
+@require_POST
+def admin_start_support_chat(request, user_id):
+    """Создать/открыть чат «Поддержка ↔ пользователь» и перейти к нему."""
+    from django.contrib import messages as django_messages
+    from .models import get_support_profile, SUPPORT_USERNAME
+    support = get_support_profile()
+    if support is None:
+        django_messages.error(request, _('Системный аккаунт поддержки не настроен.'))
+        return redirect('admin_direct_messages')
+    target = get_object_or_404(User, pk=user_id)
+    if target.username == SUPPORT_USERNAME:
+        django_messages.error(request, _('Нельзя открыть чат с системным аккаунтом.'))
+        return redirect('admin_direct_messages')
+    conversation, _created = Conversation.objects.get_or_create(
+        teacher=support, student=target,
+    )
     return redirect('admin_conversation_detail', conversation_id=conversation.id)
 
 
