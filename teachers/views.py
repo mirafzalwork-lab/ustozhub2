@@ -569,6 +569,13 @@ def home(request):
     if min_experience:
         active_filters.append({'param': 'min_experience', 'label': _('опыт от %(y)s лет') % {'y': min_experience}})
 
+    # Промо-слайдер «Рекомендуемые учителя» строится из отдельного queryset
+    # (is_featured=True) и НЕ учитывает фильтры. При активном фильтре (категория/
+    # предмет/город/поиск) он показывал чужих учителей (напр. английский при
+    # выборе «Программирование») — поэтому прячем его, оставляя строго совпадения.
+    if active_filters:
+        featured_teachers = []
+
     # Контентные секции лендинга (только на «чистой» главной — без поиска/фильтров)
     popular_subjects = []
     pinned_categories = []
