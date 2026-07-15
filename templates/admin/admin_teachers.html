@@ -154,6 +154,13 @@
                             {% csrf_token %}
                             <button type="submit" class="action-btn danger"><i class="fas fa-trash"></i> Удалить</button>
                         </form>
+                        <form method="post" action="{% url 'admin_delete_teacher' teacher.id %}"
+                              class="inline-delete-form"
+                              onsubmit="return confirm('ФОРС-УДАЛЕНИЕ «{{ teacher.user.get_full_name|default:teacher.user.username|escapejs }}».\n\nБудут ОТМЕНЕНЫ активные подписки с возвратом эскроу ученикам, затем НЕОБРАТИМО удалены брони, подписки, слоты и профиль. Денежный журнал сохранится, но история уроков/подписок этого учителя будет стёрта.\n\nПродолжить?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="force" value="1">
+                            <button type="submit" class="action-btn danger" title="Отменить обязательства и снести профиль вместе с историей"><i class="fas fa-triangle-exclamation"></i> Форс</button>
+                        </form>
                     </div>
                 </div>
                 {% empty %}

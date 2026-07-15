@@ -767,6 +767,25 @@ def admin_dashboard(request):
         student_interest_count=Count('interested_students')
     ).order_by('-teacher_count')[:10]
 
+    # ========== БЛИЖАЙШИЕ УРОКИ ==========
+    # Подтверждённые и ожидающие подтверждения брони, начало которых ещё впереди.
+    # Операционная сводка для админа: кто у кого сегодня/скоро занимается.
+    _upcoming_qs = Booking.objects.filter(
+        status__in=('confirmed', 'pending'),
+        slot__start_at__gte=now,
+    ).select_related(
+        'slot', 'slot__teacher', 'slot__teacher__user', 'student', 'subject',
+    ).order_by('slot__start_at')
+    upcoming_lessons_count = _upcoming_qs.count()
+    upcoming_lessons = _upcoming_qs[:15]
+    # Сколько из них стартует сегодня (по локальному календарному дню).
+    _today_end = today_start + timedelta(days=1)
+    upcoming_lessons_today = Booking.objects.filter(
+        status__in=('confirmed', 'pending'),
+        slot__start_at__gte=now,
+        slot__start_at__lt=_today_end,
+    ).count()
+
     # ========== ФИНАНСЫ + «ТРЕБУЕТ ВНИМАНИЯ» ==========
     from decimal import Decimal as _D
     from billing.models import (
@@ -832,6 +851,11 @@ def admin_dashboard(request):
         'recent_students': recent_students,
         'teachers_with_video': teachers_with_video,
         'teachers_with_video_count': teachers_with_video_count,
+
+        # Ближайшие уроки
+        'upcoming_lessons': upcoming_lessons,
+        'upcoming_lessons_count': upcoming_lessons_count,
+        'upcoming_lessons_today': upcoming_lessons_today,
         'page_stats': page_stats,
         'top_subjects': top_subjects,
     
@@ -855,7 +879,7 @@ def admin_dashboard(request):
     # а не ленивые запросы; затем кэшируем сводку на 45с.
     for _k in ('pending_teachers_list', 'recent_messages', 'recent_teachers',
                'recent_students', 'recent_tx', 'page_stats', 'top_subjects',
-               'teachers_with_video'):
+               'teachers_with_video', 'upcoming_lessons'):
         if _k in context:
             context[_k] = list(context[_k])
     _cache.set('admin_dashboard_ctx', context, 45)
@@ -1683,11 +1707,18 @@ def delete_teacher(request, teacher_id):
     """
     from django.db.models.deletion import ProtectedError
     from billing.models import Subscription, Transaction, Wallet
+    from billing.services import SubscriptionService
     from .models import TimeSlot, Booking
 
     teacher = get_object_or_404(TeacherProfile.objects.select_related('user'), id=teacher_id)
     user = teacher.user
     teacher_name = user.get_full_name() or user.username
+
+    # Форс-режим: администратор осознанно сносит учителя вместе с историей.
+    # Активные подписки сперва корректно закрываются (возврат эскроу ученикам),
+    # затем брони/подписки/слоты удаляются каскадом. Денежный журнал
+    # (Wallet/Transaction) при этом сохраняется — Transaction.related_* = SET_NULL.
+    force = request.POST.get('force') == '1'
 
     # Куда вернуться: на страницу-источник (если она наша), иначе на дашборд.
     referer = request.META.get('HTTP_REFERER', '')
@@ -1698,31 +1729,44 @@ def delete_teacher(request, teacher_id):
     else:
         back = reverse('admin_dashboard')
 
-    # Защита №1: нельзя удалять учителя с подписками (финансовая история).
-    sub_count = Subscription.objects.filter(teacher=teacher).count()
-    if sub_count:
-        messages.error(
-            request,
-            _('Нельзя удалить «%(name)s»: есть связанные подписки (%(n)d). '
-              'Сначала завершите или отмените их — это защита финансовой истории.')
-            % {'name': teacher_name, 'n': sub_count}
-        )
-        return redirect(back)
+    settle = None
+    if force:
+        # Закрываем активные обязательства до сноса: возврат эскроу ученикам и
+        # отмена будущих одиночных броней/платных пробных. Своя транзакция внутри.
+        settle = SubscriptionService.cancel_all_for_teacher(
+            teacher, reason=_('Форс-удаление профиля учителя администрацией'))
+    else:
+        # Защита №1: нельзя удалять учителя с подписками (финансовая история).
+        sub_count = Subscription.objects.filter(teacher=teacher).count()
+        if sub_count:
+            messages.error(
+                request,
+                _('Нельзя удалить «%(name)s»: есть связанные подписки (%(n)d). '
+                  'Сначала завершите или отмените их — это защита финансовой истории. '
+                  'Либо используйте «Форс-удалить».')
+                % {'name': teacher_name, 'n': sub_count}
+            )
+            return redirect(back)
 
-    # Защита №2: нельзя удалять учителя с бронями (реальные/забронированные уроки).
-    booking_count = Booking.objects.filter(slot__teacher=teacher).count()
-    if booking_count:
-        messages.error(
-            request,
-            _('Нельзя удалить «%(name)s»: есть уроки/брони (%(n)d) — это история '
-              'занятий. Удаление отменено (можно деактивировать профиль).')
-            % {'name': teacher_name, 'n': booking_count}
-        )
-        return redirect(back)
+        # Защита №2: нельзя удалять учителя с бронями (реальные/забронированные уроки).
+        booking_count = Booking.objects.filter(slot__teacher=teacher).count()
+        if booking_count:
+            messages.error(
+                request,
+                _('Нельзя удалить «%(name)s»: есть уроки/брони (%(n)d) — это история '
+                  'занятий. Удаление отменено (можно деактивировать профиль или '
+                  'использовать «Форс-удалить»).')
+                % {'name': teacher_name, 'n': booking_count}
+            )
+            return redirect(back)
 
-    # 1) Чистим пустые слоты расписания (PROTECT-ссылки без броней) и удаляем профиль.
+    # 1) Удаляем профиль. В форс-режиме предварительно сносим брони и подписки
+    #    (PROTECT-ссылки), иначе — только пустые слоты расписания без броней.
     try:
         with transaction.atomic():
+            if force:
+                Booking.objects.filter(slot__teacher=teacher).delete()  # + каскад чат/файлы/споры
+                Subscription.objects.filter(teacher=teacher).delete()   # + каскад ДЗ; ledger SET_NULL
             TimeSlot.objects.filter(teacher=teacher).delete()  # без броней — безопасно
             teacher.delete()
     except ProtectedError:
@@ -1745,6 +1789,16 @@ def delete_teacher(request, teacher_id):
             account_removed = False  # остались иные защищённые связи — аккаунт сохраняем
 
     cache.delete('admin_dashboard_ctx')  # сбросим кэш сводки, чтобы счётчики обновились
+
+    # В форс-режиме поясним, что вернули ученикам (эскроу активных подписок).
+    if force and settle and (settle['subscriptions'] or settle['bookings']):
+        messages.info(
+            request,
+            _('Перед удалением закрыты обязательства: подписок отменено — %(s)d '
+              '(эскроу возвращён ученикам), броней отменено — %(b)d.')
+            % {'s': settle['subscriptions'], 'b': settle['bookings']}
+        )
+
     if account_removed:
         messages.success(
             request,

@@ -145,6 +145,39 @@
             </a>
         </div>
 
+        <!-- БЛИЖАЙШИЕ УРОКИ -->
+        <div class="section-card" id="upcoming-lessons" style="margin-bottom:26px">
+            <div class="section-header">
+                <h3><i class="fas fa-calendar-check" style="color:#10B981"></i> Ближайшие уроки</h3>
+                <span class="section-badge">{% if upcoming_lessons_today %}сегодня {{ upcoming_lessons_today }} · {% endif %}всего {{ upcoming_lessons_count }}</span>
+            </div>
+            <div class="items-list">
+                {% for b in upcoming_lessons %}
+                <div class="item-row">
+                    <div class="item-left">
+                        <div class="item-icon">
+                            <i class="fas fa-chalkboard"></i>
+                        </div>
+                        <div class="item-info">
+                            <div class="item-name">
+                                <strong>{{ b.slot.teacher.user.get_full_name|default:b.slot.teacher.user.username }}</strong>
+                                <span style="color:#FC7702;font-size:12px">-></span>
+                                {{ b.student.get_full_name|default:b.student.username }}
+                                {% if b.subject %}<span style="color:#94A3B8;font-size:12px">· {{ b.subject.name }}</span>{% endif %}
+                            </div>
+                            <div class="item-date">
+                                {{ b.slot.start_at|date:"d.m.Y H:i" }}
+                                {% if b.status == 'confirmed' %}<span style="color:#10B981;font-weight:600"> · подтверждён</span>{% else %}<span style="color:#F59E0B;font-weight:600"> · ожидает</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="no-items">Нет предстоящих уроков</div>
+                {% endfor %}
+            </div>
+        </div>
+
         <!-- ФИНАНСЫ -->
         <div class="sec-h"><i class="fas fa-coins" style="color:#6366F1"></i> Финансы платформы
             <span style="font-weight:400;color:#94A3B8;font-size:13px">· за 30 дней</span></div>
