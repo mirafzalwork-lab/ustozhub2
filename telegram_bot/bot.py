@@ -16,6 +16,7 @@ from telegram.ext import (
     MessageHandler,
     filters
 )
+from telegram.helpers import escape_markdown
 
 # Добавляем путь к Django проекту
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -35,6 +36,15 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
+
+
+def _md(value):
+    """Экранирует пользовательские данные для parse_mode='Markdown' (legacy v1).
+
+    Без этого имя/email с символами _ * [ ` ломают разбор Markdown, и Telegram
+    отклоняет всё сообщение (пользователь получает «Произошла ошибка»).
+    """
+    return escape_markdown(str(value or ''), version=1)
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -102,7 +112,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         link_line = "✅ Аккаунт привязан — уведомления о уроках теперь придут сюда.\n\n" if linked else ""
         welcome_text = (
             f"{link_line}"
-            f"👋 Привет, {user.first_name}!\n\n"
+            f"👋 Привет, {_md(user.first_name)}!\n\n"
             f"Добро пожаловать в **TeacherHub** — платформу для поиска учителей и учеников!\n\n"
             f"🎓 **Что вы можете сделать:**\n"
             f"• Найти идеального учителя по любому предмету\n"
@@ -157,9 +167,9 @@ async def profile_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             profile_text = (
                 f"👤 **Ваш профиль**\n\n"
-                f"Имя: {telegram_user.user.get_full_name()}\n"
-                f"Тип: {telegram_user.user.get_user_type_display()}\n"
-                f"Email: {telegram_user.user.email}\n\n"
+                f"Имя: {_md(telegram_user.user.get_full_name())}\n"
+                f"Тип: {_md(telegram_user.user.get_user_type_display())}\n"
+                f"Email: {_md(telegram_user.user.email)}\n\n"
                 f"Нажмите кнопку ниже, чтобы редактировать профиль."
             )
             
@@ -296,15 +306,60 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.error(f"Произошла ошибка: {context.error}")
 
 
+# Держим дескриптор lock-файла открытым на весь процесс: закрытие сняло бы flock.
+_lock_handle = None
+
+
+def _acquire_single_instance_lock():
+    """Гарантирует, что бот опрашивает Telegram в одном экземпляре.
+
+    Два поллера на один токен → Telegram отдаёт 409 Conflict и апдейты теряются
+    с перебоями («иногда до бота доходит, иногда нет»). Берём эксклюзивный
+    неблокирующий flock. Возвращает False, только если lock реально занят другим
+    процессом (тогда не запускаемся). Если сам lock-файл недоступен — не мешаем
+    боту работать (availability важнее строгости), лишь предупреждаем.
+    """
+    global _lock_handle
+    lock_path = os.environ.get('TELEGRAM_BOT_LOCK_FILE') or os.path.join(
+        str(settings.BASE_DIR), '.telegram_bot.lock'
+    )
+    try:
+        import fcntl  # unix-only; на этих серверах есть всегда
+    except ImportError:
+        logger.warning("fcntl недоступен — single-instance lock пропущен.")
+        return True
+    try:
+        fh = open(lock_path, 'w')
+        fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        logger.error(
+            "Другой экземпляр бота уже держит lock %s — выходим, чтобы не поймать "
+            "409 Conflict в getUpdates.", lock_path,
+        )
+        return False
+    except OSError as e:
+        logger.warning(
+            "Не удалось взять lock %s (%s) — продолжаю без single-instance защиты.",
+            lock_path, e,
+        )
+        return True
+    _lock_handle = fh
+    return True
+
+
 def main():
     """Запуск бота"""
     # Получаем токен бота из настроек Django
     BOT_TOKEN = settings.TELEGRAM_BOT_TOKEN
-    
+
     if not BOT_TOKEN:
         logger.error("TELEGRAM_BOT_TOKEN не установлен в настройках!")
         return
-    
+
+    # Один поллер на токен — иначе 409 Conflict.
+    if not _acquire_single_instance_lock():
+        return
+
     # Создаем приложение
     application = Application.builder().token(BOT_TOKEN).build()
     
@@ -342,8 +397,13 @@ def main():
         else:
             loop = None
         
-        # Запускаем бота
-        application.run_polling(allowed_updates=Update.ALL_TYPES)
+        # Запускаем бота.
+        # drop_pending_updates=True: после простоя/рестарта не разгребаем протухшую
+        # очередь (устаревшие /start с уже истёкшими токенами привязки).
+        application.run_polling(
+            allowed_updates=Update.ALL_TYPES,
+            drop_pending_updates=True,
+        )
         
     except KeyboardInterrupt:
         logger.info("Остановка бота...")

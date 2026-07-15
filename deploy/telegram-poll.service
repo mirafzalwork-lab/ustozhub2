@@ -8,7 +8,7 @@ User=www-data
 Group=www-data
 WorkingDirectory=/var/www/ustozhubuz
 EnvironmentFile=/var/www/ustozhubuz/.env
-ExecStart=/var/www/ustozhubuz/venv/bin/python /var/www/ustozhubuz/telegram_bot/bot.py
+ExecStart=/var/www/ustozhubuz/venv/bin/python /var/www/ustozhubuz/manage.py run_telegram_bot
 Restart=always
 RestartSec=10
 

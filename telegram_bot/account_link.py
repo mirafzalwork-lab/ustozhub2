@@ -11,13 +11,21 @@
 Токен — короткий (укладывается в лимит Telegram start-payload 64 символа,
 charset a-z0-9), одноразовый, живёт 1 час.
 """
+import logging
+
 from django.conf import settings
 from django.core.cache import cache
 from django.utils.crypto import get_random_string
 
+logger = logging.getLogger(__name__)
+
 CONNECT_TTL = 3600  # 1 час
 CONNECT_PREFIX = 'tglink:'
 _ALLOWED = 'abcdefghijklmnopqrstuvwxyz0123456789'
+# Фолбэк на случай, если TELEGRAM_BOT_USERNAME задан пустым в окружении:
+# без него получилась бы битая ссылка https://t.me/?start=<token> (вечная загрузка,
+# «до бота не доходит»). Совпадает с дефолтом в core.settings.
+_DEFAULT_BOT_USERNAME = 'ustozhub_bot'
 
 
 def make_connect_token(user_id):
@@ -40,7 +48,14 @@ def consume_connect_token(token):
 
 def bot_connect_url(user_id):
     """Deep-link на бота с токеном привязки для конкретного пользователя сайта."""
-    username = (getattr(settings, 'TELEGRAM_BOT_USERNAME', '') or '').lstrip('@')
+    username = (getattr(settings, 'TELEGRAM_BOT_USERNAME', '') or '').strip().lstrip('@')
+    if not username:
+        logger.warning(
+            'TELEGRAM_BOT_USERNAME пуст — использую фолбэк %r. Проверьте .env, '
+            'иначе ссылка «Подключить бота» может вести не на тот бот.',
+            _DEFAULT_BOT_USERNAME,
+        )
+        username = _DEFAULT_BOT_USERNAME
     token = make_connect_token(user_id)
     return f'https://t.me/{username}?start={token}'
 

@@ -44,3 +44,5 @@ node_modules/
 temp_*
 celerybeat-schedule
 celerybeat.pid
+# Telegram polling bot single-instance lock (runtime)
+.telegram_bot.lock
