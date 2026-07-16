@@ -52,6 +52,12 @@
         .fin-card .fv{font-size:20px;font-weight:800;color:#0A2540;margin-top:5px}
         .fin-card.brand .fv{color:#fff}
         .fin-card .fv small{font-size:12px;font-weight:600;opacity:.7}
+        /* Бейдж статуса брони в ленте «Недавние бронирования» */
+        .bk-badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+        .bk-badge.ok{background:#ECFDF5;color:#065F46}
+        .bk-badge.info{background:#EFF6FF;color:#1E40AF}
+        .bk-badge.muted{background:#F1F5F9;color:#475569}
+        .bk-badge.bad{background:#FEF2F2;color:#991B1B}
     </style>
 </head>
 <body>
@@ -145,6 +151,16 @@
             </a>
         </div>
 
+        <!-- СТАТИСТИКА УРОКОВ -->
+        <div class="sec-h"><i class="fas fa-graduation-cap" style="color:#10B981"></i> Уроки и бронирования
+            <span style="font-weight:400;color:#94A3B8;font-size:13px">· всего {{ total_bookings }}</span></div>
+        <div class="fin-grid">
+            <div class="fin-card"><div class="fl">Проведено</div><div class="fv" style="color:#10B981">{{ lessons_completed }}</div></div>
+            <div class="fin-card"><div class="fl">Предстоит</div><div class="fv" style="color:#3B82F6">{{ lessons_upcoming }}</div></div>
+            <div class="fin-card"><div class="fl">Отменено / истекло</div><div class="fv" style="color:#94A3B8">{{ lessons_cancelled }}</div></div>
+            <div class="fin-card"><div class="fl">Неявки / не состоялись</div><div class="fv" style="color:#EF4444">{{ lessons_no_show }}</div></div>
+        </div>
+
         <!-- БЛИЖАЙШИЕ УРОКИ -->
         <div class="section-card" id="upcoming-lessons" style="margin-bottom:26px">
             <div class="section-header">
@@ -174,6 +190,47 @@
                 </div>
                 {% empty %}
                 <div class="no-items">Нет предстоящих уроков</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- НЕДАВНИЕ БРОНИРОВАНИЯ -->
+        <div class="section-card" id="recent-bookings" style="margin-bottom:26px">
+            <div class="section-header">
+                <h3><i class="fas fa-clock-rotate-left" style="color:#6366F1"></i> Недавние бронирования</h3>
+                <span class="section-badge">последние {{ recent_bookings|length }}</span>
+            </div>
+            <div class="items-list" style="max-height:520px;overflow-y:auto">
+                {% for b in recent_bookings %}
+                <div class="item-row">
+                    <div class="item-left">
+                        <div class="item-icon"><i class="fas fa-calendar-day"></i></div>
+                        <div class="item-info">
+                            <div class="item-name">
+                                <strong>{{ b.student.get_full_name|default:b.student.username }}</strong>
+                                <span style="color:#FC7702;font-size:12px">→</span>
+                                {{ b.slot.teacher.user.get_full_name|default:b.slot.teacher.user.username }}
+                                {% if b.subject %}<span style="color:#94A3B8;font-size:12px">· {{ b.subject.name }}</span>{% endif %}
+                            </div>
+                            <div class="item-date">
+                                Урок: {{ b.slot.start_at|date:"d.m.Y H:i" }} · забронирован {{ b.created_at|date:"d.m.Y" }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        {% if b.status == 'completed' %}
+                            <span class="bk-badge ok">{{ b.get_status_display }}</span>
+                        {% elif b.status == 'confirmed' or b.status == 'pending' %}
+                            <span class="bk-badge info">{{ b.get_status_display }}</span>
+                        {% elif b.status == 'no_show_student' or b.status == 'no_show_teacher' or b.status == 'not_held' %}
+                            <span class="bk-badge bad">{{ b.get_status_display }}</span>
+                        {% else %}
+                            <span class="bk-badge muted">{{ b.get_status_display }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="no-items">Бронирований пока нет</div>
                 {% endfor %}
             </div>
         </div>

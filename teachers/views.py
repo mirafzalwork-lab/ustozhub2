@@ -786,6 +786,28 @@ def admin_dashboard(request):
         slot__start_at__lt=_today_end,
     ).count()
 
+    # ========== СТАТИСТИКА УРОКОВ + НЕДАВНЯЯ АКТИВНОСТЬ ==========
+    # Полная картина по бронированиям: сколько проведено / отменено / неявок,
+    # и лента последних броней — кто у кого бронировал и чем закончилось.
+    _bk_counts = dict(
+        Booking.objects.values_list('status')
+        .annotate(n=Count('id')).values_list('status', 'n')
+    )
+    total_bookings = Booking.objects.count()
+    lessons_completed = _bk_counts.get('completed', 0)
+    lessons_upcoming = _bk_counts.get('confirmed', 0) + _bk_counts.get('pending', 0)
+    lessons_cancelled = (_bk_counts.get('cancelled_by_student', 0)
+                         + _bk_counts.get('cancelled_by_teacher', 0)
+                         + _bk_counts.get('expired', 0))
+    lessons_no_show = (_bk_counts.get('no_show_student', 0)
+                       + _bk_counts.get('no_show_teacher', 0)
+                       + _bk_counts.get('not_held', 0))
+
+    # Лента последних бронирований (все статусы, новые сверху).
+    recent_bookings = Booking.objects.select_related(
+        'slot', 'slot__teacher', 'slot__teacher__user', 'student', 'subject',
+    ).order_by('-created_at')[:15]
+
     # ========== ФИНАНСЫ + «ТРЕБУЕТ ВНИМАНИЯ» ==========
     from decimal import Decimal as _D
     from billing.models import (
@@ -856,6 +878,14 @@ def admin_dashboard(request):
         'upcoming_lessons': upcoming_lessons,
         'upcoming_lessons_count': upcoming_lessons_count,
         'upcoming_lessons_today': upcoming_lessons_today,
+
+        # Статистика уроков + недавняя активность
+        'total_bookings': total_bookings,
+        'lessons_completed': lessons_completed,
+        'lessons_upcoming': lessons_upcoming,
+        'lessons_cancelled': lessons_cancelled,
+        'lessons_no_show': lessons_no_show,
+        'recent_bookings': recent_bookings,
         'page_stats': page_stats,
         'top_subjects': top_subjects,
     
@@ -879,7 +909,7 @@ def admin_dashboard(request):
     # а не ленивые запросы; затем кэшируем сводку на 45с.
     for _k in ('pending_teachers_list', 'recent_messages', 'recent_teachers',
                'recent_students', 'recent_tx', 'page_stats', 'top_subjects',
-               'teachers_with_video', 'upcoming_lessons'):
+               'teachers_with_video', 'upcoming_lessons', 'recent_bookings'):
         if _k in context:
             context[_k] = list(context[_k])
     _cache.set('admin_dashboard_ctx', context, 45)
