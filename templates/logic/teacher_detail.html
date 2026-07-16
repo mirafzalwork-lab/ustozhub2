@@ -2508,7 +2508,7 @@
                                 <div class="reviewer-info">
                                     <div class="reviewer-avatar">
                                         {% if review.student.avatar %}
-                                            <img src="{{ review.student.avatar.url }}" alt="{{ review.student.get_full_name }}">
+                                            <img src="{{ review.student.avatar.url }}" alt="{{ review.student.get_full_name }}" loading="lazy" decoding="async">
                                         {% else %}
                                             {{ review.student.first_name.0|default:"У" }}
                                         {% endif %}
@@ -2703,7 +2703,7 @@
                                     <div class="similar-teacher-header">
                                         <div class="similar-teacher-avatar">
                                             {% if similar.user.avatar %}
-                                                <img src="{{ similar.user.avatar.url }}" alt="{{ similar.user.get_full_name }}">
+                                                <img src="{{ similar.user.avatar.url }}" alt="{{ similar.user.get_full_name }}" loading="lazy" decoding="async">
                                             {% else %}
                                                 {{ similar.user.first_name.0|default:"У" }}
                                             {% endif %}

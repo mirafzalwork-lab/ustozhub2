@@ -331,8 +331,9 @@
         height: 38px;
         border-radius: 50%;
         border: 1px solid #eef0f3;
-        background: rgba(255,255,255,0.92);
-        backdrop-filter: blur(4px);
+        background: rgba(255,255,255,0.96);
+        /* backdrop-filter:blur убран — при почти непрозрачном фоне визуально
+           незаметен, но дорог: по одному размытию на КАЖДУЮ карточку. */
         color: #cbd5e1;
         font-size: 16px;
         cursor: pointer;
@@ -894,6 +895,9 @@
         color: #6B7280;
     }
 
+    /* Кнопка закрытия drawer'а фильтров — только на мобиле (см. медиазапрос ниже) */
+    .filters-close-btn { display: none; }
+
     /* ============================================
        📱 MOBILE FILTERS TOGGLE
        ============================================ */
@@ -937,17 +941,19 @@
 
         .filters-sidebar {
             position: fixed;
-            top: 70px;
+            top: 0;
             left: -100%;
-            width: 85%;
+            width: 88%;
             max-width: 360px;
-            height: calc(100vh - 70px);
-            max-height: calc(100vh - 70px);
-            z-index: 998;
+            height: 100dvh;
+            z-index: 1100;
             border-radius: 0;
             overflow-y: auto;
-            box-shadow: 2px 0 20px rgba(0, 0, 0, 0.2);
+            -webkit-overflow-scrolling: touch;
+            box-shadow: 2px 0 16px rgba(0, 0, 0, 0.18);
             transition: left var(--transition-speed) ease-in-out;
+            display: flex;
+            flex-direction: column;
         }
 
         .filters-sidebar.active {
@@ -956,12 +962,53 @@
 
         .mobile-filters-toggle {
             display: block;
-            top: 70px;
+            top: 56px;
         }
 
         .filters-backdrop {
-            top: 70px;
+            top: 0;
+            z-index: 1099;
         }
+
+        /* Внутри drawer'а: шапка и «Применить» всегда на виду (sticky),
+           середина скроллится. Так submit доступен без прокрутки до конца. */
+        .filters-sidebar .filters-header {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #fff;
+            padding-top: max(14px, env(safe-area-inset-top));
+            margin-bottom: 4px;
+        }
+        .filters-sidebar form {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+        }
+        .filters-sidebar .apply-filters-btn {
+            position: sticky;
+            bottom: 0;
+            z-index: 2;
+            margin-top: auto;
+            background-clip: padding-box;
+            box-shadow: 0 -10px 16px -8px rgba(0, 0, 0, 0.12);
+        }
+        .filters-close-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            margin-left: 8px;
+            border: none;
+            border-radius: 50%;
+            background: var(--bg-tertiary, #F3F4F6);
+            color: var(--text-secondary, #4B5563);
+            font-size: 16px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .filters-close-btn:active { background: var(--border-color, #E5E7EB); }
 
         .teachers-grid {
             grid-template-columns: 1fr;
@@ -1977,6 +2024,9 @@
             <div class="filters-header">
                 <h3 class="filters-title">{% trans 'Фильтры' %}</h3>
                 <button class="reset-filters" onclick="resetFilters()">{% trans 'Сбросить' %}</button>
+                <button type="button" class="filters-close-btn" onclick="closeFilters()" aria-label="{% trans 'Закрыть' %}">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
             </div>
 
             <form method="GET" action="" id="filtersForm">
@@ -2449,26 +2499,9 @@
         }
     });
 
-    // Предотвращение прокрутки фона на iOS
-    const filtersSidebar = document.getElementById('filtersSidebar');
-    if (filtersSidebar) {
-        let touchStartY = 0;
-        
-        filtersSidebar.addEventListener('touchstart', function(e) {
-            touchStartY = e.touches[0].clientY;
-        }, { passive: true });
-        
-        filtersSidebar.addEventListener('touchmove', function(e) {
-            const touchY = e.touches[0].clientY;
-            const touchDelta = touchY - touchStartY;
-            const isAtTop = filtersSidebar.scrollTop === 0;
-            const isAtBottom = filtersSidebar.scrollHeight - filtersSidebar.scrollTop === filtersSidebar.clientHeight;
-            
-            if ((isAtTop && touchDelta > 0) || (isAtBottom && touchDelta < 0)) {
-                e.preventDefault();
-            }
-        }, { passive: false });
-    }
+    // Прокрутку фона гасит body{overflow:hidden} (см. toggleFilters).
+    // Прежний touchmove-preventDefault (passive:false) вызывал «залипание»
+    // тач-скролла в WebView Telegram — убран намеренно.
 
     // ========== ПОКАЗАТЬ/СКРЫТЬ ОПИСАНИЕ (150 символов) ==========
     const ABOUT_LIMIT = 150;

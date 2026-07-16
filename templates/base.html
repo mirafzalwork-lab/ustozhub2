@@ -7,7 +7,14 @@
     <meta charset="UTF-8">
     {% comment %} Без JS reveal-элементы должны быть сразу видимы {% endcomment %}
     <noscript><style>.reveal{opacity:1 !important;transform:none !important;}</style></noscript>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% comment %} viewport-fit=cover — учёт «безопасных зон» (вырезы/Telegram-хедер);
+       interactive-widget=resizes-content — экранная клавиатура ужимает layout,
+       а не перекрывает поле ввода (критично для чата в Telegram Mini App). {% endcomment %}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+    {% comment %} Telegram Mini App SDK — нативная кнопка «Назад», expand(), безопасные зоны.
+       Грузим синхронно и рано: даёт window.Telegram.WebApp до нашего init-скрипта.
+       В обычном браузере тег безвреден (объект есть, но platform='unknown'). {% endcomment %}
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <meta name="description" content="{% block meta_description %}UstozHub — платформа №1 в Узбекистане для поиска квалифицированных репетиторов. Онлайн-уроки, проверенные преподаватели, удобное бронирование.{% endblock %}">
     <title>{% block title %}UstozHub — найти репетитора в Узбекистане{% endblock %}</title>
     <link rel="icon" type="image/png" href="{% static 'logo/new_logo.png' %}">
@@ -467,7 +474,8 @@
             transform: translateY(18px);
             transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1),
                         transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
-            will-change: opacity, transform;
+            /* will-change убран намеренно: держал десятки постоянных GPU-слоёв
+               (по одному на карточку) → память и джанк в мобильном WebView. */
         }
         .reveal.is-visible {
             opacity: 1;
@@ -1002,35 +1010,38 @@
                 padding: 12px;
             }
 
-            /* Filters sidebar становится drawer */
+            /* Filters sidebar → полноэкранный drawer поверх navbar и bottom-nav.
+               top:0 / height:100dvh — раскладка не зависит от высоты navbar
+               (раньше 56/70px рассинхронились между файлами). z-index 1100 > bottom-nav (1000),
+               поэтому кнопка «Применить» больше не перекрывается нижней панелью. */
             .filters-sidebar {
                 position: fixed !important;
-                top: 56px;
+                top: 0;
                 left: -100%;
-                width: 85%;
-                max-width: 320px;
-                height: calc(100vh - 56px);
+                width: 88%;
+                max-width: 360px;
+                height: 100dvh;
                 background: white;
-                z-index: 998;
+                z-index: 1100;
                 transition: left 0.3s ease;
                 overflow-y: auto;
-                box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+                -webkit-overflow-scrolling: touch;
+                box-shadow: 2px 0 16px rgba(0, 0, 0, 0.18);
+                display: flex;
+                flex-direction: column;
             }
 
             .filters-sidebar.active {
                 left: 0;
             }
 
-            /* Backdrop для filters */
+            /* Backdrop для filters — на весь экран, под drawer'ом, над остальным */
             .filters-backdrop {
                 display: none;
                 position: fixed;
-                top: 56px;
-                left: 0;
-                right: 0;
-                bottom: 0;
+                inset: 0;
                 background: rgba(0, 0, 0, 0.5);
-                z-index: 997;
+                z-index: 1099;
             }
 
             .filters-backdrop.active {
@@ -1369,6 +1380,46 @@
         .global-message--danger  { background: #FEF2F2; border-color: #EF4444; color: #991B1B; }
         .global-message--warning { background: #FFFBEB; border-color: #F59E0B; color: #92400E; }
         .global-message--info    { background: #EFF6FF; border-color: #3B82F6; color: #1E40AF; }
+
+        /* ===== Мобильная кнопка «Назад» (веб-фоллбэк для не-Telegram) =====
+           В Telegram Mini App используется нативная кнопка (Telegram.WebApp.BackButton),
+           а этот бар показывается в обычном мобильном браузере на «внутренних» страницах.
+           Управляется JS: снимает [hidden] и ставит body.has-back-bar. */
+        .mobile-back-bar { display: none; }
+        @media (max-width: 768px) {
+            .mobile-back-bar:not([hidden]) {
+                display: flex;
+                align-items: center;
+                position: sticky;
+                top: 56px;
+                z-index: 900;
+                height: 44px;
+                padding: 0 6px;
+                background: var(--bg-primary);
+                border-bottom: 1px solid var(--border-light);
+                -webkit-backdrop-filter: none;
+            }
+            .mobile-back-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                background: none;
+                border: none;
+                padding: 9px 12px;
+                min-height: 40px;
+                font-size: 15px;
+                font-weight: 600;
+                color: var(--primary-color);
+                cursor: pointer;
+                border-radius: 10px;
+                font-family: inherit;
+            }
+            .mobile-back-btn:active { background: var(--bg-hover); }
+            .mobile-back-btn i { font-size: 16px; }
+        }
+        @media (max-width: 480px) {
+            .mobile-back-bar:not([hidden]) { top: 52px; }
+        }
     </style>
 
     {% block extra_css %}{% endblock %}
@@ -1747,6 +1798,14 @@
 
     <!-- Main Content -->
     <main id="main-content" tabindex="-1">
+        {% comment %} Мобильная кнопка «Назад» — по умолчанию скрыта; JS показывает её
+           на «внутренних» страницах в обычном браузере (в Telegram — нативная кнопка). {% endcomment %}
+        <div class="mobile-back-bar" id="mobileBackBar" hidden>
+            <button type="button" class="mobile-back-btn" onclick="uhGoBack(event)" aria-label="{% trans 'Назад' %}">
+                <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                <span>{% trans 'Назад' %}</span>
+            </button>
+        </div>
         {% comment %} Глобальный рендер flash-сообщений. Раньше messages показывались
            только на страницах со своим блоком — на остальных молча терялись.
            Шаблоны со своим оформлением переопределяют блок messages пустым. {% endcomment %}
@@ -1836,21 +1895,26 @@
             }
         })();
 
-        // Navbar scroll behavior
-        let lastScrollTop = 0;
+        // Navbar scroll behavior — rAF-троттлинг + passive listener,
+        // класс меняем только при смене состояния (минимум repaint'ов на скролле).
         const navbar = document.getElementById('navbar');
+        let scrollTicking = false;
+        let isScrolled = false;
 
-        window.addEventListener('scroll', () => {
-            let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            
-            if (scrollTop > 50) {
-                navbar.classList.add('scrolled');
-            } else {
-                navbar.classList.remove('scrolled');
-            }
-            
-            lastScrollTop = scrollTop;
-        });
+        window.addEventListener('scroll', function () {
+            if (scrollTicking) return;
+            scrollTicking = true;
+            requestAnimationFrame(function () {
+                scrollTicking = false;
+                if (!navbar) return;
+                var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                var shouldScroll = scrollTop > 50;
+                if (shouldScroll !== isScrolled) {
+                    isScrolled = shouldScroll;
+                    navbar.classList.toggle('scrolled', shouldScroll);
+                }
+            });
+        }, { passive: true });
 
         // Search functionality
         function clearSearch() {
@@ -2441,6 +2505,53 @@
             els.forEach(function (el, i) { el.classList.toggle('is-active', i === active); });
         });
         document.addEventListener('click', function (e) { if (!form.contains(e.target)) hide(); });
+    })();
+    </script>
+
+    <script>
+    // ===== Единая навигация «Назад» =====
+    // Глобальный обработчик — используется и нативной Telegram-кнопкой, и веб-баром.
+    // history.back() возвращает на предыдущую страницу С сохранением её URL —
+    // то есть список учителей открывается обратно с выбранными фильтрами.
+    function uhGoBack(e) {
+        if (e && e.preventDefault) e.preventDefault();
+        var ref = document.referrer;
+        var sameOrigin = ref && ref.indexOf(window.location.origin) === 0;
+        if (window.history.length > 1 && (sameOrigin || !ref)) {
+            window.history.back();
+        } else {
+            window.location.href = '/';
+        }
+    }
+
+    (function () {
+        var tg = window.Telegram && window.Telegram.WebApp;
+        var inTelegram = !!(tg && tg.platform && tg.platform !== 'unknown');
+
+        // Путь без языкового префикса (/ru, /uz, /en)
+        var path = window.location.pathname.replace(/^\/(ru|uz|en)(?=\/|$)/, '') || '/';
+        if (path === '') path = '/';
+        // «Корневые» экраны — кнопка «Назад» не нужна
+        var ROOT = { '/': 1, '/dashboard/': 1, '/home/': 1 };
+        var isRoot = !!ROOT[path];
+
+        if (inTelegram) {
+            // Внутри Telegram Mini App — разворачиваем на всю высоту и включаем
+            // НАТИВНУЮ кнопку «Назад» в шапке Telegram.
+            try { tg.ready(); tg.expand(); } catch (err) {}
+            if (tg.BackButton) {
+                if (isRoot) {
+                    tg.BackButton.hide();
+                } else {
+                    tg.BackButton.show();
+                    tg.BackButton.onClick(function () { uhGoBack(); });
+                }
+            }
+        } else if (!isRoot) {
+            // Обычный мобильный браузер — показываем свой sticky-бар «Назад».
+            var bar = document.getElementById('mobileBackBar');
+            if (bar) { bar.hidden = false; document.body.classList.add('has-back-bar'); }
+        }
     })();
     </script>
 

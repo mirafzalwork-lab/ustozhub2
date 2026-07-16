@@ -424,21 +424,26 @@
 
     /* Mobile (768px and below) */
     @media (max-width: 768px) {
+        /* Flex-раскладка вместо fixed+магических calc: контейнер = высота экрана,
+           шапка и композер — обычные flex-элементы, лента растягивается и скроллится.
+           С interactive-widget=resizes-content (viewport meta) экранная клавиатура
+           ужимает 100dvh → композер и последнее сообщение остаются на виду. */
         .conversation-detail-container {
             padding: 0;
-            height: calc(100vh - 56px);
+            height: calc(100dvh - 56px);
             max-width: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
         .conversation-header {
             border-radius: 0;
             padding: 10px 12px;
-            position: fixed;
-            top: 56px;
-            left: 0;
-            right: 0;
+            position: relative;
             z-index: 100;
             background: white;
+            flex-shrink: 0;
         }
 
         .conversation-user-info {
@@ -461,13 +466,11 @@
         }
 
         .back-link {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
+            position: static;
             font-size: 20px;
             padding: 8px;
-            z-index: 10;
+            margin-right: 2px;
+            flex-shrink: 0;
         }
 
         .back-link span {
@@ -489,8 +492,9 @@
 
         .messages-wrapper {
             border-radius: 0;
-            margin-top: 60px;
-            height: calc(100vh - 56px - 60px - 70px);
+            margin-top: 0;
+            flex: 1 1 auto;
+            min-height: 0;
         }
 
         .messages-list {
@@ -515,10 +519,8 @@
         .message-form-container {
             border-radius: 0;
             padding: 10px 12px;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            position: relative;
+            flex-shrink: 0;
             background: white;
             border-top: 1px solid var(--border-color);
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
@@ -559,12 +561,11 @@
     /* Small Mobile (480px and below) */
     @media (max-width: 480px) {
         .conversation-detail-container {
-            height: calc(100vh - 52px);
+            height: calc(100dvh - 52px);
         }
 
         .conversation-header {
             padding: 8px 10px;
-            top: 52px;
         }
 
         .conversation-user-avatar {
@@ -582,7 +583,6 @@
         }
 
         .back-link {
-            left: 8px;
             font-size: 18px;
             padding: 6px;
         }
@@ -590,11 +590,6 @@
         .delete-conversation-btn {
             padding: 6px 8px;
             font-size: 11px;
-        }
-
-        .messages-wrapper {
-            margin-top: 55px;
-            height: calc(100vh - 52px - 55px - 70px);
         }
 
         .messages-list {
@@ -990,31 +985,28 @@
        2) Поле ввода поднимаем над всем; 100dvh вместо 100vh — чтобы адресная
           строка браузера не «съедала» composer. */
     @media (max-width: 768px) {
+        /* На экране чата прячем глобальную нижнюю таб-навигацию И глобальный
+           бар «Назад» — у переписки свой back-link в шапке (как в мессенджерах). */
         body .bottom-nav { display: none !important; }
+        body .mobile-back-bar { display: none !important; }
         main#main-content { padding-bottom: 0 !important; }
 
         .message-form-container { z-index: 200; }
-
-        .conversation-detail-container { height: calc(100dvh - 56px); }
-        .messages-wrapper { height: calc(100dvh - 56px - 60px - 64px); }
-        .messages-list { padding-bottom: 16px; }
+        .messages-list { padding-bottom: 8px; }
     }
     @media (max-width: 480px) {
         .conversation-detail-container { height: calc(100dvh - 52px); }
-        .messages-wrapper { height: calc(100dvh - 52px - 55px - 64px); }
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="conversation-detail-container">
-    <!-- Back Link - отдельно для мобильных -->
-    <a href="{% url 'conversations_list' %}" class="back-link">
-        <i class="fas fa-arrow-left"></i>
-        <span>{% trans "Назад" %}</span>
-    </a>
-
     <div class="conversation-header">
+        <a href="{% url 'conversations_list' %}" class="back-link" aria-label="{% trans 'Назад к списку' %}">
+            <i class="fas fa-arrow-left"></i>
+            <span>{% trans "Назад" %}</span>
+        </a>
         <div class="conversation-user-info">
             <div class="conversation-user-avatar">
                 {% if other_user.avatar %}
@@ -1212,6 +1204,14 @@
         }
     }
 
+    // Пользователь у нижнего края ленты? Если да — новые сообщения доскролливаем;
+    // если он листает историю выше — НЕ дёргаем ленту вниз (убирает «прыжки»).
+    function isNearBottom() {
+        if (!messagesList) return true;
+        var gap = messagesList.scrollHeight - messagesList.scrollTop - messagesList.clientHeight;
+        return gap < 140;
+    }
+
     function escapeHtml(str) {
         if (str == null) return '';
         var d = document.createElement('div');
@@ -1303,6 +1303,13 @@
                 if (!sendBtn.disabled) {
                     messageForm.dispatchEvent(new Event('submit', { cancelable: true }));
                 }
+            }
+        });
+        // При фокусе поля на мобиле открывается клавиатура — доскролливаем ленту вниз,
+        // чтобы поле ввода и последнее сообщение остались над клавиатурой.
+        textarea.addEventListener('focus', function() {
+            if (window.innerWidth <= 768) {
+                setTimeout(function() { scrollToBottom(false); }, 300);
             }
         });
         if (window.innerWidth > 768) textarea.focus();
@@ -1423,8 +1430,11 @@
                     (isOwn ? '<span class="message-receipt" data-state="sent" title="' + I18N.sent + '"></span>' : '') +
                 '</div>' +
             '</div>';
+        // Проверяем ДО вставки: держаться низа только если пользователь уже внизу
+        // (или это наше сообщение) — иначе не мешаем чтению истории.
+        var stick = isOwn || isNearBottom();
         messagesList.appendChild(div);
-        scrollToBottom(true);
+        if (stick) scrollToBottom(true);
 
         // Вибрация для входящих
         if (!isOwn && 'vibrate' in navigator && window.innerWidth <= 768) {
@@ -1647,6 +1657,23 @@
     window.addEventListener('beforeunload', function() {
         if (socket) { try { socket.close(); } catch(_) {} }
     });
+
+    // Экранная клавиатура (visualViewport): на iOS/Telegram interactive-widget
+    // может не поддерживаться — при изменении видимой области держим низ ленты
+    // на виду, если пользователь и так был внизу. Дешёвый rAF-троттлинг.
+    if (window.visualViewport && messagesList) {
+        var vvTick = false;
+        var onViewportChange = function() {
+            if (vvTick) return;
+            vvTick = true;
+            requestAnimationFrame(function() {
+                vvTick = false;
+                if (isNearBottom()) scrollToBottom(false);
+            });
+        };
+        window.visualViewport.addEventListener('resize', onViewportChange);
+        window.visualViewport.addEventListener('scroll', onViewportChange);
+    }
 
     // ============================================
     // start
