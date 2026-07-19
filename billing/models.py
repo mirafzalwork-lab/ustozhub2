@@ -1062,3 +1062,78 @@ class MulticardInvoice(models.Model):
 
     def __str__(self) -> str:
         return f'MulticardInvoice {self.id} user={self.user_id} {self.amount} {self.status}'
+
+
+# ---------- BookingDeposit (депозит за разовый урок) ------------------------
+
+
+class BookingDeposit(models.Model):
+    """Депозит за разовую (не подписочную) бронь — анти-неявка.
+
+    Один бесплатный пробный на ученика; после него любая разовая бронь требует
+    депозита. Депозит — не доп. платёж, а сама оплата разового урока:
+      * PENDING  — запись создана, средства ещё не удержаны (транзиентное);
+      * PAID     — сумма удержана с кошелька ученика (debit) при бронировании;
+      * USED     — урок состоялся: депозит выплачен учителю (минус комиссия);
+      * FORFEITED — ученик не пришёл: депозит сгорел, ушёл учителю (не возвращается);
+      * REFUNDED — вина учителя / урок не состоялся / отмена: возвращён ученику.
+
+    Денежное движение выполняет billing.deposits.DepositService через
+    WalletService (единственный путь мутации баланса). Эта модель — журнал
+    состояния депозита и снапшот суммы; сумма фиксируется на момент брони, чтобы
+    смена BOOKING_DEPOSIT_AMOUNT не переписывала историю.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = 'pending', _('Ожидает оплаты')
+        PAID = 'paid', _('Внесён (удержан)')
+        USED = 'used', _('Зачтён в оплату урока')
+        FORFEITED = 'forfeited', _('Сгорел (неявка)')
+        REFUNDED = 'refunded', _('Возвращён')
+
+    # Терминальные статусы — депозит отыгран, дальнейших переходов нет.
+    TERMINAL_STATUSES = (Status.USED, Status.FORFEITED, Status.REFUNDED)
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    booking = models.OneToOneField(
+        'teachers.Booking',
+        on_delete=models.CASCADE,
+        related_name='deposit',
+        verbose_name=_('Бронь'),
+    )
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name=_('Сумма депозита'),
+        help_text=_('Снапшот суммы на момент бронирования.'),
+    )
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    # Момент перехода в терминальный статус (used/forfeited/refunded).
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('Депозит за урок')
+        verbose_name_plural = _('Депозиты за уроки')
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(amount__gt=Decimal('0')),
+                name='bookingdeposit_amount_positive',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['status']),
+        ]
+
+    def __str__(self) -> str:
+        return f'BookingDeposit {self.id} booking={self.booking_id} {self.amount} {self.status}'
+
+    @property
+    def is_terminal(self) -> bool:
+        return self.status in self.TERMINAL_STATUSES

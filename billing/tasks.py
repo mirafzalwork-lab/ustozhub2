@@ -114,6 +114,40 @@ def release_pending_payouts():
             errors += 1
             logger.exception(f'unexpected trial payout error booking={booking.id}: {e}')
 
+    # === Поток 3: разовые уроки с депозитом ===
+    # Доставленные = completed (депозит → USED) ИЛИ no_show_student (депозит
+    # сгорает → FORFEITED). В обоих случаях депозит уходит учителю (минус комиссия).
+    from .deposits import DepositService
+    from .models import BookingDeposit
+    deposit_candidates = (
+        Booking.objects
+        .filter(status__in=('completed', 'no_show_student'),
+                deposit__status=BookingDeposit.Status.PAID,
+                slot__end_at__lt=threshold)
+        .exclude(no_show_forgiven=True)
+        .exclude(dispute__status='open')
+        .annotate(_paid=payout_exists)
+        .filter(_paid=False)
+        .select_related('slot__teacher__user', 'student', 'deposit')
+        .order_by('slot__end_at')[:500]
+    )
+    for booking in deposit_candidates:
+        total += 1
+        payout_key = f'deposit-payout:{booking.id}'
+        if Transaction.objects.filter(idempotency_key=payout_key).exists():
+            skipped += 1
+            continue
+        try:
+            ok = DepositService.settle_payout(booking)
+            paid += 1 if ok else 0
+            skipped += 0 if ok else 1
+        except PayoutError as e:
+            errors += 1
+            logger.warning(f'deposit payout failed booking={booking.id}: {e}')
+        except Exception as e:
+            errors += 1
+            logger.exception(f'unexpected deposit payout error booking={booking.id}: {e}')
+
     return {'paid': paid, 'skipped': skipped, 'errors': errors, 'total': total}
 
 

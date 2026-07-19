@@ -8,8 +8,9 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import path, reverse
 
 from .models import (
-    Homework, HomeworkAttachment, HomeworkSubmission, HomeworkSubmissionFile,
-    Subscription, Tariff, Transaction, Wallet, WithdrawalRequest,
+    BookingDeposit, Homework, HomeworkAttachment, HomeworkSubmission,
+    HomeworkSubmissionFile, Subscription, Tariff, Transaction, Wallet,
+    WithdrawalRequest,
 )
 from .services import WalletService, WithdrawalError, WithdrawalService
 
@@ -77,6 +78,25 @@ class WalletAdmin(admin.ModelAdmin):
             'opts': self.model._meta,
             'title': f'Пополнить кошелёк {wallet.user.username}',
         })
+
+
+@admin.register(BookingDeposit)
+class BookingDepositAdmin(admin.ModelAdmin):
+    list_display = ('id', 'booking', 'amount', 'status', 'created_at', 'resolved_at')
+    list_filter = ('status',)
+    search_fields = ('booking__id', 'booking__student__username')
+    readonly_fields = tuple(f.name for f in BookingDeposit._meta.fields)
+    list_select_related = ('booking', 'booking__student')
+    date_hierarchy = 'created_at'
+
+    def has_add_permission(self, request) -> bool:
+        return False
+
+    def has_delete_permission(self, request, obj=None) -> bool:
+        return False
+
+    def has_change_permission(self, request, obj=None) -> bool:
+        return False
 
 
 @admin.register(Transaction)

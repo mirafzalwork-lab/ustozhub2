@@ -17,6 +17,23 @@ from celery import shared_task
 logger = logging.getLogger(__name__)
 
 
+def email_delivery_configured() -> bool:
+    """True, если на сервере реально настроен SMTP для отправки писем.
+
+    Прод может работать с EMAIL_BACKEND=smtp, но пустым EMAIL_HOST — тогда
+    smtplib.SMTP('', port) не подключается и любая отправка падает с
+    «please run connect() first». В этом случае email просто выключен: письма
+    не шлём (in-app + Telegram-напоминания продолжают работать), а не сыпем
+    ошибками и ретраями на каждое уведомление. Console/file/dummy-бэкенды не
+    требуют хоста и считаются настроенными.
+    """
+    from django.conf import settings
+    backend = getattr(settings, 'EMAIL_BACKEND', '')
+    if 'smtp' not in backend:
+        return True
+    return bool(getattr(settings, 'EMAIL_HOST', ''))
+
+
 @shared_task(name='teachers.health_check')
 def health_check() -> dict:
     """Простой ping для проверки что Celery worker жив и видит наши задачи."""
@@ -97,6 +114,11 @@ def send_notification_email(self, notification_id: int) -> bool:
     from .models import Notification
 
     if not getattr(settings, 'NOTIFY_EMAIL_ENABLED', True):
+        return False
+    if not email_delivery_configured():
+        # SMTP не настроен (пустой EMAIL_HOST) — не уходим в ретраи с
+        # «please run connect() first». Уведомление уже доставлено in-app и
+        # (при наличии) в Telegram.
         return False
 
     try:
@@ -329,8 +351,9 @@ def _send_reminder_for_booking(booking, kind):
             text_body = render_to_string('emails/lesson_reminder.txt', ctx)
             html_body = render_to_string('emails/lesson_reminder.html', ctx)
 
-            # Email
-            if recipient_user.email:
+            # Email (только если SMTP реально настроен — иначе не тратим
+            # попытку и не засоряем лог «please run connect() first»).
+            if recipient_user.email and email_delivery_configured():
                 try:
                     msg = EmailMultiAlternatives(
                         subject=subject_line,
@@ -452,6 +475,15 @@ def _safe_url(name, *args):
         return ''
 
 
+def _booking_has_deposit(booking) -> bool:
+    """True, если у разовой брони есть депозит (billing.BookingDeposit)."""
+    try:
+        from billing.models import BookingDeposit
+        return BookingDeposit.objects.filter(booking_id=booking.pk).exists()
+    except Exception:
+        return False
+
+
 def _notify_teacher_no_show(booking) -> None:
     """ТЗ §7: учитель не пришёл — уведомляем ученика.
 
@@ -467,6 +499,8 @@ def _notify_teacher_no_show(booking) -> None:
             'Стоимость урока возвращена на ваш баланс — её можно потратить '
             'на нового учителя или новую подписку.'
         )
+    elif _booking_has_deposit(booking):
+        money_text = 'Депозит за урок возвращён на ваш баланс.'
     else:
         money_text = 'Деньги за урок не списывались.'
     _notify(
@@ -484,6 +518,8 @@ def _notify_teacher_no_show(booking) -> None:
     # Учителю — уведомление о собственной неявке и возврате средств ученику.
     if booking.subscription_id or (booking.is_trial and booking.trial_price_paid):
         teacher_money_text = 'Стоимость урока возвращена ученику.'
+    elif _booking_has_deposit(booking):
+        teacher_money_text = 'Депозит за урок возвращён ученику.'
     else:
         teacher_money_text = 'Деньги за урок с ученика не списывались.'
     _notify(
@@ -525,10 +561,21 @@ def _handle_not_held(booking) -> None:
             LessonEvent.log(booking, 'refund', meta={'reason': 'not_held'})
         except Exception:
             logger.warning('not_held refund_lesson failed booking=%s', booking.pk, exc_info=True)
+    else:
+        # Разовый урок с депозитом: никто не пришёл — ничья вина, депозит возвращаем.
+        try:
+            from billing.deposits import DepositService
+            if DepositService.refund(booking, reason='Урок не состоялся (никто не подключился)'):
+                from .models import LessonEvent
+                LessonEvent.log(booking, 'refund', meta={'reason': 'not_held'})
+        except Exception:
+            logger.warning('not_held deposit refund failed booking=%s', booking.pk, exc_info=True)
     # Текст соответствует фактическому движению денег (аудит 2026-06-10 M15):
     # выше refund_trial/refund_lesson вернули стоимость урока на баланс ученика.
     if booking.subscription_id or (booking.is_trial and booking.trial_price_paid):
         money_text = 'Стоимость урока возвращена на баланс ученика.'
+    elif _booking_has_deposit(booking):
+        money_text = 'Депозит возвращён на баланс ученика.'
     else:
         money_text = 'Деньги не списывались.'
     for user in (booking.student, booking.slot.teacher.user):
@@ -576,6 +623,13 @@ def _handle_student_no_show(booking) -> None:
                 f'следующая неявка приведёт к списанию урока и оплате преподавателю.'
             )
         priority = 7 if ordinal < limit else 9
+    elif _booking_has_deposit(booking):
+        title = 'Депозит сгорел из-за пропуска'
+        warn = (
+            f'Вы не подключились к уроку с {teacher}. Депозит за урок сгорел '
+            f'и не возвращается — он начислен преподавателю.'
+        )
+        priority = 9
     else:
         title = 'Урок списан из-за пропуска'
         warn = (
@@ -640,6 +694,10 @@ def _refund_teacher_no_show(booking) -> None:
                 booking, cancelled_by='teacher',
                 reason='Учитель не подключился к уроку',
             )
+        else:
+            # Разовый урок с депозитом — вина учителя → депозит возвращается.
+            from billing.deposits import DepositService
+            DepositService.refund(booking, reason='Учитель не подключился к уроку')
     except Exception as e:
         logger.error(
             f'_refund_teacher_no_show failed for booking {booking.pk}: {e}',

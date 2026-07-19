@@ -3558,6 +3558,17 @@ class Booking(models.Model):
                 )
                 if refunded:
                     LessonEvent.log(locked, 'refund', meta={'reason': 'trial_hold_expired'})
+            else:
+                # Разовый урок с депозитом протух без подтверждения учителя —
+                # депозит возвращаем в этой же atomic-транзакции (идемпотентно по
+                # 'deposit-refund:<id>'; payout невозможен — статус не станет
+                # completed/no_show_student).
+                from billing.deposits import DepositService
+                refunded = DepositService.refund(
+                    locked, reason='Урок не подтверждён учителем (истёк срок)',
+                )
+                if refunded:
+                    LessonEvent.log(locked, 'refund', meta={'reason': 'deposit_hold_expired'})
             self.refresh_from_db()
 
     def mark_completed(self):

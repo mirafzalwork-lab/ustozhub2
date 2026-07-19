@@ -784,21 +784,17 @@ def booking_create_api(request):
         if teacher_subject is None:
             return _json_error('Учитель не преподаёт этот предмет', status=400)
 
-        # Анти-абуз: один пробный на пару (student, teacher) — см. _existing_trial_qs.
-        from billing.services import TrialService
-        if TrialService._existing_trial_qs(
-            request.user, slot_obj.teacher,
-        ).exists():
-            return _json_error(
-                'У вас уже был пробный урок с этим учителем. '
-                'Пробный доступен только один раз — оформите подписку, чтобы продолжить.',
-                status=409,
-            )
+    # Политику бронирования решает backend (единственный источник истины):
+    #   • бесплатный пробный — один на всю платформу (глобально по ученику);
+    #   • после него любая разовая бронь требует депозита (это и есть оплата урока);
+    #   • платный пробный — отдельный продукт учителя (анти-абуз per-teacher).
+    from billing.deposits import DepositService, has_used_free_trial
 
     try:
         if is_trial and teacher_subject and not teacher_subject.is_free_trial \
                 and teacher_subject.trial_price:
-            # Платный пробный — через TrialService (с debit'ом).
+            # Платный пробный — через TrialService (с debit'ом). Анти-абуз
+            # (один платный пробный на пару) — внутри сервиса.
             from billing.services import (
                 InsufficientFunds, TrialAlreadyTaken, TrialNotPaid, TrialService,
             )
@@ -828,14 +824,53 @@ def booking_create_api(request):
             except TrialNotPaid as e:
                 # Не должно случиться — branch гарантирует, но защита.
                 return _json_error(str(e), status=400)
-        else:
+        elif is_trial and has_used_free_trial(request.user):
+            # Явно запросили бесплатный пробный, но он уже израсходован — не
+            # списываем депозит молча, а сообщаем: нужна бронь с депозитом.
+            return _json_error(
+                'Бесплатный пробный урок уже использован. '
+                'Для новой брони внесите депозит.',
+                status=409,
+                code='free_trial_used',
+            )
+        elif not has_used_free_trial(request.user):
+            # Первая бронь ученика — это его единственный бесплатный пробный
+            # (независимо от того, помечена ли она is_trial фронтом). Денег нет.
             booking = Booking.create_hold(
                 slot_id=slot_id,
                 student=request.user,
                 subject=subject,
                 message=message,
-                is_trial=is_trial,
+                is_trial=True,
             )
+        else:
+            # Пробный уже израсходован → разовая бронь требует депозита. Депозит —
+            # не доп. платёж, а оплата урока; удерживается сразу при бронировании.
+            from billing.services import InsufficientFunds
+            try:
+                booking = DepositService.book_with_deposit(
+                    student=request.user,
+                    slot_id=slot_id,
+                    subject=subject,
+                    message=message,
+                )
+            except InsufficientFunds:
+                from urllib.parse import urlencode
+                from billing.deposits import get_deposit_amount
+                _slot = TimeSlot.objects.select_related('teacher').filter(pk=slot_id).first()
+                deposit_amount = int(get_deposit_amount())
+                params = {'amount': deposit_amount}
+                if _slot is not None:
+                    params['next'] = reverse('book_teacher_page',
+                                             kwargs={'teacher_id': _slot.teacher_id})
+                topup_url = reverse('wallet_topup_request') + '?' + urlencode(params)
+                return _json_error(
+                    f'Недостаточно средств для депозита ({deposit_amount} сум). '
+                    f'Пополните кошелёк.',
+                    status=402,
+                    code='insufficient_funds',
+                    topup_url=topup_url,
+                )
     except SlotUnavailable as e:
         return _json_error(f'Слот уже занят или прошёл: {e}', status=409)
     except TimeSlot.DoesNotExist:
@@ -849,6 +884,26 @@ def booking_create_api(request):
 
     logger.info(f'Booking created: {booking.pk} student={request.user.pk} slot={slot_id}')
     return JsonResponse({'booking': _booking_to_dict(booking)}, status=201)
+
+
+@student_required
+@require_http_methods(['GET'])
+def booking_eligibility_api(request):
+    """Состояние бронирования для ученика — фронт лишь отображает это.
+
+    Backend — единственный источник истины (enforcement в booking_create_api
+    использует ту же политику). Возвращает: доступен ли бесплатный пробный,
+    нужен ли депозит и его сумму, а также хватает ли баланса на депозит.
+    """
+    from billing.deposits import BookingPolicyService
+    from billing.services import WalletService
+
+    elig = BookingPolicyService.evaluate(request.user)
+    wallet = WalletService.get_or_create_wallet(request.user)
+    payload = elig.as_dict()
+    payload['wallet_balance'] = str(wallet.balance)
+    payload['sufficient_balance'] = wallet.balance >= elig.deposit_amount
+    return JsonResponse(payload)
 
 
 @authenticated_required
@@ -916,6 +971,16 @@ def booking_cancel_api(request, booking_id):
             )
         except Exception as e:
             logger.error(f'Lesson cancel failed for booking={booking.id}: {e}', exc_info=True)
+    else:
+        # Разовый урок с депозитом: отмена до урока → депозит возвращается
+        # (сгорает только при неявке). refund — no-op, если депозита нет.
+        try:
+            from billing.deposits import DepositService
+            refunded = DepositService.refund(booking, reason='Отмена бронирования')
+            if refunded > 0:
+                logger.info(f'Deposit refund: booking={booking.id}, amount={refunded}')
+        except Exception as e:
+            logger.error(f'Deposit refund failed for booking={booking.id}: {e}', exc_info=True)
 
     return JsonResponse({'booking': _booking_to_dict(booking)})
 
@@ -1158,6 +1223,13 @@ def booking_reject_api(request, booking_id):
             TrialService.refund_trial(booking, reason=f'Отказ учителя: {reply[:100]}')
         except Exception as e:
             logger.error(f'Trial refund failed for booking={booking.id}: {e}', exc_info=True)
+    else:
+        # Разовый урок с депозитом: учитель отклонил → депозит возвращается.
+        try:
+            from billing.deposits import DepositService
+            DepositService.refund(booking, reason=f'Отказ учителя: {reply[:100]}')
+        except Exception as e:
+            logger.error(f'Deposit refund failed for booking={booking.id}: {e}', exc_info=True)
 
     _notify_student_about_decision(booking, decision='rejected')
     logger.info(f'Booking rejected: {booking.pk}')

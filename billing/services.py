@@ -2186,6 +2186,13 @@ class DisputeService:
                 )
             elif booking.is_trial and booking.trial_price_paid:
                 TrialService.refund_trial(booking, reason='Спор решён в пользу ученика')
+            else:
+                # Разовый урок с депозитом: возвращаем депозит ученику. no-op,
+                # если депозита нет (бесплатный пробный / старая разовая бронь).
+                # Критично: без этого фоновая выплата после закрытия спора отдала
+                # бы депозит учителю, хотя спор решён в пользу ученика.
+                from billing.deposits import DepositService
+                DepositService.refund(booking, reason='Спор решён в пользу ученика')
             d.status = LessonDispute.Status.RESOLVED_REFUND
             d.resolved_by = admin
             d.resolved_at = timezone.now()
@@ -2214,6 +2221,13 @@ class DisputeService:
                     SubscriptionService.release_lesson_payout(booking)
                 elif booking.is_trial and booking.trial_price_paid:
                     TrialService.release_trial_payout(booking)
+                else:
+                    # Разовый урок с депозитом: депозит уходит учителю. no-op,
+                    # если депозита нет. (Фоновая задача тоже подхватила бы — спор
+                    # закрыт, — но платим явно для наглядности и предсказуемости.)
+                    from billing.deposits import DepositService
+                    if DepositService._get_deposit(booking) is not None:
+                        DepositService.settle_payout(booking)
             except PayoutError as e:
                 # Не критично: фоновая задача доведёт выплату (спор уже закрыт).
                 logger.warning('dispute reject payout deferred: %s', e)
