@@ -45,6 +45,18 @@ from teachers.models import (
 
 PWD = 'x' * 12
 DEPOSIT = Decimal('30000')
+
+
+def _mk_student(username, balance=Decimal('0')):
+    """Как _make_student_with_balance, но phone_verified=True — обходит гейт
+    верификации телефона (параллельная фича), чтобы тесты про депозит доходили
+    до вью. На проде существующие ученики так же грандфазерятся миграцией."""
+    u = _make_student_with_balance(username, balance=balance)
+    field_names = [f.name for f in type(u)._meta.get_fields()]
+    if 'phone_verified' in field_names:
+        type(u).objects.filter(pk=u.pk).update(phone_verified=True)
+        u.refresh_from_db()
+    return u
 TEACHER_SHARE = Decimal('25500.00')   # 30000 * 0.85
 COMMISSION = Decimal('4500.00')       # 30000 * 0.15
 
@@ -59,7 +71,11 @@ class DepositTestBase(TestCase):
         self.teacher.moderation_status = 'approved'
         self.teacher.is_active = True
         self.teacher.save()
-        self.student = _make_student_with_balance('dep_s', balance=Decimal('200000'))
+        # Обходим гейт верификации телефона (параллельная фича) и для учителя.
+        tu = self.teacher.user
+        if 'phone_verified' in [f.name for f in type(tu)._meta.get_fields()]:
+            type(tu).objects.filter(pk=tu.pk).update(phone_verified=True)
+        self.student = _mk_student('dep_s', balance=Decimal('200000'))
 
     # -- слоты / брони -------------------------------------------------------
 
@@ -219,7 +235,7 @@ class PolicyEligibilityTests(DepositTestBase):
         self.assertTrue(e.deposit_required)
 
     def test_eligibility_is_per_student(self):
-        other = _make_student_with_balance('dep_s2', balance=Decimal('0'))
+        other = _mk_student('dep_s2', balance=Decimal('0'))
         self._mark_trial_used(student=self.student)
         # Пробный self.student не влияет на другого ученика.
         self.assertTrue(has_used_free_trial(self.student))
@@ -238,7 +254,7 @@ class PolicyEligibilityTests(DepositTestBase):
         self.assertTrue(d['sufficient_balance'])
 
     def test_eligibility_api_after_trial_and_low_balance(self):
-        poor = _make_student_with_balance('dep_poor', balance=Decimal('100'))
+        poor = _mk_student('dep_poor', balance=Decimal('100'))
         self._mark_trial_used(student=poor)
         self.client.force_login(poor)
         r = self.client.get(reverse('booking_eligibility_api'))
@@ -337,6 +353,37 @@ class BookingCreationTests(DepositTestBase):
         self.assertEqual(r.json().get('code'), 'free_trial_used')
         self.assertFalse(Booking.objects.filter(slot=slot).exists())
 
+    def test_trial_used_insufficient_balance_offers_topup(self):
+        # Пробный израсходован + нет денег на депозит → 409 с topup_url (кнопка
+        # «Пополнить баланс» ведёт на страницу оплаты).
+        poor = _mk_student('dep_poor2', balance=Decimal('0'))
+        self._mark_trial_used(student=poor)
+        slot = self._future_slot()
+        self.client.force_login(poor)
+        r = self.client.post(
+            reverse('booking_create_api'),
+            data={'slot_id': str(slot.id), 'subject_id': self.subject.id, 'is_trial': True},
+            content_type='application/json')
+        self.assertEqual(r.status_code, 409, r.content)
+        body = r.json()
+        self.assertEqual(body.get('code'), 'free_trial_used')
+        self.assertIn('topup_url', body)
+        self.assertIn(reverse('wallet_topup_request'), body['topup_url'])
+        self.assertFalse(Booking.objects.filter(slot=slot).exists())
+
+    def test_trial_used_sufficient_balance_no_topup(self):
+        # Пробный израсходован, но баланс есть → 409 без topup (просто перебронировать).
+        self._mark_trial_used()  # dep_s баланс 200000
+        slot = self._future_slot()
+        self.client.login(username='dep_s', password=PWD)
+        r = self.client.post(
+            reverse('booking_create_api'),
+            data={'slot_id': str(slot.id), 'subject_id': self.subject.id, 'is_trial': True},
+            content_type='application/json')
+        self.assertEqual(r.status_code, 409, r.content)
+        self.assertEqual(r.json().get('code'), 'free_trial_used')
+        self.assertNotIn('topup_url', r.json())
+
     def test_deposit_booking_holds_exact_amount(self):
         self._mark_trial_used()
         before = self._balance(self.student)
@@ -352,7 +399,7 @@ class BookingCreationTests(DepositTestBase):
             idempotency_key=f'deposit-hold:{b.id}').exists())
 
     def test_insufficient_funds_blocks_booking_via_api(self):
-        poor = _make_student_with_balance('dep_poor', balance=Decimal('0'))
+        poor = _mk_student('dep_poor', balance=Decimal('0'))
         self._mark_trial_used(student=poor)
         slot = self._future_slot()
         self.client.force_login(poor)
@@ -367,7 +414,7 @@ class BookingCreationTests(DepositTestBase):
         self.assertFalse(BookingDeposit.objects.filter(booking__slot=slot).exists())
 
     def test_balance_exactly_deposit_succeeds(self):
-        exact = _make_student_with_balance('dep_exact', balance=DEPOSIT)
+        exact = _mk_student('dep_exact', balance=DEPOSIT)
         self._mark_trial_used(student=exact)
         slot = self._future_slot()
         b = DepositService.book_with_deposit(student=exact, slot_id=slot.id,
@@ -376,7 +423,7 @@ class BookingCreationTests(DepositTestBase):
         self.assertEqual(self._balance(exact), Decimal('0.00'))
 
     def test_balance_one_below_deposit_fails(self):
-        poor = _make_student_with_balance('dep_near', balance=DEPOSIT - Decimal('1'))
+        poor = _mk_student('dep_near', balance=DEPOSIT - Decimal('1'))
         self._mark_trial_used(student=poor)
         slot = self._future_slot()
         from billing.services import InsufficientFunds
@@ -478,7 +525,7 @@ class SettlePayoutTests(DepositTestBase):
     def test_commission_rounding_conserves_money(self):
         # Нечётная сумма: учитель + комиссия = ровно депозит (деньги не теряются).
         with override_settings(BOOKING_DEPOSIT_AMOUNT=Decimal('33333')):
-            rich = _make_student_with_balance('dep_odd', balance=Decimal('100000'))
+            rich = _mk_student('dep_odd', balance=Decimal('100000'))
             self._mark_trial_used(student=rich)
             b = self._deposit_booking(student=rich, status='completed')
             t0, p0 = self._balance(self.teacher.user), self._balance(self.platform)
@@ -748,6 +795,36 @@ class LedgerInvariantTests(DepositTestBase):
         self._assert_reconciled(self.student)
         # Возврат вернул ровно удержанное — нетто по ученику ноль относительно депозита.
         self.assertEqual(self._balance(self.student), Decimal('200000'))
+
+
+# ═══════════════ 9b. Фронтенд: страница бронирования ══════════════════════
+
+
+class BookingPageRenderTests(DepositTestBase):
+    """Проводка eligibility на страницу бронирования (шаблон + JS-конфиг)."""
+
+    def _get_page(self):
+        self.client.login(username='dep_s', password=PWD)
+        url = reverse('book_teacher_page', kwargs={'teacher_id': self.teacher.pk})
+        return self.client.get(url)
+
+    def test_page_renders_for_student(self):
+        r = self._get_page()
+        self.assertEqual(r.status_code, 200)
+
+    def test_eligibility_url_and_elements_present(self):
+        html = self._get_page().content.decode()
+        # URL eligibility прокинут в конфиг
+        self.assertIn(reverse('booking_eligibility_api'), html)
+        self.assertIn('eligibility:', html)
+        # Баннер статуса присутствует
+        self.assertIn('id="book-elig"', html)
+
+    def test_deposit_i18n_strings_present(self):
+        html = self._get_page().content.decode()
+        for key in ('eligDepTitle', 'eligFreeTitle', 'depositTitle',
+                    'depositNote', 'priceFirstFree'):
+            self.assertIn(key, html)
 
 
 # ═══════════════════════ 10. Конфиг и модель ═══════════════════════════════

@@ -49,6 +49,56 @@
     const $error = document.getElementById('book-error');
     const $confirm = document.getElementById('book-confirm');
     const $price = document.getElementById('book-price');
+    const $elig = document.getElementById('book-elig');
+
+    // Состояние права ученика (из eligibility API): доступен ли бесплатный
+    // пробный, нужен ли депозит и его сумма. Backend — источник истины; фронт
+    // только отображает. Загружается один раз для авторизованного ученика.
+    let elig = null;
+
+    function eligBalance() {
+        if (elig && elig.wallet_balance != null) return parseFloat(elig.wallet_balance);
+        if (typeof cfg.balance === 'number') return cfg.balance;
+        return null;
+    }
+
+    // Баннер статуса над формой: «первый урок бесплатный» либо «нужен депозит».
+    function renderElig() {
+        if (!$elig) return;
+        if (!cfg.isStudent || !elig) { $elig.hidden = true; return; }
+        const sum = i18n.priceSum || 'сум';
+        if (elig.free_trial_available) {
+            $elig.className = 'book-elig book-elig--free';
+            $elig.innerHTML = '<i class="fa-solid fa-gift"></i><div><strong>' +
+                (i18n.eligFreeTitle || 'Ваш первый урок — бесплатный') + '</strong>' +
+                '<span class="book-elig__sub">' + (i18n.eligFreeSub || '') + '</span></div>';
+            $elig.hidden = false;
+            return;
+        }
+        if (elig.deposit_required) {
+            const dep = parseFloat(elig.deposit_amount || '0');
+            const depFmt = dep.toLocaleString(cfg.locale);
+            let inner = '<i class="fa-solid fa-shield-halved"></i><div><strong>' +
+                (i18n.eligDepTitle || 'Требуется депозит') + ' — ' + depFmt + ' ' + sum + '</strong>' +
+                '<span class="book-elig__sub">' + (i18n.eligDepSub || '') + '</span>';
+            const bal = eligBalance();
+            if (bal != null && elig.sufficient_balance === false) {
+                const need = Math.max(dep - bal, 0).toLocaleString(cfg.locale);
+                const url = cfg.urls.topup + '?amount=' + Math.round(dep) +
+                    '&next=' + encodeURIComponent(location.pathname);
+                inner += '<span class="book-elig__sub">' + (i18n.priceBalance || 'На балансе:') + ' ' +
+                    bal.toLocaleString(cfg.locale) + ' ' + sum + ' — ' + (i18n.priceNotEnough || 'не хватает') +
+                    ' ' + need + '.</span><a class="book-topup-link" href="' + url + '">' +
+                    (i18n.topup || 'Пополнить баланс') + '</a>';
+            }
+            inner += '</div>';
+            $elig.className = 'book-elig book-elig--deposit';
+            $elig.innerHTML = inner;
+            $elig.hidden = false;
+            return;
+        }
+        $elig.hidden = true;
+    }
     // Экран подтверждения
     const $formRegion = document.getElementById('book-form-region');
     const $success = document.getElementById('book-success');
@@ -97,20 +147,16 @@
         const trialPrice = parseFloat(opt.dataset.trialPrice || '0');
         const trialDuration = parseInt(opt.dataset.trialDuration || '60', 10);
 
-        // Чекбокс «пробный» имеет смысл только если у выбранного предмета есть
-        // пробный (бесплатный или платный). Иначе прячем и снимаем отметку —
-        // чтобы не отправлять пробный, который сервер отклонит (400/409).
-        const hasTrial = isFreeTrial || trialPrice > 0;
+        // Право ученика (eligibility): бесплатный пробный доступен / нужен депозит.
+        // Пока не загружено — считаем пробный доступным, чтобы UI не мигал.
+        const freeAvail = !elig || elig.free_trial_available === true;
+        const depReq = !!(elig && elig.deposit_required === true);
+
+        // Чекбокс «пробный»: бесплатный — только пока доступен; платный — всегда.
+        const hasTrial = (isFreeTrial && freeAvail) || trialPrice > 0;
         if ($trialWrap) $trialWrap.style.display = hasTrial ? '' : 'none';
         if (!hasTrial && $trial.checked) $trial.checked = false;
 
-        // Пробный — бесплатный
-        if ($trial.checked && isFreeTrial) {
-            $price.className = 'book-price is-free';
-            $price.innerHTML = '<i class="fa-solid fa-gift"></i> ' + (i18n.priceFree || 'Пробный урок — бесплатно');
-            $price.hidden = false;
-            return;
-        }
         // Пробный — платный: используем точную сумму trial_price из TeacherSubject
         if ($trial.checked && !isFreeTrial && trialPrice > 0) {
             $price.className = 'book-price is-trial-paid';
@@ -140,6 +186,47 @@
             $price.hidden = false;
             return;
         }
+
+        // Депозит требуется (бесплатный пробный израсходован) → разовый урок = депозит.
+        if (depReq) {
+            const dep = parseFloat(elig.deposit_amount || '0');
+            $price.className = 'book-price is-deposit';
+            let html = '<i class="fa-solid fa-shield-halved"></i> ' +
+                (i18n.depositTitle || 'Оплата урока (депозит):') + ' <strong>' +
+                dep.toLocaleString(cfg.locale) + ' ' + (i18n.priceSum || 'сум') + '</strong>' +
+                '<div class="book-price__note">' + (i18n.depositNote || '') + '</div>';
+            const bal = eligBalance();
+            if (bal != null && elig.sufficient_balance === false) {
+                const need = Math.max(dep - bal, 0).toLocaleString(cfg.locale);
+                const url = cfg.urls.topup + '?amount=' + Math.round(dep) +
+                    '&next=' + encodeURIComponent(location.pathname);
+                html += '<div class="book-price__warn">' +
+                    (i18n.priceBalance || 'На балансе:') + ' ' + bal.toLocaleString(cfg.locale) + ' ' + (i18n.priceSum || 'сум') +
+                    ' — ' + (i18n.priceNotEnough || 'не хватает') + ' ' + need + '. ' +
+                    '<a class="book-topup-link" href="' + url + '">' +
+                    (i18n.topup || 'Пополнить баланс') + '</a></div>';
+            } else if (bal != null) {
+                html += '<div class="book-price__ok">' +
+                    (i18n.priceBalance || 'На балансе:') + ' ' + bal.toLocaleString(cfg.locale) + ' ' + (i18n.priceSum || 'сум') + '</div>';
+            }
+            $price.innerHTML = html;
+            $price.hidden = false;
+            return;
+        }
+
+        // Бесплатный пробный доступен → первая бронь ученика бесплатна (даже без
+        // отметки «пробный» — backend делает первый урок пробным). Либо гость
+        // отметил бесплатный пробный до загрузки eligibility.
+        if ((elig && elig.free_trial_available) || ($trial.checked && isFreeTrial)) {
+            $price.className = 'book-price is-free';
+            $price.innerHTML = '<i class="fa-solid fa-gift"></i> ' +
+                ((elig && elig.free_trial_available)
+                    ? (i18n.priceFirstFree || 'Первый урок бесплатно (пробный)')
+                    : (i18n.priceFree || 'Пробный урок — бесплатно'));
+            $price.hidden = false;
+            return;
+        }
+
         // Обычный урок
         const mins = (selectedSlot && selectedSlot.extendedProps.duration_minutes) || 60;
         const cost = Math.round(rate * mins / 60);
@@ -187,6 +274,7 @@
         $success.hidden = true;
         $foot.hidden = false;
         $successFoot.hidden = true;
+        renderElig();
         refreshPrice();
         modal.hidden = false;
         // a11y: trap + restore focus
@@ -478,6 +566,18 @@
 
     calendar.render();
 
+    // Право ученика на бронь (бесплатный пробный / депозит). Backend решает;
+    // фронт лишь отображает. Тихо игнорируем ошибку (баннер просто не покажется,
+    // enforcement всё равно на сервере). Перезагружаем после брони — первый урок
+    // мог израсходовать бесплатный пробный, дальше нужен депозит.
+    function loadElig() {
+        if (!cfg.isStudent || !cfg.urls.eligibility) return;
+        api('GET', cfg.urls.eligibility)
+            .then(d => { elig = d; renderElig(); refreshPrice(); })
+            .catch(() => {});
+    }
+    loadElig();
+
     $confirm.addEventListener('click', async () => {
         if (!selectedSlot) return;
         $error.hidden = true;
@@ -502,7 +602,14 @@
             // Забронированный слот больше не свободен — убираем с календаря
             const ev = calendar.getEventById(bookedId);
             if (ev) ev.remove();
+            // Право могло измениться (первый урок израсходовал пробный) — обновим.
+            loadElig();
         } catch (e) {
+            // Бесплатный пробный уже использован — обновим статус, чтобы UI
+            // переключился на депозит.
+            if (e.status === 409 && e.data && e.data.code === 'free_trial_used') {
+                loadElig();
+            }
             const topupUrl = e.data && e.data.topup_url;
             if (topupUrl) {
                 // Недостаточно средств → показываем кнопку «Пополнить баланс»,

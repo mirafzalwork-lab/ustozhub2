@@ -825,13 +825,32 @@ def booking_create_api(request):
                 # Не должно случиться — branch гарантирует, но защита.
                 return _json_error(str(e), status=400)
         elif is_trial and has_used_free_trial(request.user):
-            # Явно запросили бесплатный пробный, но он уже израсходован — не
-            # списываем депозит молча, а сообщаем: нужна бронь с депозитом.
+            # Явно запросили бесплатный пробный, но он уже израсходован. Не
+            # списываем депозит молча. Разовый урок оплачивается депозитом с
+            # баланса — если баланса не хватает, отдаём topup_url (страница
+            # оплаты), и фронт показывает кнопку «Пополнить баланс».
+            from billing.deposits import get_deposit_amount
+            from billing.services import WalletService
+            from urllib.parse import urlencode
+            dep = get_deposit_amount()
+            wallet = WalletService.get_or_create_wallet(request.user)
+            _slot = TimeSlot.objects.select_related('teacher').filter(pk=slot_id).first()
+            _next = (reverse('book_teacher_page', kwargs={'teacher_id': _slot.teacher_id})
+                     if _slot else '')
+            _params = {'amount': int(dep)}
+            if _next:
+                _params['next'] = _next
+            topup_url = reverse('wallet_topup_request') + '?' + urlencode(_params)
+            if wallet.balance < dep:
+                return _json_error(
+                    f'Бесплатный пробный урок уже использован. Разовый урок '
+                    f'оплачивается депозитом {int(dep)} сум — пополните баланс.',
+                    status=409, code='free_trial_used', topup_url=topup_url,
+                )
             return _json_error(
-                'Бесплатный пробный урок уже использован. '
-                'Для новой брони внесите депозит.',
-                status=409,
-                code='free_trial_used',
+                f'Бесплатный пробный урок уже использован. Снимите отметку '
+                f'«пробный» и забронируйте разовый урок — спишется депозит {int(dep)} сум.',
+                status=409, code='free_trial_used',
             )
         elif not has_used_free_trial(request.user):
             # Первая бронь ученика — это его единственный бесплатный пробный

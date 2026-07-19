@@ -81,6 +81,22 @@
     }
     .book-topup-link:hover { background: #1D4ED8; }
 
+    /* Депозит за разовый урок */
+    .book-price.is-deposit { background: #EFF6FF; border-color: #BFDBFE; color: #1E3A8A; }
+    .book-price__note { margin-top: 6px; font-size: 12.5px; color: #475569; line-height: 1.5; }
+
+    /* Баннер статуса ученика (eligibility) */
+    .book-elig {
+        margin: 0 0 16px; padding: 11px 14px; border-radius: 8px;
+        font-size: 13.5px; line-height: 1.5; display: flex; gap: 10px; align-items: flex-start;
+    }
+    .book-elig i { margin-top: 2px; font-size: 16px; }
+    .book-elig--free { background: #FEF3C7; border: 1px solid #FDE68A; color: #92400E; }
+    .book-elig--deposit { background: #EFF6FF; border: 1px solid #BFDBFE; color: #1E3A8A; }
+    .book-elig strong { font-weight: 700; }
+    .book-elig__sub { display: block; margin-top: 3px; font-size: 12.5px; opacity: .85; }
+    .book-elig .book-topup-link { margin-top: 8px; }
+
     /* Экран подтверждения */
     .book-success { text-align: center; padding: 12px 8px 4px; }
     .book-success__icon { font-size: 48px; color: var(--cal-success, #10B981); margin-bottom: 10px; transition: color .3s ease; }
@@ -214,6 +230,9 @@
                     <dt>{% trans "Длительность" %}</dt><dd id="book-duration">—</dd>
                 </dl>
 
+                {# Баннер статуса ученика: бесплатный пробный или депозит (из eligibility API) #}
+                <div class="book-elig" id="book-elig" hidden></div>
+
                 {% if teacher_subjects %}
                 <div class="cal-field">
                     <label>{% trans "Предмет" %}</label>
@@ -339,6 +358,7 @@ window.UstozBook = {
     urls: {
         slots:  "{% url 'public_teacher_slots' teacher_id=teacher.pk %}",
         book:   "{% url 'booking_create_api' %}",
+        eligibility: "{% url 'booking_eligibility_api' %}",
         login:  "{% url 'login' %}?next={{ request.path|urlencode }}",
         myBookings: "{% url 'my_bookings_page' %}",
         topup:  "{% url 'wallet_topup_request' %}",
@@ -352,6 +372,16 @@ window.UstozBook = {
         success: "{% filter escapejs %}{% trans 'Заявка отправлена! Учитель подтвердит её до начала урока.' %}{% endfilter %}",
         minutes: "{% filter escapejs %}{% trans 'мин' %}{% endfilter %}",
         priceFree: "{% filter escapejs %}{% trans 'Пробный урок — бесплатно' %}{% endfilter %}",
+        priceTrialPaid: "{% filter escapejs %}{% trans 'Платный пробный:' %}{% endfilter %}",
+        priceMinutes: "{% filter escapejs %}{% trans 'мин' %}{% endfilter %}",
+        // Eligibility: бесплатный пробный / депозит
+        eligFreeTitle: "{% filter escapejs %}{% trans 'Ваш первый урок — бесплатный' %}{% endfilter %}",
+        eligFreeSub: "{% filter escapejs %}{% trans 'Это ваш единственный бесплатный пробный урок. Деньги не спишутся.' %}{% endfilter %}",
+        eligDepTitle: "{% filter escapejs %}{% trans 'Требуется депозит' %}{% endfilter %}",
+        eligDepSub: "{% filter escapejs %}{% trans 'Депозит — это оплата урока. Удерживается при бронировании и зачитывается после проведения урока. При неявке не возвращается.' %}{% endfilter %}",
+        depositTitle: "{% filter escapejs %}{% trans 'Оплата урока (депозит):' %}{% endfilter %}",
+        depositNote: "{% filter escapejs %}{% trans 'Удерживается при бронировании, зачитывается в оплату урока. При неявке не возвращается.' %}{% endfilter %}",
+        priceFirstFree: "{% filter escapejs %}{% trans 'Первый урок бесплатно (пробный)' %}{% endfilter %}",
         priceFmt: "{% filter escapejs %}{% trans 'Стоимость урока:' %}{% endfilter %}",
         pricePerHour: "{% filter escapejs %}{% trans 'сум/час' %}{% endfilter %}",
         priceApprox: "{% filter escapejs %}{% trans '≈' %}{% endfilter %}",
